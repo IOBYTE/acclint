@@ -1,0 +1,2 @@
+#define acclint_VERSION_MAJOR @acclint_VERSION_MAJOR@
+#define acclint_VERSION_MINOR @acclint_VERSION_MINOR@
