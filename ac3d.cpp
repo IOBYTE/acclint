@@ -118,6 +118,16 @@ std::ostream & operator << (std::ostream &out, const AC3D::Vertex &v)
     return out;
 }
 
+std::string getExtension(const std::string &file)
+{
+    size_t pos = file.find_last_of(".");
+
+    if (pos != std::string::npos)
+        return file.substr(pos);
+
+    return "";
+}
+
 bool isWhitespace(const std::string &s)
 {
     return (s.find_first_not_of(" \n\r\t") == std::string::npos);
@@ -588,6 +598,72 @@ void AC3D::writeSurface(std::ostream &out, const Surface &surface) const
     out << "refs " << surface.refs.size() << newline(m_crlf);
     for (const auto &ref : surface.refs)
         writeRef(out, ref);
+}
+
+void AC3D::writeSurfaces(std::ostream &out, const Object &object) const
+{
+    std::vector<Surface> surfaces;
+
+    for (size_t i = 0; i < object.surfaces.size(); ++i)
+    {
+        if ((object.surfaces[i].flags.back() & 4) != 4)
+            surfaces.push_back(object.surfaces[i]);
+        else
+        {
+            for (size_t j = 0; j < object.surfaces[i].refs.size() - 2; ++j)
+            {
+                if (object.surfaces[i].refs[j].index >= object.vertices.size() ||
+                    object.surfaces[i].refs[j + 1].index >= object.vertices.size() ||
+                    object.surfaces[i].refs[j + 2].index >= object.vertices.size())
+                    continue;
+
+                if (object.vertices[object.surfaces[i].refs[j].index].vertex == object.vertices[object.surfaces[i].refs[j + 1].index].vertex ||
+                    object.vertices[object.surfaces[i].refs[j].index].vertex == object.vertices[object.surfaces[i].refs[j + 2].index].vertex ||
+                    object.vertices[object.surfaces[i].refs[j + 1].index].vertex == object.vertices[object.surfaces[i].refs[j + 2].index].vertex)
+                    continue;
+
+                Surface surface;
+                surface.mat = object.surfaces[i].mat;
+                surface.flags.push_back(object.surfaces[i].flags.back() & 0xf0);
+
+                if ((j & 1) == 0)
+                {
+                    Ref ref1;
+                    ref1.index = object.surfaces[i].refs[j].index;
+                    ref1.coordinates.push_back(object.surfaces[i].refs[j].coordinates.front());
+                    surface.refs.push_back(ref1);
+
+                    Ref ref2;
+                    ref2.index = object.surfaces[i].refs[j + 1].index;
+                    ref2.coordinates.push_back(object.surfaces[i].refs[j + 1].coordinates.front());
+                    surface.refs.push_back(ref2);
+                }
+                else
+                {
+                    Ref ref1;
+                    ref1.index = object.surfaces[i].refs[j + 1].index;
+                    ref1.coordinates.push_back(object.surfaces[i].refs[j + 1].coordinates.front());
+                    surface.refs.push_back(ref1);
+
+                    Ref ref2;
+                    ref2.index = object.surfaces[i].refs[j].index;
+                    ref2.coordinates.push_back(object.surfaces[i].refs[j].coordinates.front());
+                    surface.refs.push_back(ref2);
+                }
+
+                Ref ref3;
+                ref3.index = object.surfaces[i].refs[j + 2].index;
+                ref3.coordinates.push_back(object.surfaces[i].refs[j + 2].coordinates.front());
+                surface.refs.push_back(ref3);
+
+                surfaces.push_back(surface);
+            }
+        }
+    }
+
+    out << "numsurf " << surfaces.size() << newline(m_crlf);
+    for (const auto &surface : surfaces)
+        writeSurface(out, surface);
 }
 
 bool AC3D::readHeader(std::istream &in)
@@ -1608,7 +1684,7 @@ bool AC3D::sameSurface(const Surface &surface1, const Surface &surface2, const O
     return true;
 }
 
-void AC3D::writeObject(std::ostream &out, const Object &object) const
+void AC3D::writeObject(std::ostream &out, const Object &object, bool is_ac) const
 {
     out << "OBJECT " << object.type << newline(m_crlf);
     if (!object.name.empty())
@@ -1627,6 +1703,8 @@ void AC3D::writeObject(std::ostream &out, const Object &object) const
         if (!texture.type.empty())
             out << ' ' << texture.type;
         out << newline(m_crlf);
+        if (is_ac)
+            break;
     }
     if (!object.texreps.empty())
         out << "texrep " << object.texreps.back().texrep << newline(m_crlf);
@@ -1638,21 +1716,26 @@ void AC3D::writeObject(std::ostream &out, const Object &object) const
         for (const auto &vertex : object.vertices)
         {
             out << vertex.vertex;
-            if (vertex.has_normal)
+            if (!is_ac && vertex.has_normal)
                 out << ' ' << vertex.normal;
             out << newline(m_crlf);
         }
     }
     if (!object.surfaces.empty())
     {
-        out << "numsurf " << object.surfaces.size() << newline(m_crlf);
-        for (const auto &surface : object.surfaces)
-            writeSurface(out, surface);
+        if (is_ac == m_is_ac)
+        {
+            out << "numsurf " << object.surfaces.size() << newline(m_crlf);
+            for (const auto &surface : object.surfaces)
+                writeSurface(out, surface);
+        }
+        else
+            writeSurfaces(out, object);
     }
 
     out << "kids " << object.kids.size() << newline(m_crlf);
     for (const auto &kid : object.kids)
-        writeObject(out, kid);
+        writeObject(out, kid, is_ac);
 }
 
 bool AC3D::read(const std::string &file)
@@ -1667,6 +1750,18 @@ bool AC3D::read(const std::string &file)
     m_materials.clear();
     m_objects.clear();
 
+    std::string extension = getExtension(file);
+
+    if (extension == ".ac")
+        m_is_ac = true;
+    else if (extension == ".acc")
+        m_is_ac = false;
+    else
+    {
+        std::cerr << "Unknown file extension: \"" << extension << "\"" << std::endl;
+        return false;
+    }
+
     std::ifstream in(m_file);
 
     if (!in)
@@ -1674,11 +1769,6 @@ bool AC3D::read(const std::string &file)
         std::cerr << "Failed to read: \"" << m_file << "\"" << std::endl;
         return false;
     }
-
-    std::string extension(".ac");
-
-    if (m_file.size() > extension.size())
-        m_is_ac = std::equal(m_file.begin() + m_file.size() - extension.size(), m_file.end(), extension.begin());
 
     if (!readHeader(in))
         return false;
@@ -1930,10 +2020,31 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 
 bool AC3D::write(const std::string &file) const
 {
+    std::string extension = getExtension(file);
+    bool is_ac;
+
+    if (extension == ".ac")
+        is_ac = true;
+    else if (extension == ".acc")
+        is_ac = false;
+    else
+    {
+        std::cerr << "Unknown file extension: \"" << extension << "\"" << std::endl;
+        return false;
+    }
+
     std::ofstream of(file, std::ofstream::binary);
 
     if (!of)
         return false;
+
+    if (m_is_ac && !is_ac) // convert .ac to .acc
+    {
+        std::cerr << "Can't convert " << m_file << " to " << file
+                  << "! Use accc from TORCS or Speed Dreams." << std::endl;
+        of.close();
+        return false;
+    }
 
     writeHeader(of, m_header);
 
@@ -1941,7 +2052,7 @@ bool AC3D::write(const std::string &file) const
         writeMaterial(of, m_materials[i]);
 
     for (size_t i = 0; i < m_objects.size(); ++i)
-        writeObject(of, m_objects[i]);
+        writeObject(of, m_objects[i], is_ac);
 
     return true;
 }
