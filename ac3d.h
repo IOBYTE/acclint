@@ -32,7 +32,7 @@ class AC3D
 {
 public:
     bool read(const std::string &file);
-    bool write(const std::string &file) const;
+    bool write(const std::string &file);
     size_t warnings() const
     {
         return m_warnings;
@@ -316,7 +316,7 @@ private:
     bool readRef(std::istringstream &in, Ref &ref);
     void writeRef(std::ostream &out, const Ref &ref) const;
     bool readObject(std::istringstream &iss, std::istream &in, Object &object);
-    void writeObject(std::ostream &out, const Object &object, bool is_ac) const;
+    void writeObject(std::ostream &out, const Object &object) const;
     bool getLine(std::istream &in);
     bool ungetLine(std::istream &in);
     std::ostream &warning(size_t line_number = 0);
@@ -335,6 +335,8 @@ private:
     bool cleanSurfaces(std::vector<Object> &objects);
     bool cleanSurfaces(Object &object);
     bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);
+    void convertObjects(std::vector<Object> &objects);
+    void convertObject(Object &object);
     bool sameVertex(const Vertex &vertex1, const Vertex &vertex2) const;
     bool sameSurface(const Surface &surface1, const Surface &surface2, const Object &object) const;
     bool sameMaterial(const Material &material1, const Material &material2) const;

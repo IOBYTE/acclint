@@ -600,7 +600,16 @@ void AC3D::writeSurface(std::ostream &out, const Surface &surface) const
         writeRef(out, ref);
 }
 
-void AC3D::writeSurfaces(std::ostream &out, const Object &object) const
+void AC3D::convertObjects(std::vector<Object> &objects)
+{
+    for (auto &object : objects)
+    {
+        convertObject(object);
+        convertObjects(object.kids);
+    }
+}
+
+void AC3D::convertObject(Object &object)
 {
     std::vector<Surface> surfaces;
 
@@ -661,9 +670,24 @@ void AC3D::writeSurfaces(std::ostream &out, const Object &object) const
         }
     }
 
-    out << "numsurf " << surfaces.size() << newline(m_crlf);
-    for (const auto &surface : surfaces)
-        writeSurface(out, surface);
+    object.surfaces.clear();
+    object.surfaces = surfaces;
+
+    // remove textures
+    if (object.textures.size() > 1)
+        object.textures.resize(1);
+
+    // remove texture type
+    if (!object.textures.empty())
+        object.textures[0].type.clear();
+
+    // remove normals
+    for (auto & vertex : object.vertices)
+        vertex.has_normal = false;
+
+    // removing normals on vertices can create duplicate vertices
+    cleanVertices(object);
+    cleanSurfaces(object);
 }
 
 bool AC3D::readHeader(std::istream &in)
@@ -1684,7 +1708,7 @@ bool AC3D::sameSurface(const Surface &surface1, const Surface &surface2, const O
     return true;
 }
 
-void AC3D::writeObject(std::ostream &out, const Object &object, bool is_ac) const
+void AC3D::writeObject(std::ostream &out, const Object &object) const
 {
     out << "OBJECT " << object.type << newline(m_crlf);
     if (!object.name.empty())
@@ -1700,11 +1724,9 @@ void AC3D::writeObject(std::ostream &out, const Object &object, bool is_ac) cons
     for (const auto &texture : object.textures)
     {
         out << "texture " << texture.name;
-        if (!is_ac && !texture.type.empty())
+        if (!texture.type.empty())
             out << ' ' << texture.type;
         out << newline(m_crlf);
-        if (is_ac)
-            break;
     }
     if (!object.texreps.empty())
         out << "texrep " << object.texreps.back().texrep << newline(m_crlf);
@@ -1716,26 +1738,21 @@ void AC3D::writeObject(std::ostream &out, const Object &object, bool is_ac) cons
         for (const auto &vertex : object.vertices)
         {
             out << vertex.vertex;
-            if (!is_ac && vertex.has_normal)
+            if (vertex.has_normal)
                 out << ' ' << vertex.normal;
             out << newline(m_crlf);
         }
     }
     if (!object.surfaces.empty())
     {
-        if (is_ac == m_is_ac)
-        {
-            out << "numsurf " << object.surfaces.size() << newline(m_crlf);
-            for (const auto &surface : object.surfaces)
-                writeSurface(out, surface);
-        }
-        else
-            writeSurfaces(out, object);
+        out << "numsurf " << object.surfaces.size() << newline(m_crlf);
+        for (const auto &surface : object.surfaces)
+            writeSurface(out, surface);
     }
 
     out << "kids " << object.kids.size() << newline(m_crlf);
     for (const auto &kid : object.kids)
-        writeObject(out, kid, is_ac);
+        writeObject(out, kid);
 }
 
 bool AC3D::read(const std::string &file)
@@ -2018,7 +2035,7 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
     }
 }
 
-bool AC3D::write(const std::string &file) const
+bool AC3D::write(const std::string &file)
 {
     std::string extension = getExtension(file);
     bool is_ac;
@@ -2045,6 +2062,8 @@ bool AC3D::write(const std::string &file) const
         of.close();
         return false;
     }
+    else if (!m_is_ac && is_ac)
+        convertObjects(m_objects);
 
     writeHeader(of, m_header);
 
@@ -2052,7 +2071,7 @@ bool AC3D::write(const std::string &file) const
         writeMaterial(of, m_materials[i]);
 
     for (size_t i = 0; i < m_objects.size(); ++i)
-        writeObject(of, m_objects[i], is_ac);
+        writeObject(of, m_objects[i]);
 
     return true;
 }
