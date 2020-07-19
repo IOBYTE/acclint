@@ -8,17 +8,14 @@ This program is functional but has room for improvements.
 3. More cleanups and optimizations like transforming geometry (removing loc an rot)
    will be added in a future release.
 
-4. When outputting a file it is not possible to change its type.
+4. It is not possible to convert a .ac file to .acc.
 
    acclint file.ac -o file.acc
 
    will not convert a .ac file to the .acc file format.  Use accc from TORCS or
    Speed Dreams to do this conversion.
 
-   acclint file.acc -o file.ac
-
-   will not convert a .acc file to the .ac file format.  This feature will be added
-   in a future release.
+   It is possible to convert a .acc file to .ac.
 
 5. More checks like validating normals will be added in a future release.
 
