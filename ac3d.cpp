@@ -1700,7 +1700,7 @@ void AC3D::writeObject(std::ostream &out, const Object &object, bool is_ac) cons
     for (const auto &texture : object.textures)
     {
         out << "texture " << texture.name;
-        if (!texture.type.empty())
+        if (!is_ac && !texture.type.empty())
             out << ' ' << texture.type;
         out << newline(m_crlf);
         if (is_ac)
