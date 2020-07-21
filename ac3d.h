@@ -81,6 +81,14 @@ public:
     {
         return m_unused_vertex;
     }
+    void invalidNormal(bool value)
+    {
+        m_invalid_normal = value;
+    }
+    bool invalidNormal() const
+    {
+        return m_invalid_normal;
+    }
     void invalidMaterial(bool value)
     {
         m_invalid_material = value;
@@ -285,6 +293,7 @@ private:
     bool            m_blank_line = false;
     bool            m_duplicate_vertices = true;
     bool            m_unused_vertex = true;
+    bool            m_invalid_normal = true;
     bool            m_invalid_material = true;
     bool            m_invalid_material_index = true;
     bool            m_duplicate_materials = true;

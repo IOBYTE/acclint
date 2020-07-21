@@ -17,7 +17,7 @@ This program is functional but has room for improvements.
 
    It is possible to convert a .acc file to .ac.
 
-5. More checks like validating normals will be added in a future release.
+5. More checks will be added in a future release.
 
 6. Only a single file can be checked.  Multiple files could be checked at once
    but outputting a file complicates things.  We could not allow outputting a file

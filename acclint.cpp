@@ -32,6 +32,7 @@ void usage()
     std::cerr << "  -Wno-unused-material            Don't show unused material warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-vertices         Don't show duplicate vertices warnings." << std::endl;
     std::cerr << "  -Wno-unused-vertex              Don't show unused vertex warnings." << std::endl;
+    std::cerr << "  -Wno-invalid-normal             Don't show invalid normal warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces         Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surface-vertices Don't show duplicate surface vertices warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material           Don't show invaild material warnings." << std::endl;
@@ -67,6 +68,7 @@ int main(int argc, char *argv[])
     bool unused_material = true;
     bool duplicate_vertices = true;
     bool unused_vertex = true;
+    bool invalid_normal = true;
     bool invalid_material = true;
     bool invalid_material_index = true;
     bool duplicate_surfaces = true;
@@ -140,6 +142,10 @@ int main(int argc, char *argv[])
         {
             unused_vertex = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-invalid-normal" || arg == "-Winvalid-normal")
+        {
+            invalid_normal = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
         {
             invalid_material = arg.compare(2, 3, "no-") != 0;
@@ -199,6 +205,7 @@ int main(int argc, char *argv[])
     ac3d.unusedMaterial(unused_material);
     ac3d.duplicateVertices(duplicate_vertices);
     ac3d.unusedVertex(unused_vertex);
+    ac3d.invalidNormal(invalid_normal);
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.duplicateSurfaces(duplicate_surfaces);

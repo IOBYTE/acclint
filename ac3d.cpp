@@ -21,6 +21,7 @@
 #include "ac3d.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 const std::string MATERIAL_token("MATERIAL");
 const std::string rgb_token("rgb");
@@ -1425,6 +1426,26 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                 if (iss2)
                                 {
                                     vertex.has_normal = true;
+
+                                    if (m_invalid_normal)
+                                    {
+                                        double length = std::sqrt((vertex.normal[0] * vertex.normal[0]) +
+                                                                  (vertex.normal[1] * vertex.normal[1]) +
+                                                                  (vertex.normal[2] * vertex.normal[2]));
+                                        // assume truncated float values
+                                        const double epsilon = std::numeric_limits<float>::epsilon() * 10;
+
+                                        if (std::fabs(1 - length) > epsilon)
+                                        {
+                                            warning() << "invalid normal length: " << length
+                                                      << " should be 1" << std::endl;
+                                            // find start of normal
+                                            size_t offset = pos2;
+                                            while (offset < m_line.size() && std::isspace(m_line[offset]))
+                                                offset++;
+                                            showLine(iss2, offset);
+                                        }
+                                    }
 
                                     checkTrailing(iss2);
                                 }
