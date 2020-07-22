@@ -1191,6 +1191,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
         if (token == name_token)
         {
+            if (!object.name.empty())
+            {
+                warning() << "multiple names" << std::endl;
+                showLine(iss1, 0);
+            }
+
             iss1 >> object.name;
 
             if (iss1)
