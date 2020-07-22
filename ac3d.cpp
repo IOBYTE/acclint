@@ -1215,20 +1215,50 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (hasTrailing(iss1))
                 {
-                    std::string trailing = getTrailing(iss1);
-                    iss1 >> texture.type;
-                    if (iss1)
+                    if (m_is_ac)
                     {
-                        if (hasTrailing(iss1))
-                        {
-                            if (m_trailing_text)
-                                warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
-                        }
+                        warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
+                        showLine(iss1);
                     }
                     else
                     {
-                        if (m_trailing_text)
-                            warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
+                        std::string trailing = getTrailing(iss1);
+                        iss1 >> texture.type;
+                        if (iss1)
+                        {
+                            if (hasTrailing(iss1))
+                            {
+                                if (m_trailing_text)
+                                {
+                                    warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
+                                    showLine(iss1);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (!m_is_ac)
+                            {
+                                if (m_missing_texture_type)
+                                {
+                                    warning() << "missing texture type" << std::endl;
+                                    showLine(iss1);
+                                }
+                            }
+                            else if (m_trailing_text)
+                            {
+                                warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
+                                showLine(iss1);
+                            }
+                        }
+                    }
+                }
+                else if (!m_is_ac)
+                {
+                    if (m_missing_texture_type)
+                    {
+                        warning() << "missing texture type" << std::endl;
+                        showLine(iss1);
                     }
                 }
 

@@ -39,6 +39,7 @@ void usage()
     std::cerr << "  -Wno-floating-point             Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty_object               Don't show empty object warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids               Don't show missing kids warnings." << std::endl;
+    std::cerr << "  -Wno-missing_texture-type       Don't show missing texture type warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index     Don't show invaild material index errors." << std::endl;
     std::cerr << std::endl;
@@ -76,6 +77,7 @@ int main(int argc, char *argv[])
     bool floating_point = true;
     bool empty_object = true;
     bool missing_kids = true;
+    bool missing_texture_type = true;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -170,6 +172,10 @@ int main(int argc, char *argv[])
         {
             missing_kids = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-missing-texture-type" || arg == "-Wmissing-texture-type")
+        {
+            missing_texture_type = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-errors")
         {
             invalid_material_index = false;
@@ -213,6 +219,7 @@ int main(int argc, char *argv[])
     ac3d.floatingPoint(floating_point);
     ac3d.emptyObject(empty_object);
     ac3d.missingKids(missing_kids);
+    ac3d.missingTextureType(missing_texture_type);
 
     if (!ac3d.read(in_file))
     {

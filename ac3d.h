@@ -161,6 +161,14 @@ public:
     {
         return m_missing_kids;
     }
+    void missingTextureType(bool value)
+    {
+        m_missing_texture_type = value;
+    }
+    bool missingTextureType() const
+    {
+        return m_missing_texture_type;
+    }
     bool clean();
     bool cleanObjects();
     bool cleanVertices();
@@ -303,6 +311,7 @@ private:
     bool            m_floating_point = true;
     bool            m_empty_object = true;
     bool            m_missing_kids = true;
+    bool            m_missing_texture_type = true;
 
     Header m_header;
     std::vector<Material> m_materials;
