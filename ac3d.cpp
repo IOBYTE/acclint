@@ -1493,7 +1493,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     }
                     else
                     {
-                        std::streampos pos = iss2.tellg();
+                        std::streampos pos1 = iss2.tellg();
                         iss2.clear();
                         iss2.seekg(0, std::ios::beg);
                         std::string token1;
@@ -1508,7 +1508,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         else
                         {
                             error() << "reading vertex" << std::endl;
-                            showLine(iss2, pos == -1 ? static_cast<std::streampos>(0) : pos);
+                            showLine(iss2, pos1 == -1 ? static_cast<std::streampos>(0) : pos1);
                         }
                     }
 
@@ -2170,7 +2170,7 @@ bool clip(std::array<double,3> &values)
     {
         if (value < 0.0)
         {
-            value == 0.0;
+            value = 0.0;
             clipped = true;
         }
         else if (value > 1.0)
@@ -2296,7 +2296,7 @@ bool AC3D::cleanMaterials(std::vector<Object> &objects, const std::vector<size_t
             }
         }
 
-        changed != cleanMaterials(objects[i].kids, indexes);
+        changed |= cleanMaterials(objects[i].kids, indexes);
     }
 
     return changed;
