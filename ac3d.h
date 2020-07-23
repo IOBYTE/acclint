@@ -184,6 +184,13 @@ private:
         }
     };
 
+    struct Data
+    {
+        std::string data;
+        size_t line_number = 0;
+        std::streampos line_pos;
+    };
+
     struct Material
     {
         quoted_string name;
@@ -193,10 +200,10 @@ private:
         std::array<double,3> spec = {0.0, 0.0, 0.0};
         double shi = 0.0;
         double trans = 0.0;
-        std::string data;
-        size_t line_number = 0;
+        std::vector<Data> data;
         bool version12 = false;
         bool used = false;
+        size_t line_number = 0;
         std::streampos line_pos;
     };
 
@@ -204,16 +211,22 @@ private:
     {
         quoted_string name;
         std::string type;
+        size_t line_number = 0;
+        std::streampos line_pos;
     };
 
     struct TexRep
     {
         std::array<double,2> texrep;
+        size_t line_number = 0;
+        std::streampos line_pos;
     };
 
     struct TexOff
     {
         std::array<double,2> texoff;
+        size_t line_number = 0;
+        std::streampos line_pos;
     };
 
     struct Ref
@@ -238,32 +251,52 @@ private:
         std::array<double,3> vertex;
         std::array<double,3> normal;
         bool has_normal = false;
-        size_t line_number = 0;
         bool used = false;
+        size_t line_number = 0;
         std::streampos line_pos;
     };
 
     struct Location
     {
         std::array<double,3> location = {0.0, 0.0, 0.0};
+        size_t line_number = 0;
+        std::streampos line_pos;
     };
 
     struct Rotation
     {
         std::array<double,9> rotation = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        size_t line_number = 0;
+        std::streampos line_pos;
     };
 
     struct Crease
     {
         double crease = 0.0;
+        size_t line_number = 0;
+        std::streampos line_pos;
+    };
+
+    struct Name
+    {
+        quoted_string name;
+        size_t line_number = 0;
+        std::streampos line_pos;
+    };
+
+    struct URL
+    {
+        std::string url;
+        size_t line_number = 0;
+        std::streampos line_pos;
     };
 
     struct Object
     {
         std::string type;
-        quoted_string name;
-        std::string url;
-        std::string data;
+        std::vector<Name> names;
+        std::vector<URL> urls;
+        std::vector<Data> data;
         std::vector<TexRep> texreps;
         std::vector<TexOff> texoffs;
         std::vector<Location> locations;

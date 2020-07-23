@@ -1070,7 +1070,22 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
         }
         else if (token == data_token)
         {
-            readData(iss, in, material.data);
+            Data data;
+            data.line_number = m_line_number;
+            data.line_pos = m_line_pos;
+
+            if (readData(iss, in, data.data))
+            {
+                if (!material.data.empty())
+                {
+                    warning() << "multiple data" << std::endl;
+                    showLine(iss, 0);
+                    note(material.data.front().line_number) << "first instance" << std::endl;
+                    showLine(in, material.data.front().line_pos);
+                }
+
+                material.data.push_back(data);
+            }
         }
         else if (token == ENDMAT_token)
         {
@@ -1132,8 +1147,8 @@ void AC3D::writeMaterial(std::ostream &out, const Material &material) const
         out << "spec " << material.spec  << newline(m_crlf);
         out << "shi " << material.shi << newline(m_crlf);
         out << "trans " << material.trans << newline(m_crlf);
-        if (!material.data.empty())
-            writeData(out, material.data);
+        for (const auto &data : material.data)
+            writeData(out, data.data);
         out << "ENDMAT" << newline(m_crlf);
     }
 }
@@ -1191,16 +1206,26 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
         if (token == name_token)
         {
-            if (!object.name.empty())
-            {
-                warning() << "multiple names" << std::endl;
-                showLine(iss1, 0);
-            }
+            Name name;
+            name.line_number = m_line_number;
+            name.line_pos = m_line_pos;
 
-            iss1 >> object.name;
+            iss1 >> name.name;
 
             if (iss1)
+            {
+                if (!object.names.empty())
+                {
+                    warning() << "multiple names" << std::endl;
+                    showLine(iss1, 0);
+                    note(object.names.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.names.front().line_pos);
+                }
+
+                object.names.push_back(name);
+
                 checkTrailing(iss1);
+            }
             else
             {
                 error() << "reading name" << std::endl;
@@ -1209,11 +1234,28 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == data_token)
         {
-            readData(iss1, in, object.data);
+            Data data;
+            data.line_number = m_line_number;
+            data.line_pos = m_line_pos;
+
+            if (readData(iss1, in, data.data))
+            {
+                if (!object.data.empty())
+                {
+                    warning() << "multiple data" << std::endl;
+                    showLine(iss1, 0);
+                    note(object.data.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.data.front().line_pos);
+                }
+
+                object.data.push_back(data);
+            }
         }
         else if (token == texture_token)
         {
             Texture texture;
+            texture.line_number = m_line_number;
+            texture.line_pos = m_line_pos;
 
             iss1 >> texture.name;
 
@@ -1256,6 +1298,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 {
                     warning() << "multiple textures" << std::endl;
                     showLine(iss1, 0);
+                    note(object.textures.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.textures.front().line_pos);
                 }
 
                 object.textures.push_back(texture);
@@ -1269,6 +1313,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         else if (token == texrep_token)
         {
             TexRep texrep;
+            texrep.line_number = m_line_number;
+            texrep.line_pos = m_line_pos;
 
             iss1 >> texrep.texrep;
 
@@ -1278,6 +1324,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 {
                     warning() << "multiple texrep" << std::endl;
                     showLine(iss1, 0);
+                    note(object.texreps.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.texreps.front().line_pos);
                 }
 
                 object.texreps.push_back(texrep);
@@ -1293,6 +1341,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         else if (token == texoff_token)
         {
             TexOff texoff;
+            texoff.line_number = m_line_number;
+            texoff.line_pos = m_line_pos;
 
             iss1 >> texoff.texoff;
 
@@ -1302,6 +1352,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 {
                     warning() << "multiple texoff" << std::endl;
                     showLine(iss1, 0);
+                    note(object.texoffs.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.texoffs.front().line_pos);
                 }
 
                 object.texoffs.push_back(texoff);
@@ -1320,6 +1372,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         else if (token == crease_token)
         {
             Crease crease;
+            crease.line_number = m_line_number;
+            crease.line_pos = m_line_pos;
 
             iss1 >> crease.crease;
 
@@ -1329,6 +1383,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 {
                     warning() << "multiple crease" << std::endl;
                     showLine(iss1, 0);
+                    note(object.creases.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.creases.front().line_pos);
                 }
 
                 object.creases.push_back(crease);
@@ -1344,6 +1400,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         else if (token == rot_token)
         {
             Rotation rotation;
+            rotation.line_number = m_line_number;
+            rotation.line_pos = m_line_pos;
 
             iss1 >> rotation.rotation;
 
@@ -1353,6 +1411,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 {
                     warning() << "multiple rot" << std::endl;
                     showLine(iss1, 0);
+                    note(object.rotations.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.rotations.front().line_pos);
                 }
 
                 object.rotations.push_back(rotation);
@@ -1368,6 +1428,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         else if (token == loc_token)
         {
             Location location;
+            location.line_number = m_line_number;
+            location.line_pos = m_line_pos;
 
             iss1 >> location.location;
 
@@ -1377,6 +1439,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 {
                     warning() << "multiple loc" << std::endl;
                     showLine(iss1, 0);
+                    note(object.locations.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.locations.front().line_pos);
                 }
 
                 object.locations.push_back(location);
@@ -1391,9 +1455,31 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == url_token)
         {
-            iss1 >> object.url;
+            URL url;
+            url.line_number = m_line_number;
+            url.line_pos = m_line_pos;
 
-            checkTrailing(iss1);
+            iss1 >> url.url;
+
+            if (iss1)
+            {
+                if (!object.urls.empty())
+                {
+                    warning() << "multiple url" << std::endl;
+                    showLine(iss1, 0);
+                    note(object.urls.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.urls.front().line_pos);
+                }
+
+                object.urls.push_back(url);
+
+                checkTrailing(iss1);
+            }
+            else
+            {
+                error() << "reading url" << std::endl;
+                showLine(iss1);
+            }
         }
         else if (token == locked_token)
         {
@@ -1630,7 +1716,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
     if (object.empty() && m_empty_object)
     {
-        warning(object_line) << "empty object: " << object.name << std::endl;
+        warning(object_line) << "empty object: "
+                             << (!object.names.empty() ? object.names.back().name.c_str() : "")
+                             << std::endl;
         showLine(iss, 0);
     }
 
@@ -1758,16 +1846,18 @@ bool AC3D::sameSurface(const Surface &surface1, const Surface &surface2, const O
 void AC3D::writeObject(std::ostream &out, const Object &object) const
 {
     out << "OBJECT " << object.type << newline(m_crlf);
-    if (!object.name.empty())
-        out << "name " << object.name << newline(m_crlf);
+    if (!object.names.empty())
+        out << "name " << object.names.back().name << newline(m_crlf);
+    if (!object.urls.empty())
+        out << "url " << object.urls.back().url << newline(m_crlf);
     if (!object.locations.empty())
         out << "loc " << object.locations.back().location << newline(m_crlf);
     if (!object.rotations.empty())
         out << "rot " << object.rotations.back().rotation << newline(m_crlf);
     if (!object.creases.empty())
         out << "crease " << object.creases.back().crease << newline(m_crlf);
-    if (!object.data.empty())
-        writeData(out, object.data);
+    for (const auto &data : object.data)
+        writeData(out, data.data);
     for (const auto &texture : object.textures)
     {
         out << "texture " << texture.name;
@@ -2130,13 +2220,25 @@ bool AC3D::sameMaterial(const Material &material1, const Material &material2) co
 
 bool AC3D::sameMaterialParameters(const Material &material1, const Material &material2) const
 {
-    return material1.rgb == material2.rgb &&
-           material1.amb == material2.amb &&
-           material1.emis == material2.emis &&
-           material1.spec == material2.spec &&
-           material1.shi == material2.shi &&
-           material1.trans == material2.trans &&
-           material1.data == material2.data;
+    if (material1.rgb == material2.rgb &&
+        material1.amb == material2.amb &&
+        material1.emis == material2.emis &&
+        material1.spec == material2.spec &&
+        material1.shi == material2.shi &&
+        material1.trans == material2.trans)
+    {
+        if (material1.data.size() == material2.data.size())
+        {
+            for (size_t i = 0; i < material1.data.size(); ++i)
+            {
+                if (material1.data[i].data != material2.data[i].data)
+                    return false;
+            }
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool AC3D::setMaterialUsed(size_t index)
