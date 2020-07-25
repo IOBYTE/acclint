@@ -186,7 +186,7 @@ void showLine(std::istream &in, const std::streampos &pos, int offset = 0)
         line.pop_back();
     std::cerr << line << std::endl;
     if (offset < 0)
-        offset = line.size();
+        offset = static_cast<int>(line.size());
     for (int i = 0; i < offset; ++i)
         std::cerr << ' ';
     std::cerr << '^' << std::endl;
@@ -1614,7 +1614,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             object.numsurf_line_pos = m_line_pos;
 
             iss1 >> std::ws;
-            object.numsurf_number_offset = iss1.tellg();
+            object.numsurf_number_offset = static_cast<int>(iss1.tellg());
             size_t numsurf = 0;
             iss1 >> numsurf;
 

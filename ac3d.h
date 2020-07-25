@@ -306,7 +306,7 @@ private:
         std::vector<Vertex> vertices;
         size_t numsurf_line_number = 0;
         std::streampos numsurf_line_pos;
-        size_t numsurf_number_offset = 0;
+        int numsurf_number_offset = 0;
         std::vector<Surface> surfaces;
         std::vector<Object> kids;
 
