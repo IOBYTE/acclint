@@ -2577,7 +2577,6 @@ bool AC3D::cleanSurfaces(Object &object)
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         Surface &surface = object.surfaces[i];
-        size_t duplicate = 0;
 
         for (size_t j = 0; j < surface.refs.size(); ++j)
         {
