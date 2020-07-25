@@ -1615,6 +1615,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             if (!iss1)
             {
                 error() << "reading number of surfaces" << std::endl;
+                showLine(iss1);
                 continue;
             }
 
