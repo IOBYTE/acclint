@@ -159,7 +159,7 @@ void showLine(std::istringstream &in)
     std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
     buf->pubseekpos(pos, std::ios_base::in);
 
-    for (size_t i = 0; i < pos; ++i)
+    for (int i = 0; i < pos; ++i)
         std::cerr << ' ';
     std::cerr << '^' << std::endl;
 }
@@ -168,7 +168,7 @@ void showLine(std::istringstream &in, const std::streampos &pos)
 {
     std::cerr << in.str() << std::endl;
 
-    for (size_t i = 0; i < pos; ++i)
+    for (int i = 0; i < pos; ++i)
         std::cerr << ' ';
     std::cerr << '^' << std::endl;
 }
