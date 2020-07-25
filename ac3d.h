@@ -217,14 +217,14 @@ private:
 
     struct TexRep
     {
-        std::array<double,2> texrep;
+        std::array<double,2> texrep = {0.0, 0.0};
         size_t line_number = 0;
         std::streampos line_pos;
     };
 
     struct TexOff
     {
-        std::array<double,2> texoff;
+        std::array<double,2> texoff = {0.0, 0.0};
         size_t line_number = 0;
         std::streampos line_pos;
     };
@@ -248,8 +248,8 @@ private:
 
     struct Vertex
     {
-        std::array<double,3> vertex;
-        std::array<double,3> normal;
+        std::array<double,3> vertex = {0.0, 0.0, 0.0};
+        std::array<double,3> normal = {0.0, 0.0, 0.0};
         bool has_normal = false;
         bool used = false;
         size_t line_number = 0;
