@@ -1549,7 +1549,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                                                   (vertex.normal[1] * vertex.normal[1]) +
                                                                   (vertex.normal[2] * vertex.normal[2]));
                                         // assume truncated float values
-                                        constexpr double epsilon = std::numeric_limits<float>::epsilon() * 10;
+                                        constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 10;
 
                                         if (std::fabs(1 - length) > epsilon)
                                         {
