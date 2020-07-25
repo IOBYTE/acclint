@@ -173,7 +173,7 @@ void showLine(std::istringstream &in, const std::streampos &pos)
     std::cerr << '^' << std::endl;
 }
 
-void showLine(std::istream &in, const std::streampos &pos, size_t offset = 0)
+void showLine(std::istream &in, const std::streampos &pos, int offset = 0)
 {
     std::streampos current = in.tellg();
     std::string line;
@@ -185,7 +185,9 @@ void showLine(std::istream &in, const std::streampos &pos, size_t offset = 0)
     if (line.back() == '\r')
         line.pop_back();
     std::cerr << line << std::endl;
-    for (size_t i = 0; i < offset; ++i)
+    if (offset < 0)
+        offset = line.size();
+    for (int i = 0; i < offset; ++i)
         std::cerr << ' ';
     std::cerr << '^' << std::endl;
 
@@ -449,12 +451,6 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
         if (iss)
         {
-            if (!surface.flags.empty())
-            {
-                warning() << "multiple SURF" << std::endl;
-                showLine(iss, 0);
-            }
-
             // TODO check flags here
 
             surface.flags.push_back(surf);
@@ -464,7 +460,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         else
         {
             error() << "reading type" << std::endl;
-            showLine(iss);
+            showLine(iss, pos);
         }
 
         if (!getLine(in))
@@ -475,6 +471,21 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         iss.clear();
         iss.str(m_line);
         iss >> token;
+    }
+    else if (token == kids_token)
+    {
+        error() << "less surfaces than specified" << std::endl;
+        showLine(iss, 0);
+        note(object.numsurf_line_number) << "number specified" << std::endl;
+        showLine(in, object.numsurf_line_pos, object.numsurf_number_offset);
+        ungetLine(in);
+        return false;
+    }
+    else
+    {
+        error() << "invalid surface" << std::endl;
+        showLine(iss, 0);
+        return true;
     }
 
     if (token == mat_token)
@@ -488,12 +499,6 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         if (iss)
         {
             setMaterialUsed(mat);
-
-            if (!surface.mat.empty())
-            {
-                warning() << "multiple mat" << std::endl;
-                showLine(iss, 0);
-            }
 
             if (mat >= m_materials.size())
             {
@@ -1165,10 +1170,6 @@ bool icasecmp(const std::string &l, const std::string &r)
 
 bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 {
-    int numsurf = 0;
-    size_t numsurf_line_number = 0;
-    std::streampos numsurf_line_pos;
-    size_t numsurf_number_offset = 0;
     size_t object_line = m_line_number;
     iss >> std::ws;
     std::streampos pos = iss.tellg();
@@ -1609,12 +1610,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == numsurf_token)
         {
-            numsurf_line_number = m_line_number;
-            numsurf_line_pos = m_line_pos;
-            numsurf = 0;
+            object.numsurf_line_number = m_line_number;
+            object.numsurf_line_pos = m_line_pos;
 
             iss1 >> std::ws;
-            numsurf_number_offset = iss1.tellg();
+            object.numsurf_number_offset = iss1.tellg();
+            size_t numsurf = 0;
             iss1 >> numsurf;
 
             if (!iss1)
@@ -1626,7 +1627,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             checkTrailing(iss1);
 
-            for (int i = 0; i < numsurf; ++i)
+            for (size_t i = 0; i < numsurf; ++i)
             {
                 Surface surface;
 
@@ -1707,8 +1708,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         {
             error() << "found more SURF than specified" << std::endl;
             showLine(iss1, 0);
-            note(numsurf_line_number) << "number specified" << std::endl;
-            showLine(in, numsurf_line_pos, numsurf_number_offset);
+            note(object.numsurf_line_number) << "number specified" << std::endl;
+            showLine(in, object.numsurf_line_pos, object.numsurf_number_offset);
 
             Surface surface;
 
