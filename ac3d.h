@@ -257,8 +257,6 @@ private:
     struct Location : public LineInfo
     {
         std::array<double,3> location = {0.0, 0.0, 0.0};
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
     struct Rotation : public LineInfo
