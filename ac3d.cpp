@@ -291,6 +291,9 @@ void AC3D::checkTrailing(std::istringstream &iss)
 
 bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
 {
+    ref.line_number = m_line_number;
+    ref.line_pos = m_line_pos;
+
     in >> ref.index;
 
     if (!in)
@@ -476,8 +479,8 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
     {
         error() << "less surfaces than specified" << std::endl;
         showLine(iss, 0);
-        note(object.numsurf_line_number) << "number specified" << std::endl;
-        showLine(in, object.numsurf_line_pos, object.numsurf_number_offset);
+        note(object.numsurf.line_number) << "number specified" << std::endl;
+        showLine(in, object.numsurf.line_pos, object.numsurf_number_offset);
         ungetLine(in);
         return false;
     }
@@ -549,9 +552,6 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
             if (getLine(in))
             {
                 Ref ref;
-
-                ref.line_number = m_line_number;
-                ref.line_pos = m_line_pos;
 
                 std::istringstream iss1(m_line);
 
@@ -1512,12 +1512,51 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == locked_token)
         {
+            LineInfo info(m_line_number, m_line_pos);
+
+            if (!object.locked.empty())
+            {
+                warning() << "multiple locked" << std::endl;
+                showLine(iss1, 0);
+                note(object.locked.front().line_number) << "first instance" << std::endl;
+                showLine(in, object.locked.front().line_pos);
+            }
+
+            object.locked.push_back(info);
+
+            checkTrailing(iss1);
         }
         else if (token == hidden_token)
         {
+            LineInfo info(m_line_number, m_line_pos);
+
+            if (!object.hidden.empty())
+            {
+                warning() << "multiple hidden" << std::endl;
+                showLine(iss1, 0);
+                note(object.hidden.front().line_number) << "first instance" << std::endl;
+                showLine(in, object.hidden.front().line_pos);
+            }
+
+            object.hidden.push_back(info);
+
+            checkTrailing(iss1);
         }
         else if (token == folded_token)
         {
+            LineInfo info(m_line_number, m_line_pos);
+
+            if (!object.folded.empty())
+            {
+                warning() << "multiple folded" << std::endl;
+                showLine(iss1, 0);
+                note(object.folded.front().line_number) << "first instance" << std::endl;
+                showLine(in, object.folded.front().line_pos);
+            }
+
+            object.folded.push_back(info);
+
+            checkTrailing(iss1);
         }
         else if (token == numvert_token)
         {
@@ -1635,8 +1674,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == numsurf_token)
         {
-            object.numsurf_line_number = m_line_number;
-            object.numsurf_line_pos = m_line_pos;
+            object.numsurf.line_number = m_line_number;
+            object.numsurf.line_pos = m_line_pos;
 
             iss1 >> std::ws;
             object.numsurf_number_offset = static_cast<int>(iss1.tellg());
@@ -1733,8 +1772,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         {
             error() << "found more SURF than specified" << std::endl;
             showLine(iss1, 0);
-            note(object.numsurf_line_number) << "number specified" << std::endl;
-            showLine(in, object.numsurf_line_pos, object.numsurf_number_offset);
+            note(object.numsurf.line_number) << "number specified" << std::endl;
+            showLine(in, object.numsurf.line_pos, object.numsurf_number_offset);
 
             Surface surface;
 
@@ -1890,6 +1929,12 @@ void AC3D::writeObject(std::ostream &out, const Object &object) const
         out << "rot " << object.rotations.back().rotation << newline(m_crlf);
     if (!object.creases.empty())
         out << "crease " << object.creases.back().crease << newline(m_crlf);
+    if (!object.hidden.empty())
+        out << "hidden" << newline(m_crlf);
+    if (!object.locked.empty())
+        out << "locked" << newline(m_crlf);
+    if (!object.folded.empty())
+        out << "folded" << newline(m_crlf);
     for (const auto &data : object.data)
         writeData(out, data.data);
     for (const auto &texture : object.textures)

@@ -184,14 +184,21 @@ private:
         }
     };
 
-    struct Data
+    struct LineInfo
     {
-        std::string data;
+        LineInfo() = default;
+        LineInfo(size_t number, const std::streampos &pos) : line_number(number), line_pos(pos) { }
+
         size_t line_number = 0;
         std::streampos line_pos;
     };
 
-    struct Material
+    struct Data : public LineInfo
+    {
+        std::string data;
+    };
+
+    struct Material : public LineInfo
     {
         quoted_string name;
         std::array<double,3> rgb = {0.0, 0.0, 0.0};
@@ -203,99 +210,75 @@ private:
         std::vector<Data> data;
         bool version12 = false;
         bool used = false;
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct Texture
+    struct Texture : public LineInfo
     {
         quoted_string name;
         std::string type;
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct TexRep
+    struct TexRep : public LineInfo
     {
         std::array<double,2> texrep = {0.0, 0.0};
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct TexOff
+    struct TexOff : public LineInfo
     {
         std::array<double,2> texoff = {0.0, 0.0};
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct SubDiv
+    struct SubDiv : public LineInfo
     {
         size_t subdiv = 0;
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct Ref
+    struct Ref : public LineInfo
     {
         size_t index = 0;
         std::vector<std::array<double,2>> coordinates;
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct Surface
+    struct Surface : public LineInfo
     {
         std::vector<unsigned int> flags;
         std::vector<size_t> mat;
         std::vector<Ref> refs;
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct Vertex
+    struct Vertex : public LineInfo
     {
         std::array<double,3> vertex = {0.0, 0.0, 0.0};
         std::array<double,3> normal = {0.0, 0.0, 0.0};
         bool has_normal = false;
         bool used = false;
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct Location
+    struct Location : public LineInfo
     {
         std::array<double,3> location = {0.0, 0.0, 0.0};
         size_t line_number = 0;
         std::streampos line_pos;
     };
 
-    struct Rotation
+    struct Rotation : public LineInfo
     {
         std::array<double,9> rotation = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct Crease
+    struct Crease : public LineInfo
     {
         double crease = 0.0;
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct Name
+    struct Name : public LineInfo
     {
         quoted_string name;
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
-    struct URL
+    struct URL : public LineInfo
     {
         std::string url;
-        size_t line_number = 0;
-        std::streampos line_pos;
     };
 
     struct Object
@@ -310,10 +293,12 @@ private:
         std::vector<Location> locations;
         std::vector<Rotation> rotations;
         std::vector<Crease> creases;
+        std::vector<LineInfo> hidden;
+        std::vector<LineInfo> locked;
+        std::vector<LineInfo> folded;
         std::vector<Texture> textures;
         std::vector<Vertex> vertices;
-        size_t numsurf_line_number = 0;
-        std::streampos numsurf_line_pos;
+        LineInfo numsurf;
         int numsurf_number_offset = 0;
         std::vector<Surface> surfaces;
         std::vector<Object> kids;
