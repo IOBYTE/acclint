@@ -229,6 +229,13 @@ private:
         std::streampos line_pos;
     };
 
+    struct SubDiv
+    {
+        size_t subdiv = 0;
+        size_t line_number = 0;
+        std::streampos line_pos;
+    };
+
     struct Ref
     {
         size_t index = 0;
@@ -299,6 +306,7 @@ private:
         std::vector<Data> data;
         std::vector<TexRep> texreps;
         std::vector<TexOff> texoffs;
+        std::vector<SubDiv> subdivs;
         std::vector<Location> locations;
         std::vector<Rotation> rotations;
         std::vector<Crease> creases;

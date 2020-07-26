@@ -1372,6 +1372,31 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == subdiv_token)
         {
+            SubDiv subdiv;
+            subdiv.line_number = m_line_number;
+            subdiv.line_pos = m_line_pos;
+
+            iss1 >> subdiv.subdiv;
+
+            if (iss1)
+            {
+                if (!object.subdivs.empty())
+                {
+                    warning() << "multiple subdiv" << std::endl;
+                    showLine(iss1, 0);
+                    note(object.subdivs.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.subdivs.front().line_pos);
+                }
+
+                object.subdivs.push_back(subdiv);
+
+                checkTrailing(iss1);
+            }
+            else
+            {
+                error() << "reading subdiv" << std::endl;
+                showLine(iss1);
+            }
         }
         else if (token == crease_token)
         {
@@ -1878,6 +1903,8 @@ void AC3D::writeObject(std::ostream &out, const Object &object) const
         out << "texrep " << object.texreps.back().texrep << newline(m_crlf);
     if (!object.texoffs.empty())
         out << "texoff " << object.texoffs.back().texoff << newline(m_crlf);
+    if (!object.subdivs.empty())
+        out << "subdiv " << object.subdivs.back().subdiv << newline(m_crlf);
     if (!object.vertices.empty())
     {
         out << "numvert " << object.vertices.size() << newline(m_crlf);
