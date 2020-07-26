@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if (ac3d.warnings())
+    if (ac3d.warnings() > 0)
     {
         std::cerr << ac3d.warnings() << " warning";
         if (ac3d.warnings() > 1)
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
         std::cerr << std::endl;
     }
 
-    if (ac3d.errors())
+    if (ac3d.errors() > 0)
     {
         std::cerr << ac3d.errors() << " error";
         if (ac3d.errors() > 1)
@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
 
     if (!out_file.empty())
     {
-        if (ac3d.errors())
+        if (ac3d.errors() > 0)
         {
             std::cerr << "Can't write output file because input file has fatal errors" << std::endl;
             exit(EXIT_FAILURE);

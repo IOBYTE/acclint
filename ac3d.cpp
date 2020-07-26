@@ -121,7 +121,7 @@ std::ostream & operator << (std::ostream &out, const AC3D::Vertex &v)
 
 std::string getExtension(const std::string &file)
 {
-    size_t pos = file.find_last_of(".");
+    size_t pos = file.find_last_of('.');
 
     if (pos != std::string::npos)
         return file.substr(pos);
@@ -253,7 +253,7 @@ bool AC3D::ungetLine(std::istream &in)
 std::ostream &AC3D::warning(size_t line_number)
 {
     m_warnings++;
-    if (line_number)
+    if (line_number > 0)
         std::cerr << m_file << ":" << line_number << " warning: ";
     else
         std::cerr << m_file << ":" << m_line_number << " warning: ";
@@ -263,7 +263,7 @@ std::ostream &AC3D::warning(size_t line_number)
 std::ostream &AC3D::error(size_t line_number)
 {
     m_errors++;
-    if (line_number)
+    if (line_number > 0)
         std::cerr << m_file << ":" << line_number << " error: ";
     else
         std::cerr << m_file << ":" << m_line_number << " error: ";
@@ -623,7 +623,7 @@ void AC3D::convertObject(Object &object)
 
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
-        if ((object.surfaces[i].flags.back() & 4) != 4)
+        if ((object.surfaces[i].flags.back() & 4U) != 4U)
             surfaces.push_back(object.surfaces[i]);
         else
         {
@@ -641,9 +641,9 @@ void AC3D::convertObject(Object &object)
 
                 Surface surface;
                 surface.mat = object.surfaces[i].mat;
-                surface.flags.push_back(object.surfaces[i].flags.back() & 0xf0);
+                surface.flags.push_back(object.surfaces[i].flags.back() & 0xf0U);
 
-                if ((j & 1) == 0)
+                if ((j & 1U) == 0)
                 {
                     Ref ref1;
                     ref1.index = object.surfaces[i].refs[j].index;
@@ -690,7 +690,7 @@ void AC3D::convertObject(Object &object)
         object.textures[0].type.clear();
 
     // remove normals
-    for (auto & vertex : object.vertices)
+    for (auto &vertex : object.vertices)
         vertex.has_normal = false;
 
     // removing normals on vertices can create duplicate vertices
@@ -757,7 +757,7 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
     {
         checkTrailing(iss);
 
-        if (size)
+        if (size > 0)
         {
             std::getline(in, m_line);
             m_line_number++;
@@ -1748,7 +1748,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
-        if ((object.surfaces[i].flags.back() & 4) == 4)
+        if ((object.surfaces[i].flags.back() & 4U) == 4U)
         {
             for (size_t j = 0; j < object.surfaces[i].refs.size() - 2; ++j)
             {
@@ -1774,7 +1774,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 triangle.surface = i;
                 triangle.triangle = j;
                 triangle.degenerate = degenerate;
-                if ((j & 1) == 0)
+                if ((j & 1U) == 0)
                 {
                     triangle.vertices[0] = object.surfaces[i].refs[j].index;
                     triangle.vertices[1] = object.surfaces[i].refs[j + 1].index;
@@ -2067,12 +2067,12 @@ void AC3D::checkUnusedMaterial(std::istream &in)
 
     if (!m_materials.empty())
     {
-        for (size_t i = 0; i < m_materials.size(); ++i)
+        for (auto &material : m_materials)
         {
-            if (!m_materials[i].used)
+            if (!material.used)
             {
-                warning(m_materials[i].line_number) << "unused material" << std::endl;
-                showLine(in, m_materials[i].line_pos);
+                warning(material.line_number) << "unused material" << std::endl;
+                showLine(in, material.line_pos);
             }
         }
     }
@@ -2103,12 +2103,12 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
     if (!m_unused_vertex)
         return;
 
-    for (size_t i = 0; i < object.vertices.size(); i++)
+    for (auto &vertex : object.vertices)
     {
-        if (!object.vertices[i].used)
+        if (!vertex.used)
         {
-            warning(object.vertices[i].line_number) << "unused vertex" << std::endl;
-            showLine(in, object.vertices[i].line_pos);
+            warning(vertex.line_number) << "unused vertex" << std::endl;
+            showLine(in, vertex.line_pos);
         }
     }
 }
@@ -2132,7 +2132,7 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
                            object.vertices[surface.refs[j].index]))
             {
                 // triangle strips can have duplicates
-                if (surface.flags.empty() || (surface.flags.back() & 0xf) != 4)
+                if (surface.flags.empty() || (surface.flags.back() & 0xfU) != 4U)
                 {
                     warning(surface.refs[j].line_number) << "duplicate surface vertices" << std::endl;
                     showLine(in, surface.refs[j].line_pos);
@@ -2213,11 +2213,11 @@ bool AC3D::write(const std::string &file)
 
     writeHeader(of, m_header);
 
-    for (size_t i = 0; i < m_materials.size(); ++i)
-        writeMaterial(of, m_materials[i]);
+    for (auto &material : m_materials)
+        writeMaterial(of, material);
 
-    for (size_t i = 0; i < m_objects.size(); ++i)
-        writeObject(of, m_objects[i]);
+    for (auto &object : m_objects)
+        writeObject(of, object);
 
     return true;
 }
@@ -2393,21 +2393,21 @@ bool AC3D::cleanMaterials(std::vector<Object> &objects, const std::vector<size_t
 {
     bool changed = false;
 
-    for (size_t i = 0; i < objects.size(); ++i)
+    for (auto &object : objects)
     {
-        for (size_t j = 0; j < objects[i].surfaces.size(); ++j)
+        for (auto &surface : object.surfaces)
         {
-            if (!objects[i].surfaces[j].mat.empty() &&
-                objects[i].surfaces[j].mat.back() != indexes[objects[i].surfaces[j].mat.back()])
+            if (!surface.mat.empty() &&
+                surface.mat.back() != indexes[surface.mat.back()])
             {
                 changed = true;
 
                 // update surface with new index
-                objects[i].surfaces[j].mat.back() = indexes[objects[i].surfaces[j].mat.back()];
+                surface.mat.back() = indexes[surface.mat.back()];
             }
         }
 
-        changed |= cleanMaterials(objects[i].kids, indexes);
+        changed |= cleanMaterials(object.kids, indexes);
     }
 
     return changed;
@@ -2448,10 +2448,10 @@ bool AC3D::cleanVertices(std::vector<Object> &objects)
 {
     bool cleaned = false;
 
-    for (size_t i = 0; i < objects.size(); ++i)
+    for (auto &object : objects)
     {
-        cleaned |= cleanVertices(objects[i]);
-        cleaned |= cleanVertices(objects[i].kids);
+        cleaned |= cleanVertices(object);
+        cleaned |= cleanVertices(object.kids);
     }
 
     return cleaned;
@@ -2549,10 +2549,10 @@ bool AC3D::cleanVertices(Object &object)
     }
 
     // update surface indexes with new values
-    for (size_t i = 0; i < object.surfaces.size(); ++i)
+    for (auto &surface : object.surfaces)
     {
-        for (size_t j = 0; j < object.surfaces[i].refs.size(); j++)
-            object.surfaces[i].refs[j].index = info[object.surfaces[i].refs[j].index].new_index;
+        for (auto &ref : surface.refs)
+            ref.index = info[ref.index].new_index;
     }
 
     return true;
@@ -2567,10 +2567,10 @@ bool AC3D::cleanSurfaces(std::vector<Object> &objects)
 {
     bool cleaned = false;
 
-    for (size_t i = 0; i < objects.size(); ++i)
+    for (auto &object : objects)
     {
-        cleaned |= cleanSurfaces(objects[i]);
-        cleaned |= cleanSurfaces(objects[i].kids);
+        cleaned |= cleanSurfaces(object);
+        cleaned |= cleanSurfaces(object.kids);
     }
 
     return cleaned;
@@ -2596,7 +2596,7 @@ bool AC3D::cleanSurfaces(Object &object)
                                object.vertices[surface.refs[k].index]))
                 {
                     // triangle strips can have duplicates
-                    if (surface.flags.empty() || (surface.flags.back() & 0xf) != 4)
+                    if (surface.flags.empty() || (surface.flags.back() & 0xfU) != 4U)
                     {
                         // delete vertex
                         surface.refs.erase(surface.refs.begin() + k);

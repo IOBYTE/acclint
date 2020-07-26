@@ -239,7 +239,7 @@ private:
 
     struct Surface
     {
-        std::vector<int> flags;
+        std::vector<unsigned int> flags;
         std::vector<size_t> mat;
         std::vector<Ref> refs;
         size_t line_number = 0;
