@@ -314,6 +314,7 @@ private:
     size_t          m_level = 0;
     size_t          m_errors = 0;
     size_t          m_warnings = 0;
+    bool            m_is_utf_8 = false;
     bool            m_is_ac = false;
     bool            m_crlf = false;
     bool            m_trailing_text = true;

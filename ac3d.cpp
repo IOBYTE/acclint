@@ -708,6 +708,14 @@ bool AC3D::readHeader(std::istream &in)
 
     std::istringstream iss(m_line);
 
+    // remove UTF-8 BOM
+    if (m_line[0] == '\xef' && m_line[1] == '\xbb' && m_line[2] == '\xbf')
+    {
+        m_is_utf_8 = true;
+        warning() << "found UTF-8 BOM" << std::endl;
+        m_line.erase(0, 3);
+    }
+
     if (m_line.compare(0, 4, "AC3D") != 0)
     {
         error(1) << "not and AC3D file" << std::endl;
