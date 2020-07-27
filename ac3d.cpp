@@ -2268,20 +2268,19 @@ bool AC3D::write(const std::string &file)
         return false;
     }
 
-    std::ofstream of(file, std::ofstream::binary);
-
-    if (!of)
-        return false;
-
     if (m_is_ac && !is_ac) // convert .ac to .acc
     {
         std::cerr << "Can't convert " << m_file << " to " << file
                   << "! Use accc from TORCS or Speed Dreams." << std::endl;
-        of.close();
         return false;
     }
     else if (!m_is_ac && is_ac)
         convertObjects(m_objects);
+
+    std::ofstream of(file, std::ofstream::binary);
+
+    if (!of)
+        return false;
 
     writeHeader(of, m_header);
 
