@@ -827,27 +827,25 @@ bool AC3D::readColor(std::istringstream &in, std::array<double,3> &color, const 
                 showLine(in);
                 return false;
             }
-            else
+
+            in.clear();
+            pos = in.tellg();
+            std::string actual;
+            in >> actual;
+            if (in.eof())
             {
-                in.clear();
-                pos = in.tellg();
-                std::string actual;
-                in >> actual;
-                if (in.eof())
-                {
-                    error() << "invalid " << expected << std::endl;
-                    showLine(in);
-                    return false;
-                }
                 error() << "invalid " << expected << std::endl;
-                showLine(in, pos);
-                if (actual == next)
-                {
-                    in.seekg(pos);
-                    return false;
-                }
-                status = false;
+                showLine(in);
+                return false;
             }
+            error() << "invalid " << expected << std::endl;
+            showLine(in, pos);
+            if (actual == next)
+            {
+                in.seekg(pos);
+                return false;
+            }
+            status = false;
         }
         else if (value < 0.0 || value > 1.0)
         {
