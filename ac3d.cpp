@@ -2188,12 +2188,8 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
     }
 }
 
-void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object, const Surface &surface)
+void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object, Surface &surface)
 {
-#if defined(BROKEN)
-    if (!m_duplicate_surface_vertices)
-        return;
-
     for (size_t i = 0; i < surface.refs.size(); ++i)
     {
         for (size_t j = i + 1; j < surface.refs.size(); ++j)
@@ -2207,28 +2203,55 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
                 sameVertex(object.vertices[surface.refs[i].index],
                            object.vertices[surface.refs[j].index]))
             {
-                // triangle strips can have duplicates
+                // triangle strips and lines can have duplicates
                 if (surface.isPolygon() || surface.isClosedLine())
                 {
-                    warning(surface.refs[j].line_number) << "duplicate surface vertices" << std::endl;
-                    showLine(in, surface.refs[j].line_pos);
-                    if (surface.refs[i].index != surface.refs[j].index)
+                    if (j == i + 1 || j == surface.refs.size() - 1)
                     {
-                        note(object.vertices[surface.refs[j].index].line_number) << "vertex" << std::endl;
-                        showLine(in, object.vertices[surface.refs[j].index].line_pos);
+                        surface.remove.push_back(j);
+
+                        if (m_duplicate_surface_vertices)
+                        {
+                            warning(surface.refs[j].line_number) << "duplicate surface vertices" << std::endl;
+                            showLine(in, surface.refs[j].line_pos);
+                            if (surface.refs[i].index != surface.refs[j].index)
+                            {
+                                note(object.vertices[surface.refs[j].index].line_number) << "vertex" << std::endl;
+                                showLine(in, object.vertices[surface.refs[j].index].line_pos);
+                            }
+                            note(surface.refs[i].line_number) << "first instance" << std::endl;
+                            showLine(in, surface.refs[i].line_pos);
+                            if (surface.refs[i].index != surface.refs[j].index)
+                            {
+                                note(object.vertices[surface.refs[i].index].line_number) << "vertex" << std::endl;
+                                showLine(in, object.vertices[surface.refs[i].index].line_pos);
+                            }
+                        }
                     }
-                    note(surface.refs[i].line_number) << "first instance" << std::endl;
-                    showLine(in, surface.refs[i].line_pos);
-                    if (surface.refs[i].index != surface.refs[j].index)
+                    else
                     {
-                        note(object.vertices[surface.refs[i].index].line_number) << "vertex" << std::endl;
-                        showLine(in, object.vertices[surface.refs[i].index].line_pos);
+                        if (m_multiple_polygon_surface)
+                        {
+                            warning(surface.refs[j].line_number) << "multiple polygon surface" << std::endl;
+                            showLine(in, surface.refs[j].line_pos);
+                            if (surface.refs[i].index != surface.refs[j].index)
+                            {
+                                note(object.vertices[surface.refs[j].index].line_number) << "vertex" << std::endl;
+                                showLine(in, object.vertices[surface.refs[j].index].line_pos);
+                            }
+                            note(surface.refs[i].line_number) << "first instance" << std::endl;
+                            showLine(in, surface.refs[i].line_pos);
+                            if (surface.refs[i].index != surface.refs[j].index)
+                            {
+                                note(object.vertices[surface.refs[i].index].line_number) << "vertex" << std::endl;
+                                showLine(in, object.vertices[surface.refs[i].index].line_pos);
+                            }
+                        }
                     }
                 }
             }
         }
     }
-#endif
 }
 
 void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
@@ -2642,13 +2665,13 @@ bool AC3D::cleanSurfaces()
 bool AC3D::cleanSurfaces(std::vector<Object> &objects)
 {
     bool cleaned = false;
-#if defined(BROKEN)
+
     for (auto &object : objects)
     {
         cleaned |= cleanSurfaces(object);
         cleaned |= cleanSurfaces(object.kids);
     }
-#endif
+
     return cleaned;
 }
 
@@ -2663,24 +2686,14 @@ bool AC3D::cleanSurfaces(Object &object)
     {
         Surface &surface = object.surfaces[i];
 
-        for (size_t j = 0; j < surface.refs.size(); ++j)
+        if (surface.remove.empty())
+            continue;
+
+        for (size_t j = surface.remove.size(); j > 0; --j)
         {
-            for (size_t k = j + 1; k < surface.refs.size(); ++k)
-            {
-                if (surface.refs[j].index == surface.refs[k].index ||
-                    sameVertex(object.vertices[surface.refs[j].index],
-                               object.vertices[surface.refs[k].index]))
-                {
-                    // triangle strips can have duplicates
-                    if (surface.isPolygon() || surface.isClosedLine())
-                    {
-                        // delete vertex
-                        surface.refs.erase(surface.refs.begin() + k);
-                        --k;
-                        cleaned = true;
-                    }
-                }
-            }
+            // delete vertex
+            surface.refs.erase(surface.refs.begin() + surface.remove[j - 1]);
+            cleaned = true;
         }
 
         if (surface.refs.size() < 3)

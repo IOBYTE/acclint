@@ -8,6 +8,10 @@ This program is functional but has room for improvements.
 3. More cleanups and optimizations like transforming geometry (removing loc an rot)
    will be added in a future release.
 
+   split multiple polygons per surface into multiple surfaces
+   split non coplanar polygons into multiple surfaces
+   split self intersecting polygons into multiple surfaces
+
 4. It is not possible to convert a .ac file to .acc.
 
    acclint file.ac -o file.acc
@@ -19,12 +23,19 @@ This program is functional but has room for improvements.
 
 5. More checks will be added in a future release.
 
+   non coplanar polygons
+   self intersecting polygons
+
 6. Only a single file can be checked.  Multiple files could be checked at once
    but outputting a file complicates things.  We could not allow outputting a file
    when multiple inputs are present or we could merge multiple inputs into a single
    output.
 
-7. I'm conflicted about the name acclint. This name makes sense for TORCS and Speed
+7. Major refactoring and performance improvements once feature complete.
+
+8. Add tests.
+
+9. I'm conflicted about the name acclint. This name makes sense for TORCS and Speed
    Dreams content developers because they are accustomed to using both .ac and .acc
    files.  Because .acc files are an extension to the .ac file format this tool can
    handle both formats and has format specific checks.

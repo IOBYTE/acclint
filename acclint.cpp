@@ -35,6 +35,7 @@ void usage()
     std::cerr << "  -Wno-invalid-normal             Don't show invalid normal warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces         Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surface-vertices Don't show duplicate surface vertices warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-polygon-surface   Don't show multiple polygon surface warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material           Don't show invaild material warnings." << std::endl;
     std::cerr << "  -Wno-floating-point             Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty_object               Don't show empty object warnings." << std::endl;
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
     bool invalid_material_index = true;
     bool duplicate_surfaces = true;
     bool duplicate_surface_vertices = true;
+    bool multiple_polygon_surface = true;
     bool floating_point = true;
     bool empty_object = true;
     bool missing_kids = true;
@@ -114,6 +116,7 @@ int main(int argc, char *argv[])
             invalid_material = false;
             duplicate_surfaces = false;
             duplicate_surface_vertices = false;
+            multiple_polygon_surface = true;
             floating_point = false;
             empty_object = false;
             missing_kids = false;
@@ -157,6 +160,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-duplicate-surface-vertices" || arg == "-Wduplicate-surface-vertices")
         {
             duplicate_surface_vertices = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-polygon-surface" || arg == "-Wmultiple-polygon-surface")
+        {
+            multiple_polygon_surface = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-floating-point" || arg == "-Wfloating-point")
         {

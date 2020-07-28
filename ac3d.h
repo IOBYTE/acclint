@@ -137,6 +137,14 @@ public:
     {
         return m_duplicate_surface_vertices;
     }
+    void multiplePolygonSurface(bool value)
+    {
+        m_multiple_polygon_surface = value;
+    }
+    bool multiplePolygonSurface() const
+    {
+        return m_multiple_polygon_surface;
+    }
     void floatingPoint(bool value)
     {
         m_floating_point = value;
@@ -244,6 +252,7 @@ private:
         unsigned int flags;
         std::vector<size_t> mat;
         std::vector<Ref> refs;
+        std::vector<size_t> remove;
 
         enum : unsigned int
         {
@@ -367,6 +376,7 @@ private:
     bool            m_unused_material = true;
     bool            m_duplicate_surfaces = true;
     bool            m_duplicate_surface_vertices = true;
+    bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
     bool            m_empty_object = true;
     bool            m_missing_kids = true;
@@ -404,7 +414,7 @@ private:
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);
     void checkDuplicateSurfaces(std::istream &in, const Object &object);
-    void checkDuplicateSurfaceVertices(std::istream &in, const Object &object, const Surface &surface);
+    void checkDuplicateSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
     bool cleanObjects(std::vector<Object> &objects);
     bool cleanVertices(std::vector<Object> &objects);
     bool cleanVertices(Object &object);
