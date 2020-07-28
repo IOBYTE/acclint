@@ -2195,6 +2195,7 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
 
 void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object, const Surface &surface)
 {
+#if defined(BROKEN)
     if (!m_duplicate_surface_vertices)
         return;
 
@@ -2232,6 +2233,7 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
             }
         }
     }
+#endif
 }
 
 void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
@@ -2645,13 +2647,13 @@ bool AC3D::cleanSurfaces()
 bool AC3D::cleanSurfaces(std::vector<Object> &objects)
 {
     bool cleaned = false;
-
+#if defined(BROKEN)
     for (auto &object : objects)
     {
         cleaned |= cleanSurfaces(object);
         cleaned |= cleanSurfaces(object.kids);
     }
-
+#endif
     return cleaned;
 }
 
