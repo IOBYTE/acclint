@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
             invalid_material = false;
             duplicate_surfaces = false;
             duplicate_surface_vertices = false;
-            multiple_polygon_surface = true;
+            multiple_polygon_surface = false;
             floating_point = false;
             empty_object = false;
             missing_kids = false;
@@ -217,6 +217,7 @@ int main(int argc, char *argv[])
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.duplicateSurfaces(duplicate_surfaces);
     ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
+    ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
     ac3d.emptyObject(empty_object);
     ac3d.missingKids(missing_kids);

@@ -1662,11 +1662,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             ungetLine(in);
                             break;
                         }
-                        else
-                        {
-                            error() << "reading vertex" << std::endl;
-                            showLine(iss2, pos1 == -1 ? static_cast<std::streampos>(0) : pos1);
-                        }
+
+                        error() << "reading vertex" << std::endl;
+                        showLine(iss2, pos1 == -1 ? static_cast<std::streampos>(0) : pos1);
                     }
 
                     object.vertices.push_back(vertex);
@@ -2302,7 +2300,8 @@ bool AC3D::write(const std::string &file)
                   << "! Use accc from TORCS or Speed Dreams." << std::endl;
         return false;
     }
-    else if (!m_is_ac && is_ac)
+
+	if (!m_is_ac && is_ac)
         convertObjects(m_objects);
 
     std::ofstream of(file, std::ofstream::binary);
