@@ -89,6 +89,14 @@ public:
     {
         return m_invalid_normal;
     }
+    void invalidVertexIndex(bool value)
+    {
+        m_invalid_vertex_index = value;
+    }
+    bool invalidVertexIndex() const
+    {
+        return m_invalid_vertex_index;
+    }
     void invalidMaterial(bool value)
     {
         m_invalid_material = value;
@@ -369,6 +377,7 @@ private:
     bool            m_blank_line = false;
     bool            m_duplicate_vertices = true;
     bool            m_unused_vertex = true;
+    bool            m_invalid_vertex_index = true;
     bool            m_invalid_normal = true;
     bool            m_invalid_material = true;
     bool            m_invalid_material_index = true;

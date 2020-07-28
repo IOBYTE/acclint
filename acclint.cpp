@@ -42,6 +42,7 @@ void usage()
     std::cerr << "  -Wno-missing-kids               Don't show missing kids warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index     Don't show invaild material index errors." << std::endl;
+    std::cerr << "  -Wno-invalid-vertex-index       Don't show invaild vertex index errors." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -69,6 +70,7 @@ int main(int argc, char *argv[])
     bool unused_material = true;
     bool duplicate_vertices = true;
     bool unused_vertex = true;
+    bool invalid_vertex_index = true;
     bool invalid_normal = true;
     bool invalid_material = true;
     bool invalid_material_index = true;
@@ -180,10 +182,15 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-errors")
         {
             invalid_material_index = false;
+            invalid_vertex_index = false;
         }
         else if (arg == "-Wno-invalid-material-index" || arg == "-Winvalid-material-index")
         {
             invalid_material_index = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-vertex-index" || arg == "-Winvalid-vertex-index")
+        {
+            invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg[0] != '-')
         {
@@ -212,6 +219,7 @@ int main(int argc, char *argv[])
     ac3d.unusedMaterial(unused_material);
     ac3d.duplicateVertices(duplicate_vertices);
     ac3d.unusedVertex(unused_vertex);
+    ac3d.invalidVertexIndex(invalid_vertex_index);
     ac3d.invalidNormal(invalid_normal);
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
