@@ -241,9 +241,48 @@ private:
 
     struct Surface : public LineInfo
     {
-        std::vector<unsigned int> flags;
+        unsigned int flags;
         std::vector<size_t> mat;
         std::vector<Ref> refs;
+
+        enum : unsigned int
+        {
+            Polygon = 0, ClosedLine = 1, Line = 2, TriangleStrip = 4, TypeMask = 0xf,
+            SingleSidedFlat = 0, SingleSidedSmooth = 0x10, DoubleSidedFlat = 0x20, DoubleSidedSmooth = 0x30, FaceMask = 0xf0
+        };
+
+        bool isPolygon() const
+        {
+            return (flags & TypeMask) == Polygon;
+        }
+        bool isClosedLine() const
+        {
+            return (flags & TypeMask) == ClosedLine;
+        }
+        bool isLine() const
+        {
+            return (flags & TypeMask) == Line;
+        }
+        bool isTriangleStrip() const
+        {
+            return (flags & TypeMask) == TriangleStrip;
+        }
+        bool isSingleSidedFlat() const
+        {
+            return (flags & FaceMask) == SingleSidedFlat;
+        }
+        bool isSingleSidedSmooth() const
+        {
+            return (flags & FaceMask) == SingleSidedSmooth;
+        }
+        bool isDoubleSidedFlat() const
+        {
+            return (flags & FaceMask) == DoubleSidedFlat;
+        }
+        bool isDoubleSidedSmooth() const
+        {
+            return (flags & FaceMask) == DoubleSidedSmooth;
+        }
     };
 
     struct Vertex : public LineInfo

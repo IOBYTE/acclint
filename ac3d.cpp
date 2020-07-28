@@ -446,17 +446,13 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
     if (token == SURF_token)
     {
-        int surf = 0;
-
         iss >> std::ws;
         std::streampos pos = iss.tellg();
-        iss >> std::hex >> surf >> std::dec;
+        iss >> std::hex >> surface.flags >> std::dec;
 
         if (iss)
         {
             // TODO check flags here
-
-            surface.flags.push_back(surf);
 
             checkTrailing(iss);
         }
@@ -599,8 +595,7 @@ bool AC3D::sameVertex(const Vertex &vertex1, const Vertex &vertex2) const
 
 void AC3D::writeSurface(std::ostream &out, const Surface &surface) const
 {
-    if (!surface.flags.empty())
-        out << "SURF 0x" << std::hex << surface.flags[0] << std::dec << newline(m_crlf);
+    out << "SURF 0x" << std::hex << surface.flags << std::dec << newline(m_crlf);
     if (!surface.mat.empty())
         out << "mat " << surface.mat[0] << newline(m_crlf);
     out << "refs " << surface.refs.size() << newline(m_crlf);
@@ -623,7 +618,7 @@ void AC3D::convertObject(Object &object)
 
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
-        if ((object.surfaces[i].flags.back() & 4U) != 4U)
+        if (!object.surfaces[i].isTriangleStrip())
             surfaces.push_back(object.surfaces[i]);
         else
         {
@@ -641,7 +636,7 @@ void AC3D::convertObject(Object &object)
 
                 Surface surface;
                 surface.mat = object.surfaces[i].mat;
-                surface.flags.push_back(object.surfaces[i].flags.back() & 0xf0U);
+                surface.flags = object.surfaces[i].flags & Surface::FaceMask;
 
                 if ((j & 1U) == 0)
                 {
@@ -1820,7 +1815,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
-        if ((object.surfaces[i].flags.back() & 4U) == 4U)
+        if ((object.surfaces[i].isTriangleStrip())
         {
             for (size_t j = 0; j < object.surfaces[i].refs.size() - 2; ++j)
             {
@@ -2213,7 +2208,7 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
                            object.vertices[surface.refs[j].index]))
             {
                 // triangle strips can have duplicates
-                if (surface.flags.empty() || (surface.flags.back() & 0xfU) != 4U)
+                if (surface.isPolygon() || surface.isClosedLine())
                 {
                     warning(surface.refs[j].line_number) << "duplicate surface vertices" << std::endl;
                     showLine(in, surface.refs[j].line_pos);
@@ -2677,7 +2672,7 @@ bool AC3D::cleanSurfaces(Object &object)
                                object.vertices[surface.refs[k].index]))
                 {
                     // triangle strips can have duplicates
-                    if (surface.flags.empty() || (surface.flags.back() & 0xfU) != 4U)
+                    if (surface.isPolygon() || surface.isClosedLine())
                     {
                         // delete vertex
                         surface.refs.erase(surface.refs.begin() + k);
