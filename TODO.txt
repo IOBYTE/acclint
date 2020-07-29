@@ -23,6 +23,7 @@ This program is functional but has room for improvements.
 
 5. More checks will be added in a future release.
 
+   concave polygons
    non coplanar polygons
    self intersecting polygons
 
