@@ -300,6 +300,16 @@ private:
         {
             return (flags & FaceMask) == DoubleSidedSmooth;
         }
+        bool isValidFlags(bool is_ac) const
+        {
+            if (flags & ~(TypeMask | FaceMask))
+                return false;
+            if (!(isPolygon() || isClosedLine() || isLine() || (!is_ac && isTriangleStrip())))
+                return false;
+            if (!(isSingleSidedFlat() || isSingleSidedSmooth() || isDoubleSidedFlat() || isDoubleSidedSmooth()))
+                return false;
+            return true;
+        }
     };
 
     struct Vertex : public LineInfo

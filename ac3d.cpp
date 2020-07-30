@@ -452,7 +452,11 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
         if (iss)
         {
-            // TODO check flags here
+            if (!surface.isValidFlags(m_is_ac))
+            {
+                error() << "invalid surface type" << std::endl;
+                showLine(iss, pos);
+            }
 
             checkTrailing(iss);
         }
