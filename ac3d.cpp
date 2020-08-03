@@ -579,6 +579,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         }
 
         checkDuplicateSurfaceVertices(in, object, surface);
+        checkSurfaceCoplanar(in, object, surface);
     }
     else
     {
@@ -2284,6 +2285,72 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
     }
 }
 
+void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface)
+{
+    // only check polygon and polygon outline
+    if (!(surface.isPolygon() || surface.isClosedLine()))
+        return;
+
+    // must have 4 or more vertices
+    if (surface.refs.size() > 3)
+    {
+        size_t next = 0;
+        std::array<double,3> v0 = object.vertices[surface.refs[next++].index].vertex;
+        std::array<double,3> v1 = object.vertices[surface.refs[next++].index].vertex;
+        // find the next unique vertex
+        while (v0 == v1)
+        {
+            v1 = object.vertices[surface.refs[next++].index].vertex;
+            if (next >= surface.refs.size())
+                return;
+        }
+        std::array<double,3> v2 = object.vertices[surface.refs[next++].index].vertex;
+        // find the next unique vertex
+        while (v1 == v2)
+        {
+            v2 = object.vertices[surface.refs[next++].index].vertex;
+            if (next >= surface.refs.size())
+                return;
+        }
+
+        double a1 = v1[0] - v0[0];
+        double b1 = v1[1] - v0[1];
+        double c1 = v1[2] - v0[2];
+        double a2 = v2[0] - v0[0];
+        double b2 = v2[1] - v0[1];
+        double c2 = v2[2] - v0[2];
+        double a = b1 * c2 - b2 * c1;
+        double b = a2 * c1 - a1 * c2;
+        double c = a1 * b2 - b1 * a2;
+        double d = -a * v1[0] - b * v1[1] - c * v1[2] ;
+
+        for (size_t i = next; i < surface.refs.size(); ++i)
+        {
+            const std::array<double,3> &v = object.vertices[surface.refs[i].index].vertex;
+            double e = a * v[0] + b * v[1] + c * v[2] + d;
+            constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 1000;
+            if (e > epsilon)
+            {
+                surface.coplanar = false;
+
+                if (m_surface_not_coplanar)
+                {
+                    warning(surface.line_number) << "surface not coplanar" << std::endl;
+#if 0
+                    note(surface.refs[i].line_number) << std::endl;
+                    showLine(in, surface.refs[i].line_pos);
+                    std::cout << "e " << e << " epsilon " << epsilon << std::endl;
+                    for (auto &ref : surface.refs)
+                        std::cout << object.vertices[ref.index].vertex << std::endl;
+#endif
+                }
+
+                break;
+            }
+        }
+    }
+}
+
 bool AC3D::write(const std::string &file)
 {
     std::string extension = getExtension(file);
@@ -2706,6 +2773,30 @@ bool AC3D::cleanSurfaces(Object &object)
             object.surfaces.erase(object.surfaces.begin() + i);
             --i;
             cleaned = true;
+        }
+    }
+
+    // split non-coplanar quads into 2 triangles
+    for (size_t i = 0; i < object.surfaces.size(); ++i)
+    {
+        if (!object.surfaces[i].coplanar && object.surfaces[i].refs.size() == 4)
+        {
+            Surface surface;
+
+            surface.flags = object.surfaces[i].flags;
+            if (!object.surfaces[i].mat.empty())
+                surface.mat.push_back(object.surfaces[i].mat.back());
+            surface.refs.push_back(object.surfaces[i].refs[2]);
+            surface.refs.push_back(object.surfaces[i].refs[3]);
+            surface.refs.push_back(object.surfaces[i].refs[0]);
+
+            object.surfaces.insert(object.surfaces.begin() + i + 1, surface);
+
+            // remove last vertex of quad
+            object.surfaces[i].refs.pop_back();
+
+            // skip inserted surface
+            i++;
         }
     }
 

@@ -35,6 +35,7 @@ void usage()
     std::cerr << "  -Wno-invalid-normal             Don't show invalid normal warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces         Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surface-vertices Don't show duplicate surface vertices warnings." << std::endl;
+    std::cerr << "  -Wno-surface-not-coplanar       Don't show surface not coplanar warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface   Don't show multiple polygon surface warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material           Don't show invaild material warnings." << std::endl;
     std::cerr << "  -Wno-floating-point             Don't show floating point warnings." << std::endl;
@@ -76,6 +77,7 @@ int main(int argc, char *argv[])
     bool invalid_material_index = true;
     bool duplicate_surfaces = true;
     bool duplicate_surface_vertices = true;
+    bool surface_not_coplanar = true;
     bool multiple_polygon_surface = true;
     bool floating_point = true;
     bool empty_object = true;
@@ -163,6 +165,10 @@ int main(int argc, char *argv[])
         {
             duplicate_surface_vertices = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-surface-not-coplanar" || arg == "-Wsurface-not-coplanar")
+        {
+            surface_not_coplanar = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-multiple-polygon-surface" || arg == "-Wmultiple-polygon-surface")
         {
             multiple_polygon_surface = arg.compare(2, 3, "no-") != 0;
@@ -225,6 +231,7 @@ int main(int argc, char *argv[])
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.duplicateSurfaces(duplicate_surfaces);
     ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
+    ac3d.surfaceNotCoplanar(surface_not_coplanar);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
     ac3d.emptyObject(empty_object);

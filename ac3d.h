@@ -153,6 +153,14 @@ public:
     {
         return m_multiple_polygon_surface;
     }
+    void surfaceNotCoplanar(bool value)
+    {
+        m_surface_not_coplanar = value;
+    }
+    bool surfaceNotCoplanar() const
+    {
+        return m_surface_not_coplanar;
+    }
     void floatingPoint(bool value)
     {
         m_floating_point = value;
@@ -261,6 +269,7 @@ private:
         std::vector<size_t> mat;
         std::vector<Ref> refs;
         std::vector<size_t> remove;
+        bool coplanar = true; // only for Polygon and ClosedLine
 
         enum : unsigned int
         {
@@ -395,6 +404,7 @@ private:
     bool            m_unused_material = true;
     bool            m_duplicate_surfaces = true;
     bool            m_duplicate_surface_vertices = true;
+    bool            m_surface_not_coplanar = true;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
     bool            m_empty_object = true;
@@ -434,6 +444,7 @@ private:
     void checkDuplicateVertices(std::istream &in, const Object &object);
     void checkDuplicateSurfaces(std::istream &in, const Object &object);
     void checkDuplicateSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
+    void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     bool cleanObjects(std::vector<Object> &objects);
     bool cleanVertices(std::vector<Object> &objects);
     bool cleanVertices(Object &object);
