@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
             invalid_material = false;
             duplicate_surfaces = false;
             duplicate_surface_vertices = false;
+            surface_not_coplanar = false;
             multiple_polygon_surface = false;
             floating_point = false;
             empty_object = false;
