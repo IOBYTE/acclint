@@ -2521,7 +2521,9 @@ bool AC3D::cleanMaterials()
             {
                 if (sameMaterialParameters(m_materials[i], m_materials[j]))
                 {
+                    // mark this instance as a duplicate
                     duplicates[j] = true;
+                    // set new index to first instance index
                     newIndex[j] = i;
                     // mark first instance used
                     m_materials[i].used = true;
@@ -2539,7 +2541,7 @@ bool AC3D::cleanMaterials()
             // update index
             for (size_t j = i + 1; j < m_materials.size(); ++j)
             {
-                if (newIndex[j] > i)
+                if (newIndex[j] > 0)
                     newIndex[j]--;
             }
         }
