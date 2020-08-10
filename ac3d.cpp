@@ -1314,8 +1314,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                     if (!file_path.parent_path().empty())
                     {
-                        std::string parent(file_path.parent_path());
-                        texture_path = parent + std::filesystem::path::preferred_separator + texture_name;
+                        std::string parent(file_path.parent_path().string());
+                        texture_path = parent + std::to_string(std::filesystem::path::preferred_separator) + texture_name;
                     }
 
                     if (!std::filesystem::exists(texture_path))
@@ -2002,7 +2002,7 @@ bool AC3D::read(const std::string &file)
     m_materials.clear();
     m_objects.clear();
 
-    std::string extension = std::filesystem::path(file).extension();
+    std::string extension = std::filesystem::path(file).extension().string();
 
     if (extension == ".ac")
         m_is_ac = true;
@@ -2363,7 +2363,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
 
 bool AC3D::write(const std::string &file)
 {
-    std::string extension = std::filesystem::path(file).extension();
+    std::string extension = std::filesystem::path(file).extension().string();
     bool is_ac;
 
     if (extension == ".ac")
