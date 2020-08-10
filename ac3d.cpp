@@ -1315,7 +1315,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     if (!file_path.parent_path().empty())
                     {
                         std::string parent(file_path.parent_path().string());
-                        texture_path = parent + std::to_string(std::filesystem::path::preferred_separator) + texture_name;
+                        texture_path = parent + '/' + texture_name;
                     }
 
                     if (!std::filesystem::exists(texture_path))
