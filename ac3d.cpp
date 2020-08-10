@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <filesystem>
 
 const std::string MATERIAL_token("MATERIAL");
 const std::string rgb_token("rgb");
@@ -117,16 +118,6 @@ std::ostream & operator << (std::ostream &out, const AC3D::Vertex &v)
     if (v.has_normal)
         out << " " << v.normal;
     return out;
-}
-
-std::string getExtension(const std::string &file)
-{
-    size_t pos = file.find_last_of('.');
-
-    if (pos != std::string::npos)
-        return file.substr(pos);
-
-    return "";
 }
 
 bool isWhitespace(const std::string &s)
@@ -1315,6 +1306,25 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     showLine(in, object.textures.front().line_pos);
                 }
 
+                if (m_missing_texture && texture.name != "empty_texture_no_mapping")
+                {
+                    std::filesystem::path file_path(m_file);
+                    std::string texture_name(texture.name);
+                    std::filesystem::path texture_path(texture_name);
+
+                    if (!file_path.parent_path().empty())
+                    {
+                        std::string parent(file_path.parent_path());
+                        texture_path = parent + std::filesystem::path::preferred_separator + texture_name;
+                    }
+
+                    if (!std::filesystem::exists(texture_path))
+                    {
+                        warning() << "missing texture: " << texture_path << std::endl;
+                        showLine(iss1, 0);
+                    }
+                }
+
                 object.textures.push_back(texture);
             }
             else
@@ -1992,7 +2002,7 @@ bool AC3D::read(const std::string &file)
     m_materials.clear();
     m_objects.clear();
 
-    std::string extension = getExtension(file);
+    std::string extension = std::filesystem::path(file).extension();
 
     if (extension == ".ac")
         m_is_ac = true;
@@ -2353,7 +2363,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
 
 bool AC3D::write(const std::string &file)
 {
-    std::string extension = getExtension(file);
+    std::string extension = std::filesystem::path(file).extension();
     bool is_ac;
 
     if (extension == ".ac")

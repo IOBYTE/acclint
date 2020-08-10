@@ -37,6 +37,7 @@ void usage()
     std::cerr << "  -Wno-duplicate-surface-vertices Don't show duplicate surface vertices warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-coplanar       Don't show surface not coplanar warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface   Don't show multiple polygon surface warnings." << std::endl;
+    std::cerr << "  -Wno-missing-texture            Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material           Don't show invaild material warnings." << std::endl;
     std::cerr << "  -Wno-floating-point             Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty_object               Don't show empty object warnings." << std::endl;
@@ -82,6 +83,7 @@ int main(int argc, char *argv[])
     bool floating_point = true;
     bool empty_object = true;
     bool missing_kids = true;
+    bool missing_texture = true;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -125,6 +127,7 @@ int main(int argc, char *argv[])
             floating_point = false;
             empty_object = false;
             missing_kids = false;
+            missing_texture = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -186,6 +189,10 @@ int main(int argc, char *argv[])
         {
             missing_kids = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-missing-texture" || arg == "-Wmissing-texture")
+        {
+            missing_texture = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-errors")
         {
             invalid_material_index = false;
@@ -237,6 +244,7 @@ int main(int argc, char *argv[])
     ac3d.floatingPoint(floating_point);
     ac3d.emptyObject(empty_object);
     ac3d.missingKids(missing_kids);
+    ac3d.missingTexture(missing_texture);
 
     if (!ac3d.read(in_file))
     {
