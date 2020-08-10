@@ -2535,8 +2535,9 @@ bool AC3D::cleanMaterials()
                     duplicates[j] = true;
                     // set new index to first instance index
                     newIndex[j] = i;
-                    // mark first instance used
-                    m_materials[i].used = true;
+                    // mark first instance used if this instance used
+                    if (m_materials[j].used)
+                        m_materials[i].used = true;
                     // mark this instance not used
                     m_materials[j].used = false;
                 }
