@@ -273,7 +273,7 @@ private:
 
     struct Surface : public LineInfo
     {
-        unsigned int flags;
+        unsigned int flags = 0;
         std::vector<size_t> mat;
         std::vector<Ref> refs;
         std::vector<size_t> remove;
