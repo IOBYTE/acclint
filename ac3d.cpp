@@ -1306,22 +1306,78 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     showLine(in, object.textures.front().line_pos);
                 }
 
-                if (m_missing_texture && texture.name != "empty_texture_no_mapping")
+                if (texture.name != "empty_texture_no_mapping")
                 {
                     std::filesystem::path file_path(m_file);
                     std::string texture_name(texture.name);
                     std::filesystem::path texture_path(texture_name);
 
+                    // use parent path of file when available
                     if (!file_path.parent_path().empty())
                     {
                         std::string parent(file_path.parent_path().string());
                         texture_path = parent + '/' + texture_name;
                     }
 
+                    bool found = false;
+
                     if (!std::filesystem::exists(texture_path))
                     {
-                        warning() << "missing texture: " << texture_path << std::endl;
-                        showLine(iss1, 0);
+                        // look in alternate paths if available
+                        for (size_t i = 0; i < m_texture_paths.size(); ++i)
+                        {
+                            if (std::filesystem::exists(m_texture_paths[i] + '/' + texture_name))
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (!found & m_missing_texture)
+                        {
+                            warning() << "missing texture: " << texture_path << std::endl;
+                            showLine(iss1, 0);
+                        }
+                    }
+                    else if (!m_texture_paths.empty()) // look for duplicate textures
+                    {
+                        std::size_t size = std::filesystem::file_size(texture_path);
+
+                        for (size_t i = 0; i < m_texture_paths.size(); ++i)
+                        {
+                            std::string other(m_texture_paths[i] + '/' + texture_name);
+                            if (std::filesystem::exists(other))
+                            {
+                                if (size == std::filesystem::file_size(other))
+                                {
+                                    std::ifstream file1(texture_path, std::ifstream::binary);
+                                    std::ifstream file2(other, std::ifstream::binary);
+                                    if (file1.good() && file2.good())
+                                    {
+                                        if (std::equal(std::istreambuf_iterator<char>(file1),
+                                                       std::istreambuf_iterator<char>(),
+                                                       std::istreambuf_iterator<char>(file2)))
+                                        {
+                                            if (m_duplicate_texture)
+                                            {
+                                                warning() << "duplicate texture: " << texture_path
+                                                          << " and " << other << std::endl;
+                                                showLine(iss1, 0);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (m_ambiguous_texture)
+                                            {
+                                                warning() << "ambiguous texture: " << texture_path
+                                                          << " and " << other << std::endl;
+                                                showLine(iss1, 0);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 

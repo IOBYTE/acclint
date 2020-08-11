@@ -23,7 +23,7 @@
 
 void usage()
 {
-    std::cerr << "Usage: acclint [options] <inputfile> [-o <outputfile>]" << std::endl;
+    std::cerr << "Usage: acclint [options] [-T texturepath] <inputfile> [-o <outputfile>]" << std::endl;
     std::cerr << "Options:" << std::endl;
     std::cerr << "  -Wno-warnings                   Don't show any warnings." << std::endl;
     std::cerr << "  -Wno-trailing-text              Don't show trailing text warnings." << std::endl;
@@ -38,6 +38,8 @@ void usage()
     std::cerr << "  -Wno-surface-not-coplanar       Don't show surface not coplanar warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface   Don't show multiple polygon surface warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture            Don't show missing texture warnings." << std::endl;
+    std::cerr << "  -Wno-duplicate-texture          Don't show duplicate texture warnings." << std::endl;
+    std::cerr << "  -Wno-ambiguous-texture          Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material           Don't show invaild material warnings." << std::endl;
     std::cerr << "  -Wno-floating-point             Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty_object               Don't show empty object warnings." << std::endl;
@@ -84,6 +86,9 @@ int main(int argc, char *argv[])
     bool empty_object = true;
     bool missing_kids = true;
     bool missing_texture = true;
+    bool duplicate_texture = true;
+    bool ambiguous_texture = true;
+    std::vector<std::string> texture_paths;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -93,6 +98,19 @@ int main(int argc, char *argv[])
             if (i < argc)
             {
                 out_file = argv[i + 1];
+                i++;
+            }
+            else
+            {
+                usage();
+                exit(EXIT_FAILURE);
+            }
+        }
+        else if (arg == "-T")
+        {
+            if (i < argc)
+            {
+                texture_paths.push_back(argv[i + 1]);
                 i++;
             }
             else
@@ -128,6 +146,8 @@ int main(int argc, char *argv[])
             empty_object = false;
             missing_kids = false;
             missing_texture = false;
+            duplicate_texture = false;
+            ambiguous_texture = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -193,6 +213,14 @@ int main(int argc, char *argv[])
         {
             missing_texture = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-duplicate-texture" || arg == "-Wduplicate-texture")
+        {
+            duplicate_texture = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-ambiguous-texture" || arg == "-Wambiguous-texture")
+        {
+            ambiguous_texture = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-errors")
         {
             invalid_material_index = false;
@@ -245,6 +273,9 @@ int main(int argc, char *argv[])
     ac3d.emptyObject(empty_object);
     ac3d.missingKids(missing_kids);
     ac3d.missingTexture(missing_texture);
+    ac3d.duplicateTexture(duplicate_texture);
+    ac3d.ambiguousTexture(ambiguous_texture);
+    ac3d.texturePaths(texture_paths);
 
     if (!ac3d.read(in_file))
     {

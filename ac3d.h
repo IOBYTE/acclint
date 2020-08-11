@@ -193,6 +193,26 @@ public:
     {
         return m_missing_texture;
     }
+    void duplicateTexture(bool value)
+    {
+        m_duplicate_texture = value;
+    }
+    bool duplicateTexture() const
+    {
+        return m_duplicate_texture;
+    }
+    void ambiguousTexture(bool value)
+    {
+        m_ambiguous_texture = value;
+    }
+    bool ambiguousTexture() const
+    {
+        return m_ambiguous_texture;
+    }
+    void texturePaths(const std::vector<std::string> &paths)
+    {
+        m_texture_paths = paths;
+    }
     bool clean();
     bool cleanObjects();
     bool cleanVertices();
@@ -418,10 +438,13 @@ private:
     bool            m_empty_object = true;
     bool            m_missing_kids = true;
     bool            m_missing_texture = true;
+    bool            m_duplicate_texture = true;
+    bool            m_ambiguous_texture = true;
 
     Header m_header;
     std::vector<Material> m_materials;
     std::vector<Object> m_objects;
+    std::vector<std::string> m_texture_paths;
 
     bool readHeader(std::istream &in);
     void writeHeader(std::ostream &out, const Header &header) const;
