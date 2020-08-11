@@ -1376,6 +1376,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                         }
                                     }
                                 }
+                                else if (m_ambiguous_texture)
+                                {
+                                    warning() << "ambiguous texture: " << texture_path
+                                              << " and " << other << std::endl;
+                                    showLine(iss1, 0);
+                                }
                             }
                         }
                     }
