@@ -1343,9 +1343,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     {
                         std::size_t size = std::filesystem::file_size(texture_path);
 
-                        for (size_t i = 0; i < m_texture_paths.size(); ++i)
+                        for (const auto & path : m_texture_paths)
                         {
-                            std::string other(m_texture_paths[i] + '/' + texture_name);
+                            std::string other(path + '/' + texture_name);
                             if (std::filesystem::exists(other))
                             {
                                 if (size == std::filesystem::file_size(other))
