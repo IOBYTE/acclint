@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
         {
             if (i < argc)
             {
-                texture_paths.push_back(argv[i + 1]);
+                texture_paths.emplace_back(argv[i + 1]);
                 i++;
             }
             else

@@ -1319,21 +1319,21 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         texture_path = parent + '/' + texture_name;
                     }
 
-                    bool found = false;
-
                     if (!std::filesystem::exists(texture_path))
                     {
+                        bool found = false;
+
                         // look in alternate paths if available
-                        for (size_t i = 0; i < m_texture_paths.size(); ++i)
+                        for (const auto & path : m_texture_paths)
                         {
-                            if (std::filesystem::exists(m_texture_paths[i] + '/' + texture_name))
+                            if (std::filesystem::exists(path + '/' + texture_name))
                             {
                                 found = true;
                                 break;
                             }
                         }
 
-                        if (!found & m_missing_texture)
+                        if (!found && m_missing_texture)
                         {
                             warning() << "missing texture: " << texture_path << std::endl;
                             showLine(iss1, 0);
