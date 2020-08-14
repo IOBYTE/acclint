@@ -1313,7 +1313,10 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     std::filesystem::path texture_path(texture_name);
 
                     // use parent path of file when available
-                    if (!file_path.parent_path().empty())
+                    // and texture path is not absolute
+                    if (!file_path.parent_path().empty() &&
+                        !(texture_path.is_absolute() ||
+                          (std::isalpha(texture_name[0]) && texture_name[1] == ':')))
                     {
                         std::string parent(file_path.parent_path().string());
                         texture_path = parent + '/' + texture_name;
