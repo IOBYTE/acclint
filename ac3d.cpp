@@ -1311,12 +1311,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     std::filesystem::path file_path(m_file);
                     std::string texture_name(texture.name);
                     std::filesystem::path texture_path(texture_name);
+                    bool absolute = texture_path.is_absolute() ||
+                        (std::isalpha(texture_name[0]) && texture_name[1] == ':');
 
                     // use parent path of file when available
                     // and texture path is not absolute
-                    if (!file_path.parent_path().empty() &&
-                        !(texture_path.is_absolute() ||
-                          (std::isalpha(texture_name[0]) && texture_name[1] == ':')))
+                    if (!file_path.parent_path().empty() && !absolute)
                     {
                         std::string parent(file_path.parent_path().string());
                         texture_path = parent + '/' + texture_name;
@@ -1326,13 +1326,16 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     {
                         bool found = false;
 
-                        // look in alternate paths if available
-                        for (const auto & path : m_texture_paths)
+                        if (!absolute) // don't search if absolute path
                         {
-                            if (std::filesystem::exists(path + '/' + texture_name))
+                            // look in alternate paths if available
+                            for (const auto & path : m_texture_paths)
                             {
-                                found = true;
-                                break;
+                                if (std::filesystem::exists(path + '/' + texture_name))
+                                {
+                                    found = true;
+                                    break;
+                                }
                             }
                         }
 
@@ -1342,7 +1345,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             showLine(iss1, 0);
                         }
                     }
-                    else if (!m_texture_paths.empty()) // look for duplicate textures
+                    else if (!absolute && !m_texture_paths.empty()) // look for duplicate textures
                     {
                         std::size_t size = std::filesystem::file_size(texture_path);
 
