@@ -1341,7 +1341,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                         if (!found && m_missing_texture)
                         {
-                            warning() << "missing texture: " << texture_path << std::endl;
+                            warning() << "missing texture: " << texture_path.generic_string() << std::endl;
                             showLine(iss1, 0);
                         }
                     }
