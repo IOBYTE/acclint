@@ -44,6 +44,9 @@ void usage()
     std::cerr << "  -Wno-floating-point             Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty_object               Don't show empty object warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids               Don't show missing kids warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-folded            Don't show multiple folded warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-hidden            Don't show multiple hidden warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-locked            Don't show multiple locked warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index     Don't show invaild material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invaild vertex index errors." << std::endl;
@@ -88,6 +91,9 @@ int main(int argc, char *argv[])
     bool missing_texture = true;
     bool duplicate_texture = true;
     bool ambiguous_texture = true;
+    bool multiple_folded = true;
+    bool multiple_hidden = true;
+    bool multiple_locked = true;
     std::vector<std::string> texture_paths;
 
     for (int i = 1; i < argc; ++i)
@@ -148,6 +154,9 @@ int main(int argc, char *argv[])
             missing_texture = false;
             duplicate_texture = false;
             ambiguous_texture = false;
+            multiple_folded = false;
+            multiple_hidden = false;
+            multiple_locked = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -221,6 +230,18 @@ int main(int argc, char *argv[])
         {
             ambiguous_texture = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-multiple-folded" || arg == "-Wmultiple-folded")
+        {
+            multiple_folded = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-hidden" || arg == "-Wmultiple-hidden")
+        {
+            multiple_hidden = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-locked" || arg == "-Wmultiple-locked")
+        {
+            multiple_locked = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-errors")
         {
             invalid_material_index = false;
@@ -276,6 +297,9 @@ int main(int argc, char *argv[])
     ac3d.duplicateTexture(duplicate_texture);
     ac3d.ambiguousTexture(ambiguous_texture);
     ac3d.texturePaths(texture_paths);
+    ac3d.multipleFolded(multiple_folded);
+    ac3d.multipleHidden(multiple_hidden);
+    ac3d.multipleLocked(multiple_locked);
 
     if (!ac3d.read(in_file))
     {

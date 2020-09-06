@@ -1601,7 +1601,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         {
             LineInfo info(m_line_number, m_line_pos);
 
-            if (!object.locked.empty())
+            if (!object.locked.empty() && m_multiple_locked)
             {
                 warning() << "multiple locked" << std::endl;
                 showLine(iss1, 0);
@@ -1617,7 +1617,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         {
             LineInfo info(m_line_number, m_line_pos);
 
-            if (!object.hidden.empty())
+            if (!object.hidden.empty() && m_multiple_hidden)
             {
                 warning() << "multiple hidden" << std::endl;
                 showLine(iss1, 0);
@@ -1633,7 +1633,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         {
             LineInfo info(m_line_number, m_line_pos);
 
-            if (!object.folded.empty())
+            if (!object.folded.empty() && m_multiple_folded)
             {
                 warning() << "multiple folded" << std::endl;
                 showLine(iss1, 0);

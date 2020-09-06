@@ -209,6 +209,30 @@ public:
     {
         return m_ambiguous_texture;
     }
+    void multipleFolded(bool value)
+    {
+        m_multiple_folded = value;
+    }
+    bool multipleFolded() const
+    {
+        return m_multiple_folded;
+    }
+    void multipleHidden(bool value)
+    {
+        m_multiple_hidden = value;
+    }
+    bool multipleHidden() const
+    {
+        return m_multiple_hidden;
+    }
+    void multipleLocked(bool value)
+    {
+        m_multiple_locked = value;
+    }
+    bool multipleLocked() const
+    {
+        return m_multiple_locked;
+    }
     void texturePaths(const std::vector<std::string> &paths)
     {
         m_texture_paths = paths;
@@ -440,6 +464,9 @@ private:
     bool            m_missing_texture = true;
     bool            m_duplicate_texture = true;
     bool            m_ambiguous_texture = true;
+    bool            m_multiple_folded = true;
+    bool            m_multiple_hidden = true;
+    bool            m_multiple_locked = true;
 
     Header m_header;
     std::vector<Material> m_materials;
