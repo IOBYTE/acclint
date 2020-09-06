@@ -2407,21 +2407,12 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
             const std::array<double,3> &v = object.vertices[surface.refs[i].index].vertex;
             double e = a * v[0] + b * v[1] + c * v[2] + d;
             constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 1000;
-            if (e > epsilon)
+            if (std::fabs(e) > epsilon)
             {
                 surface.coplanar = false;
 
                 if (m_surface_not_coplanar)
-                {
                     warning(surface.line_number) << "surface not coplanar" << std::endl;
-#if 0
-                    note(surface.refs[i].line_number) << std::endl;
-                    showLine(in, surface.refs[i].line_pos);
-                    std::cout << "e " << e << " epsilon " << epsilon << std::endl;
-                    for (auto &ref : surface.refs)
-                        std::cout << object.vertices[ref.index].vertex << std::endl;
-#endif
-                }
 
                 break;
             }
