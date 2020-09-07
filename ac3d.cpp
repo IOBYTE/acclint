@@ -570,6 +570,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         }
 
         checkDuplicateSurfaceVertices(in, object, surface);
+        checkCollinearSurfaceVertices(in, object, surface);
         checkSurfaceCoplanar(in, object, surface);
     }
     else
@@ -2363,6 +2364,44 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
     }
 }
 
+bool collinear(const std::array<double,3> &p1, const std::array<double,3> &p2, const std::array<double,3> &p3)
+{
+    constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon());
+    std::array<double,3> v1{ p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2] };
+    std::array<double,3> v2{ p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2] };
+    return std::fabs(v1[1] * v2[2] - v1[2] * v2[1]) < epsilon &&
+           std::fabs(v1[2] * v2[0] - v1[0] * v2[2]) < epsilon &&
+           std::fabs(v1[0] * v2[1] - v1[1] * v2[0]) < epsilon;
+}
+
+void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface)
+{
+    // must be a polygon with at least 3 sides
+    if (!m_collinear_surface_vertices || surface.refs.size() < 3 || !surface.isPolygon())
+        return;
+
+    size_t size = surface.refs.size();
+    for (size_t i = 2; i < size + 2; ++i)
+    {
+        const std::array<double,3> &v0 = object.vertices[surface.refs[i - 2].index].vertex;
+        const std::array<double,3> &v1 = object.vertices[surface.refs[(i - 1) % size].index].vertex;
+        const std::array<double,3> &v2 = object.vertices[surface.refs[i % size].index].vertex;
+
+        if (v0 != v1 && v1 != v2 && (v0 == v2 || collinear(v0, v1, v2)))
+        {
+            warning(surface.refs[i % size].line_number) << "collinear verticies" << std::endl;
+            showLine(in, surface.refs[i % size].line_pos);
+
+            note(object.vertices[surface.refs[i - 2].index].line_number) << "first vertex" << std::endl;
+            showLine(in, object.vertices[surface.refs[i - 2].index].line_pos);
+            note(object.vertices[surface.refs[(i - 1) % size].index].line_number) << "second vertex" << std::endl;
+            showLine(in, object.vertices[surface.refs[(i - 1) % size].index].line_pos);
+            note(object.vertices[surface.refs[i % size].index].line_number) << "third vertex" << std::endl;
+            showLine(in, object.vertices[surface.refs[i % size].index].line_pos);
+        }
+    }
+}
+
 void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface)
 {
     // only check polygon and polygon outline
@@ -2384,7 +2423,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
         }
         std::array<double,3> v2 = object.vertices[surface.refs[next++].index].vertex;
         // find the next unique vertex
-        while (v1 == v2)
+        while (v1 == v2 || collinear(v0, v1, v2))
         {
             v2 = object.vertices[surface.refs[next++].index].vertex;
             if (next >= surface.refs.size())
@@ -2400,7 +2439,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
         double a = b1 * c2 - b2 * c1;
         double b = a2 * c1 - a1 * c2;
         double c = a1 * b2 - b1 * a2;
-        double d = -a * v1[0] - b * v1[1] - c * v1[2] ;
+        double d = -a * v1[0] - b * v1[1] - c * v1[2];
 
         for (size_t i = next; i < surface.refs.size(); ++i)
         {

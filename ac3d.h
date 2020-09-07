@@ -145,6 +145,14 @@ public:
     {
         return m_duplicate_surface_vertices;
     }
+    void collinearSurfaceVertices(bool value)
+    {
+        m_collinear_surface_vertices = value;
+    }
+    bool collinearSurfaceVertices() const
+    {
+        return m_collinear_surface_vertices;
+    }
     void multiplePolygonSurface(bool value)
     {
         m_multiple_polygon_surface = value;
@@ -456,6 +464,7 @@ private:
     bool            m_unused_material = true;
     bool            m_duplicate_surfaces = true;
     bool            m_duplicate_surface_vertices = true;
+    bool            m_collinear_surface_vertices = true;
     bool            m_surface_not_coplanar = true;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
@@ -503,6 +512,7 @@ private:
     void checkDuplicateVertices(std::istream &in, const Object &object);
     void checkDuplicateSurfaces(std::istream &in, const Object &object);
     void checkDuplicateSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
+    void checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     bool cleanObjects(std::vector<Object> &objects);
     bool cleanVertices(std::vector<Object> &objects);

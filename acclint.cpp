@@ -35,6 +35,7 @@ void usage()
     std::cerr << "  -Wno-invalid-normal             Don't show invalid normal warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces         Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surface-vertices Don't show duplicate surface vertices warnings." << std::endl;
+    std::cerr << "  -Wno-collinear-surface-vertices Don't show collinear surface vertices warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-coplanar       Don't show surface not coplanar warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface   Don't show multiple polygon surface warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture            Don't show missing texture warnings." << std::endl;
@@ -83,6 +84,7 @@ int main(int argc, char *argv[])
     bool invalid_material_index = true;
     bool duplicate_surfaces = true;
     bool duplicate_surface_vertices = true;
+    bool collinear_surface_vertices = true;
     bool surface_not_coplanar = true;
     bool multiple_polygon_surface = true;
     bool floating_point = true;
@@ -146,6 +148,7 @@ int main(int argc, char *argv[])
             invalid_material = false;
             duplicate_surfaces = false;
             duplicate_surface_vertices = false;
+            collinear_surface_vertices = false;
             surface_not_coplanar = false;
             multiple_polygon_surface = false;
             floating_point = false;
@@ -197,6 +200,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-duplicate-surface-vertices" || arg == "-Wduplicate-surface-vertices")
         {
             duplicate_surface_vertices = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-collinear-surface-vertices" || arg == "-Wcollinear-surface-vertices")
+        {
+            collinear_surface_vertices = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-surface-not-coplanar" || arg == "-Wsurface-not-coplanar")
         {
@@ -288,6 +295,7 @@ int main(int argc, char *argv[])
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.duplicateSurfaces(duplicate_surfaces);
     ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
+    ac3d.collinearSurfaceVertices(collinear_surface_vertices);
     ac3d.surfaceNotCoplanar(surface_not_coplanar);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
