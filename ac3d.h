@@ -258,6 +258,31 @@ public:
     };
 
 private:
+    class Color : public std::array<double,3>
+    {
+    public:
+        bool clip()
+        {
+            bool clipped = false;
+
+            for (auto &value : *this)
+            {
+                if (value < 0.0)
+                {
+                    value = 0.0;
+                    clipped = true;
+                }
+                else if (value > 1.0)
+                {
+                    value = 1.0;
+                    clipped = true;
+                }
+            }
+
+            return clipped;
+        }
+    };
+
     struct Header
     {
         std::string version = "AC3Db";
@@ -285,10 +310,10 @@ private:
     struct Material : public LineInfo
     {
         quoted_string name;
-        std::array<double,3> rgb = {0.0, 0.0, 0.0};
-        std::array<double,3> amb = {0.0, 0.0, 0.0};
-        std::array<double,3> emis = {0.0, 0.0, 0.0};
-        std::array<double,3> spec = {0.0, 0.0, 0.0};
+        Color rgb = {0.0, 0.0, 0.0};
+        Color amb = {0.0, 0.0, 0.0};
+        Color emis = {0.0, 0.0, 0.0};
+        Color spec = {0.0, 0.0, 0.0};
         double shi = 0.0;
         double trans = 0.0;
         std::vector<Data> data;
@@ -484,8 +509,8 @@ private:
 
     bool readHeader(std::istream &in);
     void writeHeader(std::ostream &out, const Header &header) const;
-    bool readTypeAndColor(std::istringstream &in, std::array<double,3> &color, const std::string &expected, const std::string &next);
-    bool readColor(std::istringstream &in, std::array<double,3> &color, const std::string &expected, const std::string &next);
+    bool readTypeAndColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next);
+    bool readColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next);
     bool readTypeAndValue(std::istringstream &in, double &value, const std::string &expected, const std::string &next, double min, double max, bool is_float);
     bool readValue(std::istringstream &in, double &value, const std::string &expected, double min, double max, bool is_float);
     bool readData(std::istringstream &iss, std::istream &in, std::string &data);

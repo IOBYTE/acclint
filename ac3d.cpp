@@ -807,7 +807,7 @@ void AC3D::writeData(std::ostream &out, const std::string &data) const
     out << data << newline(m_crlf);
 }
 
-bool AC3D::readColor(std::istringstream &in, std::array<double,3> &color, const std::string &expected, const std::string &next)
+bool AC3D::readColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next)
 {
     bool status = true;
     for (auto & component : color)
@@ -862,7 +862,7 @@ bool AC3D::readColor(std::istringstream &in, std::array<double,3> &color, const 
     return status;
 }
 
-bool AC3D::readTypeAndColor(std::istringstream &in, std::array<double,3> &color, const std::string &expected, const std::string &next)
+bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next)
 {
     in >> std::ws;
 
@@ -2551,37 +2551,16 @@ bool AC3D::clean()
     return cleaned;
 }
 
-bool clip(std::array<double,3> &values)
-{
-    bool clipped = false;
-
-    for (auto &value : values)
-    {
-        if (value < 0.0)
-        {
-            value = 0.0;
-            clipped = true;
-        }
-        else if (value > 1.0)
-        {
-            value = 1.0;
-            clipped = true;
-        }
-    }
-
-    return clipped;
-}
-
 bool AC3D::cleanMaterials()
 {
     bool cleaned = false;
 
     for (auto &material : m_materials)
     {
-        cleaned |= clip(material.rgb);
-        cleaned |= clip(material.amb);
-        cleaned |= clip(material.emis);
-        cleaned |= clip(material.spec);
+        cleaned |= material.rgb.clip();
+        cleaned |= material.amb.clip();
+        cleaned |= material.emis.clip();
+        cleaned |= material.spec.clip();
 
         double shi = std::round(material.shi);
 
