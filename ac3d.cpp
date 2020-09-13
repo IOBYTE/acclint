@@ -810,7 +810,7 @@ void AC3D::writeData(std::ostream &out, const std::string &data) const
 bool AC3D::readColor(std::istringstream &in, std::array<double,3> &color, const std::string &expected, const std::string &next)
 {
     bool status = true;
-    for (size_t i = 0; i < 3; ++i)
+    for (auto & component : color)
     {
         in >> std::ws;
 
@@ -856,7 +856,7 @@ bool AC3D::readColor(std::istringstream &in, std::array<double,3> &color, const 
             }
         }
 
-        color[i] = value;
+        component = value;
     }
 
     return status;
