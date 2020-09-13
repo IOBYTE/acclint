@@ -45,9 +45,17 @@ void usage()
     std::cerr << "  -Wno-floating-point             Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty_object               Don't show empty object warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids               Don't show missing kids warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-crease            Don't show multiple crease warnings." << std::endl;
     std::cerr << "  -Wno-multiple-folded            Don't show multiple folded warnings." << std::endl;
     std::cerr << "  -Wno-multiple-hidden            Don't show multiple hidden warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-loc               Don't show multiple loc warnings." << std::endl;
     std::cerr << "  -Wno-multiple-locked            Don't show multiple locked warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-name              Don't show multiple name warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-rot               Don't show multiple rot warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-subdiv            Don't show multiple subdiv warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-texoff            Don't show multiple texoff warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-texrep            Don't show multiple texrep warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-texture           Don't show multiple texture warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index     Don't show invaild material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invaild vertex index errors." << std::endl;
@@ -93,9 +101,17 @@ int main(int argc, char *argv[])
     bool missing_texture = true;
     bool duplicate_texture = true;
     bool ambiguous_texture = true;
+    bool multiple_crease = true;
     bool multiple_folded = true;
     bool multiple_hidden = true;
     bool multiple_locked = true;
+    bool multiple_loc = true;
+    bool multiple_name = true;
+    bool multiple_rot = true;
+    bool multiple_subdiv = true;
+    bool multiple_texoff = true;
+    bool multiple_texrep = true;
+    bool multiple_texture = true;
     std::vector<std::string> texture_paths;
 
     for (int i = 1; i < argc; ++i)
@@ -157,9 +173,17 @@ int main(int argc, char *argv[])
             missing_texture = false;
             duplicate_texture = false;
             ambiguous_texture = false;
+            multiple_crease = false;
             multiple_folded = false;
             multiple_hidden = false;
+            multiple_loc = false;
             multiple_locked = false;
+            multiple_name = false;
+            multiple_rot = false;
+            multiple_subdiv = false;
+            multiple_texoff = false;
+            multiple_texrep = false;
+            multiple_texture = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -237,6 +261,10 @@ int main(int argc, char *argv[])
         {
             ambiguous_texture = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-multiple-crease" || arg == "-Wmultiple-crease")
+        {
+            multiple_crease = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-multiple-folded" || arg == "-Wmultiple-folded")
         {
             multiple_folded = arg.compare(2, 3, "no-") != 0;
@@ -245,9 +273,37 @@ int main(int argc, char *argv[])
         {
             multiple_hidden = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-multiple-loc" || arg == "-Wmultiple-loc")
+        {
+            multiple_loc = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-multiple-locked" || arg == "-Wmultiple-locked")
         {
             multiple_locked = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-name" || arg == "-Wmultiple-name")
+        {
+            multiple_name = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-rot" || arg == "-Wmultiple-rot")
+        {
+            multiple_rot = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-subdiv" || arg == "-Wmultiple-subdiv")
+        {
+            multiple_subdiv = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-texoff" || arg == "-Wmultiple-texoff")
+        {
+            multiple_texoff = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-texrep" || arg == "-Wmultiple-texrep")
+        {
+            multiple_texrep = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-texture" || arg == "-Wmultiple-texture")
+        {
+            multiple_texture = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-errors")
         {
@@ -305,9 +361,17 @@ int main(int argc, char *argv[])
     ac3d.duplicateTexture(duplicate_texture);
     ac3d.ambiguousTexture(ambiguous_texture);
     ac3d.texturePaths(texture_paths);
+    ac3d.multipleCrease(multiple_crease);
     ac3d.multipleFolded(multiple_folded);
     ac3d.multipleHidden(multiple_hidden);
+    ac3d.multipleLoc(multiple_loc);
     ac3d.multipleLocked(multiple_locked);
+    ac3d.multipleName(multiple_name);
+    ac3d.multipleRot(multiple_rot);
+    ac3d.multipleSubdiv(multiple_subdiv);
+    ac3d.multipleTexoff(multiple_texoff);
+    ac3d.multipleTexrep(multiple_texrep);
+    ac3d.multipleTexture(multiple_texture);
 
     if (!ac3d.read(in_file))
     {

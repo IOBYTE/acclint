@@ -1219,9 +1219,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (iss1)
             {
-                if (!object.names.empty())
+                if (!object.names.empty() && m_multiple_name)
                 {
-                    warning() << "multiple names" << std::endl;
+                    warning() << "multiple name" << std::endl;
                     showLine(iss1, 0);
                     note(object.names.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.names.front().line_pos);
@@ -1299,9 +1299,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     }
                 }
 
-                if (m_is_ac && !object.textures.empty())
+                if (m_is_ac && !object.textures.empty() && m_multiple_texture)
                 {
-                    warning() << "multiple textures" << std::endl;
+                    warning() << "multiple texture" << std::endl;
                     showLine(iss1, 0);
                     note(object.textures.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.textures.front().line_pos);
@@ -1412,7 +1412,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (iss1)
             {
-                if (!object.texreps.empty())
+                if (!object.texreps.empty() && m_multiple_texrep)
                 {
                     warning() << "multiple texrep" << std::endl;
                     showLine(iss1, 0);
@@ -1440,7 +1440,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (iss1)
             {
-                if (!object.texoffs.empty())
+                if (!object.texoffs.empty() && m_multiple_texoff)
                 {
                     warning() << "multiple texoff" << std::endl;
                     showLine(iss1, 0);
@@ -1468,7 +1468,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (iss1)
             {
-                if (!object.subdivs.empty())
+                if (!object.subdivs.empty() && m_multiple_subdiv)
                 {
                     warning() << "multiple subdiv" << std::endl;
                     showLine(iss1, 0);
@@ -1496,7 +1496,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (iss1)
             {
-                if (!object.creases.empty())
+                if (!object.creases.empty() && m_multiple_crease)
                 {
                     warning() << "multiple crease" << std::endl;
                     showLine(iss1, 0);
@@ -1524,7 +1524,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (iss1)
             {
-                if (!object.rotations.empty())
+                if (!object.rotations.empty() && m_multiple_rot)
                 {
                     warning() << "multiple rot" << std::endl;
                     showLine(iss1, 0);
@@ -1552,7 +1552,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (iss1)
             {
-                if (!object.locations.empty())
+                if (!object.locations.empty() && m_multiple_loc)
                 {
                     warning() << "multiple loc" << std::endl;
                     showLine(iss1, 0);

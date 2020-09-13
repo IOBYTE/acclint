@@ -217,6 +217,14 @@ public:
     {
         return m_ambiguous_texture;
     }
+    void multipleCrease(bool value)
+    {
+        m_multiple_crease = value;
+    }
+    bool multipleCrease() const
+    {
+        return m_multiple_crease;
+    }
     void multipleFolded(bool value)
     {
         m_multiple_folded = value;
@@ -233,6 +241,14 @@ public:
     {
         return m_multiple_hidden;
     }
+    void multipleLoc(bool value)
+    {
+        m_multiple_loc = value;
+    }
+    bool multipleLoc() const
+    {
+        return m_multiple_loc;
+    }
     void multipleLocked(bool value)
     {
         m_multiple_locked = value;
@@ -240,6 +256,54 @@ public:
     bool multipleLocked() const
     {
         return m_multiple_locked;
+    }
+    void multipleName(bool value)
+    {
+        m_multiple_name = value;
+    }
+    bool multipleName() const
+    {
+        return m_multiple_name;
+    }
+    void multipleRot(bool value)
+    {
+        m_multiple_rot = value;
+    }
+    bool multipleRot() const
+    {
+        return m_multiple_rot;
+    }
+    void multipleSubdiv(bool value)
+    {
+        m_multiple_subdiv = value;
+    }
+    bool multipleSubdiv() const
+    {
+        return m_multiple_subdiv;
+    }
+    void multipleTexoff(bool value)
+    {
+        m_multiple_texoff = value;
+    }
+    bool multipleTexoff() const
+    {
+        return m_multiple_texoff;
+    }
+    void multipleTexrep(bool value)
+    {
+        m_multiple_texrep= value;
+    }
+    bool multipleTexrep() const
+    {
+        return m_multiple_texrep;
+    }
+    void multipleTexture(bool value)
+    {
+        m_multiple_texture = value;
+    }
+    bool multipleTexture() const
+    {
+        return m_multiple_texture;
     }
     void texturePaths(const std::vector<std::string> &paths)
     {
@@ -498,9 +562,17 @@ private:
     bool            m_missing_texture = true;
     bool            m_duplicate_texture = true;
     bool            m_ambiguous_texture = true;
+    bool            m_multiple_crease = true;
     bool            m_multiple_folded = true;
     bool            m_multiple_hidden = true;
+    bool            m_multiple_loc = true;
     bool            m_multiple_locked = true;
+    bool            m_multiple_name = true;
+    bool            m_multiple_rot = true;
+    bool            m_multiple_subdiv = true;
+    bool            m_multiple_texoff = true;
+    bool            m_multiple_texrep = true;
+    bool            m_multiple_texture = true;
 
     Header m_header;
     std::vector<Material> m_materials;
