@@ -1,0 +1,13 @@
+test5.ac:16 warning: collinear verticies
+0 0 0
+^
+test5.ac:10 note: first vertex
+0 0 0
+^
+test5.ac:11 note: second vertex
+1 0 0
+^
+test5.ac:8 note: third vertex
+2 0 0
+^
+1 warning
