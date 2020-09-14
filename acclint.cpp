@@ -57,6 +57,7 @@ void usage()
     std::cerr << "  -Wno-multiple-texrep            Don't show multiple texrep warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texture           Don't show multiple texture warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
+    std::cerr << "  -Wno-not-ac3d-file              Don't show not AC3D file errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index     Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-token              Don't show invalid token errors." << std::endl;
@@ -81,6 +82,7 @@ int main(int argc, char *argv[])
 
     std::string in_file;
     std::string out_file;
+    bool not_ac3d_file = true;
     bool trailing_text = true;
     bool blank_line = true;
     bool duplicate_materials = true;
@@ -309,9 +311,14 @@ int main(int argc, char *argv[])
         }
         else if (arg == "-Wno-errors")
         {
+            not_ac3d_file = false;
             invalid_material_index = false;
             invalid_vertex_index = false;
             invalid_token = false;
+        }
+        else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
+        {
+            not_ac3d_file = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-material-index" || arg == "-Winvalid-material-index")
         {
@@ -346,6 +353,7 @@ int main(int argc, char *argv[])
 
     AC3D ac3d;
 
+    ac3d.notAC3DFile(not_ac3d_file);
     ac3d.trailingText(trailing_text);
     ac3d.blankLine(blank_line);
     ac3d.duplicateMaterials(duplicate_materials);
@@ -383,10 +391,13 @@ int main(int argc, char *argv[])
 
     if (!ac3d.read(in_file))
     {
-        std::cerr << ac3d.errors() << " error";
-        if (ac3d.errors() > 1)
-            std::cerr << "s";
-        std::cerr << std::endl;
+        if (ac3d.errors() > 0)
+        {
+            std::cerr << ac3d.errors() << " error";
+            if (ac3d.errors() > 1)
+                std::cerr << "s";
+            std::cerr << std::endl;
+        }
         exit(EXIT_FAILURE);
     }
 

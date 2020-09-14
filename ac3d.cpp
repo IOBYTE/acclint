@@ -713,8 +713,11 @@ bool AC3D::readHeader(std::istream &in)
 
     if (m_line.compare(0, 4, "AC3D") != 0)
     {
-        error(1) << "not and AC3D file" << std::endl;
-        showLine(iss, 0);
+        if (m_not_ac3d_file)
+        {
+            error(1) << "not AC3D file" << std::endl;
+            showLine(iss, 0);
+        }
         return false;
     }
 

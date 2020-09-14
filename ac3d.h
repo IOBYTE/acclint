@@ -49,6 +49,14 @@ public:
     {
         return m_crlf;
     }
+    void notAC3DFile(bool value)
+    {
+        m_not_ac3d_file = value;
+    }
+    bool notAC3DFile() const
+    {
+        return m_not_ac3d_file;
+    }
     void trailingText(bool value)
     {
         m_trailing_text = value;
@@ -574,6 +582,7 @@ private:
     bool            m_is_utf_8 = false;
     bool            m_is_ac = false;
     bool            m_crlf = false;
+    bool            m_not_ac3d_file = true;
     bool            m_trailing_text = true;
     bool            m_blank_line = false;
     bool            m_duplicate_vertices = true;
