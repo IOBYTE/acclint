@@ -2421,33 +2421,30 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
     if (surface.refs.size() > 3)
     {
         size_t next = 0;
-        size_t index = surface.refs[next++].index;
-        if (index >= object.vertices.size())
-                return;
-        std::array<double,3> v0 = object.vertices[index].vertex;
-        index = surface.refs[next++].index;
-        if (index >= object.vertices.size())
-                return;
-        std::array<double,3> v1 = object.vertices[index].vertex;
+        std::array<double,3> v0;
+        std::array<double,3> v1;
+        std::array<double,3> v2;
+
+        if (!object.getSurfaceVertex(surface, next++, v0))
+            return;
+
+        if (!object.getSurfaceVertex(surface, next++, v1))
+            return;
+
         // find the next unique vertex
         while (v0 == v1)
         {
-            index = surface.refs[next++].index;
-            if (index >= object.vertices.size())
-                return;
-            v1 = object.vertices[index].vertex;
-            if (next >= surface.refs.size())
+            if (!object.getSurfaceVertex(surface, next++, v1))
                 return;
         }
-        std::array<double,3> v2 = object.vertices[surface.refs[next++].index].vertex;
+
+        if (!object.getSurfaceVertex(surface, next++, v2))
+            return;
+
         // find the next unique vertex
         while (v1 == v2 || collinear(v0, v1, v2))
         {
-            index = surface.refs[next++].index;
-            if (index >= object.vertices.size())
-                return;
-            v2 = object.vertices[index].vertex;
-            if (next >= surface.refs.size())
+            if (!object.getSurfaceVertex(surface, next++, v2))
                 return;
         }
 
@@ -2464,10 +2461,10 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
 
         for (size_t i = next; i < surface.refs.size(); ++i)
         {
-            index = surface.refs[i].index;
-            if (index >= object.vertices.size())
+            std::array<double,3> v;
+            if (!object.getSurfaceVertex(surface, i, v))
                 return;
-            const std::array<double,3> &v = object.vertices[index].vertex;
+
             double e = a * v[0] + b * v[1] + c * v[2] + d;
             constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 1000;
             if (std::fabs(e) > epsilon)

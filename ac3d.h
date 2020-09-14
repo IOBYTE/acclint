@@ -476,6 +476,13 @@ private:
                 return false;
             return true;
         }
+        bool getIndex(size_t ref, size_t &index) const
+        {
+            if (ref >= refs.size())
+                return false;
+            index = refs[ref].index;
+            return true;
+        }
     };
 
     struct Vertex : public LineInfo
@@ -536,6 +543,24 @@ private:
         bool empty() const
         {
             return (type == "poly" && vertices.empty() && surfaces.empty() && kids.empty());
+        }
+        bool getVertex(size_t index, std::array<double,3> &vertex) const
+        {
+            if (index >= vertices.size())
+                return false;
+            vertex = vertices[index].vertex;
+            return true;
+        }
+        bool getSurfaceVertex(const Surface &surface,
+                              size_t ref,
+                              std::array<double,3> &vertex) const
+        {
+            size_t index;
+            if (!surface.getIndex(ref, index))
+                return false;
+            if (!getVertex(index, vertex))
+                return false;
+            return true;
         }
     };
 
