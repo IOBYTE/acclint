@@ -113,6 +113,14 @@ public:
     {
         return m_invalid_material_index;
     }
+    void invalidToken(bool value)
+    {
+        m_invalid_token = value;
+    }
+    bool invalidToken() const
+    {
+        return m_invalid_token;
+    }
     void duplicateMaterials(bool value)
     {
         m_duplicate_materials = value;
@@ -549,6 +557,7 @@ private:
     bool            m_invalid_normal = true;
     bool            m_invalid_material = true;
     bool            m_invalid_material_index = true;
+    bool            m_invalid_token = true;
     bool            m_duplicate_materials = true;
     bool            m_unused_material = true;
     bool            m_duplicate_surfaces = true;

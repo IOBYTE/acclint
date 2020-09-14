@@ -41,7 +41,7 @@ void usage()
     std::cerr << "  -Wno-missing-texture            Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-texture          Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-ambiguous-texture          Don't show ambiguous texture warnings." << std::endl;
-    std::cerr << "  -Wno-invalid-material           Don't show invaild material warnings." << std::endl;
+    std::cerr << "  -Wno-invalid-material           Don't show invalid material warnings." << std::endl;
     std::cerr << "  -Wno-floating-point             Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty_object               Don't show empty object warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids               Don't show missing kids warnings." << std::endl;
@@ -57,8 +57,9 @@ void usage()
     std::cerr << "  -Wno-multiple-texrep            Don't show multiple texrep warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texture           Don't show multiple texture warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
-    std::cerr << "  -Wno-invalid-material-index     Don't show invaild material index errors." << std::endl;
-    std::cerr << "  -Wno-invalid-vertex-index       Don't show invaild vertex index errors." << std::endl;
+    std::cerr << "  -Wno-invalid-material-index     Don't show invalid material index errors." << std::endl;
+    std::cerr << "  -Wno-invalid-vertex-index       Don't show invalid vertex index errors." << std::endl;
+    std::cerr << "  -Wno-invalid-token              Don't show invalid token errors." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -90,6 +91,7 @@ int main(int argc, char *argv[])
     bool invalid_normal = true;
     bool invalid_material = true;
     bool invalid_material_index = true;
+    bool invalid_token = true;
     bool duplicate_surfaces = true;
     bool duplicate_surface_vertices = true;
     bool collinear_surface_vertices = true;
@@ -309,6 +311,7 @@ int main(int argc, char *argv[])
         {
             invalid_material_index = false;
             invalid_vertex_index = false;
+            invalid_token = false;
         }
         else if (arg == "-Wno-invalid-material-index" || arg == "-Winvalid-material-index")
         {
@@ -317,6 +320,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-vertex-index" || arg == "-Winvalid-vertex-index")
         {
             invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-token" || arg == "-Winvalid-token")
+        {
+            invalid_token = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg[0] != '-')
         {
@@ -349,6 +356,7 @@ int main(int argc, char *argv[])
     ac3d.invalidNormal(invalid_normal);
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
+    ac3d.invalidToken(invalid_token);
     ac3d.duplicateSurfaces(duplicate_surfaces);
     ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
     ac3d.collinearSurfaceVertices(collinear_surface_vertices);

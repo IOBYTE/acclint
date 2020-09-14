@@ -1121,7 +1121,8 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
         }
         else
         {
-            error() << "invalid token: " << token << std::endl;
+            if (m_invalid_token)
+                error() << "invalid token: " << token << std::endl;
             return false;
         }
 
@@ -1821,7 +1822,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             readObject(iss2, in, kid);
                             object.kids.push_back(kid);
                         }
-                        else
+                        else if (m_invalid_token)
                         {
                             error() << "invalid token: " << token1 << std::endl;
                             showLine(iss2, 0);
@@ -1866,7 +1867,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             if (readSurface(in, surface, object, false))
                 object.surfaces.push_back(surface);
         }
-        else
+        else if (m_invalid_token)
         {
             error() << "invalid token: " << token << std::endl;
             showLine(iss1, 0);
@@ -2124,7 +2125,7 @@ bool AC3D::read(const std::string &file)
                 needMaterial = false;
                 m_objects.push_back(object);
             }
-            else
+            else if (m_invalid_token)
             {
                 error() << "invalid token: " << token << std::endl;
                 showLine(iss, 0);
@@ -2152,7 +2153,7 @@ bool AC3D::read(const std::string &file)
             readMaterial(iss, in, material);
             m_materials.push_back(material);
         }
-        else
+        else if (m_invalid_token)
         {
             error() << "invalid token: " << token << std::endl;
             showLine(iss, 0);
