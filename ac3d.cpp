@@ -2381,6 +2381,7 @@ bool collinear(const std::array<double,3> &p1, const std::array<double,3> &p2, c
 void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface)
 {
     const size_t size = surface.refs.size();
+    size_t found = 0;
 
     // must be a polygon with at least 3 sides
     if (!m_collinear_surface_vertices || size < 3 || !surface.isPolygon())
@@ -2410,6 +2411,11 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
             showLine(in, object.vertices[surface.refs[(i - 1) % size].index].line_pos);
             note(object.vertices[surface.refs[i % size].index].line_number) << "third vertex" << std::endl;
             showLine(in, object.vertices[surface.refs[i % size].index].line_pos);
+
+            found++;
+            // don't show all combinations when all vertices are collinear
+            if (found == (size - 2))
+                break;
         }
     }
 }
