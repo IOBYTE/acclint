@@ -1,0 +1,4 @@
+test2.ac:15 error: invalid vertex index: 3 of 3
+3 0 0
+^
+1 error
