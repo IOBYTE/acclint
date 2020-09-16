@@ -1,13 +1,16 @@
 #!/usr/bin/bash
 
-pushd collinear-surface-vertices
+cd collinear-surface-vertices
+echo "${PWD##*/}"
 bats test.bats
-popd
+cd ..
 
-pushd invalid-vertex-index
+cd invalid-vertex-index
+echo "${PWD##*/}"
 bats test.bats
-popd
+cd ..
 
-pushd unused-vertex
+cd unused-vertex
+echo "${PWD##*/}"
 bats test.bats
-popd
+cd ..
