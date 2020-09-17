@@ -294,7 +294,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
         return false;
     }
 
-    std::array<double,2> uv;
+    Point2 uv;
 
     in >> uv;
 
@@ -1274,8 +1274,11 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 {
                     if (m_is_ac)
                     {
-                        warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
-                        showLine(iss1);
+                        if (m_trailing_text)
+                        {
+                            warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
+                            showLine(iss1);
+                        }
                     }
                     else
                     {
@@ -1891,7 +1894,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 #if defined(CHECK_TRIANGLE_STRIPS)
     struct Triangle
     {
-        std::array<size_t,3> vertices{ 0, 0, 0 };
+        Point3 vertices{ 0, 0, 0 };
         size_t surface = 0;
         size_t triangle = 0;
         bool degenerate = false;
@@ -2368,14 +2371,15 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
     }
 }
 
-bool collinear(const std::array<double,3> &p1, const std::array<double,3> &p2, const std::array<double,3> &p3)
+bool AC3D::collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3)
 {
     constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon());
-    std::array<double,3> v1{ p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2] };
-    std::array<double,3> v2{ p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2] };
-    return std::fabs(v1[1] * v2[2] - v1[2] * v2[1]) < epsilon &&
-           std::fabs(v1[2] * v2[0] - v1[0] * v2[2]) < epsilon &&
-           std::fabs(v1[0] * v2[1] - v1[1] * v2[0]) < epsilon;
+    Point3 v1{ p2 - p1 };
+    Point3 v2{ p3 - p1 };
+    Point3 v3 = v1.cross(v2);
+    return std::fabs(v3[0]) < epsilon &&
+           std::fabs(v3[1]) < epsilon &&
+           std::fabs(v3[2]) < epsilon;
 }
 
 void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface)
@@ -2396,9 +2400,9 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
         if (i < size && surface.refs[i].index >= vertices)
             return;
 
-        const std::array<double,3> &v0 = object.vertices[surface.refs[i - 2].index].vertex;
-        const std::array<double,3> &v1 = object.vertices[surface.refs[(i - 1) % size].index].vertex;
-        const std::array<double,3> &v2 = object.vertices[surface.refs[i % size].index].vertex;
+        const Point3 &v0 = object.vertices[surface.refs[i - 2].index].vertex;
+        const Point3 &v1 = object.vertices[surface.refs[(i - 1) % size].index].vertex;
+        const Point3 &v2 = object.vertices[surface.refs[i % size].index].vertex;
 
         if (v0 != v1 && v1 != v2 && (v0 == v2 || collinear(v0, v1, v2)))
         {
@@ -2430,9 +2434,9 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
     if (surface.refs.size() > 3)
     {
         size_t next = 0;
-        std::array<double,3> v0;
-        std::array<double,3> v1;
-        std::array<double,3> v2;
+        Point3 v0;
+        Point3 v1;
+        Point3 v2;
 
         if (!object.getSurfaceVertex(surface, next++, v0))
             return;
@@ -2470,7 +2474,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
 
         for (size_t i = next; i < surface.refs.size(); ++i)
         {
-            std::array<double,3> v;
+            Point3 v;
             if (!object.getSurfaceVertex(surface, i, v))
                 return;
 

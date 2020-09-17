@@ -371,6 +371,27 @@ private:
         }
     };
 
+    using Point2 = std::array<double,2>;
+
+    class Point3 : public std::array<double,3>
+    {
+    public:
+        Point3 operator - (const Point3 &other) const
+        {
+            return Point3 { (*this)[0] - other[0],
+                            (*this)[1] - other[1],
+                            (*this)[2] - other[2] };
+        }
+        Point3 cross(const Point3 &other) const
+        {
+            return Point3 { (*this)[1] * other[2] - (*this)[2] * other[1],
+                            (*this)[2] * other[0] - (*this)[0] * other[2],
+                            (*this)[0] * other[1] - (*this)[1] * other[0] };
+        }
+    };
+
+    using Matrix = std::array<double,9>;
+
     struct Header
     {
         std::string version = "AC3Db";
@@ -417,12 +438,12 @@ private:
 
     struct TexRep : public LineInfo
     {
-        std::array<double,2> texrep = {0.0, 0.0};
+        Point2 texrep = {0.0, 0.0};
     };
 
     struct TexOff : public LineInfo
     {
-        std::array<double,2> texoff = {0.0, 0.0};
+        Point2 texoff = {0.0, 0.0};
     };
 
     struct SubDiv : public LineInfo
@@ -433,7 +454,7 @@ private:
     struct Ref : public LineInfo
     {
         size_t index = 0;
-        std::vector<std::array<double,2>> coordinates;
+        std::vector<Point2> coordinates;
     };
 
     struct Surface : public LineInfo
@@ -503,20 +524,20 @@ private:
 
     struct Vertex : public LineInfo
     {
-        std::array<double,3> vertex = {0.0, 0.0, 0.0};
-        std::array<double,3> normal = {0.0, 0.0, 0.0};
+        Point3 vertex = {0.0, 0.0, 0.0};
+        Point3 normal = {0.0, 0.0, 0.0};
         bool has_normal = false;
         bool used = false;
     };
 
     struct Location : public LineInfo
     {
-        std::array<double,3> location = {0.0, 0.0, 0.0};
+        Point3 location = {0.0, 0.0, 0.0};
     };
 
     struct Rotation : public LineInfo
     {
-        std::array<double,9> rotation = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        Matrix rotation = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     };
 
     struct Crease : public LineInfo
@@ -560,7 +581,7 @@ private:
         {
             return (type == "poly" && vertices.empty() && surfaces.empty() && kids.empty());
         }
-        bool getVertex(size_t index, std::array<double,3> &vertex) const
+        bool getVertex(size_t index, Point3 &vertex) const
         {
             if (index >= vertices.size())
                 return false;
@@ -569,7 +590,7 @@ private:
         }
         bool getSurfaceVertex(const Surface &surface,
                               size_t ref,
-                              std::array<double,3> &vertex) const
+                              Point3 &vertex) const
         {
             size_t index;
             if (!surface.getIndex(ref, index))
@@ -678,6 +699,7 @@ private:
     bool setMaterialUsed(size_t index);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
+    static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
 };
 
 #endif
