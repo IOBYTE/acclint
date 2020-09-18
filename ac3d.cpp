@@ -2298,7 +2298,7 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
                 {
                     if (j == i + 1 || j == surface.refs.size() - 1)
                     {
-                        surface.remove.push_back(j);
+                        surface.refs[j].duplicate = true;
 
                         if (m_duplicate_surface_vertices)
                         {
@@ -2880,15 +2880,17 @@ bool AC3D::cleanSurfaces(Object &object)
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         Surface &surface = object.surfaces[i];
-
-        if (surface.remove.empty())
-            continue;
-
-        for (size_t j = surface.remove.size(); j > 0; --j)
+        auto it = surface.refs.begin();
+        while (it != surface.refs.end())
         {
-            // delete vertex
-            surface.refs.erase(surface.refs.begin() + surface.remove[j - 1]);
-            cleaned = true;
+            if (it->duplicate)
+            {
+                // delete vertex
+                it = surface.refs.erase(it);
+                cleaned = true;
+            }
+            else
+                ++it;
         }
 
         if (surface.refs.size() < 3)

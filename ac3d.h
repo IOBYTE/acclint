@@ -455,6 +455,7 @@ private:
     {
         size_t index = 0;
         std::vector<Point2> coordinates;
+        bool duplicate = false;
     };
 
     struct Surface : public LineInfo
@@ -462,7 +463,6 @@ private:
         unsigned int flags = 0;
         std::vector<size_t> mat;
         std::vector<Ref> refs;
-        std::vector<size_t> remove;
         bool coplanar = true; // only for Polygon and ClosedLine
 
         enum : unsigned int
