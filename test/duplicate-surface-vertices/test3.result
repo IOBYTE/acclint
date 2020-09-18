@@ -1,0 +1,7 @@
+test3.ac:17 warning: duplicate surface vertices
+1 0 0
+^
+test3.ac:16 note: first instance
+1 0 0
+^
+1 warning
