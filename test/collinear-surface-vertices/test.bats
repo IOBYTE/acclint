@@ -30,10 +30,18 @@
 
 ################################################################################
 
-@test "test3" {
+@test "test3.1" {
   run acclint test3.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test3.result)" ]
+}
+
+@test "test3.2" {
+  run acclint -Wno-warnings test3.ac -o test3.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat test3.output.ac)" = "$(cat test3.result.ac)" ]
+  rm test3.output.ac
 }
 
 ################################################################################

@@ -2388,7 +2388,7 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
     size_t found = 0;
 
     // must be a polygon with at least 3 sides
-    if (!m_collinear_surface_vertices || size < 3 || !surface.isPolygon())
+    if (size < 3 || !surface.isPolygon())
         return;
 
     const size_t vertices = object.vertices.size();
@@ -2406,20 +2406,22 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
 
         if (v0 != v1 && v1 != v2 && (v0 == v2 || collinear(v0, v1, v2)))
         {
-            warning(surface.refs[i % size].line_number) << "collinear verticies" << std::endl;
-            showLine(in, surface.refs[i % size].line_pos);
+            // don't show all combinations when all vertices are collinear
+            if (found < (size - 2) && m_collinear_surface_vertices)
+            {
+                warning(surface.refs[i % size].line_number) << "collinear verticies" << std::endl;
+                showLine(in, surface.refs[i % size].line_pos);
 
-            note(object.vertices[surface.refs[i - 2].index].line_number) << "first vertex" << std::endl;
-            showLine(in, object.vertices[surface.refs[i - 2].index].line_pos);
-            note(object.vertices[surface.refs[(i - 1) % size].index].line_number) << "second vertex" << std::endl;
-            showLine(in, object.vertices[surface.refs[(i - 1) % size].index].line_pos);
-            note(object.vertices[surface.refs[i % size].index].line_number) << "third vertex" << std::endl;
-            showLine(in, object.vertices[surface.refs[i % size].index].line_pos);
+                note(object.vertices[surface.refs[i - 2].index].line_number) << "first vertex" << std::endl;
+                showLine(in, object.vertices[surface.refs[i - 2].index].line_pos);
+                note(object.vertices[surface.refs[(i - 1) % size].index].line_number) << "second vertex" << std::endl;
+                showLine(in, object.vertices[surface.refs[(i - 1) % size].index].line_pos);
+                note(object.vertices[surface.refs[i % size].index].line_number) << "third vertex" << std::endl;
+                showLine(in, object.vertices[surface.refs[i % size].index].line_pos);
+            }
 
             found++;
-            // don't show all combinations when all vertices are collinear
-            if (found == (size - 2))
-                break;
+            surface.refs[(i - 1) % size].collinear = true;
         }
     }
 }
@@ -2580,6 +2582,7 @@ bool AC3D::clean()
     cleaned |= cleanMaterials();
     cleaned |= cleanVertices();
     cleaned |= cleanSurfaces();
+    cleaned |= cleanVertices(); // cleanSurfaces may create unused vertices
     cleaned |= cleanObjects();
 
     return cleaned;
@@ -2884,6 +2887,12 @@ bool AC3D::cleanSurfaces(Object &object)
         while (it != surface.refs.end())
         {
             if (it->duplicate)
+            {
+                // delete vertex
+                it = surface.refs.erase(it);
+                cleaned = true;
+            }
+            else if (it->collinear) // TODO: check if shared by other surfaces
             {
                 // delete vertex
                 it = surface.refs.erase(it);

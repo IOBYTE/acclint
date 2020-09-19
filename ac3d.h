@@ -456,6 +456,7 @@ private:
         size_t index = 0;
         std::vector<Point2> coordinates;
         bool duplicate = false;
+        bool collinear = false;
     };
 
     struct Surface : public LineInfo
