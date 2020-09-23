@@ -768,6 +768,8 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
             std::getline(in, m_line);
             m_line_number++;
             data = m_line;
+            if (data.back() == '\r') // remove DOS CR
+                data.pop_back();
 
             while (data.size() < size)
             {
@@ -776,6 +778,8 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
                 std::getline(in, m_line);
                 m_line_number++;
                 data += m_line;
+                if (data.back() == '\r') // remove DOS CR
+                    data.pop_back();
             }
 
             if (data.size() > size)
@@ -785,9 +789,12 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
                     if (m_trailing_text)
                     {
                         warning() << "trailing text: \"" << data.substr(size) << "\"" << std::endl;
+                        if (m_line.back() == '\r') // remove DOS CR
+                            m_line.pop_back();
                         std::istringstream iss1(m_line);
                         showLine(iss1, m_line.size() - (data.size() - size));
                     }
+                    data.resize(size);
                 }
                 else
                     data.pop_back();
@@ -807,7 +814,13 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
 void AC3D::writeData(std::ostream &out, const std::string &data) const
 {
     out << "data " << data.size() << newline(m_crlf);
-    out << data << newline(m_crlf);
+    for (char c : data)
+    {
+        if (c == '\n' && m_crlf)
+            out << '\r';
+        out << c;
+    }
+    out << newline(m_crlf);
 }
 
 bool AC3D::readColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next)
