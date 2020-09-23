@@ -1,0 +1,88 @@
+test6.ac:1 warning: trailing text: " "
+AC3Db 
+     ^
+test6.ac:2 warning: trailing text: " "
+MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0 
+                                                                                     ^
+test6.ac:3 warning: trailing text: " "
+OBJECT world 
+            ^
+test6.ac:4 warning: trailing text: " "
+kids 1 
+      ^
+test6.ac:5 warning: trailing text: " "
+OBJECT poly 
+           ^
+test6.ac:6 warning: trailing text: " "
+name "test" 
+           ^
+test6.ac:7 warning: trailing text: " "
+data 4 
+      ^
+test6.ac:9 warning: trailing text: " "
+4 
+ ^
+test6.ac:10 warning: trailing text: " "
+hidden 
+      ^
+test6.ac:11 warning: trailing text: " "
+locked 
+      ^
+test6.ac:12 warning: trailing text: " "
+folded 
+      ^
+test6.ac:13 warning: trailing text: " "
+texture "test.rgb" 
+                  ^
+test6.ac:14 warning: trailing text: " "
+texrep 0 0 
+          ^
+test6.ac:15 warning: trailing text: " "
+rot 0 0 0 0 0 0 0 0 0 
+                     ^
+test6.ac:16 warning: trailing text: " "
+loc 0 0 0 
+         ^
+test6.ac:17 warning: trailing text: " "
+subdiv 0 
+        ^
+test6.ac:18 warning: trailing text: " "
+crease 0 
+        ^
+test6.ac:19 warning: trailing text: " "
+numvert 3 
+         ^
+test6.ac:20 warning: trailing text: " "
+0 0 0 
+     ^
+test6.ac:21 warning: trailing text: " "
+1 0 0 
+     ^
+test6.ac:22 warning: trailing text: " "
+1 1 0 
+     ^
+test6.ac:23 warning: trailing text: " "
+numsurf 1 
+         ^
+test6.ac:24 warning: trailing text: " "
+SURF 0x20 
+         ^
+test6.ac:25 warning: trailing text: " "
+mat 0 
+     ^
+test6.ac:26 warning: trailing text: " "
+refs 3 
+      ^
+test6.ac:27 warning: trailing text: " "
+0 0 0 
+     ^
+test6.ac:28 warning: trailing text: " "
+1 0 0 
+     ^
+test6.ac:29 warning: trailing text: " "
+2 0 0 
+     ^
+test6.ac:30 warning: trailing text: " "
+kids 0 
+      ^
+29 warnings

@@ -1,0 +1,30 @@
+AC3Db 1
+MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0 2
+OBJECT world 3
+kids 1 4
+OBJECT poly 5
+name "test" 6
+data 4 7
+12
+4 8
+hidden 9
+locked 10
+folded 11
+texture "test.rgb" 12
+texrep 0 0 13
+rot 0 0 0 0 0 0 0 0 0 14
+loc 0 0 0 15
+subdiv 0 16
+crease 0 17
+numvert 3 18
+0 0 0 19
+1 0 0 20
+1 1 0 21
+numsurf 1 22
+SURF 0x20 23
+mat 0 24
+refs 3 25
+0 0 0 26
+1 0 0 27
+2 0 0 28
+kids 0 29
