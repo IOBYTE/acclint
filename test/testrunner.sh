@@ -20,6 +20,11 @@ echo "${PWD##*/}"
 bats test.bats
 cd ..
 
+cd trailing-text
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
 cd unused-vertex
 echo "${PWD##*/}"
 bats test.bats
