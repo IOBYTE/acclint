@@ -10,6 +10,11 @@ echo "${PWD##*/}"
 bats test.bats
 cd ..
 
+cd duplicate-vertices
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
 cd invalid-vertex-index
 echo "${PWD##*/}"
 bats test.bats
