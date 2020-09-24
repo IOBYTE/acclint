@@ -1,0 +1,4 @@
+test1.ac:12 warning: invalid ref count
+refs 1
+^
+1 warning
