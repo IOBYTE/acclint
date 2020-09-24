@@ -15,6 +15,11 @@ echo "${PWD##*/}"
 bats test.bats
 cd ..
 
+cd invalid-ref-count
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
 cd invalid-vertex-index
 echo "${PWD##*/}"
 bats test.bats

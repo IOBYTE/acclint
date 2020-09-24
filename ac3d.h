@@ -121,6 +121,14 @@ public:
     {
         return m_invalid_material_index;
     }
+    void invalidRefCount(bool value)
+    {
+        m_invalid_ref_count = value;
+    }
+    bool invalidRefCount() const
+    {
+        return m_invalid_ref_count;
+    }
     void invalidSurfaceType(bool value)
     {
         m_invalid_surface_type = value;
@@ -459,11 +467,17 @@ private:
         bool collinear = false;
     };
 
+    class Refs : public LineInfo, public std::vector<Ref>
+    {
+    public:
+        int declared_size = 0;
+    };
+
     struct Surface : public LineInfo
     {
         unsigned int flags = 0;
         std::vector<size_t> mat;
-        std::vector<Ref> refs;
+        Refs refs;
         bool coplanar = true; // only for Polygon and ClosedLine
 
         enum : unsigned int
@@ -621,6 +635,7 @@ private:
     bool            m_invalid_normal = true;
     bool            m_invalid_material = true;
     bool            m_invalid_material_index = true;
+    bool            m_invalid_ref_count = true;
     bool            m_invalid_surface_type = true;
     bool            m_invalid_token = true;
     bool            m_duplicate_materials = true;

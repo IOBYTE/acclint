@@ -526,9 +526,10 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
     if (token == refs_token)
     {
-        int refs = 0;
+        surface.refs.line_number = m_line_number;
+        surface.refs.line_pos = m_line_pos;
 
-        iss >> refs;
+        iss >> surface.refs.declared_size;
 
         if (iss)
             checkTrailing(iss);
@@ -538,7 +539,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
             showLine(iss);
         }
 
-        for (int j = 0; j < refs; ++j)
+        for (int j = 0; j < surface.refs.declared_size; ++j)
         {
             if (getLine(in))
             {
@@ -2401,8 +2402,17 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
     size_t found = 0;
 
     // must be a polygon with at least 3 sides
-    if (size < 3 || !surface.isPolygon())
+    if (!surface.isPolygon())
         return;
+    else if (size < 3)
+    {
+        if (m_invalid_ref_count)
+        {
+            warning(surface.refs.line_number) << "invalid ref count" << std::endl;
+            showLine(in, surface.refs.line_pos);
+        }
+        return;
+    }
 
     const size_t vertices = object.vertices.size();
     if (surface.refs[0].index >= vertices || surface.refs[1].index >= vertices)
