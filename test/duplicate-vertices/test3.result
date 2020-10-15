@@ -1,0 +1,7 @@
+test3.acc:11 warning: duplicate verticies
+0 0 0 0 0 1
+^
+test3.acc:8 note: first instance
+0 0 0 0 0 1
+^
+1 warning
