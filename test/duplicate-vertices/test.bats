@@ -43,3 +43,19 @@
   [ "$(cat test2.output.ac)" = "$(cat test2.result.ac)" ]
   rm test2.output.ac
 }
+
+################################################################################
+
+@test "test3.1" {
+  run acclint test3.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test3.result)" ]
+}
+
+@test "test3.2" {
+  run acclint -Wno-warnings test3.acc -o test3.output.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat test3.output.acc)" = "$(cat test3.result.acc)" ]
+  rm test3.output.acc
+}

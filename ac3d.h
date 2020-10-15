@@ -543,6 +543,20 @@ private:
         Point3 normal = {0.0, 0.0, 0.0};
         bool has_normal = false;
         bool used = false;
+
+        bool operator == (const Vertex &other) const
+        {
+            if (vertex != other.vertex)
+                return false;
+
+            if (has_normal != other.has_normal)
+                return false;
+
+            if (has_normal && normal != other.normal)
+                return false;
+
+            return true;
+        }
     };
 
     struct Location : public LineInfo
@@ -708,7 +722,6 @@ private:
     bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);
     void convertObjects(std::vector<Object> &objects);
     void convertObject(Object &object);
-    bool sameVertex(const Vertex &vertex1, const Vertex &vertex2) const;
     bool sameSurface(const Surface &surface1, const Surface &surface2, const Object &object) const;
     bool sameMaterial(const Material &material1, const Material &material2) const;
     bool sameMaterialParameters(const Material &material1, const Material &material2) const;

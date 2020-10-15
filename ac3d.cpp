@@ -583,17 +583,6 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
     return true;
 }
 
-bool AC3D::sameVertex(const Vertex &vertex1, const Vertex &vertex2) const
-{
-    if (vertex1.vertex != vertex2.vertex)
-        return false;
-
-    if (vertex1.has_normal && vertex1.normal != vertex2.normal)
-        return false;
-
-    return true;
-}
-
 void AC3D::writeSurface(std::ostream &out, const Surface &surface) const
 {
     out << "SURF 0x" << std::hex << surface.flags << std::dec << newline(m_crlf);
@@ -1978,7 +1967,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     for (size_t l = 0; l < 3; ++l)
                     {
                         if (!triangles[i].duplicate && !triangles[i].degenerate && !triangles[j].degenerate &&
-                            sameVertex(object.vertices[triangles[i].vertices[k]], object.vertices[triangles[j].vertices[l]]))
+                            object.vertices[triangles[i].vertices[k]] == object.vertices[triangles[j].vertices[l]])
                         {
                             duplicates++;
                         }
@@ -2010,13 +1999,14 @@ bool AC3D::sameSurface(const Surface &surface1, const Surface &surface2, const O
 
     for (size_t i = 0; i < surface1.refs.size(); ++i)
     {
+        const size_t index1 = surface1.refs[i].index;
+        const size_t index2 = surface2.refs[i].index;
+
         // skip invalid vertex
-        if (surface1.refs[i].index >= object.vertices.size() ||
-            surface2.refs[i].index >= object.vertices.size())
+        if (index1 >= object.vertices.size() || index2 >= object.vertices.size())
             continue;
 
-        if (!(surface1.refs[i].index == surface2.refs[i].index ||
-            sameVertex(object.vertices[surface1.refs[i].index], object.vertices[surface2.refs[i].index])))
+        if (!(index1 == index2 || object.vertices[index1] == object.vertices[index2]))
             return false;
     }
 
@@ -2304,8 +2294,7 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
                 continue;
 
             if (surface.refs[i].index == surface.refs[j].index ||
-                sameVertex(object.vertices[surface.refs[i].index],
-                           object.vertices[surface.refs[j].index]))
+                object.vertices[surface.refs[i].index] == object.vertices[surface.refs[j].index])
             {
                 // triangle strips and lines can have duplicates
                 if (surface.isPolygon() || surface.isClosedLine())
@@ -2372,7 +2361,7 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 
         for (size_t j = i + 1; j < object.vertices.size(); j++)
         {
-            if (sameVertex(object.vertices[i], object.vertices[j]))
+            if (object.vertices[i] == object.vertices[j])
             {
                 duplicates[j] = true;
 
