@@ -667,6 +667,7 @@ private:
                 return false;
             return true;
         }
+        bool sameSurface(size_t index1, size_t index2) const;
     };
 
     std::string     m_file;
@@ -761,7 +762,6 @@ private:
     bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);
     void convertObjects(std::vector<Object> &objects);
     void convertObject(Object &object);
-    bool sameSurface(const Surface &surface1, const Surface &surface2, const Object &object) const;
     bool sameMaterial(const Material &material1, const Material &material2) const;
     bool sameMaterialParameters(const Material &material1, const Material &material2) const;
     bool setMaterialUsed(size_t index);

@@ -1989,21 +1989,24 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     return true;
 }
 
-bool AC3D::sameSurface(const Surface &surface1, const Surface &surface2, const Object &object) const
+bool AC3D::Object::sameSurface(size_t index1, size_t index2) const
 {
+    const Surface &surface1 = surfaces[index1];
+    const Surface &surface2 = surfaces[index2];
+
     if (surface1.refs.size() != surface2.refs.size() || surface1.refs.empty())
         return false;
 
     for (size_t i = 0; i < surface1.refs.size(); ++i)
     {
-        const size_t index1 = surface1.refs[i].index;
-        const size_t index2 = surface2.refs[i].index;
+        const size_t vertex1 = surface1.refs[i].index;
+        const size_t vertex2 = surface2.refs[i].index;
 
         // skip invalid vertex
-        if (index1 >= object.vertices.size() || index2 >= object.vertices.size())
+        if (vertex1 >= vertices.size() || vertex2 >= vertices.size())
             continue;
 
-        if (!(index1 == index2 || object.vertices[index1] == object.vertices[index2]))
+        if (!(vertex1 == vertex2 || vertices[vertex1] == vertices[vertex2]))
             return false;
     }
 
@@ -2253,7 +2256,7 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
         {
-            if (sameSurface(object.surfaces[i], object.surfaces[j], object))
+            if (object.sameSurface(i, j))
             {
                 warning(object.surfaces[j].line_number) << "duplicate surfaces" << std::endl;
                 showLine(in, object.surfaces[j].line_pos);
@@ -2939,7 +2942,7 @@ bool AC3D::cleanSurfaces(Object &object)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
         {
-            if (sameSurface(object.surfaces[i], object.surfaces[j], object))
+            if (object.sameSurface(i, j))
             {
                 object.surfaces.erase(object.surfaces.begin() + j);
                 --j;
