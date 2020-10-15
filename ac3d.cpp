@@ -2404,7 +2404,8 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
     // must be a polygon with at least 3 sides
     if (!surface.isPolygon())
         return;
-    else if (size < 3)
+
+    if (size < 3)
     {
         if (m_invalid_ref_count)
         {
