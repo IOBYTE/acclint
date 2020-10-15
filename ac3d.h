@@ -27,6 +27,7 @@
 #include <sstream>
 #include <array>
 #include <vector>
+#include <cmath>
 
 class AC3D
 {
@@ -379,22 +380,60 @@ private:
         }
     };
 
-    using Point2 = std::array<double,2>;
+    class Point2 : public std::array<double,2>
+    {
+        double x() const { return (*this)[0]; }
+        double y() const { return (*this)[1]; }
+        void x(double value) { (*this)[0] = value; }
+        void y(double value) { (*this)[1] = value; }
+        Point2 operator - (const Point2 &other) const
+        {
+            return Point2 { x() - other.x(), y() - other.y() };
+        }
+        double dot(const Point2 &other) const
+        {
+            return x() * other.x() + y() * other.y();
+        }
+        double cross(const Point2 &other)
+        {
+            return (x() * other.y()) - (y() * other.x());
+        }
+    };
 
     class Point3 : public std::array<double,3>
     {
     public:
+        double x() const { return (*this)[0]; }
+        double y() const { return (*this)[1]; }
+        double z() const { return (*this)[2]; }
+        void x(double value) { (*this)[0] = value; }
+        void y(double value) { (*this)[1] = value; }
+        void z(double value) { (*this)[2] = value; }
         Point3 operator - (const Point3 &other) const
         {
-            return Point3 { (*this)[0] - other[0],
-                            (*this)[1] - other[1],
-                            (*this)[2] - other[2] };
+            return Point3 { x() - other.x(),
+                            y() - other.y(),
+                            z() - other.z() };
         }
         Point3 cross(const Point3 &other) const
         {
-            return Point3 { (*this)[1] * other[2] - (*this)[2] * other[1],
-                            (*this)[2] * other[0] - (*this)[0] * other[2],
-                            (*this)[0] * other[1] - (*this)[1] * other[0] };
+            return Point3 { y() * other.z() - z() * other.y(),
+                            z() * other.x() - x() * other.z(),
+                            x() * other.y() - y() * other.x() };
+        }
+        double length() const
+        {
+            return std::sqrt(x() * x() + y() * y() + z() * z());
+        }
+        void normalize()
+        {
+            const double l = length();
+            if (l != 0.0)
+            {
+                x(x() / l);
+                y(y() / l);
+                z(z() / l);
+            }
         }
     };
 

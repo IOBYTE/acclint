@@ -20,7 +20,6 @@
 
 #include "ac3d.h"
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <filesystem>
 
@@ -1707,9 +1706,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                                     if (m_invalid_normal)
                                     {
-                                        double length = std::sqrt((vertex.normal[0] * vertex.normal[0]) +
-                                                                  (vertex.normal[1] * vertex.normal[1]) +
-                                                                  (vertex.normal[2] * vertex.normal[2]));
+                                        double length = vertex.normal.length();
                                         // assume truncated float values
                                         constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 10;
 
@@ -2377,12 +2374,10 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 bool AC3D::collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3)
 {
     constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon());
-    Point3 v1{ p2 - p1 };
-    Point3 v2{ p3 - p1 };
-    Point3 v3 = v1.cross(v2);
-    return std::fabs(v3[0]) < epsilon &&
-           std::fabs(v3[1]) < epsilon &&
-           std::fabs(v3[2]) < epsilon;
+    Point3 v = Point3{p2 - p1}.cross(p3 - p1);
+    return std::fabs(v.x()) < epsilon &&
+           std::fabs(v.y()) < epsilon &&
+           std::fabs(v.z()) < epsilon;
 }
 
 void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface)
@@ -2449,51 +2444,43 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
     if (surface.refs.size() > 3)
     {
         size_t next = 0;
-        Point3 v0;
-        Point3 v1;
-        Point3 v2;
+        Point3 p0;
+        Point3 p1;
+        Point3 p2;
 
-        if (!object.getSurfaceVertex(surface, next++, v0))
+        if (!object.getSurfaceVertex(surface, next++, p0))
             return;
 
-        if (!object.getSurfaceVertex(surface, next++, v1))
-            return;
-
-        // find the next unique vertex
-        while (v0 == v1)
-        {
-            if (!object.getSurfaceVertex(surface, next++, v1))
-                return;
-        }
-
-        if (!object.getSurfaceVertex(surface, next++, v2))
+        if (!object.getSurfaceVertex(surface, next++, p1))
             return;
 
         // find the next unique vertex
-        while (v1 == v2 || collinear(v0, v1, v2))
+        while (p0 == p1)
         {
-            if (!object.getSurfaceVertex(surface, next++, v2))
+            if (!object.getSurfaceVertex(surface, next++, p1))
                 return;
         }
 
-        double a1 = v1[0] - v0[0];
-        double b1 = v1[1] - v0[1];
-        double c1 = v1[2] - v0[2];
-        double a2 = v2[0] - v0[0];
-        double b2 = v2[1] - v0[1];
-        double c2 = v2[2] - v0[2];
-        double a = b1 * c2 - b2 * c1;
-        double b = a2 * c1 - a1 * c2;
-        double c = a1 * b2 - b1 * a2;
-        double d = -a * v1[0] - b * v1[1] - c * v1[2];
+        if (!object.getSurfaceVertex(surface, next++, p2))
+            return;
+
+        // find the next unique vertex
+        while (p1 == p2 || collinear(p0, p1, p2))
+        {
+            if (!object.getSurfaceVertex(surface, next++, p2))
+                return;
+        }
+
+        Point3 v = Point3{p1 - p0}.cross(p2 - p0);
+        double d = -v.x() * p1.x() - v.y() * p1.y() - v.z() * p1.z();
 
         for (size_t i = next; i < surface.refs.size(); ++i)
         {
-            Point3 v;
-            if (!object.getSurfaceVertex(surface, i, v))
+            Point3 p;
+            if (!object.getSurfaceVertex(surface, i, p))
                 return;
 
-            double e = a * v[0] + b * v[1] + c * v[2] + d;
+            double e = v.x() * p.x() + v.y() * p.y() + v.z() * p.z() + d;
             constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 1000;
             if (std::fabs(e) > epsilon)
             {
