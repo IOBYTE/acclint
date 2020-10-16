@@ -23,8 +23,6 @@ This program is functional but has room for improvements.
 
 5. More checks will be added in a future release.
 
-   concave polygons
-   non coplanar polygons
    self intersecting polygons
 
 6. Only a single file can be checked.  Multiple files could be checked at once
@@ -34,7 +32,7 @@ This program is functional but has room for improvements.
 
 7. Major refactoring and performance improvements once feature complete.
 
-8. Add tests.
+8. Add more tests.
 
 9. I'm conflicted about the name acclint. This name makes sense for TORCS and Speed
    Dreams content developers because they are accustomed to using both .ac and .acc
