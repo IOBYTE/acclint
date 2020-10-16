@@ -1,0 +1,7 @@
+test1.ac:14 warning: surface not convex
+SURF 0x10
+^
+test1.ac:17 note: concave vertex
+3 0 0
+^
+1 warning
