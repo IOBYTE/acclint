@@ -572,6 +572,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkDuplicateSurfaceVertices(in, object, surface);
         checkCollinearSurfaceVertices(in, object, surface);
         checkSurfaceCoplanar(in, object, surface);
+        checkSurfacePolygonType(in, object, surface);
     }
     else
     {
@@ -2443,8 +2444,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
     if (!(surface.isPolygon() || surface.isClosedLine()))
         return;
 
-    // must have 4 or more vertices
-    if (surface.refs.size() > 3)
+    if (surface.refs.size() > 2)
     {
         size_t next = 0;
         Point3 p0;
@@ -2475,6 +2475,12 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
         }
 
         Point3 v = Point3{p1 - p0}.cross(p2 - p0);
+        surface.normal = v;
+
+        // must have 4 or more vertices
+        if (surface.refs.size() < 4)
+            return;
+
         double d = -v.x() * p1.x() - v.y() * p1.y() - v.z() * p1.z();
 
         for (size_t i = next; i < surface.refs.size(); ++i)
@@ -2490,9 +2496,99 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
                 surface.coplanar = false;
 
                 if (m_surface_not_coplanar)
+                {
                     warning(surface.line_number) << "surface not coplanar" << std::endl;
+                    showLine(in, surface.line_pos);
+                }
 
                 break;
+            }
+        }
+    }
+}
+
+bool AC3D::ccw(Point2 p1, Point2 p2, Point2 p3)
+{
+    double val = (p2.y() - p1.y()) * (p3.x() - p2.x()) -
+                 (p2.x() - p1.x()) * (p3.y() - p2.y());
+
+    return (val < 0.0);
+}
+
+void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface)
+{
+    // only check coplanar polygon
+    if (!(surface.isPolygon() && surface.coplanar))
+        return;
+
+    // must have 3 or more vertices
+    if (surface.refs.size() > 2)
+    {
+        size_t next = 0;
+        Point2 p0;
+        Point2 p1;
+        Point2 p2;
+
+        // project 3d coordinates onto 2d plane
+        Object::Plane plane = object.getPlane(surface.normal);
+
+        if (!object.getSurfaceVertex(surface, next++, p0, plane))
+            return;
+
+        if (!object.getSurfaceVertex(surface, next++, p1, plane))
+            return;
+
+        // find the next unique non-collnear vertex
+        while (p0 == p1 || surface.refs[next - 1].collinear)
+        {
+            if (!object.getSurfaceVertex(surface, next++, p1, plane))
+                return;
+        }
+
+        if (!object.getSurfaceVertex(surface, next++, p2, plane))
+            return;
+
+        // find the next unique non-collnear vertex
+        while (p1 == p2 || surface.refs[next - 1].collinear)
+        {
+            if (!object.getSurfaceVertex(surface, next++, p2, plane))
+                return;
+        }
+
+        // FIXME: this will be wrong when starting on a convex vertex
+        surface.counterclockwise = ccw(p0, p1, p2);
+
+        if (!surface.counterclockwise && m_surface_not_ccw)
+        {
+            warning(surface.line_number) << "surface not counterclockwise" << std::endl;
+            showLine(in, surface.line_pos);
+        }
+
+        size_t size = surface.refs.size();
+        while (next < (size + 2))
+        {
+            p0 = p1;
+            p1 = p2;
+            if (!object.getSurfaceVertex(surface, next++ % size, p2, plane))
+                return;
+
+            while (p1 == p2 || surface.refs[(next - 1) % size].collinear)
+            {
+                if (!object.getSurfaceVertex(surface, next++ % size, p2, plane))
+                    return;
+            }
+
+            if (ccw(p0, p1, p2) != surface.counterclockwise && !surface.concave)
+            {
+                surface.concave = true;
+
+                if (m_surface_not_convex)
+                {
+                    warning(surface.line_number) << "surface not convex" << std::endl;
+                    showLine(in, surface.line_pos);
+                    note(surface.refs[(next - 2) % size].line_number) << "concave vertex"  << std::endl;
+                    showLine(in, surface.refs[(next - 2) % size].line_pos);
+                }
             }
         }
     }

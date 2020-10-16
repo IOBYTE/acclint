@@ -202,6 +202,22 @@ public:
     {
         return m_surface_not_coplanar;
     }
+    void surfaceNotCCW(bool value)
+    {
+        m_surface_not_ccw = value;
+    }
+    bool surfaceNotCCW() const
+    {
+        return m_surface_not_ccw;
+    }
+    void surfaceNotConvex(bool value)
+    {
+        m_surface_not_convex = value;
+    }
+    bool surfaceNotConvex() const
+    {
+        return m_surface_not_convex;
+    }
     void floatingPoint(bool value)
     {
         m_floating_point = value;
@@ -382,6 +398,7 @@ private:
 
     class Point2 : public std::array<double,2>
     {
+    public:
         double x() const { return (*this)[0]; }
         double y() const { return (*this)[1]; }
         void x(double value) { (*this)[0] = value; }
@@ -518,6 +535,9 @@ private:
         std::vector<size_t> mat;
         Refs refs;
         bool coplanar = true; // only for Polygon and ClosedLine
+        Point3 normal = { 0.0, 0.0, 0.0 }; // only for Polygon
+        bool counterclockwise = true; // only for Polygon
+        bool concave = false; // only for Polygon
 
         enum : unsigned int
         {
@@ -645,6 +665,8 @@ private:
         std::vector<Surface> surfaces;
         std::vector<Object> kids;
 
+        enum Plane { xy, xz, yz };
+
         bool empty() const
         {
             return (type == "poly" && vertices.empty() && surfaces.empty() && kids.empty());
@@ -664,6 +686,47 @@ private:
             if (!surface.getIndex(ref, index))
                 return false;
             if (!getVertex(index, vertex))
+                return false;
+            return true;
+        }
+        Plane getPlane(const Point3 &normal) const
+        {
+            if (normal.x() < normal.z() && normal.y() < normal.z())
+                return xy;
+            if (normal.x() < normal.y() && normal.z() < normal.y())
+                return xz;
+            return yz;
+        }
+        bool getVertex(size_t index, Point2 &vertex, Plane plane) const
+        {
+            if (index >= vertices.size())
+                return false;
+            switch (plane)
+            {
+            case xy:
+                vertex.x(vertices[index].vertex.x());
+                vertex.y(vertices[index].vertex.y());
+                break;
+            case xz:
+                vertex.x(vertices[index].vertex.x());
+                vertex.y(vertices[index].vertex.z());
+                break;
+            case yz:
+                vertex.x(vertices[index].vertex.y());
+                vertex.y(vertices[index].vertex.z());
+                break;
+            }
+            return true;
+        }
+        bool getSurfaceVertex(const Surface &surface,
+                              size_t ref,
+                              Point2 &vertex,
+                              Plane plane) const
+        {
+            size_t index;
+            if (!surface.getIndex(ref, index))
+                return false;
+            if (!getVertex(index, vertex, plane))
                 return false;
             return true;
         }
@@ -698,6 +761,8 @@ private:
     bool            m_duplicate_surface_vertices = true;
     bool            m_collinear_surface_vertices = true;
     bool            m_surface_not_coplanar = true;
+    bool            m_surface_not_ccw = true;
+    bool            m_surface_not_convex = true;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
     bool            m_empty_object = true;
@@ -754,6 +819,7 @@ private:
     void checkDuplicateSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
     void checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
+    void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
     bool cleanObjects(std::vector<Object> &objects);
     bool cleanVertices(std::vector<Object> &objects);
     bool cleanVertices(Object &object);
@@ -768,6 +834,7 @@ private:
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
+    static bool ccw(AC3D::Point2 p1, AC3D::Point2 p2, AC3D::Point2 p3);
 };
 
 #endif

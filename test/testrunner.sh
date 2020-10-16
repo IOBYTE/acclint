@@ -25,6 +25,21 @@ echo "${PWD##*/}"
 bats test.bats
 cd ..
 
+cd surface-not-coplanar
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
+cd surface-not-ccw
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
+cd surface-not-convex
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
 cd trailing-text
 echo "${PWD##*/}"
 bats test.bats
