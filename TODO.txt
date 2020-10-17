@@ -12,6 +12,11 @@ This program is functional but has room for improvements.
    split non coplanar polygons into multiple surfaces
    split self intersecting polygons into multiple surfaces
 
+   convert polygons that are two sided because they are defined
+   with a clockwise vertex order to be single sided with a counterclockwise order
+
+   add the ability to change, delete, or extract specific objects or groups of objects
+
 4. It is not possible to convert a .ac file to .acc.
 
    acclint file.ac -o file.acc
