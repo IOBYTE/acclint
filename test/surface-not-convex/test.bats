@@ -19,3 +19,11 @@
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }
+
+################################################################################
+
+@test "test2" {
+  run acclint test2.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test2.result)" ]
+}

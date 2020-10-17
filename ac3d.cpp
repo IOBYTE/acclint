@@ -2477,6 +2477,8 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
         Point3 v = Point3{p1 - p0}.cross(p2 - p0);
         surface.normal = v;
 
+        surface.normal.normalize();
+
         // must have 4 or more vertices
         if (surface.refs.size() < 4)
             return;

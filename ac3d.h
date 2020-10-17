@@ -691,10 +691,15 @@ private:
         }
         Plane getPlane(const Point3 &normal) const
         {
-            if (normal.x() < normal.z() && normal.y() < normal.z())
+            // z largest so use xy plane
+            if (std::fabs(normal.x()) < std::fabs(normal.z()) && std::fabs(normal.y()) < std::fabs(normal.z()))
                 return xy;
-            if (normal.x() < normal.y() && normal.z() < normal.y())
+
+            // y largest so use xz plane
+            if (std::fabs(normal.x()) < std::fabs(normal.y()) && std::fabs(normal.z()) < std::fabs(normal.y()))
                 return xz;
+
+            // use yz plane
             return yz;
         }
         bool getVertex(size_t index, Point2 &vertex, Plane plane) const
