@@ -35,6 +35,11 @@ make
 
 The resulting binary is ```acclint``` inside the build directory.
 
+You can install ```acclint``` using GNU Make:
+```
+sudo make install
+```
+
 Example
 -------
 
@@ -151,18 +156,29 @@ refs 3
 kids 0
 ```
 
+Running regression tests
+--------
 
+Running the regression tests on linux requires [Bats](https://github.com/bats-core/bats-core) (Bash Automated Testing System).
 
+Change the current directory from the installed directory to the ```test``` directory and run the file ```testrunner.sh```.
 
+acclint must be installed before you can run the tests.
 
+```
+cd test
+bash testrunner.sh
+```
 
+Feedback
+--------
 
+This software is in early development and is far from feature complete. There is a todo list in ```TODO.txt```.
 
+Please let me know if you have problems with the software or want to see improvements using [Issues](https://github.com/IOBYTE/acclint/issues).
 
+Copyright
+--------
 
-
-
-
-
-
+© 2020 Robert Reif
 
