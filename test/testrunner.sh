@@ -25,6 +25,11 @@ echo "${PWD##*/}"
 bats test.bats
 cd ..
 
+cd surface-self-intersecting
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
 cd surface-not-ccw
 echo "${PWD##*/}"
 bats test.bats

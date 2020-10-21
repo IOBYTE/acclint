@@ -573,6 +573,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkCollinearSurfaceVertices(in, object, surface);
         checkSurfaceCoplanar(in, object, surface);
         checkSurfacePolygonType(in, object, surface);
+        checkSurfaceSelfIntersecting(in, object, surface);
     }
     else
     {
@@ -2590,6 +2591,165 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
                     showLine(in, surface.line_pos);
                     note(surface.refs[(next - 2) % size].line_number) << "concave vertex"  << std::endl;
                     showLine(in, surface.refs[(next - 2) % size].line_pos);
+                }
+            }
+        }
+    }
+}
+
+// from http://geomalgorithms.com/a07-_distance.html
+double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3)
+{
+    Point3  u = p1 - p0;
+    Point3  v = p3 - p2;
+    Point3  w = p0 - p2;
+    double  a = u.dot(u);         // always >= 0
+    double  b = u.dot(v);
+    double  c = v.dot(v);         // always >= 0
+    double  d = u.dot(w);
+    double  e = v.dot(w);
+    double  D = a*c - b*b;        // always >= 0
+    double  sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
+    double  tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
+    constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
+
+    // compute the line parameters of the two closest points
+    if (D < SMALL_NUM) { // the lines are almost parallel
+        sN = 0.0;        // force using point P0 on segment S1
+        sD = 1.0;        // to prevent possible division by 0.0 later
+        tN = e;
+        tD = c;
+    }
+    else {               // get the closest points on the infinite lines
+        sN = (b*e - c*d);
+        tN = (a*e - b*d);
+        if (sN < 0.0) {  // sc < 0 => the s=0 edge is visible
+            sN = 0.0;
+            tN = e;
+            tD = c;
+        }
+        else if (sN > sD) {  // sc > 1  => the s=1 edge is visible
+            sN = sD;
+            tN = e + b;
+            tD = c;
+        }
+    }
+
+    if (tN < 0.0) {      // tc < 0 => the t=0 edge is visible
+        tN = 0.0;
+        // recompute sc for this edge
+        if (-d < 0.0)
+            sN = 0.0;
+        else if (-d > a)
+            sN = sD;
+        else {
+            sN = -d;
+            sD = a;
+        }
+    }
+    else if (tN > tD) {  // tc > 1  => the t=1 edge is visible
+        tN = tD;
+        // recompute sc for this edge
+        if ((-d + b) < 0.0)
+            sN = 0;
+        else if ((-d + b) > a)
+            sN = sD;
+        else {
+            sN = (-d +  b);
+            sD = a;
+        }
+    }
+    // finally do the division to get sc and tc
+    sc = (abs(sN) < SMALL_NUM ? 0.0 : sN / sD);
+    tc = (abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
+
+    // get the difference of the two closest points
+    Point3  dP = w + (u * sc) - (v * tc);  // =  S1(sc) - S2(tc)
+
+    return dP.length();   // return the closest distance
+}
+
+void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface)
+{
+    // only check coplanar polygon
+    if (!(surface.isPolygon() && surface.coplanar))
+        return;
+
+    if (surface.refs.size() > 3)
+    {
+        const size_t size = surface.refs.size();
+        const size_t count = size - 2;
+
+        for (size_t j = 0; j < count; j++)
+        {
+            size_t next = j;
+            size_t end = j + size - 1;
+
+            Point3 p0;
+            Point3 p1;
+            Point3 p2;
+            Point3 p3;
+            Point3 p4;
+
+            // get first vertex of first line segment
+            if (!object.getSurfaceVertex(surface, next++, p0))
+                return;
+
+            // find the second vertex of the first line segment
+            if (!object.getSurfaceVertex(surface, next++, p1))
+                return;
+
+            // find the vertex after the first line segment
+            if (!object.getSurfaceVertex(surface, next, p2))
+                return;
+
+            // skip duplicate and collinear vertices
+            while (p0 == p1 || p1 == p2 || surface.refs[next - 1].collinear)
+            {
+                end--;
+                next++;
+                p1 = p2;
+                if (!object.getSurfaceVertex(surface, next, p2))
+                    return;
+            }
+
+            while (next < end)
+            {
+                // find the first vertex of the second line segment
+                if (!object.getSurfaceVertex(surface, next++ % size, p2))
+                    return;
+
+                // find the second vertex of the second line segment
+                if (!object.getSurfaceVertex(surface, next % size, p3))
+                    return;
+
+                // find the vertex after the second line segment
+                if (!object.getSurfaceVertex(surface, (next + 1) % size, p4))
+                    return;
+
+                // skip duplicate and collinear vertices
+                while (p2 == p3 || p3 == p4 || surface.refs[next % size].collinear)
+                {
+                    end--;
+                    next++;
+                    p3 = p4;
+                    if (!object.getSurfaceVertex(surface, next % size, p4))
+                        return;
+                }
+
+                if (next <= end)
+                {
+                    double distance = closest(p0, p1, p2, p3);
+
+                    if (distance < static_cast<double>(std::numeric_limits<double>::epsilon()))
+                    {
+                        if (m_surface_self_intersecting)
+                        {
+                            warning(surface.line_number) << "surface self intersecting" << std::endl;
+                            showLine(in, surface.line_pos);
+                        }
+                        return;
+                    }
                 }
             }
         }

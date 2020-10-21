@@ -194,6 +194,14 @@ public:
     {
         return m_multiple_polygon_surface;
     }
+    void surfaceSelfIntersecting(bool value)
+    {
+        m_surface_self_intersecting = value;
+    }
+    bool surfaceSelfIntersecting() const
+    {
+        return m_surface_self_intersecting;
+    }
     void surfaceNotCoplanar(bool value)
     {
         m_surface_not_coplanar = value;
@@ -426,11 +434,25 @@ private:
         void x(double value) { (*this)[0] = value; }
         void y(double value) { (*this)[1] = value; }
         void z(double value) { (*this)[2] = value; }
+        Point3 operator + (const Point3 &other) const
+        {
+            return Point3 { x() + other.x(),
+                            y() + other.y(),
+                            z() + other.z() };
+        }
         Point3 operator - (const Point3 &other) const
         {
             return Point3 { x() - other.x(),
                             y() - other.y(),
                             z() - other.z() };
+        }
+        Point3 operator * (double value) const
+        {
+            return Point3 { x() * value, y() * value, z() * value };
+        }
+        double dot(const Point3 &other)
+        {
+            return x() * other.x() + y() * other.y() + z() * other.z();
         }
         Point3 cross(const Point3 &other) const
         {
@@ -765,6 +787,7 @@ private:
     bool            m_duplicate_surfaces = true;
     bool            m_duplicate_surface_vertices = true;
     bool            m_collinear_surface_vertices = true;
+    bool            m_surface_self_intersecting = true;
     bool            m_surface_not_coplanar = true;
     bool            m_surface_not_ccw = true;
     bool            m_surface_not_convex = true;
@@ -825,6 +848,7 @@ private:
     void checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
+    void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface);
     bool cleanObjects(std::vector<Object> &objects);
     bool cleanVertices(std::vector<Object> &objects);
     bool cleanVertices(Object &object);
@@ -840,6 +864,7 @@ private:
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
     static bool ccw(AC3D::Point2 p1, AC3D::Point2 p2, AC3D::Point2 p3);
+    static double closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3);
 };
 
 #endif
