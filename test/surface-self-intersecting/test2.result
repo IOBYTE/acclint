@@ -1,0 +1,4 @@
+test2.ac:13 warning: surface self intersecting
+SURF 0x10
+^
+1 warning
