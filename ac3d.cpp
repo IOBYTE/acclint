@@ -2559,14 +2559,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
         }
 
         // FIXME: this will be wrong when starting on a convex vertex
-        surface.counterclockwise = ccw(p0, p1, p2);
-
-        if (!surface.counterclockwise && m_surface_not_ccw)
-        {
-            warning(surface.line_number) << "surface not counterclockwise" << std::endl;
-            showLine(in, surface.line_pos);
-        }
-
+        bool counterclockwise = ccw(p0, p1, p2);
         size_t size = surface.refs.size();
         while (next < (size + 2))
         {
@@ -2581,7 +2574,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
                     return;
             }
 
-            if (ccw(p0, p1, p2) != surface.counterclockwise && !surface.concave)
+            if (ccw(p0, p1, p2) != counterclockwise && !surface.concave)
             {
                 surface.concave = true;
 

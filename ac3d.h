@@ -210,14 +210,6 @@ public:
     {
         return m_surface_not_coplanar;
     }
-    void surfaceNotCCW(bool value)
-    {
-        m_surface_not_ccw = value;
-    }
-    bool surfaceNotCCW() const
-    {
-        return m_surface_not_ccw;
-    }
     void surfaceNotConvex(bool value)
     {
         m_surface_not_convex = value;
@@ -558,7 +550,6 @@ private:
         Refs refs;
         bool coplanar = true; // only for Polygon and ClosedLine
         Point3 normal = { 0.0, 0.0, 0.0 }; // only for Polygon
-        bool counterclockwise = true; // only for Polygon
         bool concave = false; // only for Polygon
 
         enum : unsigned int
@@ -789,7 +780,6 @@ private:
     bool            m_collinear_surface_vertices = true;
     bool            m_surface_self_intersecting = true;
     bool            m_surface_not_coplanar = true;
-    bool            m_surface_not_ccw = true;
     bool            m_surface_not_convex = true;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;

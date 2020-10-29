@@ -30,11 +30,6 @@ echo "${PWD##*/}"
 bats test.bats
 cd ..
 
-cd surface-not-ccw
-echo "${PWD##*/}"
-bats test.bats
-cd ..
-
 cd surface-not-convex
 echo "${PWD##*/}"
 bats test.bats

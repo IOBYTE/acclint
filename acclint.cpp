@@ -38,7 +38,6 @@ void usage()
     std::cerr << "  -Wno-collinear-surface-vertices Don't show collinear surface vertices warnings." << std::endl;
     std::cerr << "  -Wno-surface-self-intersecting  Don't show surface self intersecting warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-coplanar       Don't show surface not coplanar warnings." << std::endl;
-    std::cerr << "  -Wno-surface-not-ccw            Don't show surface not counterclockwise warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-convex         Don't show surface not convex warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface   Don't show multiple polygon surface warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture            Don't show missing texture warnings." << std::endl;
@@ -106,7 +105,6 @@ int main(int argc, char *argv[])
     bool collinear_surface_vertices = true;
     bool surface_self_intersecting = true;
     bool surface_not_coplanar = true;
-    bool surface_not_ccw = true;
     bool surface_not_convex = true;
     bool multiple_polygon_surface = true;
     bool floating_point = true;
@@ -182,7 +180,6 @@ int main(int argc, char *argv[])
             collinear_surface_vertices = false;
             surface_not_coplanar = false;
             surface_self_intersecting = false;
-            surface_not_ccw = false;
             surface_not_convex = false;
             multiple_polygon_surface = false;
             floating_point = false;
@@ -254,10 +251,6 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-surface-not-coplanar" || arg == "-Wsurface-not-coplanar")
         {
             surface_not_coplanar = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-not-ccw" || arg == "-Wsurface-not-ccw")
-        {
-            surface_not_ccw = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-surface-not-convex" || arg == "-Wsurface-not-convex")
         {
@@ -407,7 +400,6 @@ int main(int argc, char *argv[])
     ac3d.collinearSurfaceVertices(collinear_surface_vertices);
     ac3d.surfaceSelfIntersecting(surface_self_intersecting);
     ac3d.surfaceNotCoplanar(surface_not_coplanar);
-    ac3d.surfaceNotCCW(surface_not_ccw);
     ac3d.surfaceNotConvex(surface_not_convex);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
