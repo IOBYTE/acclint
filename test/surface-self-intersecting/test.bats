@@ -3,7 +3,7 @@
 ################################################################################
 
 @test "test1.1" {
-  run acclint -Wno-surface-not-ccw -Wno-surface-not-convex test1.ac
+  run acclint -Wno-surface-not-convex test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }
@@ -23,7 +23,7 @@
 ################################################################################
 
 @test "test2" {
-  run acclint -Wno-surface-not-ccw -Wno-surface-not-convex test2.ac
+  run acclint -Wno-surface-not-convex test2.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test2.result)" ]
 }
