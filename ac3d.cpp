@@ -2653,8 +2653,8 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
         }
     }
     // finally do the division to get sc and tc
-    sc = (abs(sN) < SMALL_NUM ? 0.0 : sN / sD);
-    tc = (abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
+    sc = (std::fabs(sN) < SMALL_NUM ? 0.0 : sN / sD);
+    tc = (std::fabs(tN) < SMALL_NUM ? 0.0 : tN / tD);
 
     // get the difference of the two closest points
     Point3  dP = w + (u * sc) - (v * tc);  // =  S1(sc) - S2(tc)
