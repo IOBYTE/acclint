@@ -40,7 +40,7 @@ You can install ```acclint``` using GNU Make:
 sudo make install
 ```
 
-Example
+Examples
 -------
 
 Here is an example of running ```acclint``` on the supplied file ```example.ac```.
@@ -155,7 +155,15 @@ refs 3
 3 0 0
 kids 0
 ```
-
+acclint can also convert .acc files to the .ac file format.
+```
+acclint file.acc -o file.ac
+```
+acclint can not convert .ac files to the .acc file format.
+```
+acclint file.ac -o file.acc
+Can't convert file.ac to file.acc! Use accc from TORCS or Speed Dreams.
+```
 Running regression tests
 --------
 
