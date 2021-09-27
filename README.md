@@ -188,5 +188,5 @@ Please let me know if you have problems with the software or want to see improve
 Copyright
 --------
 
-© 2020 Robert Reif
+© 2020-2021 Robert Reif
 
