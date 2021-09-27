@@ -1907,7 +1907,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
-        if ((object.surfaces[i].isTriangleStrip())
+        if (object.surfaces[i].isTriangleStrip())
         {
             for (size_t j = 0; j < object.surfaces[i].refs.size() - 2; ++j)
             {
