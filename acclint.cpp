@@ -65,7 +65,7 @@ void usage()
     std::cerr << "  -Wno-invalid-surface-type       Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-token              Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invalid vertex index errors." << std::endl;
-    std::cerr << "  --dump group|poly|surf          Dumps the hierarcy of OBJECT and SURF." << std::endl;
+    std::cerr << "  --dump group|poly|surf          Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
