@@ -32,8 +32,11 @@
 class AC3D
 {
 public:
+    enum class DumpType { group, poly, surf};
+
     bool read(const std::string &file);
     bool write(const std::string &file);
+    void dump(DumpType dump_type) const;
     size_t warnings() const
     {
         return m_warnings;
@@ -607,6 +610,7 @@ private:
             index = refs[ref].index;
             return true;
         }
+        void dump(DumpType dump_type, size_t count, size_t level) const;
     };
 
     struct Vertex : public LineInfo
@@ -749,6 +753,8 @@ private:
             return true;
         }
         bool sameSurface(size_t index1, size_t index2) const;
+
+        void dump(DumpType dump_type, size_t count, size_t level) const;
     };
 
     std::string     m_file;

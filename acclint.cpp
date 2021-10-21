@@ -65,6 +65,7 @@ void usage()
     std::cerr << "  -Wno-invalid-surface-type       Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-token              Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invalid vertex index errors." << std::endl;
+    std::cerr << "  --dump group|poly|surf          Dumps the hierarcy of OBJECT and SURF." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -125,6 +126,8 @@ int main(int argc, char *argv[])
     bool multiple_texrep = true;
     bool multiple_texture = true;
     std::vector<std::string> texture_paths;
+    bool dump = false;
+    AC3D::DumpType dump_type;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -360,6 +363,30 @@ int main(int argc, char *argv[])
         {
             invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "--dump")
+        {
+            i++;
+            if (i == argc)
+            {
+                std::cerr << "Missing dump type" << std::endl;
+                usage();
+                exit(EXIT_FAILURE);
+            }
+            arg = argv[i];
+            if (arg == "group")
+                dump_type = AC3D::DumpType::group;
+            else if (arg == "poly")
+                dump_type = AC3D::DumpType::poly;
+            else if(arg == "surf")
+                dump_type = AC3D::DumpType::surf;
+            else
+            {
+                std::cerr << "Invalid dump type: " << arg << std::endl;
+                usage();
+                exit(EXIT_FAILURE);
+            }
+            dump = true;
+        }
         else if (arg[0] != '-')
         {
             if (in_file.empty())
@@ -461,6 +488,9 @@ int main(int argc, char *argv[])
 
         ac3d.write(out_file);
     }
+
+    if (dump)
+        ac3d.dump(dump_type);
 
     return 0;
 }

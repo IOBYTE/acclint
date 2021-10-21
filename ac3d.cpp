@@ -2015,6 +2015,62 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2) const
     return true;
 }
 
+void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
+{
+    std::string indent;
+
+    for (size_t i = 0; i < level; i++)
+        indent += "    ";
+
+    if (type == "world")
+    {
+        std::cout << indent << (count + 1) << " " << type;
+        std::cout << " " << kids.size() << " kid" << (kids.size() == 1 ? "" : "s") << std::endl;
+    }
+    else
+    {
+        if (type == "group")
+        {
+            std::cout << indent << (count + 1) << " " << type;
+
+            for (const auto& name : names)
+                std::cout << " " << name.name;
+
+            std::cout << " " << kids.size() << " kid" << (kids.size() == 1 ? "" : "s") << std::endl;
+        }
+        else if (type == "poly" && (dump_type == DumpType::poly || dump_type == DumpType::surf))
+        {
+            std::cout << indent << (count + 1) << " " << type;
+
+            for (const auto& name : names)
+                std::cout << " " << name.name;
+
+            std::cout << " " << surfaces.size() << " surface" << (surfaces.size() == 1 ? "" : "s") << std::endl;
+
+            if (dump_type == DumpType::surf)
+            {
+                for (size_t i = 0; i < surfaces.size(); i++)
+                {
+                    surfaces[i].dump(dump_type, i, level + 1);
+                }
+            }
+        }
+    }
+
+    for (size_t i = 0; i < kids.size(); i++)
+    {
+        kids[i].dump(dump_type, i, level + 1);
+    }
+}
+
+void AC3D::Surface::dump(DumpType dump_type, size_t count, size_t level) const
+{
+    for (size_t i = 0; i < level; i++)
+        std::cout << "    ";
+
+    std::cout << (count + 1) << " surface " << refs.size() << " ref" << (refs.size() == 1 ? "" : "s") << std::endl;
+}
+
 void AC3D::writeObject(std::ostream &out, const Object &object) const
 {
     out << "OBJECT " << object.type << newline(m_crlf);
@@ -3205,3 +3261,10 @@ bool AC3D::cleanSurfaces(Object &object)
     return cleaned;
 }
 
+void AC3D::dump(DumpType dump_type) const
+{
+    for (size_t i = 0; i < m_objects.size(); i++)
+    {
+        m_objects[i].dump(dump_type, i, 0);
+    }
+}

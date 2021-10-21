@@ -164,6 +164,14 @@ acclint can not convert .ac files to the .acc file format.
 acclint file.ac -o file.acc
 Can't convert file.ac to file.acc! Use accc from TORCS or Speed Dreams.
 ```
+acclint can also dump the object hiearcy of a file.
+```
+acclint  --dump surf -Wno-warnings example.ac
+1 world 1 kid
+    1 poly "square" 2 surfaces
+        1 surface 3 refs
+        2 surface 3 refs
+```
 Running regression tests
 --------
 
