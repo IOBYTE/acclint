@@ -1,0 +1,19 @@
+test1.ac:38 warning: different uv
+4 .5 .5
+^
+test1.ac:20 note: first instance
+4 .5 .75
+^
+test1.ac:38 warning: different uv
+4 .5 .5
+^
+test1.ac:26 note: first instance
+4 .5 .75
+^
+test1.ac:38 warning: different uv
+4 .5 .5
+^
+test1.ac:32 note: first instance
+4 .5 .75
+^
+3 warnings
