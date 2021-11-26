@@ -21,6 +21,8 @@
 #ifndef _AC3D_H_
 #define _AC3D_H_
 
+#define _USE_MATH_DEFINES
+
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -453,7 +455,7 @@ private:
         {
             return Point3 { x() * value, y() * value, z() * value };
         }
-        double dot(const Point3 &other)
+        double dot(const Point3 &other) const
         {
             return x() * other.x() + y() * other.y() + z() * other.z();
         }
