@@ -357,6 +357,14 @@ public:
     {
         return m_multiple_texture;
     }
+    void differentUV(bool value)
+    {
+        m_different_uv = value;
+    }
+    bool differentUV() const
+    {
+        return m_different_uv;
+    }
     void texturePaths(const std::vector<std::string> &paths)
     {
         m_texture_paths = paths;
@@ -682,7 +690,7 @@ private:
         std::vector<Surface> surfaces;
         std::vector<Object> kids;
 
-        enum Plane { xy, xz, yz };
+        enum class Plane { xy, xz, yz };
 
         bool empty() const
         {
@@ -710,14 +718,14 @@ private:
         {
             // z largest so use xy plane
             if (std::fabs(normal.x()) < std::fabs(normal.z()) && std::fabs(normal.y()) < std::fabs(normal.z()))
-                return xy;
+                return Plane::xy;
 
             // y largest so use xz plane
             if (std::fabs(normal.x()) < std::fabs(normal.y()) && std::fabs(normal.z()) < std::fabs(normal.y()))
-                return xz;
+                return Plane::xz;
 
             // use yz plane
-            return yz;
+            return Plane::yz;
         }
         bool getVertex(size_t index, Point2 &vertex, Plane plane) const
         {
@@ -725,15 +733,15 @@ private:
                 return false;
             switch (plane)
             {
-            case xy:
+            case Plane::xy:
                 vertex.x(vertices[index].vertex.x());
                 vertex.y(vertices[index].vertex.y());
                 break;
-            case xz:
+            case Plane::xz:
                 vertex.x(vertices[index].vertex.x());
                 vertex.y(vertices[index].vertex.z());
                 break;
-            case yz:
+            case Plane::yz:
                 vertex.x(vertices[index].vertex.y());
                 vertex.y(vertices[index].vertex.z());
                 break;
@@ -805,6 +813,7 @@ private:
     bool            m_multiple_texoff = true;
     bool            m_multiple_texrep = true;
     bool            m_multiple_texture = true;
+    bool            m_different_uv = true;
 
     Header m_header;
     std::vector<Material> m_materials;
@@ -845,6 +854,7 @@ private:
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface);
+    void checkDifferentUV(std::istream &in, const Object &object);
     bool cleanObjects(std::vector<Object> &objects);
     bool cleanVertices(std::vector<Object> &objects);
     bool cleanVertices(Object &object);

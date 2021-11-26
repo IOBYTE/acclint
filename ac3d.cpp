@@ -1892,6 +1892,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
     checkUnusedVertex(in, object);
     checkDuplicateSurfaces(in, object);
+    checkDifferentUV(in, object);
 
 #if defined(CHECK_TRIANGLE_STRIPS)
     struct Triangle
@@ -2336,6 +2337,41 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
         {
             warning(vertex.line_number) << "unused vertex" << std::endl;
             showLine(in, vertex.line_pos);
+        }
+    }
+}
+
+void AC3D::checkDifferentUV(std::istream &in, const Object &object)
+{
+    if (!m_different_uv)
+        return;
+
+    // only check texture coordinates when texture is present
+    if (object.textures.empty())
+        return;
+
+    for (size_t i = 0; i < object.surfaces.size(); ++i)
+    {
+        const Surface &surface1 = object.surfaces[i];
+
+        for (size_t j = i + 1; j < object.surfaces.size(); ++j)
+        {
+            const Surface &surface2 = object.surfaces[j];
+
+            for (size_t k = 0; k < surface1.refs.size(); ++k)
+            {
+                for (size_t l = 0; l < surface2.refs.size(); ++l)
+                {
+                    if (surface1.refs[k].index == surface2.refs[l].index &&
+                        surface1.refs[k].coordinates != surface2.refs[l].coordinates)
+                    {
+                        warning(surface2.refs[l].line_number) << "different uv" << std::endl;
+                        showLine(in, surface1.refs[k].line_pos);
+                        note(surface1.refs[k].line_number) << "first instance" << std::endl;
+                        showLine(in, surface2.refs[l].line_pos);
+                    }
+                }
+            }
         }
     }
 }

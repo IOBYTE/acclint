@@ -49,3 +49,8 @@ cd unused-vertex
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd different-uv
+echo "${PWD##*/}"
+bats test.bats
+cd ..
