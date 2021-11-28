@@ -2153,7 +2153,7 @@ bool AC3D::read(const std::string &file)
         return false;
     }
 
-    std::ifstream in(m_file);
+    std::ifstream in(m_file, std::ifstream::binary);
 
     if (!in)
     {
