@@ -594,6 +594,31 @@ void AC3D::writeSurface(std::ostream &out, const Surface &surface) const
         writeRef(out, ref);
 }
 
+void  AC3D::writeSurfaces(std::ostream &out, const Object &object) const
+{
+    if (!object.surfaces.empty())
+    {
+        out << "numsurf " << object.surfaces.size() << newline(m_crlf);
+        for (const auto& surface : object.surfaces)
+            writeSurface(out, surface);
+    }
+}
+
+void AC3D::writeVertices(std::ostream &out, const Object &object) const
+{
+    if (!object.vertices.empty())
+    {
+        out << "numvert " << object.vertices.size() << newline(m_crlf);
+        for (const auto& vertex : object.vertices)
+        {
+            out << vertex.vertex;
+            if (vertex.has_normal)
+                out << ' ' << vertex.normal;
+            out << newline(m_crlf);
+        }
+    }
+}
+
 void AC3D::convertObjects(std::vector<Object> &objects)
 {
     for (auto &object : objects)
@@ -2106,23 +2131,8 @@ void AC3D::writeObject(std::ostream &out, const Object &object) const
         out << "texoff " << object.texoffs.back().texoff << newline(m_crlf);
     if (!object.subdivs.empty())
         out << "subdiv " << object.subdivs.back().subdiv << newline(m_crlf);
-    if (!object.vertices.empty())
-    {
-        out << "numvert " << object.vertices.size() << newline(m_crlf);
-        for (const auto &vertex : object.vertices)
-        {
-            out << vertex.vertex;
-            if (vertex.has_normal)
-                out << ' ' << vertex.normal;
-            out << newline(m_crlf);
-        }
-    }
-    if (!object.surfaces.empty())
-    {
-        out << "numsurf " << object.surfaces.size() << newline(m_crlf);
-        for (const auto &surface : object.surfaces)
-            writeSurface(out, surface);
-    }
+    writeVertices(out, object);
+    writeSurfaces(out, object);
 
     out << "kids " << object.kids.size() << newline(m_crlf);
     for (const auto &kid : object.kids)

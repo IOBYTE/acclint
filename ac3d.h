@@ -836,6 +836,7 @@ private:
     bool readSurface(std::istream &in, Surface &surface, Object &object, bool get_line);
     void writeSurface(std::ostream &out, const Surface &surface) const;
     void writeSurfaces(std::ostream &out, const Object &object) const;
+    void writeVertices(std::ostream &out, const Object &object) const;
     bool readRef(std::istringstream &in, Ref &ref);
     void writeRef(std::ostream &out, const Ref &ref) const;
     bool readObject(std::istringstream &iss, std::istream &in, Object &object);
