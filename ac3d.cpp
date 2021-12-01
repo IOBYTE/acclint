@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <limits>
 #include <filesystem>
+#include <map>
+#include <set>
 
 const std::string MATERIAL_token("MATERIAL");
 const std::string rgb_token("rgb");
@@ -2357,14 +2359,28 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
         return;
 
     // only check texture coordinates when texture is present
-    if (object.textures.empty())
+    if (object.textures.empty() || object.textures[0].name == "empty_texture_no_mapping")
         return;
+
+    using RefPtr = const Ref*;
+
+    struct CmpRefPtr
+    {
+        bool operator()(const RefPtr &lhs, const RefPtr &rhs) const
+        {
+            return (lhs->line_number < rhs->line_number);
+        }
+    };
+
+    using RefPtrSet = std::set<RefPtr, CmpRefPtr>;
+
+    std::map<size_t, RefPtrSet> matches;
 
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         const Surface &surface1 = object.surfaces[i];
 
-        for (size_t j = i + 1; j < object.surfaces.size(); ++j)
+        for (size_t j = 0; j < object.surfaces.size(); ++j)
         {
             const Surface &surface2 = object.surfaces[j];
 
@@ -2380,13 +2396,39 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
 
                         if (angle < crease)
                         {
-                            warning(surface2.refs[l].line_number) << "different uv" << std::endl;
-                            showLine(in, surface1.refs[k].line_pos);
-                            note(surface1.refs[k].line_number) << "first instance" << std::endl;
-                            showLine(in, surface2.refs[l].line_pos);
+                            auto item = matches.find(surface1.refs[k].index);
+                            if (item != matches.end())
+                            {
+                                if (item->second.find(&surface2.refs[l]) == item->second.end())
+                                    item->second.insert(&surface2.refs[l]);
+                            }
+                            else
+                            {
+                                RefPtrSet refs = { &surface1.refs[k], &surface2.refs[l] };
+                                matches.insert(std::make_pair(surface1.refs[k].index, refs));
+                            }
                         }
                     }
                 }
+            }
+        }
+    }
+
+    for (const auto &item : matches)
+    {
+        bool first = true;
+        for (const auto &entry : item.second)
+        {
+            if (first)
+            {
+                warning(entry->line_number) << "different uv" << std::endl;
+                showLine(in, entry->line_pos);
+                first = false;
+            }
+            else
+            {
+                note(entry->line_number) << "instance" << std::endl;
+                showLine(in, entry->line_pos);
             }
         }
     }
