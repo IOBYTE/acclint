@@ -2343,7 +2343,7 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
     if (!m_unused_vertex)
         return;
 
-    for (auto &vertex : object.vertices)
+    for (const auto &vertex : object.vertices)
     {
         if (!vertex.used)
         {
@@ -2591,8 +2591,8 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
 
 void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface)
 {
-    // only check polygon and polygon outline
-    if (!(surface.isPolygon() || surface.isClosedLine()))
+    // only check polygon
+    if (!surface.isPolygon())
         return;
 
     if (surface.refs.size() > 2)
@@ -2931,10 +2931,10 @@ bool AC3D::write(const std::string &file)
 
     writeHeader(of, m_header);
 
-    for (auto &material : m_materials)
+    for (const auto &material : m_materials)
         writeMaterial(of, material);
 
-    for (auto &object : m_objects)
+    for (const auto &object : m_objects)
         writeObject(of, object);
 
     return true;
