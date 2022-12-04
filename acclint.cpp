@@ -59,13 +59,13 @@ void usage()
     std::cerr << "  -Wno-multiple-texoff            Don't show multiple texoff warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texrep            Don't show multiple texrep warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texture           Don't show multiple texture warnings." << std::endl;
+    std::cerr << "  -Wno-different-uv               Don't show different uv warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file              Don't show not AC3D file errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index     Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type       Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-token              Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invalid vertex index errors." << std::endl;
-    std::cerr << "  -Wno-different-uv               Don't show different uv warnings." << std::endl;
     std::cerr << "  -Wno-group-with-geometry        Don't show group with geometry errors." << std::endl;
     std::cerr << "  --dump group|poly|surf          Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << std::endl;
