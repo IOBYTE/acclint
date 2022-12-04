@@ -207,7 +207,6 @@ int main(int argc, char *argv[])
             multiple_texrep = false;
             multiple_texture = false;
             different_uv = false;
-            group_with_geometry = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -341,10 +340,6 @@ int main(int argc, char *argv[])
         {
             different_uv = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
-        {
-            group_with_geometry = arg.compare(2, 3, "no-") != 0;
-        }
         else if (arg == "-Wno-errors")
         {
             not_ac3d_file = false;
@@ -352,6 +347,7 @@ int main(int argc, char *argv[])
             invalid_surface_type = false;
             invalid_token = false;
             invalid_vertex_index = false;
+            group_with_geometry = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -376,6 +372,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-vertex-index" || arg == "-Winvalid-vertex-index")
         {
             invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
+        {
+            group_with_geometry = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "--dump")
         {

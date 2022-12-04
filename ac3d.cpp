@@ -1820,7 +1820,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             checkTrailing(iss1);
 
-            for (size_t i = 0; i < object.numsurf.number; ++i)
+            for (int i = 0; i < object.numsurf.number; ++i)
             {
                 Surface surface;
 
@@ -2444,6 +2444,9 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
 
 void AC3D::checkGroupWithGeometry(std::istream& in, const Object& object)
 {
+    if (!m_group_with_geometry)
+        return;
+
     if (object.type.type == "group" && object.vertices.size() != 0)
     {
         error(object.type.line_number) << "group with geometry" << std::endl;
@@ -2940,7 +2943,7 @@ bool AC3D::write(const std::string &file)
         return false;
     }
 
-	if (!m_is_ac && is_ac)
+    if (!m_is_ac && is_ac)
         convertObjects(m_objects);
 
     std::ofstream of(file, std::ofstream::binary);
