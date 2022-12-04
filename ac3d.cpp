@@ -3148,6 +3148,12 @@ bool AC3D::cleanObjects(std::vector<Object> &objects)
 
     while (it != objects.end())
     {
+        if (it->type.type == "group" && it->vertices.size() > 0)
+        {
+            it->type.type = "poly";
+            cleaned = true;
+        }
+
         cleaned |= cleanObjects(it->kids);
 
         if (it->empty())
