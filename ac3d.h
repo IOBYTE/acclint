@@ -367,6 +367,14 @@ public:
     {
         return m_different_uv;
     }
+    void groupWithGeometry(bool value)
+    {
+        m_group_with_geometry = value;
+    }
+    bool groupWithGeometry() const
+    {
+        return m_group_with_geometry;
+    }
     void texturePaths(const std::vector<std::string> &paths)
     {
         m_texture_paths = paths;
@@ -670,9 +678,27 @@ private:
         std::string url;
     };
 
-    struct Object
+    struct Type : public LineInfo
     {
         std::string type;
+        int type_offset = 0;
+    };
+
+    struct Numvert : public LineInfo
+    {
+        int number = 0;
+        int number_offset = 0;
+    };
+
+    struct Numvsurf : public LineInfo
+    {
+        int number = 0;
+        int number_offset = 0;
+    };
+
+    struct Object : public LineInfo
+    {
+        Type type;
         std::vector<Name> names;
         std::vector<URL> urls;
         std::vector<Data> data;
@@ -686,9 +712,9 @@ private:
         std::vector<LineInfo> locked;
         std::vector<LineInfo> folded;
         std::vector<Texture> textures;
+        Numvert numvert;
         std::vector<Vertex> vertices;
-        LineInfo numsurf;
-        int numsurf_number_offset = 0;
+        Numvsurf numsurf;
         std::vector<Surface> surfaces;
         std::vector<Object> kids;
 
@@ -696,7 +722,7 @@ private:
 
         bool empty() const
         {
-            return (type == "poly" && vertices.empty() && surfaces.empty() && kids.empty());
+            return (type.type == "poly" && vertices.empty() && surfaces.empty() && kids.empty());
         }
         bool getVertex(size_t index, Point3 &vertex) const
         {
@@ -816,6 +842,7 @@ private:
     bool            m_multiple_texrep = true;
     bool            m_multiple_texture = true;
     bool            m_different_uv = true;
+    bool            m_group_with_geometry = true;
 
     Header m_header;
     std::vector<Material> m_materials;
@@ -858,6 +885,7 @@ private:
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface);
     void checkDifferentUV(std::istream &in, const Object &object);
+    void checkGroupWithGeometry(std::istream& in, const Object& object);
     bool cleanObjects(std::vector<Object> &objects);
     bool cleanVertices(std::vector<Object> &objects);
     bool cleanVertices(Object &object);

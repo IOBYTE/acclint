@@ -472,7 +472,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         error() << "less surfaces than specified" << std::endl;
         showLine(iss, 0);
         note(object.numsurf.line_number) << "number specified" << std::endl;
-        showLine(in, object.numsurf.line_pos, object.numsurf_number_offset);
+        showLine(in, object.numsurf.line_pos, object.numsurf.number_offset);
         ungetLine(in);
         return false;
     }
@@ -1206,10 +1206,15 @@ bool icasecmp(const std::string &l, const std::string &r)
 
 bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 {
-    size_t object_line = m_line_number;
+    object.line_number = m_line_number;
+    object.line_pos = m_line_pos;
+
+    object.type.line_number = m_line_number;
+    object.type.line_pos = m_line_pos;
+
     iss >> std::ws;
-    std::streampos pos = iss.tellg();
-    iss >> object.type;
+    object.type.type_offset = static_cast<int>(iss.tellg());
+    iss >> object.type.type;
 
     if (!iss)
     {
@@ -1218,19 +1223,19 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     }
     else
     {
-        if (object.type != world_token && object.type != group_token &&
-            object.type != poly_token && object.type != light_token)
+        if (object.type.type != world_token && object.type.type != group_token &&
+            object.type.type != poly_token && object.type.type != light_token)
         {
-            if (icasecmp(object.type, world_token) || icasecmp(object.type, group_token) ||
-                icasecmp(object.type, poly_token) || icasecmp(object.type, light_token))
+            if (icasecmp(object.type.type, world_token) || icasecmp(object.type.type, group_token) ||
+                icasecmp(object.type.type, poly_token) || icasecmp(object.type.type, light_token))
             {
-                warning() << "type should be lowercase: " << object.type << std::endl;
-                showLine(iss, pos);
+                warning() << "type should be lowercase: " << object.type.type << std::endl;
+                showLine(iss, object.type.type_offset);
             }
             else
             {
-                warning() << "unknown object type: " << object.type << std::endl;
-                showLine(iss, pos);
+                warning() << "unknown object type: " << object.type.type << std::endl;
+                showLine(iss, object.type.type_offset);
             }
         }
 
@@ -1686,9 +1691,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == numvert_token)
         {
-            int numvert = 0;
+            object.numvert.line_number = m_line_number;
+            object.numvert.line_pos = m_line_pos;
 
-            iss1 >> numvert;
+            iss1 >> std::ws;
+            object.numvert.number_offset = static_cast<int>(iss1.tellg());
+            iss1 >> object.numvert.number;
 
             if (iss1)
                 checkTrailing(iss1);
@@ -1699,7 +1707,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 continue;
             }
 
-            for (int i = 0; i < numvert; ++i)
+            for (int i = 0; i < object.numvert.number; ++i)
             {
                 if (getLine(in))
                 {
@@ -1800,9 +1808,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             object.numsurf.line_pos = m_line_pos;
 
             iss1 >> std::ws;
-            object.numsurf_number_offset = static_cast<int>(iss1.tellg());
-            size_t numsurf = 0;
-            iss1 >> numsurf;
+            object.numsurf.number_offset = static_cast<int>(iss1.tellg());
+            iss1 >> object.numsurf.number;
 
             if (!iss1)
             {
@@ -1813,7 +1820,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             checkTrailing(iss1);
 
-            for (size_t i = 0; i < numsurf; ++i)
+            for (size_t i = 0; i < object.numsurf.number; ++i)
             {
                 Surface surface;
 
@@ -1895,7 +1902,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             error() << "found more SURF than specified" << std::endl;
             showLine(iss1, 0);
             note(object.numsurf.line_number) << "number specified" << std::endl;
-            showLine(in, object.numsurf.line_pos, object.numsurf_number_offset);
+            showLine(in, object.numsurf.line_pos, object.numsurf.number_offset);
 
             Surface surface;
 
@@ -1911,15 +1918,16 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
     if (object.empty() && m_empty_object)
     {
-        warning(object_line) << "empty object: "
-                             << (!object.names.empty() ? object.names.back().name.c_str() : "")
-                             << std::endl;
+        warning(object.line_number) << "empty object: "
+                                    << (!object.names.empty() ? object.names.back().name.c_str() : "")
+                                    << std::endl;
         showLine(iss, 0);
     }
 
     checkUnusedVertex(in, object);
     checkDuplicateSurfaces(in, object);
     checkDifferentUV(in, object);
+    checkGroupWithGeometry(in, object);
 
 #if defined(CHECK_TRIANGLE_STRIPS)
     struct Triangle
@@ -2050,25 +2058,25 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
     for (size_t i = 0; i < level; i++)
         indent += "    ";
 
-    if (type == "world")
+    if (type.type == "world")
     {
-        std::cout << indent << (count + 1) << " " << type;
+        std::cout << indent << (count + 1) << " " << type.type;
         std::cout << " " << kids.size() << " kid" << (kids.size() == 1 ? "" : "s") << std::endl;
     }
     else
     {
-        if (type == "group")
+        if (type.type == "group")
         {
-            std::cout << indent << (count + 1) << " " << type;
+            std::cout << indent << (count + 1) << " " << type.type;
 
             for (const auto& name : names)
                 std::cout << " " << name.name;
 
             std::cout << " " << kids.size() << " kid" << (kids.size() == 1 ? "" : "s") << std::endl;
         }
-        else if (type == "poly" && (dump_type == DumpType::poly || dump_type == DumpType::surf))
+        else if (type.type == "poly" && (dump_type == DumpType::poly || dump_type == DumpType::surf))
         {
-            std::cout << indent << (count + 1) << " " << type;
+            std::cout << indent << (count + 1) << " " << type.type;
 
             for (const auto& name : names)
                 std::cout << " " << name.name;
@@ -2101,7 +2109,7 @@ void AC3D::Surface::dump(DumpType dump_type, size_t count, size_t level) const
 
 void AC3D::writeObject(std::ostream &out, const Object &object) const
 {
-    out << "OBJECT " << object.type << newline(m_crlf);
+    out << "OBJECT " << object.type.type << newline(m_crlf);
     if (!object.names.empty())
         out << "name " << object.names.back().name << newline(m_crlf);
     if (!object.urls.empty())
@@ -2307,7 +2315,7 @@ void AC3D::checkUnusedMaterial(std::istream &in)
 
     if (!m_materials.empty())
     {
-        for (auto &material : m_materials)
+        for (const auto &material : m_materials)
         {
             if (!material.used)
             {
@@ -2431,6 +2439,17 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
                 showLine(in, entry->line_pos);
             }
         }
+    }
+}
+
+void AC3D::checkGroupWithGeometry(std::istream& in, const Object& object)
+{
+    if (object.type.type == "group" && object.vertices.size() != 0)
+    {
+        error(object.type.line_number) << "group with geometry" << std::endl;
+        showLine(in, object.type.line_pos, object.type.type_offset);
+        note(object.numvert.line_number) << "geometry" << std::endl;
+        showLine(in, object.numvert.line_pos);
     }
 }
 
