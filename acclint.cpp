@@ -60,13 +60,13 @@ void usage()
     std::cerr << "  -Wno-multiple-texrep            Don't show multiple texrep warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texture           Don't show multiple texture warnings." << std::endl;
     std::cerr << "  -Wno-different-uv               Don't show different uv warnings." << std::endl;
+    std::cerr << "  -Wno-group-with-geometry        Don't show group with geometry warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file              Don't show not AC3D file errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index     Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type       Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-token              Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invalid vertex index errors." << std::endl;
-    std::cerr << "  -Wno-group-with-geometry        Don't show group with geometry errors." << std::endl;
     std::cerr << "  --dump group|poly|surf          Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings and errors are enabled." << std::endl;
@@ -207,6 +207,7 @@ int main(int argc, char *argv[])
             multiple_texrep = false;
             multiple_texture = false;
             different_uv = false;
+            group_with_geometry = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -340,6 +341,10 @@ int main(int argc, char *argv[])
         {
             different_uv = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
+        {
+            group_with_geometry = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-errors")
         {
             not_ac3d_file = false;
@@ -347,7 +352,6 @@ int main(int argc, char *argv[])
             invalid_surface_type = false;
             invalid_token = false;
             invalid_vertex_index = false;
-            group_with_geometry = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -372,10 +376,6 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-vertex-index" || arg == "-Winvalid-vertex-index")
         {
             invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
-        {
-            group_with_geometry = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "--dump")
         {

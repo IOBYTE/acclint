@@ -2449,7 +2449,7 @@ void AC3D::checkGroupWithGeometry(std::istream& in, const Object& object)
 
     if (object.type.type == "group" && object.vertices.size() != 0)
     {
-        error(object.type.line_number) << "group with geometry" << std::endl;
+        warning(object.type.line_number) << "group with geometry" << std::endl;
         showLine(in, object.type.line_pos, object.type.type_offset);
         note(object.numvert.line_number) << "geometry" << std::endl;
         showLine(in, object.numvert.line_pos);

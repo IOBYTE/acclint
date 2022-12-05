@@ -1,7 +1,7 @@
-test1.ac:5 error: group with geometry
+test1.ac:5 warning: group with geometry
 OBJECT group
        ^
 test1.ac:7 note: geometry
 numvert 3
 ^
-1 error
+1 warning
