@@ -155,6 +155,11 @@ refs 3
 3 0 0
 kids 0
 ```
+acclint can also convert from one file format version to another.
+```
+acclint filev12.ac -o filev11.ac -v 11
+acclint filev11.ac -o filev12.ac -v 12
+```
 acclint can also convert .acc files to the .ac file format.
 ```
 acclint file.acc -o file.ac
