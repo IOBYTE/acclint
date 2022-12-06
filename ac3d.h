@@ -37,7 +37,7 @@ public:
     enum class DumpType { group, poly, surf};
 
     bool read(const std::string &file);
-    bool write(const std::string &file);
+    bool write(const std::string &file, int version = 0);
     void dump(DumpType dump_type) const;
     size_t warnings() const
     {

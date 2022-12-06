@@ -23,7 +23,7 @@
 
 void usage()
 {
-    std::cerr << "Usage: acclint [options] [-T texturepath] <inputfile> [-o <outputfile>]" << std::endl;
+    std::cerr << "Usage: acclint [options] [-T texturepath] <inputfile> [-o <outputfile>] [-v <11|12>]" << std::endl;
     std::cerr << "Options:" << std::endl;
     std::cerr << "  -Wno-warnings                   Don't show any warnings." << std::endl;
     std::cerr << "  -Wno-trailing-text              Don't show trailing text warnings." << std::endl;
@@ -68,6 +68,7 @@ void usage()
     std::cerr << "  -Wno-invalid-token              Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  --dump group|poly|surf          Dumps the hierarchy of OBJECT and SURF." << std::endl;
+    std::cerr << "  -v 11|12                        Output version 11 or 12." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -132,6 +133,7 @@ int main(int argc, char *argv[])
     std::vector<std::string> texture_paths;
     bool dump = false;
     AC3D::DumpType dump_type;
+    int version = 0;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -401,6 +403,27 @@ int main(int argc, char *argv[])
             }
             dump = true;
         }
+        else if (arg == "-v")
+        {
+            i++;
+            if (i == argc)
+            {
+                std::cerr << "Missing output version" << std::endl;
+                usage();
+                exit(EXIT_FAILURE);
+            }
+            arg = argv[i];
+            if (arg == "11")
+                version = 11;
+            else if (arg == "12")
+                version = 12;
+            else
+            {
+                std::cerr << "Invalid output version: " << arg << std::endl;
+                usage();
+                exit(EXIT_FAILURE);
+            }
+        }
         else if (arg[0] != '-')
         {
             if (in_file.empty())
@@ -502,7 +525,7 @@ int main(int argc, char *argv[])
 
         ac3d.clean();
 
-        ac3d.write(out_file);
+        ac3d.write(out_file, version);
     }
 
     if (dump)

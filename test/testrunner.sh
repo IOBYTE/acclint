@@ -59,3 +59,8 @@ cd group-with-geometry
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd output-version
+echo "${PWD##*/}"
+bats test.bats
+cd ..

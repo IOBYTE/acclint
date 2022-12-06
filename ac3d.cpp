@@ -2921,7 +2921,7 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
     }
 }
 
-bool AC3D::write(const std::string &file)
+bool AC3D::write(const std::string &file, int version)
 {
     std::string extension = std::filesystem::path(file).extension().string();
     bool is_ac;
@@ -2950,6 +2950,21 @@ bool AC3D::write(const std::string &file)
 
     if (!of)
         return false;
+
+    if (version == 12)
+    {
+        m_header.version = "AC3Dc";
+
+        for (auto& material : m_materials)
+            material.version12 = true;
+    }
+    else if (version == 11)
+    {
+        m_header.version = "AC3Db";
+
+        for (auto& material : m_materials)
+            material.version12 = false;
+    }
 
     writeHeader(of, m_header);
 
