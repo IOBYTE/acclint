@@ -375,6 +375,14 @@ public:
     {
         return m_group_with_geometry;
     }
+    void multipleWorld(bool value)
+    {
+        m_multiple_world = value;
+    }
+    bool multipleWorld() const
+    {
+        return m_multiple_world;
+    }
     void texturePaths(const std::vector<std::string> &paths)
     {
         m_texture_paths = paths;
@@ -843,6 +851,8 @@ private:
     bool            m_multiple_texture = true;
     bool            m_different_uv = true;
     bool            m_group_with_geometry = true;
+    bool            m_multiple_world = true;
+    bool            m_has_world = false;
 
     Header m_header;
     std::vector<Material> m_materials;

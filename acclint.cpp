@@ -59,6 +59,7 @@ void usage()
     std::cerr << "  -Wno-multiple-texoff            Don't show multiple texoff warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texrep            Don't show multiple texrep warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texture           Don't show multiple texture warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-world             Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-different-uv               Don't show different uv warnings." << std::endl;
     std::cerr << "  -Wno-group-with-geometry        Don't show group with geometry warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
@@ -130,6 +131,7 @@ int main(int argc, char *argv[])
     bool multiple_texture = true;
     bool different_uv = true;
     bool group_with_geometry = true;
+    bool multiple_world = true;
     std::vector<std::string> texture_paths;
     bool dump = false;
     AC3D::DumpType dump_type;
@@ -210,6 +212,7 @@ int main(int argc, char *argv[])
             multiple_texture = false;
             different_uv = false;
             group_with_geometry = false;
+            multiple_world = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -346,6 +349,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
         {
             group_with_geometry = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-world" || arg == "-Wmultiple-world")
+        {
+            multiple_world = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-errors")
         {
@@ -486,6 +493,7 @@ int main(int argc, char *argv[])
     ac3d.multipleTexture(multiple_texture);
     ac3d.differentUV(different_uv);
     ac3d.groupWithGeometry(group_with_geometry);
+    ac3d.multipleWorld(multiple_world);
 
     if (!ac3d.read(in_file))
     {

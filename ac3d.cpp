@@ -1223,6 +1223,17 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     }
     else
     {
+        if (object.type.type == world_token)
+        {
+            if (m_multiple_world && m_has_world)
+            {
+                warning() << "multiple world" << std::endl;
+                showLine(iss, object.type.type_offset);
+            }
+
+            m_has_world = true;
+        }
+
         if (object.type.type != world_token && object.type.type != group_token &&
             object.type.type != poly_token && object.type.type != light_token)
         {
