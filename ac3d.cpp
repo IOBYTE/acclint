@@ -3545,3 +3545,43 @@ void AC3D::dump(DumpType dump_type) const
         m_objects[i].dump(dump_type, i, 0);
     }
 }
+
+bool AC3D::merge(const AC3D &ac3d)
+{
+    if (m_objects.size() != 1 || m_objects[0].type.type != "world" ||
+        ac3d.m_objects.size() != 1 || ac3d.m_objects[0].type.type != "world")
+    {
+        return false;
+    }
+
+    size_t num_materials = m_materials.size();
+    size_t num_kids = m_objects[0].kids.size();
+
+    m_materials.insert(m_materials.end(), ac3d.m_materials.begin(), ac3d.m_materials.end());
+    m_objects[0].kids.insert(m_objects[0].kids.end(), ac3d.m_objects[0].kids.begin(), ac3d.m_objects[0].kids.end());
+
+    // fix up materials
+    for (size_t i = num_kids; i < m_objects[0].kids.size(); i++)
+    {
+        m_objects[0].kids[i].incrementMaterialIndex(num_materials);
+    }
+
+    return true;
+}
+
+void AC3D::Object::incrementMaterialIndex(size_t num_materials)
+{
+    if (type.type == "poly")
+    {
+        for (auto &surface : surfaces)
+        {
+            if (!surface.mat.empty())
+                surface.mat[0] += num_materials;
+        }
+    }
+    else
+    {
+        for (auto &kid : kids)
+            kid.incrementMaterialIndex(num_materials);
+    }
+}

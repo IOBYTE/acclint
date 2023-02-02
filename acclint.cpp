@@ -23,7 +23,7 @@
 
 void usage()
 {
-    std::cerr << "Usage: acclint [options] [-T texturepath] <inputfile> [-o <outputfile>] [-v <11|12>]" << std::endl;
+    std::cerr << "Usage: acclint [options] [-T texturepath] <inputfile> [--merge <inputfile>] [-o <outputfile>] [-v <11|12>]" << std::endl;
     std::cerr << "Options:" << std::endl;
     std::cerr << "  -Wno-warnings                   Don't show any warnings." << std::endl;
     std::cerr << "  -Wno-trailing-text              Don't show trailing text warnings." << std::endl;
@@ -72,6 +72,7 @@ void usage()
     std::cerr << "  --dump group|poly|surf          Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                        Output version 11 or 12." << std::endl;
     std::cerr << "  --splitSURF                     Split objects with multiple surface types into seperate objects" << std::endl;
+    std::cerr << "  --merge filename                Merge filename with inputfile." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -140,6 +141,7 @@ int main(int argc, char *argv[])
     bool splitSURF = false;
     AC3D::DumpType dump_type;
     int version = 0;
+    std::vector<std::string> merge_files;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -399,6 +401,20 @@ int main(int argc, char *argv[])
         {
             splitSURF = true;
         }
+        else if (arg == "--merge")
+        {
+            if (i < argc)
+            {
+                merge_files.push_back(argv[i + 1]);
+                i++;
+            }
+            else
+            {
+                std::cerr << "Missing merge file" << std::endl;
+                usage();
+                exit(EXIT_FAILURE);
+            }
+        }
         else if (arg == "--dump")
         {
             i++;
@@ -543,6 +559,50 @@ int main(int argc, char *argv[])
         {
             std::cerr << "Can't write output file because input file has fatal errors" << std::endl;
             exit(EXIT_FAILURE);
+        }
+
+        for (auto& filename : merge_files)
+        {
+            std::cout << "Reading: " << filename << std::endl;
+
+            AC3D to_merge;
+
+            if (!to_merge.read(filename))
+            {
+                if (to_merge.errors() > 0)
+                {
+                    std::cerr << to_merge.errors() << " error";
+                    if (to_merge.errors() > 1)
+                        std::cerr << "s";
+                    std::cerr << std::endl;
+                }
+
+                exit(EXIT_FAILURE);
+            }
+
+            if (to_merge.warnings() > 0)
+            {
+                std::cerr << to_merge.warnings() << " warning";
+                if (to_merge.warnings() > 1)
+                    std::cerr << "s";
+                std::cerr << std::endl;
+            }
+
+            if (to_merge.errors() > 0)
+            {
+                std::cerr << to_merge.errors() << " error";
+                if (to_merge.errors() > 1)
+                    std::cerr << "s";
+                std::cerr << std::endl;
+            }
+
+            std::cout << "Merging: " << filename << std::endl;
+
+            if (!ac3d.merge(to_merge))
+            {
+                std::cerr << "Couldn't merge " << filename << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
 
         if (ac3d.fixMultipleWorlds())

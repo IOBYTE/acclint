@@ -402,6 +402,7 @@ public:
     bool cleanMaterials();
     bool fixMultipleWorlds();
     bool splitMultipleSURF();
+    bool merge(const AC3D& ac3d);
 
     class quoted_string : public std::string
     {
@@ -809,6 +810,8 @@ private:
         bool sameSurface(size_t index1, size_t index2) const;
 
         void dump(DumpType dump_type, size_t count, size_t level) const;
+
+        void incrementMaterialIndex(size_t num_materials);
     };
 
     std::string     m_file;
