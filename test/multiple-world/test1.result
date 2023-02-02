@@ -1,0 +1,4 @@
+test1.ac:19 warning: multiple world
+OBJECT world
+       ^
+1 warning

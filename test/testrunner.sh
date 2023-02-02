@@ -64,3 +64,13 @@ cd output-version
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd multiple-world
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
+cd different-surf
+echo "${PWD##*/}"
+bats test.bats
+cd ..
