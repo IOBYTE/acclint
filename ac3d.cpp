@@ -1939,6 +1939,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     checkDuplicateSurfaces(in, object);
     checkDifferentUV(in, object);
     checkGroupWithGeometry(in, object);
+    checkDifferentSURF(in, object);
 
 #if defined(CHECK_TRIANGLE_STRIPS)
     struct Triangle
@@ -2368,6 +2369,28 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
         {
             warning(vertex.line_number) << "unused vertex" << std::endl;
             showLine(in, vertex.line_pos);
+        }
+    }
+}
+
+void AC3D::checkDifferentSURF(std::istream& in, const Object& object)
+{
+    if (!m_different_surf)
+        return;
+
+    if (object.surfaces.empty())
+        return;
+
+    unsigned int flags = object.surfaces[0].flags;
+
+    for (size_t i = 1; i < object.surfaces.size(); ++i)
+    {
+        if (object.surfaces[i].flags != flags)
+        {
+            warning(object.surfaces[i].line_number) << "different SURF" << std::endl;
+            showLine(in, object.surfaces[i].line_pos);
+            note(object.surfaces[0].line_number) << "SURF" << std::endl;
+            showLine(in, object.surfaces[0].line_pos);
         }
     }
 }

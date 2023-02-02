@@ -383,6 +383,14 @@ public:
     {
         return m_multiple_world;
     }
+    void differentSURF(bool value)
+    {
+        m_different_surf = value;
+    }
+    bool differentSURF() const
+    {
+        return m_different_surf;
+    }
     void texturePaths(const std::vector<std::string> &paths)
     {
         m_texture_paths = paths;
@@ -853,6 +861,7 @@ private:
     bool            m_different_uv = true;
     bool            m_group_with_geometry = true;
     bool            m_multiple_world = true;
+    bool            m_different_surf = true;
     bool            m_has_world = false;
 
     Header m_header;
@@ -895,7 +904,8 @@ private:
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface);
-    void checkDifferentUV(std::istream &in, const Object &object);
+    void checkDifferentSURF(std::istream &in, const Object &object);
+    void checkDifferentUV(std::istream& in, const Object& object);
     void checkGroupWithGeometry(std::istream& in, const Object& object);
     bool cleanObjects(std::vector<Object> &objects);
     bool cleanVertices(std::vector<Object> &objects);

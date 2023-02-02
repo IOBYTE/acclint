@@ -61,6 +61,7 @@ void usage()
     std::cerr << "  -Wno-multiple-texture           Don't show multiple texture warnings." << std::endl;
     std::cerr << "  -Wno-multiple-world             Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-different-uv               Don't show different uv warnings." << std::endl;
+    std::cerr << "  -Wno-different-surf             Don't show different surf warnings." << std::endl;
     std::cerr << "  -Wno-group-with-geometry        Don't show group with geometry warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file              Don't show not AC3D file errors." << std::endl;
@@ -132,6 +133,7 @@ int main(int argc, char *argv[])
     bool different_uv = true;
     bool group_with_geometry = true;
     bool multiple_world = true;
+    bool different_surf = true;
     std::vector<std::string> texture_paths;
     bool dump = false;
     AC3D::DumpType dump_type;
@@ -213,6 +215,7 @@ int main(int argc, char *argv[])
             different_uv = false;
             group_with_geometry = false;
             multiple_world = false;
+            different_surf = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -354,6 +357,10 @@ int main(int argc, char *argv[])
         {
             multiple_world = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-different-surf" || arg == "-Wdifferent-surf")
+        {
+            different_surf = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-errors")
         {
             not_ac3d_file = false;
@@ -494,6 +501,7 @@ int main(int argc, char *argv[])
     ac3d.differentUV(different_uv);
     ac3d.groupWithGeometry(group_with_geometry);
     ac3d.multipleWorld(multiple_world);
+    ac3d.differentSURF(different_surf);
 
     if (!ac3d.read(in_file))
     {
