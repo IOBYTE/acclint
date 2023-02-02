@@ -3040,6 +3040,41 @@ bool AC3D::clean()
     return cleaned;
 }
 
+bool AC3D::fixMultipleWorlds()
+{
+    // check for concatenated files
+    if (!(m_objects.size() == 2 && m_objects[0].type.type == "world" && m_objects[1].type.type == "world"))
+        return true;
+
+    size_t materials = 0;
+    size_t line_number = m_objects[1].line_number - 1;
+
+    // check if concatenated file has materials
+    for (auto it = m_materials.rbegin(); it != m_materials.rend(); ++it)
+    {
+        if (it->line_number == line_number)
+        {
+            materials++;
+            line_number--;
+        }
+        else
+            break;
+    }
+
+    if (materials != 0)
+    {
+        // TODO: change material index of concatenated file surfaces if necessary
+        std::cerr << "Can't fix concatenated world with materials yet" << std::endl;
+        return false;
+    }
+
+    m_objects[0].kids.insert(m_objects[0].kids.end(), m_objects[1].kids.begin(), m_objects[1].kids.end());
+
+    m_objects.pop_back();
+
+    return true;
+}
+
 bool AC3D::cleanMaterials()
 {
     bool cleaned = false;

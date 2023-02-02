@@ -531,9 +531,12 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
 
-        ac3d.clean();
+        if (ac3d.fixMultipleWorlds())
+        {
+            ac3d.clean();
 
-        ac3d.write(out_file, version);
+            ac3d.write(out_file, version);
+        }
     }
 
     if (dump)

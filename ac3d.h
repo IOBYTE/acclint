@@ -392,6 +392,7 @@ public:
     bool cleanVertices();
     bool cleanSurfaces();
     bool cleanMaterials();
+    bool fixMultipleWorlds();
 
     class quoted_string : public std::string
     {
