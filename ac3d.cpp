@@ -3063,6 +3063,77 @@ bool AC3D::clean()
     return cleaned;
 }
 
+bool AC3D::splitMultipleSURF()
+{
+    return splitMultipleSURF(m_objects);
+}
+
+bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
+{
+    std::vector<Object> newKids;
+    bool split = false;
+
+    auto kid = kids.begin();
+    while (kid != kids.end())
+    {
+        if (!kid->kids.empty())
+            split |= splitMultipleSURF(kid->kids);
+
+        if (kid->surfaces.empty())
+        {
+            ++kid;
+            continue;
+        }
+
+        unsigned int flags = kid->surfaces[0].flags;
+        std::set<unsigned int> newFlags;
+
+        for (size_t i = 1; i < kid->surfaces.size(); ++i)
+        {
+            if (kid->surfaces[i].flags != flags)
+            {
+                if (!newFlags.contains(kid->surfaces[i].flags))
+                {
+                    newFlags.insert(kid->surfaces[i].flags);
+                    newKids.push_back(*kid);
+
+                    if (!newKids.back().names.empty())
+                        newKids.back().names[0].name += ("-split" + std::to_string(newKids.size()));
+
+                    auto it = newKids.back().surfaces.begin();
+                    while (it != newKids.back().surfaces.end())
+                    {
+                        // remove surfaces that don't match
+                        if (it->flags != kid->surfaces[i].flags)
+                            it = newKids.back().surfaces.erase(it);
+                       else
+                            ++it;
+                    }
+                }
+            }
+        }
+
+        auto it = kid->surfaces.begin();
+        while (it != kid->surfaces.end())
+        {
+            // remove surfaces that don't match
+            if (it->flags != flags)
+                it = kid->surfaces.erase(it);
+            else
+                ++it;
+        }
+
+        ++kid;
+    }
+
+    if (newKids.empty())
+        return split;
+
+    kids.insert(kids.end(), newKids.begin(), newKids.end());
+
+    return true;
+}
+
 bool AC3D::fixMultipleWorlds()
 {
     // check for concatenated files

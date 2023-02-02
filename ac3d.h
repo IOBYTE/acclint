@@ -401,6 +401,7 @@ public:
     bool cleanSurfaces();
     bool cleanMaterials();
     bool fixMultipleWorlds();
+    bool splitMultipleSURF();
 
     class quoted_string : public std::string
     {
@@ -918,6 +919,7 @@ private:
     bool sameMaterial(const Material &material1, const Material &material2) const;
     bool sameMaterialParameters(const Material &material1, const Material &material2) const;
     bool setMaterialUsed(size_t index);
+    bool splitMultipleSURF(std::vector<Object> &kids);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);

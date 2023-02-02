@@ -71,6 +71,7 @@ void usage()
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  --dump group|poly|surf          Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                        Output version 11 or 12." << std::endl;
+    std::cerr << "  --splitSURF                     Split objects with multiple surface types into seperate objects" << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -136,6 +137,7 @@ int main(int argc, char *argv[])
     bool different_surf = true;
     std::vector<std::string> texture_paths;
     bool dump = false;
+    bool splitSURF = false;
     AC3D::DumpType dump_type;
     int version = 0;
 
@@ -393,6 +395,10 @@ int main(int argc, char *argv[])
         {
             invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "--splitSURF")
+        {
+            splitSURF = true;
+        }
         else if (arg == "--dump")
         {
             i++;
@@ -541,6 +547,9 @@ int main(int argc, char *argv[])
 
         if (ac3d.fixMultipleWorlds())
         {
+            if (splitSURF)
+                ac3d.splitMultipleSURF();
+
             ac3d.clean();
 
             ac3d.write(out_file, version);
