@@ -391,6 +391,14 @@ public:
     {
         return m_different_surf;
     }
+    void differentMat(bool value)
+    {
+        m_different_mat = value;
+    }
+    bool differentMat() const
+    {
+        return m_different_mat;
+    }
     void texturePaths(const std::vector<std::string> &paths)
     {
         m_texture_paths = paths;
@@ -402,6 +410,7 @@ public:
     bool cleanMaterials();
     bool fixMultipleWorlds();
     bool splitMultipleSURF();
+    bool splitMultipleMat();
     bool merge(const AC3D& ac3d);
 
     class quoted_string : public std::string
@@ -583,10 +592,17 @@ private:
         int declared_size = 0;
     };
 
+    struct Mat : public LineInfo
+    {
+        size_t mat = 0;
+
+        Mat(size_t number, const std::streampos& pos, size_t index) : LineInfo(number, pos), mat(index) { }
+    };
+
     struct Surface : public LineInfo
     {
         unsigned int flags = 0;
-        std::vector<size_t> mat;
+        std::vector<Mat> mats;
         Refs refs;
         bool coplanar = true; // only for Polygon and ClosedLine
         Point3 normal = { 0.0, 0.0, 0.0 }; // only for Polygon
@@ -866,6 +882,7 @@ private:
     bool            m_group_with_geometry = true;
     bool            m_multiple_world = true;
     bool            m_different_surf = true;
+    bool            m_different_mat = true;
     bool            m_has_world = false;
 
     Header m_header;
@@ -909,6 +926,7 @@ private:
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
+    void checkDifferentMat(std::istream& in, const Object& object);
     void checkDifferentUV(std::istream& in, const Object& object);
     void checkGroupWithGeometry(std::istream& in, const Object& object);
     bool cleanObjects(std::vector<Object> &objects);
@@ -923,6 +941,7 @@ private:
     bool sameMaterialParameters(const Material &material1, const Material &material2) const;
     bool setMaterialUsed(size_t index);
     bool splitMultipleSURF(std::vector<Object> &kids);
+    bool splitMultipleMat(std::vector<Object> &kids);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);

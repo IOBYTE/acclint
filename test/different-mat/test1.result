@@ -1,0 +1,7 @@
+test1.ac:21 warning: different mat
+mat 1
+^
+test1.ac:15 note: mat
+mat 0
+^
+1 warning

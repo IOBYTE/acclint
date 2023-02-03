@@ -79,3 +79,8 @@ cd merge
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd different-mat
+echo "${PWD##*/}"
+bats test.bats
+cd ..

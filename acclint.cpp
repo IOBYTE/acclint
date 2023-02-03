@@ -62,6 +62,7 @@ void usage()
     std::cerr << "  -Wno-multiple-world             Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-different-uv               Don't show different uv warnings." << std::endl;
     std::cerr << "  -Wno-different-surf             Don't show different surf warnings." << std::endl;
+    std::cerr << "  -Wno-different-mat              Don't show different mat warnings." << std::endl;
     std::cerr << "  -Wno-group-with-geometry        Don't show group with geometry warnings." << std::endl;
     std::cerr << "  -Wno-errors                     Don't show any errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file              Don't show not AC3D file errors." << std::endl;
@@ -71,7 +72,8 @@ void usage()
     std::cerr << "  -Wno-invalid-vertex-index       Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  --dump group|poly|surf          Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                        Output version 11 or 12." << std::endl;
-    std::cerr << "  --splitSURF                     Split objects with multiple surface types into seperate objects" << std::endl;
+    std::cerr << "  --splitSURF                     Split objects with multiple surface types into seperate objects." << std::endl;
+    std::cerr << "  --splitMat                      Split objects with multiple materials into seperate objects." << std::endl;
     std::cerr << "  --merge filename                Merge filename with inputfile." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings and errors are enabled." << std::endl;
@@ -136,9 +138,11 @@ int main(int argc, char *argv[])
     bool group_with_geometry = true;
     bool multiple_world = true;
     bool different_surf = true;
+    bool different_mat = true;
     std::vector<std::string> texture_paths;
     bool dump = false;
     bool splitSURF = false;
+    bool splitMat = false;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
@@ -220,6 +224,7 @@ int main(int argc, char *argv[])
             group_with_geometry = false;
             multiple_world = false;
             different_surf = false;
+            different_mat = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -365,6 +370,10 @@ int main(int argc, char *argv[])
         {
             different_surf = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-different-mat" || arg == "-Wdifferent-mat")
+        {
+            different_mat = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-errors")
         {
             not_ac3d_file = false;
@@ -400,6 +409,10 @@ int main(int argc, char *argv[])
         else if (arg == "--splitSURF")
         {
             splitSURF = true;
+        }
+        else if (arg == "--splitMat")
+        {
+            splitMat = true;
         }
         else if (arg == "--merge")
         {
@@ -524,6 +537,7 @@ int main(int argc, char *argv[])
     ac3d.groupWithGeometry(group_with_geometry);
     ac3d.multipleWorld(multiple_world);
     ac3d.differentSURF(different_surf);
+    ac3d.differentMat(different_mat);
 
     if (!ac3d.read(in_file))
     {
@@ -609,6 +623,9 @@ int main(int argc, char *argv[])
         {
             if (splitSURF)
                 ac3d.splitMultipleSURF();
+
+            if (splitMat)
+                ac3d.splitMultipleMat();
 
             ac3d.clean();
 

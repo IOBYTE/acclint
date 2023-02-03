@@ -505,7 +505,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                 }
             }
 
-            surface.mat.push_back(mat);
+            surface.mats.emplace_back(m_line_number, m_line_pos, mat);
 
             checkTrailing(iss);
         }
@@ -589,8 +589,8 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 void AC3D::writeSurface(std::ostream &out, const Surface &surface) const
 {
     out << "SURF 0x" << std::hex << surface.flags << std::dec << newline(m_crlf);
-    if (!surface.mat.empty())
-        out << "mat " << surface.mat[0] << newline(m_crlf);
+    if (!surface.mats.empty())
+        out << "mat " << surface.mats[0].mat << newline(m_crlf);
     out << "refs " << surface.refs.size() << newline(m_crlf);
     for (const auto &ref : surface.refs)
         writeRef(out, ref);
@@ -653,7 +653,7 @@ void AC3D::convertObject(Object &object)
                     continue;
 
                 Surface surface;
-                surface.mat = object.surfaces[i].mat;
+                surface.mats = object.surfaces[i].mats;
                 surface.flags = object.surfaces[i].flags & Surface::FaceMask;
 
                 if ((j & 1U) == 0)
@@ -1939,6 +1939,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     checkDifferentUV(in, object);
     checkGroupWithGeometry(in, object);
     checkDifferentSURF(in, object);
+    checkDifferentMat(in, object);
 
 #if defined(CHECK_TRIANGLE_STRIPS)
     struct Triangle
@@ -2390,6 +2391,28 @@ void AC3D::checkDifferentSURF(std::istream& in, const Object& object)
             showLine(in, object.surfaces[i].line_pos);
             note(object.surfaces[0].line_number) << "SURF" << std::endl;
             showLine(in, object.surfaces[0].line_pos);
+        }
+    }
+}
+
+void AC3D::checkDifferentMat(std::istream& in, const Object& object)
+{
+    if (!m_different_mat)
+        return;
+
+    if (object.surfaces.empty())
+        return;
+
+    const size_t mat = object.surfaces[0].mats[0].mat;
+
+    for (size_t i = 1; i < object.surfaces.size(); ++i)
+    {
+        if (object.surfaces[i].mats[0].mat != mat)
+        {
+            warning(object.surfaces[i].mats[0].line_number) << "different mat" << std::endl;
+            showLine(in, object.surfaces[i].mats[0].line_pos);
+            note(object.surfaces[0].mats[0].line_number) << "mat" << std::endl;
+            showLine(in, object.surfaces[0].mats[0].line_pos);
         }
     }
 }
@@ -3133,6 +3156,83 @@ bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
     return true;
 }
 
+bool AC3D::splitMultipleMat()
+{
+    return splitMultipleMat(m_objects);
+}
+
+bool AC3D::splitMultipleMat(std::vector<Object> &kids)
+{
+    std::vector<Object> newKids;
+    bool split = false;
+
+    auto kid = kids.begin();
+    while (kid != kids.end())
+    {
+        if (!kid->kids.empty())
+            split |= splitMultipleMat(kid->kids);
+
+        if (kid->surfaces.empty())
+        {
+            ++kid;
+            continue;
+        }
+
+        if (kid->surfaces[0].mats.empty())
+        {
+            ++kid;
+            continue;
+        }
+
+        const size_t mat = kid->surfaces[0].mats[0].mat;
+        std::set<size_t> newMat;
+
+        for (size_t i = 1; i < kid->surfaces.size(); ++i)
+        {
+            if (!kid->surfaces[i].mats.empty() && kid->surfaces[i].mats[0].mat != mat)
+            {
+                if (!newMat.contains(kid->surfaces[i].mats[0].mat))
+                {
+                    newMat.insert(kid->surfaces[i].mats[0].mat);
+                    newKids.push_back(*kid);
+
+                    if (!newKids.back().names.empty())
+                        newKids.back().names[0].name += ("-split" + std::to_string(newKids.size()));
+
+                    auto it = newKids.back().surfaces.begin();
+                    while (it != newKids.back().surfaces.end())
+                    {
+                        // remove surfaces that don't match
+                        if (it->mats[0].mat != kid->surfaces[i].mats[0].mat)
+                            it = newKids.back().surfaces.erase(it);
+                        else
+                            ++it;
+                    }
+                }
+            }
+        }
+
+        auto it = kid->surfaces.begin();
+        while (it != kid->surfaces.end())
+        {
+            // remove surfaces that don't match
+            if (it->mats[0].mat != mat)
+                it = kid->surfaces.erase(it);
+            else
+                ++it;
+        }
+
+        ++kid;
+    }
+
+    if (newKids.empty())
+        return split;
+
+    kids.insert(kids.end(), newKids.begin(), newKids.end());
+
+    return true;
+}
+
 bool AC3D::fixMultipleWorlds()
 {
     // check for concatenated files
@@ -3274,13 +3374,13 @@ bool AC3D::cleanMaterials(std::vector<Object> &objects, const std::vector<size_t
     {
         for (auto &surface : object.surfaces)
         {
-            if (!surface.mat.empty() &&
-                surface.mat.back() != indexes[surface.mat.back()])
+            if (!surface.mats.empty() &&
+                surface.mats.back().mat != indexes[surface.mats.back().mat])
             {
                 changed = true;
 
                 // update surface with new index
-                surface.mat.back() = indexes[surface.mat.back()];
+                surface.mats.back().mat = indexes[surface.mats.back().mat];
             }
         }
 
@@ -3505,8 +3605,8 @@ bool AC3D::cleanSurfaces(Object &object)
             Surface surface;
 
             surface.flags = object.surfaces[i].flags;
-            if (!object.surfaces[i].mat.empty())
-                surface.mat.push_back(object.surfaces[i].mat.back());
+            if (!object.surfaces[i].mats.empty())
+                surface.mats.push_back(object.surfaces[i].mats.back());
             surface.refs.push_back(object.surfaces[i].refs[2]);
             surface.refs.push_back(object.surfaces[i].refs[3]);
             surface.refs.push_back(object.surfaces[i].refs[0]);
@@ -3574,8 +3674,8 @@ void AC3D::Object::incrementMaterialIndex(size_t num_materials)
     {
         for (auto &surface : surfaces)
         {
-            if (!surface.mat.empty())
-                surface.mat[0] += num_materials;
+            if (!surface.mats.empty())
+                surface.mats[0].mat += num_materials;
         }
     }
     else
