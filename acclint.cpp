@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     if (argc < 2)
     {
         usage();
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     std::string in_file;
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
     std::vector<std::string> texture_paths;
     bool dump = false;
     bool splitSURF = false;
-    AC3D::DumpType dump_type;
+    AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
 
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
             else
             {
                 usage();
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
         }
         else if (arg == "-T")
@@ -169,18 +169,18 @@ int main(int argc, char *argv[])
             else
             {
                 usage();
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
         }
         else if (arg == "--version")
         {
             std::cout << "acclint " << acclint_VERSION_MAJOR << "." << acclint_VERSION_MINOR << std::endl;
-            exit(EXIT_SUCCESS);
+            return EXIT_SUCCESS;
         }
         else if (arg == "--help")
         {
             usage();
-            exit(EXIT_SUCCESS);
+            return EXIT_SUCCESS;
         }
         else if (arg == "-Wno-warnings")
         {
@@ -412,7 +412,7 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "Missing merge file" << std::endl;
                 usage();
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
         }
         else if (arg == "--dump")
@@ -422,7 +422,7 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "Missing dump type" << std::endl;
                 usage();
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             arg = argv[i];
             if (arg == "group")
@@ -435,7 +435,7 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "Invalid dump type: " << arg << std::endl;
                 usage();
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             dump = true;
         }
@@ -446,7 +446,7 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "Missing output version" << std::endl;
                 usage();
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
             arg = argv[i];
             if (arg == "11")
@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "Invalid output version: " << arg << std::endl;
                 usage();
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
         }
         else if (arg[0] != '-')
@@ -468,14 +468,14 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "Multiple input files not supported: " << arg << std::endl;
                 usage();
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
         }
         else
         {
             std::cerr << "Unknown option: " << arg << std::endl;
             usage();
-            exit(EXIT_FAILURE);
+            return EXIT_FAILURE;
         }
     }
 
@@ -534,7 +534,7 @@ int main(int argc, char *argv[])
                 std::cerr << "s";
             std::cerr << std::endl;
         }
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     if (ac3d.warnings() > 0)
@@ -558,10 +558,10 @@ int main(int argc, char *argv[])
         if (ac3d.errors() > 0)
         {
             std::cerr << "Can't write output file because input file has fatal errors" << std::endl;
-            exit(EXIT_FAILURE);
+            return EXIT_FAILURE;
         }
 
-        for (auto& filename : merge_files)
+        for (const auto& filename : merge_files)
         {
             std::cout << "Reading: " << filename << std::endl;
 
@@ -577,7 +577,7 @@ int main(int argc, char *argv[])
                     std::cerr << std::endl;
                 }
 
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
 
             if (to_merge.warnings() > 0)
@@ -601,7 +601,7 @@ int main(int argc, char *argv[])
             if (!ac3d.merge(to_merge))
             {
                 std::cerr << "Couldn't merge " << filename << std::endl;
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
         }
 
@@ -619,6 +619,6 @@ int main(int argc, char *argv[])
     if (dump)
         ac3d.dump(dump_type);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 

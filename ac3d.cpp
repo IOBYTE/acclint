@@ -129,8 +129,8 @@ bool isWhitespace(const std::string &s)
 bool hasTrailing(const std::istringstream &s)
 {
     std::streambuf *buf = s.rdbuf();
-    std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
-    std::streampos end = buf->pubseekoff(0, std::ios_base::end, std::ios_base::in);
+    const std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
+    const std::streampos end = buf->pubseekoff(0, std::ios_base::end, std::ios_base::in);
     buf->pubseekpos(pos, std::ios_base::in);
     return end != pos;
 }
@@ -138,7 +138,7 @@ bool hasTrailing(const std::istringstream &s)
 std::string getTrailing(const std::istringstream &s)
 {
     std::streambuf *buf = s.rdbuf();
-    std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
+    const std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
     buf->pubseekpos(pos, std::ios_base::in);
     return s.str().substr(pos);
 }
@@ -148,7 +148,7 @@ void showLine(std::istringstream &in)
     std::cerr << in.str() << std::endl;
 
     std::streambuf *buf = in.rdbuf();
-    std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
+    const std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
     buf->pubseekpos(pos, std::ios_base::in);
 
     for (int i = 0; i < pos; ++i)
@@ -167,7 +167,7 @@ void showLine(std::istringstream &in, const std::streampos &pos)
 
 void showLine(std::istream &in, const std::streampos &pos, int offset = 0)
 {
-    std::streampos current = in.tellg();
+    const std::streampos current = in.tellg();
     std::string line;
 
     in.seekg(pos);
@@ -273,7 +273,7 @@ void AC3D::checkTrailing(std::istringstream &iss)
     if (!m_trailing_text)
         return;
 
-    std::streampos pos = iss.tellg();
+    const std::streampos pos = iss.tellg();
     if (hasTrailing(iss))
     {
         warning() << "trailing text: \"" << getTrailing(iss) << "\"" << std::endl;
@@ -439,7 +439,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
     if (token == SURF_token)
     {
         iss >> std::ws;
-        std::streampos pos = iss.tellg();
+        const std::streampos pos = iss.tellg();
         iss >> std::hex >> surface.flags >> std::dec;
 
         if (iss)
@@ -488,7 +488,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         size_t mat;
 
         iss >> std::ws;
-        std::streampos pos = iss.tellg();
+        const std::streampos pos = iss.tellg();
         iss >> mat;
 
         if (iss)
@@ -832,7 +832,7 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
 void AC3D::writeData(std::ostream &out, const std::string &data) const
 {
     out << "data " << data.size() << newline(m_crlf);
-    for (char c : data)
+    for (const char c : data)
     {
         if (c == '\n' && m_crlf)
             out << '\r';
@@ -900,7 +900,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
 {
     in >> std::ws;
 
-    std::streampos pos = in.tellg();
+    const std::streampos pos = in.tellg();
     std::string actual;
 
     in >> actual;
@@ -937,7 +937,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
 bool AC3D::readValue(std::istringstream &in, double &value, const std::string &expected, double min, double max, bool is_float)
 {
     in >> std::ws;
-    std::streampos pos = in.tellg();
+    const std::streampos pos = in.tellg();
     std::string value_string;
     in >> value_string;
 
@@ -988,7 +988,7 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string &e
 bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::string &expected, const std::string &next, double min, double max, bool is_float)
 {
     in >> std::ws;
-    std::streampos pos = in.tellg();
+    const std::streampos pos = in.tellg();
     std::string actual;
 
     in >> actual;
@@ -1329,7 +1329,6 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     }
                     else
                     {
-                        std::string trailing = getTrailing(iss1);
                         iss1 >> texture.type;
                         if (iss1)
                         {
@@ -1363,17 +1362,17 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                 if (texture.name != "empty_texture_no_mapping")
                 {
-                    std::filesystem::path file_path(m_file);
+                    const std::filesystem::path file_path(m_file);
                     std::string texture_name(texture.name);
                     std::filesystem::path texture_path(texture_name);
-                    bool absolute = texture_path.is_absolute() ||
+                    const bool absolute = texture_path.is_absolute() ||
                         (std::isalpha(texture_name[0]) && texture_name[1] == ':');
 
                     // use parent path of file when available
                     // and texture path is not absolute
                     if (!file_path.parent_path().empty() && !absolute)
                     {
-                        std::string parent(file_path.parent_path().string());
+                        const std::string parent(file_path.parent_path().string());
                         texture_path = parent + '/' + texture_name;
                     }
 
@@ -1402,11 +1401,11 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     }
                     else if (!absolute && !m_texture_paths.empty()) // look for duplicate textures
                     {
-                        std::size_t size = std::filesystem::file_size(texture_path);
+                        const std::size_t size = std::filesystem::file_size(texture_path);
 
                         for (const auto & path : m_texture_paths)
                         {
-                            std::string other(path + '/' + texture_name);
+                            const std::string other(path + '/' + texture_name);
                             if (std::filesystem::exists(other))
                             {
                                 if (size == std::filesystem::file_size(other))
@@ -1654,7 +1653,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == locked_token)
         {
-            LineInfo info(m_line_number, m_line_pos);
+            const LineInfo info(m_line_number, m_line_pos);
 
             if (!object.locked.empty() && m_multiple_locked)
             {
@@ -1670,7 +1669,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == hidden_token)
         {
-            LineInfo info(m_line_number, m_line_pos);
+            const LineInfo info(m_line_number, m_line_pos);
 
             if (!object.hidden.empty() && m_multiple_hidden)
             {
@@ -1686,7 +1685,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == folded_token)
         {
-            LineInfo info(m_line_number, m_line_pos);
+            const LineInfo info(m_line_number, m_line_pos);
 
             if (!object.folded.empty() && m_multiple_folded)
             {
@@ -1735,8 +1734,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     {
                         if (hasTrailing(iss2))
                         {
-                            std::streampos pos2 = iss2.tellg();
-                            std::string trailing = getTrailing(iss2);
+                            const std::streampos pos2 = iss2.tellg();
+                            const std::string trailing = getTrailing(iss2);
                             if (m_is_ac)
                             {
                                 if (m_trailing_text)
@@ -1754,7 +1753,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                                     if (m_invalid_normal)
                                     {
-                                        double length = vertex.normal.length();
+                                        const double length = vertex.normal.length();
                                         // assume truncated float values
                                         constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 10;
 
@@ -1790,7 +1789,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     }
                     else
                     {
-                        std::streampos pos1 = iss2.tellg();
+                        const std::streampos pos1 = iss2.tellg();
                         iss2.clear();
                         iss2.seekg(0, std::ios::beg);
                         std::string token1;
@@ -1858,7 +1857,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             if (kids > 0)
             {
                 m_level++;
-                size_t kids_line = m_line_number;
+                const size_t kids_line = m_line_number;
 
                 for (int i = 0; i < kids; ++i)
                 {
@@ -2173,7 +2172,7 @@ bool AC3D::read(const std::string &file)
     m_materials.clear();
     m_objects.clear();
 
-    std::string extension = std::filesystem::path(file).extension().string();
+    const std::string extension = std::filesystem::path(file).extension().string();
 
     if (extension == ".ac")
         m_is_ac = true;
@@ -2381,7 +2380,7 @@ void AC3D::checkDifferentSURF(std::istream& in, const Object& object)
     if (object.surfaces.empty())
         return;
 
-    unsigned int flags = object.surfaces[0].flags;
+    const unsigned int flags = object.surfaces[0].flags;
 
     for (size_t i = 1; i < object.surfaces.size(); ++i)
     {
@@ -2433,8 +2432,8 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
                     if (surface1.refs[k].index == surface2.refs[l].index &&
                         surface1.refs[k].coordinates != surface2.refs[l].coordinates)
                     {
-                        double angle = std::acos(surface1.normal.dot(surface2.normal)) * 180.0 / M_PI;
-                        double crease = object.creases.empty() ? 45.0 : object.creases[0].crease;
+                        const double angle = std::acos(surface1.normal.dot(surface2.normal)) * 180.0 / M_PI;
+                        const double crease = object.creases.empty() ? 45.0 : object.creases[0].crease;
 
                         if (angle < crease)
                         {
@@ -2446,7 +2445,7 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
                             }
                             else
                             {
-                                RefPtrSet refs = { &surface1.refs[k], &surface2.refs[l] };
+                                const RefPtrSet refs = { &surface1.refs[k], &surface2.refs[l] };
                                 matches.insert(std::make_pair(surface1.refs[k].index, refs));
                             }
                         }
@@ -2481,7 +2480,7 @@ void AC3D::checkGroupWithGeometry(std::istream& in, const Object& object)
     if (!m_group_with_geometry)
         return;
 
-    if (object.type.type == "group" && object.vertices.size() != 0)
+    if (object.type.type == "group" && !object.vertices.empty())
     {
         warning(object.type.line_number) << "group with geometry" << std::endl;
         showLine(in, object.type.line_pos, object.type.type_offset);
@@ -2585,7 +2584,7 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 bool AC3D::collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3)
 {
     constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon());
-    Point3 v = Point3{p2 - p1}.cross(p3 - p1);
+    const Point3 v = Point3{p2 - p1}.cross(p3 - p1);
     return std::fabs(v.x()) < epsilon &&
            std::fabs(v.y()) < epsilon &&
            std::fabs(v.z()) < epsilon;
@@ -2681,7 +2680,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
                 return;
         }
 
-        Point3 v = Point3{p1 - p0}.cross(p2 - p0);
+        const Point3 v = Point3{p1 - p0}.cross(p2 - p0);
         surface.normal = v;
 
         surface.normal.normalize();
@@ -2690,7 +2689,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
         if (surface.refs.size() < 4)
             return;
 
-        double d = -v.x() * p1.x() - v.y() * p1.y() - v.z() * p1.z();
+        const double d = -v.x() * p1.x() - v.y() * p1.y() - v.z() * p1.z();
 
         for (size_t i = next; i < surface.refs.size(); ++i)
         {
@@ -2698,7 +2697,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
             if (!object.getSurfaceVertex(surface, i, p))
                 return;
 
-            double e = v.x() * p.x() + v.y() * p.y() + v.z() * p.z() + d;
+            const double e = v.x() * p.x() + v.y() * p.y() + v.z() * p.z() + d;
             constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 1000;
             if (std::fabs(e) > epsilon)
             {
@@ -2716,10 +2715,10 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
     }
 }
 
-bool AC3D::ccw(Point2 p1, Point2 p2, Point2 p3)
+bool AC3D::ccw(const Point2 &p1, const Point2 &p2, const Point2 &p3)
 {
-    double val = (p2.y() - p1.y()) * (p3.x() - p2.x()) -
-                 (p2.x() - p1.x()) * (p3.y() - p2.y());
+    const double val = (p2.y() - p1.y()) * (p3.x() - p2.x()) -
+                       (p2.x() - p1.x()) * (p3.y() - p2.y());
 
     return (val < 0.0);
 }
@@ -2739,7 +2738,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
         Point2 p2;
 
         // project 3d coordinates onto 2d plane
-        Object::Plane plane = object.getPlane(surface.normal);
+        const Object::Plane plane = object.getPlane(surface.normal);
 
         if (!object.getSurfaceVertex(surface, next++, p0, plane))
             return;
@@ -2765,8 +2764,8 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
         }
 
         // FIXME: this will be wrong when starting on a convex vertex
-        bool counterclockwise = ccw(p0, p1, p2);
-        size_t size = surface.refs.size();
+        const bool counterclockwise = ccw(p0, p1, p2);
+        const size_t size = surface.refs.size();
         while (next < (size + 2))
         {
             p0 = p1;
@@ -2799,15 +2798,15 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
 // from http://geomalgorithms.com/a07-_distance.html
 double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3)
 {
-    Point3  u = p1 - p0;
-    Point3  v = p3 - p2;
-    Point3  w = p0 - p2;
-    double  a = u.dot(u);         // always >= 0
-    double  b = u.dot(v);
-    double  c = v.dot(v);         // always >= 0
-    double  d = u.dot(w);
-    double  e = v.dot(w);
-    double  D = a*c - b*b;        // always >= 0
+    const Point3  u = p1 - p0;
+    const Point3  v = p3 - p2;
+    const Point3  w = p0 - p2;
+    const double  a = u.dot(u);         // always >= 0
+    const double  b = u.dot(v);
+    const double  c = v.dot(v);         // always >= 0
+    const double  d = u.dot(w);
+    const double  e = v.dot(w);
+    const double  D = a*c - b*b;        // always >= 0
     double  sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
     double  tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
     constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
@@ -2863,7 +2862,7 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
     tc = (std::fabs(tN) < SMALL_NUM ? 0.0 : tN / tD);
 
     // get the difference of the two closest points
-    Point3  dP = w + (u * sc) - (v * tc);  // =  S1(sc) - S2(tc)
+    const Point3  dP = w + (u * sc) - (v * tc);  // =  S1(sc) - S2(tc)
 
     return dP.length();   // return the closest distance
 }
@@ -2938,7 +2937,7 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
 
                 if (next <= end)
                 {
-                    double distance = closest(p0, p1, p2, p3);
+                    const double distance = closest(p0, p1, p2, p3);
 
                     if (distance < static_cast<double>(std::numeric_limits<double>::epsilon()))
                     {
@@ -2957,7 +2956,7 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
 
 bool AC3D::write(const std::string &file, int version)
 {
-    std::string extension = std::filesystem::path(file).extension().string();
+    const std::string extension = std::filesystem::path(file).extension().string();
     bool is_ac;
 
     if (extension == ".ac")
@@ -3085,7 +3084,7 @@ bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
             continue;
         }
 
-        unsigned int flags = kid->surfaces[0].flags;
+        const unsigned int flags = kid->surfaces[0].flags;
         std::set<unsigned int> newFlags;
 
         for (size_t i = 1; i < kid->surfaces.size(); ++i)
@@ -3106,7 +3105,7 @@ bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
                         // remove surfaces that don't match
                         if (it->flags != kid->surfaces[i].flags)
                             it = newKids.back().surfaces.erase(it);
-                       else
+                        else
                             ++it;
                     }
                 }
@@ -3180,7 +3179,7 @@ bool AC3D::cleanMaterials()
         cleaned |= material.emis.clip();
         cleaned |= material.spec.clip();
 
-        double shi = std::round(material.shi);
+        const double shi = std::round(material.shi);
 
         if (shi != material.shi)
         {
@@ -3255,7 +3254,7 @@ bool AC3D::cleanMaterials()
 
     for (size_t i = duplicates.size(); i > 0; --i)
     {
-        size_t index = i - 1;
+        const size_t index = i - 1;
 
         // remove unused materials
         if (!m_materials[index].used)
@@ -3303,7 +3302,7 @@ bool AC3D::cleanObjects(std::vector<Object> &objects)
 
     while (it != objects.end())
     {
-        if (it->type.type == "group" && it->vertices.size() > 0)
+        if (it->type.type == "group" && !it->vertices.empty())
         {
             it->type.type = "poly";
             cleaned = true;
@@ -3384,14 +3383,14 @@ bool AC3D::cleanVertices(Object &object)
     {
         for (size_t j = 0; j < object.surfaces[i].refs.size(); j++)
         {
-            size_t index = object.surfaces[i].refs[j].index;
+            const size_t index = object.surfaces[i].refs[j].index;
 
             if (index >= object.vertices.size())
                 return false;
 
             if (info[index].duplicate)
             {
-                size_t new_index = info[index].new_index;
+                const size_t new_index = info[index].new_index;
 
                 object.surfaces[i].refs[j].index = new_index;
 
@@ -3554,8 +3553,8 @@ bool AC3D::merge(const AC3D &ac3d)
         return false;
     }
 
-    size_t num_materials = m_materials.size();
-    size_t num_kids = m_objects[0].kids.size();
+    const size_t num_materials = m_materials.size();
+    const size_t num_kids = m_objects[0].kids.size();
 
     m_materials.insert(m_materials.end(), ac3d.m_materials.begin(), ac3d.m_materials.end());
     m_objects[0].kids.insert(m_objects[0].kids.end(), ac3d.m_objects[0].kids.begin(), ac3d.m_objects[0].kids.end());
