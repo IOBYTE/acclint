@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="1">
+    <builddir>acclint-cppcheck-build-dir</builddir>
+    <platform>unknown</platform>
+    <importproject>build/acclint.sln</importproject>
+    <analyze-all-vs-configs>false</analyze-all-vs-configs>
+    <check-headers>true</check-headers>
+    <check-unused-templates>true</check-unused-templates>
+    <max-ctu-depth>2</max-ctu-depth>
+    <max-template-recursion>100</max-template-recursion>
+    <suppressions>
+        <suppression>clang-tidy-modernize-use-trailing-return-type</suppression>
+        <suppression>clang-tidy-fuchsia-overloaded-operator</suppression>
+        <suppression>clang-analyzer</suppression>
+        <suppression>clang-tidy-fuchsia-statically-constructed-objects</suppression>
+        <suppression>clang-tidy-cert-err58-cpp</suppression>
+        <suppression>clang-tidy-readability-identifier-length</suppression>
+        <suppression>clang-tidy-altera-unroll-loops</suppression>
+        <suppression>clang-tidy-fuchsia-default-arguments-calls</suppression>
+        <suppression>clang-tidy-altera-id-dependent-backward-branch</suppression>
+        <suppression>clang-tidy-google-readability-todo</suppression>
+        <suppression>clang-tidy-misc-no-recursion</suppression>
+        <suppression>clang-tidy-bugprone-easily-swappable-parameters</suppression>
+        <suppression>clang-tidy-readability-function-cognitive-complexity</suppression>
+    </suppressions>
+    <safe-checks>
+        <class-public/>
+    </safe-checks>
+    <tools>
+        <tool>clang-tidy</tool>
+    </tools>
+</project>

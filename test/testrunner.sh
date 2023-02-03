@@ -74,3 +74,8 @@ cd different-surf
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd merge
+echo "${PWD##*/}"
+bats test.bats
+cd ..
