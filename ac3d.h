@@ -607,6 +607,48 @@ private:
         Mat(size_t number, const std::streampos& pos, size_t index) : LineInfo(number, pos), mat(index) { }
     };
 
+    struct Vertex : public LineInfo
+    {
+        Point3 vertex = { 0.0, 0.0, 0.0 };
+        Point3 normal = { 0.0, 0.0, 0.0 };
+        bool has_normal = false;
+        bool used = false;
+
+        bool operator == (const Vertex& other) const
+        {
+            if (vertex != other.vertex)
+                return false;
+
+            if (has_normal != other.has_normal)
+                return false;
+
+            if (has_normal && normal != other.normal)
+                return false;
+
+            return true;
+        }
+    };
+
+    struct Triangle
+    {
+        Vertex vertex0;
+        Vertex vertex1;
+        Vertex vertex2;
+        Point3 normal = { 0.0, 0.0, 0.0 };
+        bool degenerate = false;
+
+        Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2) :
+            vertex0(v0), vertex1(v1), vertex2(v2)
+        {
+            degenerate = AC3D::degenerate(v0.vertex, v1.vertex, v2.vertex);
+
+            if (!degenerate)
+                normal = AC3D::normal(v0.vertex, v1.vertex, v2.vertex);
+        }
+    };
+
+    struct Object;
+
     struct Surface : public LineInfo
     {
         unsigned int flags = 0;
@@ -615,6 +657,7 @@ private:
         bool coplanar = true; // only for Polygon and ClosedLine
         Point3 normal = { 0.0, 0.0, 0.0 }; // only for Polygon
         bool concave = false; // only for Polygon
+        std::vector<Triangle> triangleStrip; // only for triangle strips
 
         enum : unsigned int
         {
@@ -684,29 +727,12 @@ private:
             index = refs[ref].index;
             return true;
         }
-        void dump(DumpType dump_type, size_t count, size_t level) const;
-    };
-
-    struct Vertex : public LineInfo
-    {
-        Point3 vertex = {0.0, 0.0, 0.0};
-        Point3 normal = {0.0, 0.0, 0.0};
-        bool has_normal = false;
-        bool used = false;
-
-        bool operator == (const Vertex &other) const
+        const std::vector<Triangle> &getTriangleStrip() const
         {
-            if (vertex != other.vertex)
-                return false;
-
-            if (has_normal != other.has_normal)
-                return false;
-
-            if (has_normal && normal != other.normal)
-                return false;
-
-            return true;
+            return triangleStrip;
         }
+        void setTriangleStrip(const Object &object);
+        void dump(DumpType dump_type, size_t count, size_t level) const;
     };
 
     struct Location : public LineInfo
@@ -971,6 +997,7 @@ private:
     static bool ccw(const AC3D::Point2 &p1, const AC3D::Point2 &p2, const AC3D::Point2 &p3);
     static double closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3);
     static Point3 normal(const Point3& p0, const Point3& p1, const Point3& p2);
+    static bool degenerate(const Point3& p0, const Point3& p1, const Point3& p2);
 };
 
 #endif

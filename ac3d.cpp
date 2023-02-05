@@ -571,6 +571,8 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
             }
         }
 
+        surface.setTriangleStrip(object);
+
         checkDuplicateSurfaceVertices(in, object, surface);
         checkCollinearSurfaceVertices(in, object, surface);
         checkSurfaceCoplanar(in, object, surface);
@@ -1915,7 +1917,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             note(object.numsurf.line_number) << "number specified" << std::endl;
             showLine(in, object.numsurf.line_pos, object.numsurf.number_offset);
 
-            Surface surface;
+            Surface surface(object);
 
             if (readSurface(in, surface, object, false))
                 object.surfaces.push_back(surface);
@@ -2118,6 +2120,20 @@ void AC3D::Surface::dump(DumpType dump_type, size_t count, size_t level) const
         std::cout << "    ";
 
     std::cout << (count + 1) << " surface " << refs.size() << " ref" << (refs.size() == 1 ? "" : "s") << std::endl;
+}
+
+void AC3D::Surface::setTriangleStrip(const Object &object)
+{
+    // TODO: Should we handle this being called more than once?
+    if (triangleStrip.empty() && isTriangleStrip())
+    {
+        for (size_t i = 2; i < refs.size(); i++)
+        {
+            triangleStrip.emplace_back(object.vertices[refs[i - 2].index],
+                                       object.vertices[refs[i - 1].index],
+                                       object.vertices[refs[i].index]);
+        }
+    }
 }
 
 void AC3D::writeObject(std::ostream &out, const Object &object) const
@@ -2828,6 +2844,11 @@ AC3D::Point3 AC3D::normal(const Point3& p0, const Point3& p1, const Point3& p2)
     return normal;
 }
 
+bool AC3D::degenerate(const Point3& p0, const Point3& p1, const Point3& p2)
+{
+    return p0 == p1 || p0 == p2 || p1 == p2;
+}
+
 // from http://geomalgorithms.com/a07-_distance.html
 double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3)
 {
@@ -2911,26 +2932,7 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
     if (!surface.isTriangleStrip() || surface.isDoubleSided())
         return;
 
-    struct Triangle
-    {
-        Vertex vertex0, vertex1, vertex2;
-        Point3 normal = { 0.0, 0.0, 0.0 };
-
-        Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2) :
-            vertex0(v0), vertex1(v1), vertex2(v2),
-            normal(AC3D::normal(v0.vertex, v1.vertex, v2.vertex))
-        {
-        }
-    };
-
-    std::vector<Triangle> triangleStrip;
-
-    for (size_t i = 2; i < surface.refs.size(); i++)
-    {
-        triangleStrip.emplace_back(object.vertices[surface.refs[i - 2].index],
-                                   object.vertices[surface.refs[i - 1].index],
-                                   object.vertices[surface.refs[i].index]);
-    }
+    const std::vector<Triangle> &triangleStrip = surface.getTriangleStrip();
 
     //std::cout << triangleStrip.size() << " triangles" << std::endl;
 }
