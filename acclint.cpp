@@ -40,6 +40,7 @@ void usage()
     std::cerr << "  -Wno-surface-not-coplanar       Don't show surface not coplanar warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-convex         Don't show surface not convex warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-hole         Don't show surface triangle strip with hole warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-size         Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface   Don't show multiple polygon surface warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture            Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-texture          Don't show duplicate texture warnings." << std::endl;
@@ -118,6 +119,7 @@ int main(int argc, char *argv[])
     bool surface_not_coplanar = true;
     bool surface_not_convex = true;
     bool surface_strip_hole = true;
+    bool surface_strip_size = true;
     bool multiple_polygon_surface = true;
     bool floating_point = true;
     bool empty_object = true;
@@ -205,6 +207,7 @@ int main(int argc, char *argv[])
             surface_self_intersecting = false;
             surface_not_convex = false;
             surface_strip_hole = false;
+            surface_strip_size = false;
             multiple_polygon_surface = false;
             floating_point = false;
             empty_object = false;
@@ -288,6 +291,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-surface-strip-hole" || arg == "-Wsurface-strip-hole")
         {
             surface_strip_hole = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-strip-size" || arg == "-Wsurface-strip-size")
+        {
+            surface_strip_size = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-multiple-polygon-surface" || arg == "-Wmultiple-polygon-surface")
         {
@@ -522,6 +529,7 @@ int main(int argc, char *argv[])
     ac3d.surfaceNotCoplanar(surface_not_coplanar);
     ac3d.surfaceNotConvex(surface_not_convex);
     ac3d.surfaceStripHole(surface_strip_hole);
+    ac3d.surfaceStripSize(surface_strip_size);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
     ac3d.emptyObject(empty_object);

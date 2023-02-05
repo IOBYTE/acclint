@@ -84,3 +84,8 @@ cd different-mat
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd surface-strip-size
+echo "${PWD##*/}"
+bats test.bats
+cd ..

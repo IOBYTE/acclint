@@ -579,6 +579,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfacePolygonType(in, object, surface);
         checkSurfaceSelfIntersecting(in, object, surface);
         checkSurfaceStripHole(in, object, surface);
+        checkSurfaceStripSize(in, object, surface);
     }
     else
     {
@@ -2921,6 +2922,24 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
     return dP.length();   // return the closest distance
 }
 
+void AC3D::checkSurfaceStripSize(std::istream &in, const Object &object, const Surface &surface)
+{
+    if (!m_surface_strip_size)
+        return;
+
+    if (m_is_ac)
+        return;
+
+    if (!surface.isTriangleStrip())
+        return;
+
+    if (surface.getTriangleStrip().size() < 2)
+    {
+        warning(surface.line_number) << "triangle strip with" << (surface.getTriangleStrip().empty() ? " no triangles" : " 1 triangle") << std::endl;
+        showLine(in, surface.line_pos);
+    }
+}
+
 void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const Surface& surface)
 {
     if (!m_surface_strip_hole)
@@ -2933,6 +2952,9 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
         return;
 
     const std::vector<Triangle> &triangleStrip = surface.getTriangleStrip();
+
+    if (triangleStrip.size() < 2)
+        return;
 
     //std::cout << triangleStrip.size() << " triangles" << std::endl;
 }
