@@ -576,6 +576,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfaceCoplanar(in, object, surface);
         checkSurfacePolygonType(in, object, surface);
         checkSurfaceSelfIntersecting(in, object, surface);
+        checkSurfaceStripHole(in, object, surface);
     }
     else
     {
@@ -2888,6 +2889,20 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
     const Point3  dP = w + (u * sc) - (v * tc);  // =  S1(sc) - S2(tc)
 
     return dP.length();   // return the closest distance
+}
+
+void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, Surface& surface)
+{
+    if (!m_surface_strip_hole)
+        return;
+
+    if (m_is_ac)
+        return;
+
+    if (!surface.isTriangleStrip() || surface.isDoubleSided())
+        return;
+
+    //TODO: add check
 }
 
 void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface)

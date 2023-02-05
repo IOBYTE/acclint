@@ -223,6 +223,14 @@ public:
     {
         return m_surface_not_convex;
     }
+    void surfaceStripHole(bool value)
+    {
+        m_surface_strip_hole = value;
+    }
+    bool surfaceStripHole() const
+    {
+        return m_surface_strip_hole;
+    }
     void floatingPoint(bool value)
     {
         m_floating_point = value;
@@ -610,8 +618,9 @@ private:
 
         enum : unsigned int
         {
-            Polygon = 0, ClosedLine = 1, Line = 2, TriangleStrip = 4, TypeMask = 0xf,
-            SingleSidedFlat = 0, SingleSidedSmooth = 0x10, DoubleSidedFlat = 0x20, DoubleSidedSmooth = 0x30, FaceMask = 0xf0
+            Polygon = 0, ClosedLine = 1, Line = 2, TriangleStrip = 4, DoubleSided = 0x10, Shaded = 0x20,
+            TypeMask = 0xf, FaceMask = 0xf0, SideMask = 0x10, ShadeMask = 0x20,
+            SingleSidedFlat = 0, SingleSidedSmooth = 0x10, DoubleSidedFlat = 0x20, DoubleSidedSmooth = 0x30
         };
 
         bool isPolygon() const
@@ -629,6 +638,18 @@ private:
         bool isTriangleStrip() const
         {
             return (flags & TypeMask) == TriangleStrip;
+        }
+        bool isShaded() const
+        {
+            return (flags & ShadeMask) == Shaded;
+        }
+        bool isSingleSided() const
+        {
+            return (flags & SideMask) != DoubleSided;
+        }
+        bool isDoubleSided() const
+        {
+            return (flags & SideMask) == DoubleSided;
         }
         bool isSingleSidedFlat() const
         {
@@ -860,6 +881,7 @@ private:
     bool            m_surface_self_intersecting = true;
     bool            m_surface_not_coplanar = true;
     bool            m_surface_not_convex = true;
+    bool            m_surface_strip_hole = true;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
     bool            m_empty_object = true;
@@ -925,6 +947,7 @@ private:
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface);
+    void checkSurfaceStripHole(std::istream& in, const Object& object, Surface& surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream& in, const Object& object);
     void checkDifferentUV(std::istream& in, const Object& object);
