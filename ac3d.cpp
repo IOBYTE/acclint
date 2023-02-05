@@ -1917,7 +1917,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             note(object.numsurf.line_number) << "number specified" << std::endl;
             showLine(in, object.numsurf.line_pos, object.numsurf.number_offset);
 
-            Surface surface(object);
+            Surface surface;
 
             if (readSurface(in, surface, object, false))
                 object.surfaces.push_back(surface);
