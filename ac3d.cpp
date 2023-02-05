@@ -2819,6 +2819,15 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
     }
 }
 
+AC3D::Point3 AC3D::normal(const Point3& p0, const Point3& p1, const Point3& p2)
+{
+    Point3  normal((p1 - p0).cross(p2 - p1));
+
+    normal.normalize();
+
+    return normal;
+}
+
 // from http://geomalgorithms.com/a07-_distance.html
 double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3)
 {
@@ -2891,7 +2900,7 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
     return dP.length();   // return the closest distance
 }
 
-void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, Surface& surface)
+void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const Surface& surface)
 {
     if (!m_surface_strip_hole)
         return;
@@ -2902,10 +2911,31 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, Surface
     if (!surface.isTriangleStrip() || surface.isDoubleSided())
         return;
 
-    //TODO: add check
+    struct Triangle
+    {
+        Vertex vertex0, vertex1, vertex2;
+        Point3 normal = { 0.0, 0.0, 0.0 };
+
+        Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2) :
+            vertex0(v0), vertex1(v1), vertex2(v2),
+            normal(AC3D::normal(v0.vertex, v1.vertex, v2.vertex))
+        {
+        }
+    };
+
+    std::vector<Triangle> triangleStrip;
+
+    for (size_t i = 2; i < surface.refs.size(); i++)
+    {
+        triangleStrip.emplace_back(object.vertices[surface.refs[i - 2].index],
+                                   object.vertices[surface.refs[i - 1].index],
+                                   object.vertices[surface.refs[i].index]);
+    }
+
+    //std::cout << triangleStrip.size() << " triangles" << std::endl;
 }
 
-void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface)
+void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, const Surface &surface)
 {
     // only check coplanar polygon
     if (!(surface.isPolygon() && surface.coplanar))

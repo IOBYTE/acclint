@@ -618,8 +618,8 @@ private:
 
         enum : unsigned int
         {
-            Polygon = 0, ClosedLine = 1, Line = 2, TriangleStrip = 4, DoubleSided = 0x10, Shaded = 0x20,
-            TypeMask = 0xf, FaceMask = 0xf0, SideMask = 0x10, ShadeMask = 0x20,
+            Polygon = 0, ClosedLine = 1, Line = 2, TriangleStrip = 4, Shaded = 0x10, DoubleSided = 0x20,
+            TypeMask = 0xf, FaceMask = 0xf0, ShadeMask = 0x10, SideMask = 0x20,
             SingleSidedFlat = 0, SingleSidedSmooth = 0x10, DoubleSidedFlat = 0x20, DoubleSidedSmooth = 0x30
         };
 
@@ -946,8 +946,8 @@ private:
     void checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
-    void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, Surface &surface);
-    void checkSurfaceStripHole(std::istream& in, const Object& object, Surface& surface);
+    void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, const Surface &surface);
+    void checkSurfaceStripHole(std::istream& in, const Object& object, const Surface& surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream& in, const Object& object);
     void checkDifferentUV(std::istream& in, const Object& object);
@@ -970,6 +970,7 @@ private:
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
     static bool ccw(const AC3D::Point2 &p1, const AC3D::Point2 &p2, const AC3D::Point2 &p3);
     static double closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3);
+    static Point3 normal(const Point3& p0, const Point3& p1, const Point3& p2);
 };
 
 #endif
