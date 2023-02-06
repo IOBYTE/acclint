@@ -239,6 +239,14 @@ public:
     {
         return m_surface_strip_size;
     }
+    void surfaceStripDegenerate(bool value)
+    {
+        m_surface_strip_degenerate = value;
+    }
+    bool surfaceStripDegenerate() const
+    {
+        return m_surface_strip_degenerate;
+    }
     void floatingPoint(bool value)
     {
         m_floating_point = value;
@@ -917,6 +925,7 @@ private:
     bool            m_surface_not_convex = true;
     bool            m_surface_strip_hole = true;
     bool            m_surface_strip_size = true;
+    bool            m_surface_strip_degenerate = true;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
     bool            m_empty_object = true;
@@ -984,6 +993,7 @@ private:
     void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceStripHole(std::istream& in, const Object& object, const Surface& surface);
     void checkSurfaceStripSize(std::istream &in, const Object &object, const Surface &surface);
+    void checkSurfaceStripDegenerate(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream& in, const Object& object);
     void checkDifferentUV(std::istream& in, const Object& object);

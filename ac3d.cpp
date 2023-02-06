@@ -580,6 +580,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfaceSelfIntersecting(in, object, surface);
         checkSurfaceStripHole(in, object, surface);
         checkSurfaceStripSize(in, object, surface);
+        checkSurfaceStripDegenerate(in, object, surface);
     }
     else
     {
@@ -2936,6 +2937,33 @@ void AC3D::checkSurfaceStripSize(std::istream &in, const Object &object, const S
     if (surface.getTriangleStrip().size() < 2)
     {
         warning(surface.line_number) << "triangle strip with" << (surface.getTriangleStrip().empty() ? " no triangles" : " 1 triangle") << std::endl;
+        showLine(in, surface.line_pos);
+    }
+}
+
+void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Object &object, const Surface &surface)
+{
+    if (!m_surface_strip_degenerate)
+        return;
+
+    if (m_is_ac)
+        return;
+
+    if (!surface.isTriangleStrip())
+        return;
+
+    size_t count = 0;
+    for (const auto & triangle : surface.getTriangleStrip())
+    {
+        if (triangle.degenerate)
+            count++;
+    }
+
+    if (count > 0)
+    {
+        double size = static_cast<double>(surface.getTriangleStrip().size());
+        warning(surface.line_number) << "triangle strip " << count << " out of " << size << " ("
+            << ((count / size) * 100.0) << " percent) degenerate triangles" << std::endl;
         showLine(in, surface.line_pos);
     }
 }

@@ -89,3 +89,8 @@ cd surface-strip-size
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd surface-strip-degenerate
+echo "${PWD##*/}"
+bats test.bats
+cd ..
