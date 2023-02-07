@@ -816,7 +816,7 @@ private:
         std::vector<Surface> surfaces;
         std::vector<Object> kids;
 
-        enum class Plane { xy, xz, yz };
+        enum class PlaneType { xy, xz, yz };
 
         bool empty() const
         {
@@ -840,34 +840,34 @@ private:
                 return false;
             return true;
         }
-        Plane getPlane(const Point3 &normal) const
+        PlaneType getPlaneType(const Point3 &normal) const
         {
             // z largest so use xy plane
             if (std::fabs(normal.x()) < std::fabs(normal.z()) && std::fabs(normal.y()) < std::fabs(normal.z()))
-                return Plane::xy;
+                return PlaneType::xy;
 
             // y largest so use xz plane
             if (std::fabs(normal.x()) < std::fabs(normal.y()) && std::fabs(normal.z()) < std::fabs(normal.y()))
-                return Plane::xz;
+                return PlaneType::xz;
 
             // use yz plane
-            return Plane::yz;
+            return PlaneType::yz;
         }
-        bool getVertex(size_t index, Point2 &vertex, Plane plane) const
+        bool getVertex(size_t index, Point2 &vertex, PlaneType planeType) const
         {
             if (index >= vertices.size())
                 return false;
-            switch (plane)
+            switch (planeType)
             {
-            case Plane::xy:
+            case PlaneType::xy:
                 vertex.x(vertices[index].vertex.x());
                 vertex.y(vertices[index].vertex.y());
                 break;
-            case Plane::xz:
+            case PlaneType::xz:
                 vertex.x(vertices[index].vertex.x());
                 vertex.y(vertices[index].vertex.z());
                 break;
-            case Plane::yz:
+            case PlaneType::yz:
                 vertex.x(vertices[index].vertex.y());
                 vertex.y(vertices[index].vertex.z());
                 break;
@@ -877,12 +877,12 @@ private:
         bool getSurfaceVertex(const Surface &surface,
                               size_t ref,
                               Point2 &vertex,
-                              Plane plane) const
+                              PlaneType planeType) const
         {
             size_t index;
             if (!surface.getIndex(ref, index))
                 return false;
-            if (!getVertex(index, vertex, plane))
+            if (!getVertex(index, vertex, planeType))
                 return false;
             return true;
         }

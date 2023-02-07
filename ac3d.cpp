@@ -2780,28 +2780,28 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
         Point2 p2;
 
         // project 3d coordinates onto 2d plane
-        const Object::Plane plane = object.getPlane(surface.normal);
+        const Object::PlaneType planeType = object.getPlaneType(surface.normal);
 
-        if (!object.getSurfaceVertex(surface, next++, p0, plane))
+        if (!object.getSurfaceVertex(surface, next++, p0, planeType))
             return;
 
-        if (!object.getSurfaceVertex(surface, next++, p1, plane))
+        if (!object.getSurfaceVertex(surface, next++, p1, planeType))
             return;
 
         // find the next unique non-collnear vertex
         while (p0 == p1 || surface.refs[next - 1].collinear)
         {
-            if (!object.getSurfaceVertex(surface, next++, p1, plane))
+            if (!object.getSurfaceVertex(surface, next++, p1, planeType))
                 return;
         }
 
-        if (!object.getSurfaceVertex(surface, next++, p2, plane))
+        if (!object.getSurfaceVertex(surface, next++, p2, planeType))
             return;
 
         // find the next unique non-collnear vertex
         while (p1 == p2 || surface.refs[next - 1].collinear)
         {
-            if (!object.getSurfaceVertex(surface, next++, p2, plane))
+            if (!object.getSurfaceVertex(surface, next++, p2, planeType))
                 return;
         }
 
@@ -2812,12 +2812,12 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
         {
             p0 = p1;
             p1 = p2;
-            if (!object.getSurfaceVertex(surface, next++ % size, p2, plane))
+            if (!object.getSurfaceVertex(surface, next++ % size, p2, planeType))
                 return;
 
             while (p1 == p2 || surface.refs[(next - 1) % size].collinear)
             {
-                if (!object.getSurfaceVertex(surface, next++ % size, p2, plane))
+                if (!object.getSurfaceVertex(surface, next++ % size, p2, planeType))
                     return;
             }
 
