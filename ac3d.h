@@ -663,6 +663,71 @@ private:
         }
     };
 
+    enum class Winding { CCW, CW };
+
+    struct Plane
+    {
+        double  distance = 0;
+        Point3  normal = { 0.0, 0.0, 0.0 };
+        bool valid = false;
+
+        Plane(const Point3 &p0, const Point3 &p1, const Point3 &p2)
+        {
+            if (!AC3D::degenerate(p0, p1, p2))
+            {
+                normal = (p1 - p0).cross(p2 - p0);
+                normal.normalize();
+                distance = normal.dot(p0);
+                valid = true;
+            }
+        }
+        Plane(const Point3 &p0, const Point3 &p1, const Point3 &p2, Winding winding)
+        {
+            if (!AC3D::degenerate(p0, p1, p2))
+            {
+                if (winding == Winding::CCW)
+                    normal = (p1 - p0).cross(p2 - p0);
+                else
+                    normal = (p2 - p0).cross(p1 - p0);
+
+                normal.normalize();
+                distance = normal.dot(p0);
+                valid = true;
+            }
+        }
+        explicit Plane(const Triangle &triangle)
+        {
+            if (!triangle.degenerate)
+            {
+                normal = triangle.normal;
+                distance = normal.dot(triangle.vertex0.vertex);
+                valid = true;
+            }
+        }
+
+        bool isOnPlane(Point3 point) const
+        {
+            constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
+
+            return std::abs(normal.dot(point) - distance) < SMALL_NUM;
+        }
+
+        double distanceToPoint(const Point3 &point) const
+        {
+            return normal.dot(point) - distance;
+        }
+
+        bool isAbovePlane(const Point3 &point) const
+        {
+            return distanceToPoint(point) >= 0.0;
+        }
+
+        bool isBelowPlane(const Point3 &point) const
+        {
+            return !isAbovePlane(point);
+        }
+    };
+
     struct Object;
 
     struct Surface : public LineInfo
