@@ -2422,6 +2422,9 @@ void AC3D::checkDifferentMat(std::istream& in, const Object& object)
     if (object.surfaces.empty())
         return;
 
+    if (object.surfaces[0].mats.empty())
+        return;
+
     const size_t mat = object.surfaces[0].mats[0].mat;
 
     for (size_t i = 1; i < object.surfaces.size(); ++i)
@@ -2984,7 +2987,39 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
     if (triangleStrip.size() < 2)
         return;
 
-    //std::cout << triangleStrip.size() << " triangles" << std::endl;
+    const auto &triangles = surface.getTriangleStrip();
+    bool hasNormal = false;
+    Point3 oldNormal;
+    size_t holes = 0;
+    for (size_t i = 0; i < triangles.size(); i++)
+    {
+        if (triangles[i].degenerate)
+            continue;
+
+        Point3 newNormal;
+
+        if (i % 2)
+            newNormal = triangles[i].normal;
+        else
+            newNormal = -triangles[i].normal;
+
+        // TODO: assumes crease angle less than 90 degrees
+        // make it work for all crease angles
+        if (hasNormal && oldNormal.dot(newNormal) < 0)
+            holes++;
+
+        oldNormal = newNormal;
+        hasNormal = true;
+    }
+
+    if (holes > 0)
+    {
+        std::string s(holes != 1 ? "s" : "");
+
+        warning(surface.line_number) << "triangle strip with " << holes << " possible hole"
+            << s << " (reversed triangle" << s << ")" << std::endl;
+        showLine(in, surface.line_pos);
+    }
 }
 
 void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, const Surface &surface)

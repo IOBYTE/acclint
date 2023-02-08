@@ -79,7 +79,7 @@ void usage()
     std::cerr << "  --splitMat                      Split objects with multiple materials into seperate objects." << std::endl;
     std::cerr << "  --merge filename                Merge filename with inputfile." << std::endl;
     std::cerr << std::endl;
-    std::cerr << "By default all warnings and errors are enabled." << std::endl;
+    std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
     std::cerr << "You can also disable all warnings or errors and then reenable specific ones" << std::endl;
     std::cerr << "using the options above but without \"no-\"." << std::endl;
@@ -119,9 +119,9 @@ int main(int argc, char *argv[])
     bool surface_self_intersecting = true;
     bool surface_not_coplanar = true;
     bool surface_not_convex = true;
-    bool surface_strip_hole = true;
-    bool surface_strip_size = true;
-    bool surface_strip_degenerate = true;
+    bool surface_strip_hole = false;
+    bool surface_strip_size = false;
+    bool surface_strip_degenerate = false;
     bool multiple_polygon_surface = true;
     bool floating_point = true;
     bool empty_object = true;

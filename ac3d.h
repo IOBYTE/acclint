@@ -515,6 +515,10 @@ private:
         {
             return Point3 { x() * value, y() * value, z() * value };
         }
+        Point3 operator - () const
+        {
+            return Point3{ -x(), -y(), -z() };
+        }
         double dot(const Point3 &other) const
         {
             return x() * other.x() + y() * other.y() + z() * other.z();
@@ -988,9 +992,9 @@ private:
     bool            m_surface_self_intersecting = true;
     bool            m_surface_not_coplanar = true;
     bool            m_surface_not_convex = true;
-    bool            m_surface_strip_hole = true;
-    bool            m_surface_strip_size = true;
-    bool            m_surface_strip_degenerate = true;
+    bool            m_surface_strip_hole = false;
+    bool            m_surface_strip_size = false;
+    bool            m_surface_strip_degenerate = false;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
     bool            m_empty_object = true;
