@@ -2133,7 +2133,8 @@ void AC3D::Surface::setTriangleStrip(const Object &object)
         {
             triangleStrip.emplace_back(object.vertices[refs[i - 2].index],
                                        object.vertices[refs[i - 1].index],
-                                       object.vertices[refs[i].index]);
+                                       object.vertices[refs[i].index],
+                                       refs[i - 2], refs[i - 1], refs[i]);
         }
     }
 }
@@ -2964,7 +2965,7 @@ void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Object &object, c
 
     if (count > 0)
     {
-        double size = static_cast<double>(surface.getTriangleStrip().size());
+        const double size = static_cast<double>(surface.getTriangleStrip().size());
         warning(surface.line_number) << "triangle strip " << count << " out of " << size << " ("
             << ((count / size) * 100.0) << " percent) degenerate triangles" << std::endl;
         showLine(in, surface.line_pos);
@@ -2988,9 +2989,11 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
         return;
 
     const auto &triangles = surface.getTriangleStrip();
-    bool hasNormal = false;
+    bool hasOldNormal = false;
     Point3 oldNormal;
-    size_t holes = 0;
+    size_t oldTriangleIndex = 0;
+    std::vector<size_t> holes;
+
     for (size_t i = 0; i < triangles.size(); i++)
     {
         if (triangles[i].degenerate)
@@ -2998,27 +3001,54 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
 
         Point3 newNormal;
 
+        // alternate triangles in strip have reversed winding
+        // so flip them to match previous winding
         if (i % 2)
-            newNormal = triangles[i].normal;
+            newNormal = -triangles[i].normal; // reverse odd normals
         else
-            newNormal = -triangles[i].normal;
+            newNormal = triangles[i].normal;
 
-        // TODO: assumes crease angle less than 90 degrees
-        // make it work for all crease angles
-        if (hasNormal && oldNormal.dot(newNormal) < 0)
-            holes++;
+        if (hasOldNormal)
+        {
+            // find plane perpendicular to triangle running through shared edge
+            const Plane perpendicular(triangles[i].vertex0.vertex,
+                                      triangles[i].vertex1.vertex,
+                                      triangles[i].vertex0.vertex + triangles[oldTriangleIndex].normal);
+
+            // find out which side of plane third vertex is in
+            const bool above = perpendicular.isAbovePlane(triangles[i].vertex2.vertex);
+
+            // check normals for different winding
+            const double dot = oldNormal.dot(newNormal);
+            if (above)
+            {
+                if (dot < 0)
+                    holes.push_back(i);
+            }
+            else
+            {
+                if (dot > 0)
+                    holes.push_back(i);
+            }
+        }
 
         oldNormal = newNormal;
-        hasNormal = true;
+        oldTriangleIndex = i;
+        hasOldNormal = true;
     }
 
-    if (holes > 0)
+    if (!holes.empty())
     {
-        std::string s(holes != 1 ? "s" : "");
+        const std::string s(holes.size() != 1 ? "s" : "");
 
-        warning(surface.line_number) << "triangle strip with " << holes << " possible hole"
+        warning(surface.line_number) << "triangle strip with " << holes.size() << " possible hole"
             << s << " (reversed triangle" << s << ")" << std::endl;
         showLine(in, surface.line_pos);
+        for (size_t i = 0; i < holes.size(); i++)
+        {
+            note(triangles[holes[i]].ref2.line_number) << "ref" << std::endl;
+            showLine(in, triangles[holes[i]].ref2.line_pos);
+        }
     }
 }
 

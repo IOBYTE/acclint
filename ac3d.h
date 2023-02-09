@@ -654,11 +654,14 @@ private:
         Vertex vertex0;
         Vertex vertex1;
         Vertex vertex2;
+        Ref ref0;
+        Ref ref1;
+        Ref ref2;
         Point3 normal = { 0.0, 0.0, 0.0 };
         bool degenerate = false;
 
-        Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2) :
-            vertex0(v0), vertex1(v1), vertex2(v2)
+        Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Ref &r0, const Ref &r1, const Ref &r2) :
+            vertex0(v0), vertex1(v1), vertex2(v2), ref0(r0), ref1(r1), ref2(r2)
         {
             degenerate = AC3D::degenerate(v0.vertex, v1.vertex, v2.vertex);
 
