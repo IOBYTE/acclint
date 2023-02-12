@@ -34,6 +34,8 @@ void usage()
     std::cerr << "  -Wno-unused-vertex              Don't show unused vertex warnings." << std::endl;
     std::cerr << "  -Wno-invalid-normal             Don't show invalid normal warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces         Don't show duplicate surfaces warnings." << std::endl;
+    std::cerr << "  -Wno-duplicate-surfaces-order   Don't show duplicate surfaces with different vertex order warnings." << std::endl;
+    std::cerr << "  -Wno-duplicate-surfaces-winding Don't show duplicate surfaces with different winding warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surface-vertices Don't show duplicate surface vertices warnings." << std::endl;
     std::cerr << "  -Wno-collinear-surface-vertices Don't show collinear surface vertices warnings." << std::endl;
     std::cerr << "  -Wno-surface-self-intersecting  Don't show surface self intersecting warnings." << std::endl;
@@ -114,6 +116,8 @@ int main(int argc, char *argv[])
     bool invalid_surface_type = true;
     bool invalid_token = true;
     bool duplicate_surfaces = true;
+    bool duplicate_surfaces_order = true;
+    bool duplicate_surfaces_winding = true;
     bool duplicate_surface_vertices = true;
     bool collinear_surface_vertices = true;
     bool surface_self_intersecting = true;
@@ -203,6 +207,8 @@ int main(int argc, char *argv[])
             invalid_material = false;
             invalid_ref_count = false;
             duplicate_surfaces = false;
+            duplicate_surfaces_order = false;
+            duplicate_surfaces_winding = false;
             duplicate_surface_vertices = false;
             collinear_surface_vertices = false;
             surface_not_coplanar = false;
@@ -270,6 +276,14 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-duplicate-surfaces" || arg == "-Wduplicate-surfaces")
         {
             duplicate_surfaces = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-duplicate-surfaces-order" || arg == "-Wduplicate-surfaces-order")
+        {
+            duplicate_surfaces_order = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-duplicate-surfaces-winding" || arg == "-Wduplicate-surfaces-winding")
+        {
+            duplicate_surfaces_winding = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-duplicate-surface-vertices" || arg == "-Wduplicate-surface-vertices")
         {
@@ -530,6 +544,8 @@ int main(int argc, char *argv[])
     ac3d.invalidVertexIndex(invalid_vertex_index);
     ac3d.invalidToken(invalid_token);
     ac3d.duplicateSurfaces(duplicate_surfaces);
+    ac3d.duplicateSurfacesOrder(duplicate_surfaces_order);
+    ac3d.duplicateSurfacesWinding(duplicate_surfaces_winding);
     ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
     ac3d.collinearSurfaceVertices(collinear_surface_vertices);
     ac3d.surfaceSelfIntersecting(surface_self_intersecting);

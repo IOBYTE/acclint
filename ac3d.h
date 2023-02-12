@@ -175,6 +175,22 @@ public:
     {
         return m_duplicate_surfaces;
     }
+    void duplicateSurfacesOrder(bool value)
+    {
+        m_duplicate_surfaces_order = value;
+    }
+    bool duplicateSurfacesOrder() const
+    {
+        return m_duplicate_surfaces_order;
+    }
+    void duplicateSurfacesWinding(bool value)
+    {
+        m_duplicate_surfaces_winding = value;
+    }
+    bool duplicateSurfacesWinding() const
+    {
+        return m_duplicate_surfaces_winding;
+    }
     void duplicateSurfaceVertices(bool value)
     {
         m_duplicate_surface_vertices = value;
@@ -958,10 +974,22 @@ private:
                 return false;
             return true;
         }
-        bool sameSurface(size_t index1, size_t index2) const;
+        bool sameVertex(size_t index1, size_t index2) const
+        {
+            if (index1 == index2)
+                return true;
 
+            // skip invalid vertex
+            if (index1 >= vertices.size() || index2 >= vertices.size())
+                return false;
+
+            return vertices[index1].vertex == vertices[index2].vertex;
+        }
+
+        enum Difference : unsigned int { None = 0, Order = 1, Winding = 2 };
+
+        bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
-
         void incrementMaterialIndex(size_t num_materials);
     };
 
@@ -990,6 +1018,8 @@ private:
     bool            m_duplicate_materials = true;
     bool            m_unused_material = true;
     bool            m_duplicate_surfaces = true;
+    bool            m_duplicate_surfaces_order = true;
+    bool            m_duplicate_surfaces_winding = true;
     bool            m_duplicate_surface_vertices = true;
     bool            m_collinear_surface_vertices = true;
     bool            m_surface_self_intersecting = true;

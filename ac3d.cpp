@@ -2044,7 +2044,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     return true;
 }
 
-bool AC3D::Object::sameSurface(size_t index1, size_t index2) const
+bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference difference) const
 {
     const Surface &surface1 = surfaces[index1];
     const Surface &surface2 = surfaces[index2];
@@ -2052,20 +2052,86 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2) const
     if (surface1.refs.size() != surface2.refs.size() || surface1.refs.empty())
         return false;
 
-    for (size_t i = 0; i < surface1.refs.size(); ++i)
+    size_t size = surface1.refs.size();
+
+    if (difference == Object::Difference::None)
     {
-        const size_t vertex1 = surface1.refs[i].index;
-        const size_t vertex2 = surface2.refs[i].index;
+        for (size_t i = 0; i < size; ++i)
+        {
+            const size_t vertex1 = surface1.refs[i].index;
+            const size_t vertex2 = surface2.refs[i].index;
 
-        // skip invalid vertex
-        if (vertex1 >= vertices.size() || vertex2 >= vertices.size())
-            continue;
+            // skip invalid vertex
+            if (vertex1 >= vertices.size() || vertex2 >= vertices.size())
+                continue;
 
-        if (!(vertex1 == vertex2 || vertices[vertex1] == vertices[vertex2]))
-            return false;
+            if (!(vertex1 == vertex2 || vertices[vertex1] == vertices[vertex2]))
+                return false;
+        }
+
+        return true;
     }
 
-    return true;
+    if (difference == Object::Difference::Order)
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            const size_t vertex1 = surface1.refs[i].index;
+
+            for (size_t j = 0; j < size; j++)
+            {
+                const size_t vertex2 = surface2.refs[j].index;
+
+                if (sameVertex(vertex1, vertex2))
+                {
+                    bool same = true;
+                    for (size_t k = 1; k < size; k++)
+                    {
+                        if (!sameVertex(surface1.refs[(i + k) % size].index, surface2.refs[(j + k) % size].index))
+                        {
+                            same = false;
+                            break;
+                        }
+                    }
+                    if (same)
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    if (difference == Object::Difference::Winding)
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            const size_t vertex1 = surface1.refs[i].index;
+
+            for (size_t j = 0; j < size; j++)
+            {
+                const size_t vertex2 = surface2.refs[j].index;
+
+                if (sameVertex(vertex1, vertex2))
+                {
+                    bool same = true;
+                    for (size_t k = 1; k < size; k++)
+                    {
+                        if (!sameVertex(surface1.refs[(i + k) % size].index, surface2.refs[(j + size - k) % size].index))
+                        {
+                            same = false;
+                            break;
+                        }
+                    }
+                    if (same)
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    return false;
 }
 
 void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
@@ -2360,16 +2426,31 @@ void AC3D::checkUnusedMaterial(std::istream &in)
 
 void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
 {
-    if (!m_duplicate_surfaces)
-        return;
-
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
         {
-            if (object.sameSurface(i, j))
+            if (m_duplicate_surfaces && object.sameSurface(i, j, Object::Difference::None))
             {
                 warning(object.surfaces[j].line_number) << "duplicate surfaces" << std::endl;
+                showLine(in, object.surfaces[j].line_pos);
+                note(object.surfaces[i].line_number) << "first instance" << std::endl;
+                showLine(in, object.surfaces[i].line_pos);
+                continue;
+            }
+
+            if (m_duplicate_surfaces_order && object.sameSurface(i, j, Object::Difference::Order))
+            {
+                warning(object.surfaces[j].line_number) << "duplicate surfaces with different vertex order" << std::endl;
+                showLine(in, object.surfaces[j].line_pos);
+                note(object.surfaces[i].line_number) << "first instance" << std::endl;
+                showLine(in, object.surfaces[i].line_pos);
+                continue;
+            }
+
+            if (m_duplicate_surfaces_winding && object.sameSurface(i, j, Object::Difference::Winding))
+            {
+                warning(object.surfaces[j].line_number) << "duplicate surfaces with with different winding" << std::endl;
                 showLine(in, object.surfaces[j].line_pos);
                 note(object.surfaces[i].line_number) << "first instance" << std::endl;
                 showLine(in, object.surfaces[i].line_pos);
@@ -2430,7 +2511,7 @@ void AC3D::checkDifferentMat(std::istream& in, const Object& object)
 
     for (size_t i = 1; i < object.surfaces.size(); ++i)
     {
-        if (object.surfaces[i].mats[0].mat != mat)
+        if (!object.surfaces[i].mats.empty() && object.surfaces[i].mats[0].mat != mat)
         {
             warning(object.surfaces[i].mats[0].line_number) << "different mat" << std::endl;
             showLine(in, object.surfaces[i].mats[0].line_pos);
@@ -3787,7 +3868,7 @@ bool AC3D::cleanSurfaces(Object &object)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
         {
-            if (object.sameSurface(i, j))
+            if (object.sameSurface(i, j, Object::Difference::None))
             {
                 object.surfaces.erase(object.surfaces.begin() + j);
                 --j;

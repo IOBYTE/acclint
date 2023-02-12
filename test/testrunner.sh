@@ -94,3 +94,18 @@ cd surface-strip-degenerate
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd duplicate-surfaces
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
+cd duplicate-surfaces-order
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
+cd duplicate-surfaces-winding
+echo "${PWD##*/}"
+bats test.bats
+cd ..

@@ -1,0 +1,7 @@
+test3.ac:18 warning: duplicate surfaces with different vertex order
+SURF 0x20
+^
+test3.ac:12 note: first instance
+SURF 0x20
+^
+1 warning
