@@ -1,4 +1,4 @@
-test2.ac:18 warning: duplicate surfaces with with different winding
+test2.ac:18 warning: duplicate surfaces with different winding
 SURF 0x20
 ^
 test2.ac:12 note: first instance
