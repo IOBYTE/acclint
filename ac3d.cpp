@@ -121,6 +121,25 @@ std::ostream & operator << (std::ostream &out, const AC3D::Vertex &v)
     return out;
 }
 
+bool operator == (const std::vector<AC3D::Mat> &mats1, const std::vector<AC3D::Mat> &mats2)
+{
+    if (mats1.size() != mats2.size())
+        return false;
+
+    for (size_t i = 0; i < mats1.size(); i++)
+    {
+        if (mats1[i].mat != mats2[i].mat)
+            return false;
+    }
+
+    return true;
+}
+
+bool operator != (const std::vector<AC3D::Mat> &mats1, const std::vector<AC3D::Mat> &mats2)
+{
+    return !(mats1 == mats2);
+}
+
 bool isWhitespace(const std::string &s)
 {
     return (s.find_first_not_of(" \n\r\t") == std::string::npos);
@@ -3934,6 +3953,12 @@ bool AC3D::cleanSurfaces(Object &object)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
         {
+            if (object.surfaces[i].flags != object.surfaces[j].flags)
+                continue;
+
+            if (object.surfaces[i].mats != object.surfaces[j].mats)
+                continue;
+
             if (object.sameSurface(i, j, Difference::None))
             {
                 object.surfaces.erase(object.surfaces.begin() + j);

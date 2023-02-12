@@ -1134,6 +1134,8 @@ private:
     bool splitMultipleSURF(std::vector<Object> &kids);
     bool splitMultipleMat(std::vector<Object> &kids);
 
+    friend bool operator == (const std::vector<Mat> &mats1, const std::vector<Mat> &mats2);
+    friend bool operator != (const std::vector<Mat> &mats1, const std::vector<Mat> &mats2);
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
     static bool ccw(const AC3D::Point2 &p1, const AC3D::Point2 &p2, const AC3D::Point2 &p3);
