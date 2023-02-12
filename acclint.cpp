@@ -43,7 +43,6 @@ void usage()
     std::cerr << "  -Wno-surface-not-convex                Don't show surface not convex warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
-    std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-triangles               Don't show surface duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
