@@ -357,7 +357,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                                             showLine(in, pos);
                                         }
                                     }
-                                    else
+                                    else if (m_invalid_texture_coordinate)
                                     {
                                         error() << "reading forth texture cordinate: \"" << trailing << "\"" << std::endl;
                                         showLine(in);
@@ -375,7 +375,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                                     showLine(in, pos);
                                 }
                             }
-                            else
+                            else if (m_invalid_texture_coordinate)
                             {
                                 error() << "reading third texture cordinate: \"" << trailing << "\"" << std::endl;
                                 showLine(in);
@@ -393,7 +393,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                             showLine(in, pos);
                         }
                     }
-                    else
+                    else if (m_invalid_texture_coordinate)
                     {
                         error() << "reading second texture cordinate: \"" << trailing << "\"" << std::endl;
                         showLine(in);
@@ -402,7 +402,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
             }
         }
     }
-    else
+    else if (m_invalid_texture_coordinate)
     {
         error() << "reading texture cordinate" << std::endl;
         showLine(in);
@@ -2053,7 +2053,7 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
     if (surface1.refs.size() != surface2.refs.size() || surface1.refs.empty())
         return false;
 
-    size_t size = surface1.refs.size();
+    const size_t size = surface1.refs.size();
 
     if (difference == Difference::None)
     {

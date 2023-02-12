@@ -111,6 +111,14 @@ public:
     {
         return m_invalid_vertex_index;
     }
+    void invalidTextureCoordinate(bool value)
+    {
+        m_invalid_texture_coordinate = value;
+    }
+    bool invalidTextureCoordinate() const
+    {
+        return m_invalid_texture_coordinate;
+    }
     void invalidMaterial(bool value)
     {
         m_invalid_material = value;
@@ -673,7 +681,7 @@ private:
         }
     };
 
-    enum Difference : unsigned int { None = 0, Order = 1, Winding = 2 };
+    enum Difference { None = 0, Order = 1, Winding = 2 };
 
     struct Triangle
     {
@@ -1018,6 +1026,7 @@ private:
     bool            m_duplicate_vertices = true;
     bool            m_unused_vertex = true;
     bool            m_invalid_vertex_index = true;
+    bool            m_invalid_texture_coordinate = true;
     bool            m_invalid_normal = true;
     bool            m_invalid_material = true;
     bool            m_invalid_material_index = true;

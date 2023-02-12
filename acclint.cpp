@@ -76,6 +76,7 @@ void usage()
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
+    std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
     std::cerr << "  --splitSURF                            Split objects with multiple surface types into seperate objects." << std::endl;
@@ -110,6 +111,7 @@ int main(int argc, char *argv[])
     bool duplicate_vertices = true;
     bool unused_vertex = true;
     bool invalid_vertex_index = true;
+    bool invalid_texture_coordinate = true;
     bool invalid_normal = true;
     bool invalid_material = true;
     bool invalid_material_index = true;
@@ -423,6 +425,7 @@ int main(int argc, char *argv[])
             invalid_surface_type = false;
             invalid_token = false;
             invalid_vertex_index = false;
+            invalid_texture_coordinate = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -447,6 +450,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-vertex-index" || arg == "-Winvalid-vertex-index")
         {
             invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
+        {
+            invalid_texture_coordinate = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "--splitSURF")
         {
@@ -549,6 +556,7 @@ int main(int argc, char *argv[])
     ac3d.invalidRefCount(invalid_ref_count);
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidVertexIndex(invalid_vertex_index);
+    ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
     ac3d.invalidToken(invalid_token);
     ac3d.duplicateSurfaces(duplicate_surfaces);
     ac3d.duplicateSurfacesOrder(duplicate_surfaces_order);
