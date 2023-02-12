@@ -3294,7 +3294,7 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
         if (triangles[i].degenerate)
             continue;
 
-        Point3 newNormal = triangles[i].normal;
+        const Point3 &newNormal = triangles[i].normal;
 
         if (hasOldNormal)
         {
