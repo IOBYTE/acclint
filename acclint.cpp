@@ -45,6 +45,7 @@ void usage()
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
+    std::cerr << "  -Wno-duplicate-triangles               Don't show surface duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
@@ -130,6 +131,7 @@ int main(int argc, char *argv[])
     bool surface_strip_size = false;
     bool surface_strip_degenerate = false;
     bool surface_strip_duplicate_triangles = true;
+    bool duplicate_triangles = true;
     bool multiple_polygon_surface = true;
     bool floating_point = true;
     bool empty_object = true;
@@ -222,6 +224,7 @@ int main(int argc, char *argv[])
             surface_strip_size = false;
             surface_strip_degenerate = false;
             surface_strip_duplicate_triangles = false;
+            duplicate_triangles = false;
             multiple_polygon_surface = false;
             floating_point = false;
             empty_object = false;
@@ -325,6 +328,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-surface-strip-duplicate-triangles" || arg == "-Wsurface-strip-duplicate-triangles")
         {
             surface_strip_duplicate_triangles = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-duplicate-triangles" || arg == "-Wduplicate-triangles")
+        {
+            duplicate_triangles = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-multiple-polygon-surface" || arg == "-Wmultiple-polygon-surface")
         {
@@ -570,6 +577,7 @@ int main(int argc, char *argv[])
     ac3d.surfaceStripSize(surface_strip_size);
     ac3d.surfaceStripDegenerate(surface_strip_degenerate);
     ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
+    ac3d.duplicateTriangles(duplicate_triangles);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
     ac3d.emptyObject(empty_object);

@@ -279,6 +279,14 @@ public:
     {
         return m_surface_strip_duplicate_triangles;
     }
+    void duplicateTriangles(bool value)
+    {
+        m_duplicate_triangles = value;
+    }
+    bool duplicateTriangles() const
+    {
+        return m_duplicate_triangles;
+    }
     void floatingPoint(bool value)
     {
         m_floating_point = value;
@@ -683,26 +691,31 @@ private:
 
     enum Difference { None = 0, Order = 1, Winding = 2 };
 
+    struct Surface;
+    struct Object;
+
     struct Triangle
     {
-        Vertex vertex0;
-        Vertex vertex1;
-        Vertex vertex2;
-        Ref ref0;
-        Ref ref1;
-        Ref ref2;
+        std::array<Vertex,3> vertices;
+        std::array<Ref,3> refs;
         Point3 normal = { 0.0, 0.0, 0.0 };
         bool degenerate = false;
 
-        Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Ref &r0, const Ref &r1, const Ref &r2) :
-            vertex0(v0), vertex1(v1), vertex2(v2), ref0(r0), ref1(r1), ref2(r2)
+        Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Ref &r0, const Ref &r1, const Ref &r2)
         {
+            vertices[0] = v0;
+            vertices[1] = v1;
+            vertices[2] = v2;
+            refs[0] = r0;
+            refs[1] = r1;
+            refs[2] = r2;
             degenerate = AC3D::degenerate(v0.vertex, v1.vertex, v2.vertex);
 
             if (!degenerate)
                 normal = AC3D::normal(v0.vertex, v1.vertex, v2.vertex);
         }
         bool sameTriangle(const Triangle &triangle, Difference difference) const;
+        bool sameTriangle(const Object &object, const Surface &surface, Difference difference) const;
     };
 
     enum class WindingType { CCW, CW };
@@ -742,7 +755,7 @@ private:
             if (!triangle.degenerate)
             {
                 normal = triangle.normal;
-                distance = normal.dot(triangle.vertex0.vertex);
+                distance = normal.dot(triangle.vertices[0].vertex);
                 valid = true;
             }
         }
@@ -769,8 +782,6 @@ private:
             return !isAbovePlane(point);
         }
     };
-
-    struct Object;
 
     struct Surface : public LineInfo
     {
@@ -855,6 +866,10 @@ private:
             return triangleStrip;
         }
         void setTriangleStrip(const Object &object);
+        bool isTriangle() const
+        {
+            return refs.size() == 3;
+        }
         void dump(DumpType dump_type, size_t count, size_t level) const;
     };
 
@@ -1047,6 +1062,7 @@ private:
     bool            m_surface_strip_size = false;
     bool            m_surface_strip_degenerate = false;
     bool            m_surface_strip_duplicate_triangles = false;
+    bool            m_duplicate_triangles = false;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
     bool            m_empty_object = true;
@@ -1106,6 +1122,7 @@ private:
     void checkDuplicateMaterials(std::istream &in);
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);
+    void checkDuplicateTriangles(std::istream &in, const Object &object);
     void checkDuplicateSurfaces(std::istream &in, const Object &object);
     void checkDuplicateSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
     void checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface);

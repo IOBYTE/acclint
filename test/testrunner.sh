@@ -109,3 +109,8 @@ cd duplicate-surfaces-winding
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd duplicate-triangles
+echo "${PWD##*/}"
+bats test.bats
+cd ..

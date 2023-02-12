@@ -1,0 +1,25 @@
+test1.acc:20 warning: duplicate triangle
+SURF 0x14
+^
+test1.acc:25 note: ref
+2 0 0
+^
+test1.acc:13 note: first instance
+SURF 0x14
+^
+test1.acc:18 note: ref
+2 0 0
+^
+test1.acc:20 warning: duplicate triangle
+SURF 0x14
+^
+test1.acc:26 note: ref
+3 0 0
+^
+test1.acc:13 note: first instance
+SURF 0x14
+^
+test1.acc:19 note: ref
+3 0 0
+^
+2 warnings
