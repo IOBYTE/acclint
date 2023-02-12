@@ -263,6 +263,14 @@ public:
     {
         return m_surface_strip_degenerate;
     }
+    void surfaceStripDuplicateTriangles(bool value)
+    {
+        m_surface_strip_duplicate_triangles = value;
+    }
+    bool surfaceStripDuplicateTriangles() const
+    {
+        return m_surface_strip_duplicate_triangles;
+    }
     void floatingPoint(bool value)
     {
         m_floating_point = value;
@@ -665,6 +673,8 @@ private:
         }
     };
 
+    enum Difference : unsigned int { None = 0, Order = 1, Winding = 2 };
+
     struct Triangle
     {
         Vertex vertex0;
@@ -684,9 +694,10 @@ private:
             if (!degenerate)
                 normal = AC3D::normal(v0.vertex, v1.vertex, v2.vertex);
         }
+        bool sameTriangle(const Triangle &triangle, Difference difference) const;
     };
 
-    enum class Winding { CCW, CW };
+    enum class WindingType { CCW, CW };
 
     struct Plane
     {
@@ -704,11 +715,11 @@ private:
                 valid = true;
             }
         }
-        Plane(const Point3 &p0, const Point3 &p1, const Point3 &p2, Winding winding)
+        Plane(const Point3 &p0, const Point3 &p1, const Point3 &p2, WindingType winding)
         {
             if (!AC3D::degenerate(p0, p1, p2))
             {
-                if (winding == Winding::CCW)
+                if (winding == WindingType::CCW)
                     normal = (p1 - p0).cross(p2 - p0);
                 else
                     normal = (p2 - p0).cross(p1 - p0);
@@ -986,8 +997,6 @@ private:
             return vertices[index1].vertex == vertices[index2].vertex;
         }
 
-        enum Difference : unsigned int { None = 0, Order = 1, Winding = 2 };
-
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
         void incrementMaterialIndex(size_t num_materials);
@@ -1028,6 +1037,7 @@ private:
     bool            m_surface_strip_hole = false;
     bool            m_surface_strip_size = false;
     bool            m_surface_strip_degenerate = false;
+    bool            m_surface_strip_duplicate_triangles = false;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
     bool            m_empty_object = true;
@@ -1096,6 +1106,7 @@ private:
     void checkSurfaceStripHole(std::istream& in, const Object& object, const Surface& surface);
     void checkSurfaceStripSize(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceStripDegenerate(std::istream &in, const Object &object, const Surface &surface);
+    void checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream& in, const Object& object);
     void checkDifferentUV(std::istream& in, const Object& object);

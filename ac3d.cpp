@@ -581,6 +581,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfaceStripHole(in, object, surface);
         checkSurfaceStripSize(in, object, surface);
         checkSurfaceStripDegenerate(in, object, surface);
+        checkSurfaceStripDuplicateTriangles(in, object, surface);
     }
     else
     {
@@ -2054,7 +2055,7 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
 
     size_t size = surface1.refs.size();
 
-    if (difference == Object::Difference::None)
+    if (difference == Difference::None)
     {
         for (size_t i = 0; i < size; ++i)
         {
@@ -2072,7 +2073,7 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
         return true;
     }
 
-    if (difference == Object::Difference::Order)
+    if (difference == Difference::Order)
     {
         for (size_t i = 0; i < size; ++i)
         {
@@ -2101,7 +2102,7 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
         return false;
     }
 
-    if (difference == Object::Difference::Winding)
+    if (difference == Difference::Winding)
     {
         for (size_t i = 0; i < size; ++i)
         {
@@ -2430,7 +2431,7 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
         {
-            if (m_duplicate_surfaces && object.sameSurface(i, j, Object::Difference::None))
+            if (m_duplicate_surfaces && object.sameSurface(i, j, Difference::None))
             {
                 warning(object.surfaces[j].line_number) << "duplicate surfaces" << std::endl;
                 showLine(in, object.surfaces[j].line_pos);
@@ -2439,7 +2440,7 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
                 continue;
             }
 
-            if (m_duplicate_surfaces_order && object.sameSurface(i, j, Object::Difference::Order))
+            if (m_duplicate_surfaces_order && object.sameSurface(i, j, Difference::Order))
             {
                 warning(object.surfaces[j].line_number) << "duplicate surfaces with different vertex order" << std::endl;
                 showLine(in, object.surfaces[j].line_pos);
@@ -2448,7 +2449,7 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
                 continue;
             }
 
-            if (m_duplicate_surfaces_winding && object.sameSurface(i, j, Object::Difference::Winding))
+            if (m_duplicate_surfaces_winding && object.sameSurface(i, j, Difference::Winding))
             {
                 warning(object.surfaces[j].line_number) << "duplicate surfaces with different winding" << std::endl;
                 showLine(in, object.surfaces[j].line_pos);
@@ -3023,6 +3024,71 @@ void AC3D::checkSurfaceStripSize(std::istream &in, const Object &object, const S
     {
         warning(surface.line_number) << "triangle strip with" << (surface.getTriangleStrip().empty() ? " no triangles" : " 1 triangle") << std::endl;
         showLine(in, surface.line_pos);
+    }
+}
+
+bool AC3D::Triangle::sameTriangle(const Triangle &triangle, Difference difference) const
+{
+    if (difference == None)
+        return vertex0 == triangle.vertex0 && vertex1 == triangle.vertex1 && vertex2 == triangle.vertex2;
+
+    if (difference == Order)
+        return (vertex0 == triangle.vertex1 && vertex1 == triangle.vertex2 && vertex2 == triangle.vertex0) ||
+               (vertex0 == triangle.vertex2 && vertex1 == triangle.vertex0 && vertex2 == triangle.vertex1);
+
+    if (difference == Winding)
+        return (vertex0 == triangle.vertex2 && vertex1 == triangle.vertex1 && vertex2 == triangle.vertex0) ||
+               (vertex0 == triangle.vertex1 && vertex1 == triangle.vertex0 && vertex2 == triangle.vertex2) ||
+               (vertex0 == triangle.vertex0 && vertex1 == triangle.vertex2 && vertex2 == triangle.vertex1);
+
+    return false;
+}
+
+void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &object, const Surface &surface)
+{
+    if (!m_surface_strip_duplicate_triangles)
+        return;
+
+    if (m_is_ac)
+        return;
+
+    if (!surface.isTriangleStrip())
+        return;
+
+    for (size_t i = 0; i < surface.triangleStrip.size(); i++)
+    {
+        for (size_t j = i + 1; j < surface.triangleStrip.size(); j++)
+        {
+            if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::None))
+            {
+                warning(surface.line_number) << "triangle strip with duplicate triangle" << std::endl;
+                showLine(in, surface.line_pos);
+                note(surface.triangleStrip[i].ref2.line_number) << "first trianglex" << std::endl;
+                showLine(in, surface.triangleStrip[i].ref2.line_pos);
+                note(surface.triangleStrip[j].ref2.line_number) << "duplicate triangle" << std::endl;
+                showLine(in, surface.triangleStrip[j].ref2.line_pos);
+            }
+
+            if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::Order))
+            {
+                warning(surface.line_number) << "triangle strip with duplicate triangle with different vertex order" << std::endl;
+                showLine(in, surface.line_pos);
+                note(surface.triangleStrip[i].ref2.line_number) << "first trianglex" << std::endl;
+                showLine(in, surface.triangleStrip[i].ref2.line_pos);
+                note(surface.triangleStrip[j].ref2.line_number) << "duplicate triangle" << std::endl;
+                showLine(in, surface.triangleStrip[j].ref2.line_pos);
+            }
+
+            if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::Winding))
+            {
+                warning(surface.line_number) << "triangle strip with duplicate triangle with different winding" << std::endl;
+                showLine(in, surface.line_pos);
+                note(surface.triangleStrip[i].ref2.line_number) << "first trianglex" << std::endl;
+                showLine(in, surface.triangleStrip[i].ref2.line_pos);
+                note(surface.triangleStrip[j].ref2.line_number) << "duplicate triangle" << std::endl;
+                showLine(in, surface.triangleStrip[j].ref2.line_pos);
+            }
+        }
     }
 }
 
@@ -3868,7 +3934,7 @@ bool AC3D::cleanSurfaces(Object &object)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
         {
-            if (object.sameSurface(i, j, Object::Difference::None))
+            if (object.sameSurface(i, j, Difference::None))
             {
                 object.surfaces.erase(object.surfaces.begin() + j);
                 --j;
