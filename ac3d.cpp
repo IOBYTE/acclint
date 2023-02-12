@@ -2450,7 +2450,7 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
 
             if (m_duplicate_surfaces_winding && object.sameSurface(i, j, Object::Difference::Winding))
             {
-                warning(object.surfaces[j].line_number) << "duplicate surfaces with with different winding" << std::endl;
+                warning(object.surfaces[j].line_number) << "duplicate surfaces with different winding" << std::endl;
                 showLine(in, object.surfaces[j].line_pos);
                 note(object.surfaces[i].line_number) << "first instance" << std::endl;
                 showLine(in, object.surfaces[i].line_pos);
