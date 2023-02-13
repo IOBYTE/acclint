@@ -783,10 +783,31 @@ private:
         }
     };
 
+    struct Mats : public std::vector<Mat>
+    {
+        bool operator == (const std::vector<AC3D::Mat> &mats)
+        {
+            if (size() != mats.size())
+                return false;
+
+            for (size_t i = 0; i < size(); i++)
+            {
+                if (at(i).mat != mats[i].mat)
+                    return false;
+            }
+
+            return true;
+        }
+        bool operator != (const std::vector<AC3D::Mat> &mats)
+        {
+            return !(mats == *this);
+        }
+    };
+
     struct Surface : public LineInfo
     {
         unsigned int flags = 0;
-        std::vector<Mat> mats;
+        Mats mats;
         Refs refs;
         bool coplanar = true; // only for Polygon and ClosedLine
         Point3 normal = { 0.0, 0.0, 0.0 }; // only for Polygon
@@ -1151,8 +1172,6 @@ private:
     bool splitMultipleSURF(std::vector<Object> &kids);
     bool splitMultipleMat(std::vector<Object> &kids);
 
-    friend bool operator == (const std::vector<Mat> &mats1, const std::vector<Mat> &mats2);
-    friend bool operator != (const std::vector<Mat> &mats1, const std::vector<Mat> &mats2);
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
     static bool ccw(const AC3D::Point2 &p1, const AC3D::Point2 &p2, const AC3D::Point2 &p3);
