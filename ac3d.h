@@ -785,7 +785,7 @@ private:
 
     struct Mats : public std::vector<Mat>
     {
-        bool operator == (const std::vector<AC3D::Mat> &mats)
+        bool operator == (const Mats &mats) const
         {
             if (size() != mats.size())
                 return false;
@@ -798,7 +798,7 @@ private:
 
             return true;
         }
-        bool operator != (const std::vector<AC3D::Mat> &mats)
+        bool operator != (const Mats &mats) const
         {
             return !(mats == *this);
         }
