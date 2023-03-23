@@ -81,6 +81,7 @@ void usage()
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
     std::cerr << "  --splitSURF                            Split objects with multiple surface types into seperate objects." << std::endl;
     std::cerr << "  --splitMat                             Split objects with multiple materials into seperate objects." << std::endl;
+    std::cerr << "  --flatten                              Flatten objects." << std::endl;
     std::cerr << "  --merge filename                       Merge filename with inputfile." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
@@ -158,6 +159,7 @@ int main(int argc, char *argv[])
     bool dump = false;
     bool splitSURF = false;
     bool splitMat = false;
+    bool flatten = false;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
@@ -469,6 +471,10 @@ int main(int argc, char *argv[])
         {
             splitMat = true;
         }
+        else if (arg == "--flatten")
+        {
+            flatten = true;
+        }
         else if (arg == "--merge")
         {
             if (i < argc)
@@ -681,6 +687,9 @@ int main(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
         }
+
+        if (flatten)
+            ac3d.flatten();
 
         if (ac3d.fixMultipleWorlds())
         {

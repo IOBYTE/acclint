@@ -404,7 +404,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
     }
     else if (m_invalid_texture_coordinate)
     {
-        error() << "reading texture cordinate" << std::endl;
+        error() << "reading texture coordinate" << std::endl;
         showLine(in);
         return false;
     }
@@ -4120,4 +4120,49 @@ void AC3D::Object::incrementMaterialIndex(size_t num_materials)
         for (auto &kid : kids)
             kid.incrementMaterialIndex(num_materials);
     }
+}
+
+void AC3D::Object::transform(const Matrix &matrix)
+{
+	Matrix thisMatrix;
+
+	if (!locations.empty())
+	{
+		thisMatrix.setLocation(locations.back().location);
+        locations.clear();
+	}
+
+	if (!rotations.empty())
+	{
+		thisMatrix.setRotation(rotations.back().rotation);
+        rotations.clear();
+	}
+
+	Matrix newMatrix = thisMatrix.multiply(matrix);
+
+    if (type.type == "poly")
+    {
+        for (auto &vertex : vertices)
+            newMatrix.transformPoint(vertex.vertex);
+    }
+    else
+    {
+        for (auto &kid : kids)
+            kid.transform(newMatrix);
+    }
+}
+
+void AC3D::transform(const Matrix &matrix)
+{
+    for (auto & object : m_objects)
+        object.transform(matrix);
+}
+
+void AC3D::flatten()
+{
+    Matrix matrix;
+
+    transform(matrix);
+
+    //TODO flatten the object hiearchy
 }

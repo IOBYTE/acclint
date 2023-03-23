@@ -28,6 +28,7 @@
         <suppression>clang-tidy-readability-isolate-declaration</suppression>
         <suppression>clang-tidy-cppcoreguidelines-pro-bounds-pointer-arithmetic</suppression>
         <suppression>clang-tidy-altera-struct-pack-align</suppression>
+        <suppression>missingIncludeSystem</suppression>
     </suppressions>
     <safe-checks>
         <class-public/>

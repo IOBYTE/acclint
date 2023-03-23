@@ -114,3 +114,8 @@ cd duplicate-triangles
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd flatten
+echo "${PWD##*/}"
+bats test.bats
+cd ..

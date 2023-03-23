@@ -476,6 +476,7 @@ public:
     bool splitMultipleSURF();
     bool splitMultipleMat();
     bool merge(const AC3D& ac3d);
+    void flatten();
 
     class quoted_string : public std::string
     {
@@ -585,7 +586,97 @@ private:
         }
     };
 
-    using Matrix = std::array<double,9>;
+    class Matrix : public std::array<std::array<double, 4>, 4>
+    {
+    public:
+        Matrix()
+        {
+            (*this)[0][0] = 1; (*this)[0][1] = 0; (*this)[0][2] = 0; (*this)[0][3] = 0;
+            (*this)[1][0] = 0; (*this)[1][1] = 1; (*this)[1][2] = 0; (*this)[1][3] = 0;
+            (*this)[2][0] = 0; (*this)[2][1] = 0; (*this)[2][2] = 1; (*this)[2][3] = 0;
+            (*this)[3][0] = 0; (*this)[3][1] = 0; (*this)[3][2] = 0; (*this)[3][3] = 1;
+        }
+        Matrix(double m0,  double m1,  double m2,  double m3,
+               double m4,  double m5,  double m6,  double m7,
+               double m8,  double m9,  double m10, double m11,
+               double m12, double m13, double m14, double m15)
+        {
+            (*this)[0][0] = m0;  (*this)[0][1] = m1;  (*this)[0][2] = m2;  (*this)[0][3] = m3;
+            (*this)[1][0] = m4;  (*this)[1][1] = m5;  (*this)[1][2] = m6;  (*this)[1][3] = m7;
+            (*this)[2][0] = m8;  (*this)[2][1] = m9;  (*this)[2][2] = m10; (*this)[2][3] = m11;
+            (*this)[3][0] = m12; (*this)[3][1] = m13; (*this)[3][2] = m14; (*this)[3][3] = m15;
+        }
+        void setLocation(const Point3 &location)
+        {
+            (*this)[3][0] = location[0];
+            (*this)[3][1] = location[1];
+            (*this)[3][2] = location[2];
+        }
+
+        void setRotation(const std::array<double, 9> &rotation)
+        {
+            (*this)[0][0] = rotation[0]; (*this)[0][1] = rotation[1]; (*this)[0][2] = rotation[2];
+            (*this)[1][0] = rotation[3]; (*this)[1][1] = rotation[4]; (*this)[1][2] = rotation[5];
+            (*this)[2][0] = rotation[6]; (*this)[2][1] = rotation[7]; (*this)[2][2] = rotation[8];
+        }
+        void transformPoint(Point3 &point) const
+        {
+            Point3 dst;
+
+            double t0 = point[0];
+            double t1 = point[1];
+            double t2 = point[2];
+
+            dst[0] = t0 * (*this)[0][0] + t1 * (*this)[1][0] + t2 * (*this)[2][0] + (*this)[3][0];
+            dst[1] = t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1] + (*this)[3][1];
+            dst[2] = t0 * (*this)[0][2] + t1 * (*this)[1][2] + t2 * (*this)[2][2] + (*this)[3][2];
+
+            point = dst;
+        }
+        Matrix multiply(const Matrix &matrix)
+        {
+            Matrix result;
+
+            for (int j = 0; j < 4; j++)
+            {
+                result[0][j] = matrix[0][0] * (*this)[0][j] +
+                               matrix[0][1] * (*this)[1][j] +
+                               matrix[0][2] * (*this)[2][j] +
+                               matrix[0][3] * (*this)[3][j];
+
+                result[1][j] = matrix[1][0] * (*this)[0][j] +
+                               matrix[1][1] * (*this)[1][j] +
+                               matrix[1][2] * (*this)[2][j] +
+                               matrix[1][3] * (*this)[3][j];
+
+                result[2][j] = matrix[2][0] * (*this)[0][j] +
+                               matrix[2][1] * (*this)[1][j] +
+                               matrix[2][2] * (*this)[2][j] +
+                               matrix[2][3] * (*this)[3][j];
+
+                result[3][j] = matrix[3][0] * (*this)[0][j] +
+                               matrix[3][1] * (*this)[1][j] +
+                               matrix[3][2] * (*this)[2][j] +
+                               matrix[3][3] * (*this)[3][j];
+            }
+
+            return result;
+        }
+        void transformNormal(Point3 &normal) const
+        {
+            Point3 dst;
+
+            double t0 = normal[0];
+            double t1 = normal[1];
+            double t2 = normal[2];
+
+            dst[0] = t0 * (*this)[0][0] + t1 * (*this)[1][0] + t2 * (*this)[2][0];
+            dst[1] = t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1];
+            dst[2] = t0 * (*this)[0][2] + t1 * (*this)[1][2] + t2 * (*this)[2][2];
+
+            normal = dst;
+        }
+    };
 
     struct Header
     {
@@ -901,7 +992,7 @@ private:
 
     struct Rotation : public LineInfo
     {
-        Matrix rotation = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        std::array<double,9> rotation = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     };
 
     struct Crease : public LineInfo
@@ -1044,6 +1135,7 @@ private:
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
         void incrementMaterialIndex(size_t num_materials);
+        void transform(const Matrix &matrix);
     };
 
     std::string     m_file;
@@ -1171,6 +1263,7 @@ private:
     bool setMaterialUsed(size_t index);
     bool splitMultipleSURF(std::vector<Object> &kids);
     bool splitMultipleMat(std::vector<Object> &kids);
+    void transform(const Matrix &matrix);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
