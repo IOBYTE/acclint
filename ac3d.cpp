@@ -4124,26 +4124,31 @@ void AC3D::Object::incrementMaterialIndex(size_t num_materials)
 
 void AC3D::Object::transform(const Matrix &matrix)
 {
-	Matrix thisMatrix;
+    Matrix thisMatrix;
 
-	if (!locations.empty())
-	{
-		thisMatrix.setLocation(locations.back().location);
+    if (!locations.empty())
+    {
+        thisMatrix.setLocation(locations.back().location);
         locations.clear();
-	}
+    }
 
-	if (!rotations.empty())
-	{
-		thisMatrix.setRotation(rotations.back().rotation);
+    if (!rotations.empty())
+    {
+        thisMatrix.setRotation(rotations.back().rotation);
         rotations.clear();
-	}
+    }
 
-	Matrix newMatrix = thisMatrix.multiply(matrix);
+    Matrix newMatrix = thisMatrix.multiply(matrix);
 
     if (type.type == "poly")
     {
         for (auto &vertex : vertices)
+        {
             newMatrix.transformPoint(vertex.vertex);
+
+            if (vertex.has_normal)
+                newMatrix.transformNormal(vertex.normal);
+        }
     }
     else
     {
