@@ -119,3 +119,8 @@ cd flatten
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd missing-surfaces
+echo "${PWD##*/}"
+bats test.bats
+cd ..

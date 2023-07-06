@@ -33,6 +33,7 @@ void usage()
     std::cerr << "  -Wno-duplicate-vertices                Don't show duplicate vertices warnings." << std::endl;
     std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
     std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal warnings." << std::endl;
+    std::cerr << "  -Wno-missing-surface                   Don't show missing surface warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces                Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces-order          Don't show duplicate surfaces with different vertex order warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces-winding        Don't show duplicate surfaces with different winding warnings." << std::endl;
@@ -119,6 +120,7 @@ int main(int argc, char *argv[])
     bool invalid_ref_count = true;
     bool invalid_surface_type = true;
     bool invalid_token = true;
+    bool missing_surfaces = true;
     bool duplicate_surfaces = true;
     bool duplicate_surfaces_order = true;
     bool duplicate_surfaces_winding = true;
@@ -213,6 +215,7 @@ int main(int argc, char *argv[])
             unused_vertex = false;
             invalid_material = false;
             invalid_ref_count = false;
+            missing_surfaces = false;
             duplicate_surfaces = false;
             duplicate_surfaces_order = false;
             duplicate_surfaces_winding = false;
@@ -281,6 +284,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
         {
             invalid_material = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-missing-surfaces" || arg == "-Wmissing-surfaces")
+        {
+            missing_surfaces = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-duplicate-surfaces" || arg == "-Wduplicate-surfaces")
         {
@@ -570,6 +577,7 @@ int main(int argc, char *argv[])
     ac3d.invalidVertexIndex(invalid_vertex_index);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
     ac3d.invalidToken(invalid_token);
+    ac3d.missingSurfaces(missing_surfaces);
     ac3d.duplicateSurfaces(duplicate_surfaces);
     ac3d.duplicateSurfacesOrder(duplicate_surfaces_order);
     ac3d.duplicateSurfacesWinding(duplicate_surfaces_winding);

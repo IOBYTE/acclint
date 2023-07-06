@@ -1941,6 +1941,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     }
 
     checkUnusedVertex(in, object);
+    checkMissingSurfaces(in, object);
     checkDuplicateSurfaces(in, object);
     checkDifferentUV(in, object);
     checkGroupWithGeometry(in, object);
@@ -2547,6 +2548,21 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                 }
             }
         }
+    }
+}
+
+void AC3D::checkMissingSurfaces(std::istream &in, const Object &object)
+{
+    if (!m_missing_surfaces)
+        return;
+
+    if (object.type.type != "poly")
+        return;
+
+    if (object.surfaces.empty())
+    {
+        warning(object.line_number) << "missing surfaces" << std::endl;
+        showLine(in, object.line_pos);
     }
 }
 

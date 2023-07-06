@@ -175,6 +175,14 @@ public:
     {
         return m_unused_material;
     }
+    void missingSurfaces(bool value)
+    {
+        m_missing_surfaces = value;
+    }
+    bool missingSurfaces() const
+    {
+        return m_missing_surfaces;
+    }
     void duplicateSurfaces(bool value)
     {
         m_duplicate_surfaces = value;
@@ -1163,6 +1171,7 @@ private:
     bool            m_invalid_token = true;
     bool            m_duplicate_materials = true;
     bool            m_unused_material = true;
+    bool            m_missing_surfaces = true;
     bool            m_duplicate_surfaces = true;
     bool            m_duplicate_surfaces_order = true;
     bool            m_duplicate_surfaces_winding = true;
@@ -1236,6 +1245,7 @@ private:
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);
     void checkDuplicateTriangles(std::istream &in, const Object &object);
+    void checkMissingSurfaces(std::istream &in, const Object &object);
     void checkDuplicateSurfaces(std::istream &in, const Object &object);
     void checkDuplicateSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
     void checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface);
