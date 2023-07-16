@@ -255,6 +255,14 @@ public:
     {
         return m_surface_not_convex;
     }
+    void surfaceNoTexture(bool value)
+    {
+        m_surface_no_texture = value;
+    }
+    bool surfaceNoTexture() const
+    {
+        return m_surface_no_texture;
+    }
     void surfaceStripHole(bool value)
     {
         m_surface_strip_hole = value;
@@ -1180,6 +1188,7 @@ private:
     bool            m_surface_self_intersecting = true;
     bool            m_surface_not_coplanar = true;
     bool            m_surface_not_convex = true;
+    bool            m_surface_no_texture = true;
     bool            m_surface_strip_hole = false;
     bool            m_surface_strip_size = false;
     bool            m_surface_strip_degenerate = false;
@@ -1256,6 +1265,7 @@ private:
     void checkSurfaceStripSize(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceStripDegenerate(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &object, const Surface &surface);
+    void checkSurfaceNoTexture(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream& in, const Object& object);
     void checkDifferentUV(std::istream& in, const Object& object);

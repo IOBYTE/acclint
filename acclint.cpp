@@ -42,6 +42,7 @@ void usage()
     std::cerr << "  -Wno-surface-self-intersecting         Don't show surface self intersecting warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-coplanar              Don't show surface not coplanar warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-convex                Don't show surface not convex warnings." << std::endl;
+    std::cerr << "  -Wno-surface-no-texture                Don't show surface no texture warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
@@ -129,6 +130,7 @@ int main(int argc, char *argv[])
     bool surface_self_intersecting = true;
     bool surface_not_coplanar = true;
     bool surface_not_convex = true;
+    bool surface_no_texture = true;
     bool surface_strip_hole = false;
     bool surface_strip_size = false;
     bool surface_strip_degenerate = false;
@@ -224,6 +226,7 @@ int main(int argc, char *argv[])
             surface_not_coplanar = false;
             surface_self_intersecting = false;
             surface_not_convex = false;
+            surface_no_texture = false;
             surface_strip_hole = false;
             surface_strip_size = false;
             surface_strip_degenerate = false;
@@ -320,6 +323,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-surface-not-convex" || arg == "-Wsurface-not-convex")
         {
             surface_not_convex = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-no-texture" || arg == "-Wsurface-no-texture")
+        {
+            surface_no_texture = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-surface-strip-hole" || arg == "-Wsurface-strip-hole")
         {
@@ -586,6 +593,7 @@ int main(int argc, char *argv[])
     ac3d.surfaceSelfIntersecting(surface_self_intersecting);
     ac3d.surfaceNotCoplanar(surface_not_coplanar);
     ac3d.surfaceNotConvex(surface_not_convex);
+    ac3d.surfaceNoTexture(surface_no_texture);
     ac3d.surfaceStripHole(surface_strip_hole);
     ac3d.surfaceStripSize(surface_strip_size);
     ac3d.surfaceStripDegenerate(surface_strip_degenerate);

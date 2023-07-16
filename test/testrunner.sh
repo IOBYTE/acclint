@@ -124,3 +124,8 @@ cd missing-surfaces
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd surface-no-texture
+echo "${PWD##*/}"
+bats test.bats
+cd ..

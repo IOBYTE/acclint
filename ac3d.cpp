@@ -582,6 +582,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfaceStripSize(in, object, surface);
         checkSurfaceStripDegenerate(in, object, surface);
         checkSurfaceStripDuplicateTriangles(in, object, surface);
+        checkSurfaceNoTexture(in, object, surface);
     }
     else
     {
@@ -2994,6 +2995,31 @@ bool AC3D::ccw(const Point2 &p1, const Point2 &p2, const Point2 &p3)
                        (p2.x() - p1.x()) * (p3.y() - p2.y());
 
     return (val < 0.0);
+}
+
+void AC3D::checkSurfaceNoTexture(std::istream &in, const Object &object, const Surface &surface)
+{
+    if (!m_surface_no_texture)
+        return;
+
+    if (!surface.isPolygon())
+        return;
+
+    bool hasCoordinates = false;
+    for (auto & ref : surface.refs)
+    {
+        if (ref.coordinates.size() > 0 && (ref.coordinates[0].x() != 0 || ref.coordinates[0].y() != 0.0))
+        {
+            hasCoordinates = true;
+            break;
+        }
+    }
+
+    if (hasCoordinates && object.textures.empty())
+    {
+        warning(surface.line_number) << "surface with texture coordinates but no texture" << std::endl;
+        showLine(in, surface.line_pos);
+    }
 }
 
 void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface)

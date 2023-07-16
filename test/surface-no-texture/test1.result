@@ -1,0 +1,4 @@
+test1.ac:13 warning: surface with texture coordinates but no texture
+SURF 0x20
+^
+1 warning
