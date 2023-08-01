@@ -319,6 +319,14 @@ public:
     {
         return m_empty_object;
     }
+    void extraObject(bool value)
+    {
+        m_extra_object = value;
+    }
+    bool extraObject() const
+    {
+        return m_extra_object;
+    }
     void missingKids(bool value)
     {
         m_missing_kids = value;
@@ -1197,6 +1205,7 @@ private:
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
     bool            m_empty_object = true;
+    bool            m_extra_object = true;
     bool            m_missing_kids = true;
     bool            m_missing_texture = true;
     bool            m_duplicate_texture = true;

@@ -129,3 +129,13 @@ cd surface-no-texture
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd missing-kids
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
+cd extra-object
+echo "${PWD##*/}"
+bats test.bats
+cd ..

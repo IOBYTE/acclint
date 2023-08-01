@@ -54,7 +54,8 @@ void usage()
     std::cerr << "  -Wno-invalid-material                  Don't show invalid material warnings." << std::endl;
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count errors." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
-    std::cerr << "  -Wno-empty_object                      Don't show empty object warnings." << std::endl;
+    std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
+    std::cerr << "  -Wno-extra-object                      Don't show extra object warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids                      Don't show missing kids warnings." << std::endl;
     std::cerr << "  -Wno-multiple-crease                   Don't show multiple crease warnings." << std::endl;
     std::cerr << "  -Wno-multiple-folded                   Don't show multiple folded warnings." << std::endl;
@@ -139,6 +140,7 @@ int main(int argc, char *argv[])
     bool multiple_polygon_surface = true;
     bool floating_point = true;
     bool empty_object = true;
+    bool extra_object = true;
     bool missing_kids = true;
     bool missing_texture = true;
     bool duplicate_texture = true;
@@ -235,6 +237,7 @@ int main(int argc, char *argv[])
             multiple_polygon_surface = false;
             floating_point = false;
             empty_object = false;
+            extra_object = false;
             missing_kids = false;
             missing_texture = false;
             duplicate_texture = false;
@@ -359,6 +362,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-empty-object" || arg == "-Wempty-object")
         {
             empty_object = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-extra-object" || arg == "-Wextra-object")
+        {
+            extra_object = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-missing-kids" || arg == "-Wmissing-kids")
         {
@@ -602,6 +609,7 @@ int main(int argc, char *argv[])
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
     ac3d.emptyObject(empty_object);
+    ac3d.extraObject(extra_object);
     ac3d.missingKids(missing_kids);
     ac3d.missingTexture(missing_texture);
     ac3d.duplicateTexture(duplicate_texture);

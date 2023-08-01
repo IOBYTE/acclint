@@ -2226,6 +2226,11 @@ bool AC3D::read(const std::string &file)
             }
             else if (token == OBJECT_token)
             {
+                if (m_extra_object && !m_objects.empty())
+                {
+                    warning(m_line_number) << "extra OBJECT" << std::endl;
+                    showLine(in, m_line_pos);
+                }
                 Object object;
                 readObject(iss, in, object);
                 needMaterial = false;
@@ -2239,6 +2244,11 @@ bool AC3D::read(const std::string &file)
         }
         else if (token == OBJECT_token)
         {
+            if (m_extra_object && !m_objects.empty())
+            {
+                warning(m_line_number) << "extra OBJECT" << std::endl;
+                showLine(in, m_line_pos);
+            }
             Object object;
             readObject(iss, in, object);
             m_objects.push_back(object);
@@ -3006,9 +3016,9 @@ void AC3D::checkSurfaceNoTexture(std::istream &in, const Object &object, const S
         return;
 
     bool hasCoordinates = false;
-    for (auto & ref : surface.refs)
+    for (const auto & ref : surface.refs)
     {
-        if (ref.coordinates.size() > 0 && (ref.coordinates[0].x() != 0 || ref.coordinates[0].y() != 0.0))
+        if (!ref.coordinates.empty() && (ref.coordinates[0].x() != 0 || ref.coordinates[0].y() != 0.0))
         {
             hasCoordinates = true;
             break;
