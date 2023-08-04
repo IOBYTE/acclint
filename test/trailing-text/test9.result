@@ -1,0 +1,94 @@
+test9.acc:1 warning: trailing text: " "
+AC3Db 
+     ^
+test9.acc:2 warning: trailing text: " "
+MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0 
+                                                                                     ^
+test9.acc:3 warning: trailing text: " "
+OBJECT world 
+            ^
+test9.acc:4 warning: trailing text: " "
+kids 1 
+      ^
+test9.acc:5 warning: trailing text: " "
+OBJECT poly 
+           ^
+test9.acc:6 warning: trailing text: " "
+name "test" 
+           ^
+test9.acc:7 warning: trailing text: " "
+data 4 
+      ^
+test9.acc:8 warning: trailing text: " "
+1234 
+    ^
+test9.acc:9 warning: trailing text: " "
+hidden 
+      ^
+test9.acc:10 warning: trailing text: " "
+locked 
+      ^
+test9.acc:11 warning: trailing text: " "
+folded 
+      ^
+test9.acc:12 warning: trailing text: " "
+shader "ENV" 
+            ^
+test9.acc:13 warning: trailing text: " "
+texture "test.rgb" base 
+                       ^
+test9.acc:14 warning: trailing text: " "
+texture "test.rgb" tiled 
+                        ^
+test9.acc:15 warning: trailing text: " "
+texrep 0 0 
+          ^
+test9.acc:16 warning: trailing text: " "
+rot 0 0 0 0 0 0 0 0 0 
+                     ^
+test9.acc:17 warning: trailing text: " "
+loc 0 0 0 
+         ^
+test9.acc:18 warning: trailing text: " "
+subdiv 0 
+        ^
+test9.acc:19 warning: trailing text: " "
+crease 0 
+        ^
+test9.acc:20 warning: trailing text: " "
+numvert 3 
+         ^
+test9.acc:21 warning: trailing text: " "
+0 0 0 0 0 1 
+           ^
+test9.acc:22 warning: trailing text: " "
+1 0 0 0 0 1 
+           ^
+test9.acc:23 warning: trailing text: " "
+1 1 0 0 0 1 
+           ^
+test9.acc:24 warning: trailing text: " "
+numsurf 1 
+         ^
+test9.acc:25 warning: trailing text: " "
+SURF 0x20 
+         ^
+test9.acc:26 warning: trailing text: " "
+mat 0 
+     ^
+test9.acc:27 warning: trailing text: " "
+refs 3 
+      ^
+test9.acc:28 warning: trailing text: " "
+0 0 0 0 0 
+         ^
+test9.acc:29 warning: trailing text: " "
+1 0 0 0 1 
+         ^
+test9.acc:30 warning: trailing text: " "
+2 0 0 1 1 
+         ^
+test9.acc:31 warning: trailing text: " "
+kids 0 
+      ^
+31 warnings

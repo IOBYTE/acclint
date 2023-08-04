@@ -38,6 +38,7 @@ const std::string ENDMAT_token("ENDMAT");
 const std::string OBJECT_token("OBJECT");
 const std::string name_token("name");
 const std::string texture_token("texture");
+const std::string shader_token("shader");
 const std::string texrep_token("texrep");
 const std::string texoff_token("texoff");
 const std::string subdiv_token("subdiv");
@@ -1898,6 +1899,34 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             }
             break;
         }
+        else if (!m_is_ac && token == shader_token)
+        {
+            Shader shader;
+            shader.line_number = m_line_number;
+            shader.line_pos = m_line_pos;
+
+            iss1 >> shader.name;
+
+            if (iss1)
+            {
+                if (!object.shaders.empty())
+                {
+                    warning() << "multiple shaders" << std::endl;
+                    showLine(iss1, 0);
+                    note(object.shaders.front().line_number) << "first instance" << std::endl;
+                    showLine(in, object.shaders.front().line_pos);
+                }
+
+                object.shaders.push_back(shader);
+
+                checkTrailing(iss1);
+            }
+            else
+            {
+                error() << "reading shader" << std::endl;
+                showLine(iss1);
+            }
+        }
         else if (token == MATERIAL_token)
         {
             warning() << "MATERIAL should come before OBJECT" << std::endl;
@@ -2145,6 +2174,8 @@ void AC3D::writeObject(std::ostream &out, const Object &object) const
         out << "folded" << newline(m_crlf);
     for (const auto &data : object.data)
         writeData(out, data.data);
+    for (const auto &shader : object.shaders)
+        out << "shader " << shader.name << newline(m_crlf);
     for (const auto &texture : object.textures)
     {
         out << "texture " << texture.name;

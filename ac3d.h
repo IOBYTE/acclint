@@ -1029,6 +1029,11 @@ private:
         quoted_string name;
     };
 
+    struct Shader : public LineInfo
+    {
+        quoted_string name;
+    };
+
     struct URL : public LineInfo
     {
         std::string url;
@@ -1058,6 +1063,7 @@ private:
         std::vector<Name> names;
         std::vector<URL> urls;
         std::vector<Data> data;
+        std::vector<Shader> shaders;
         std::vector<TexRep> texreps;
         std::vector<TexOff> texoffs;
         std::vector<SubDiv> subdivs;

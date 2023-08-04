@@ -139,3 +139,33 @@
   [ "$(cat test8.output.ac)" = "$(cat test8.result.ac)" ]
   rm test8.output.ac
 }
+
+################################################################################
+
+@test "test9.1" {
+  run acclint test9.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test9.result)" ]
+}
+
+@test "test9.2" {
+  run acclint -Wno-warnings test9.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+}
+
+@test "test9.3" {
+  run acclint -Wno-warnings -Wtrailing-text test9.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test9.result)" ]
+}
+
+@test "test9.4" {
+  run acclint -Wno-warnings test9.acc -o test9.output.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat test9.output.acc)" = "$(cat test9.result.acc)" ]
+  rm test9.output.acc
+}
+
+################################################################################
