@@ -736,6 +736,26 @@ bool AC3D::readHeader(std::istream &in)
         warning() << "found UTF-8 BOM" << std::endl;
         m_line.erase(0, 3);
     }
+    else if (m_line[0] == '\xff' && m_line[1] == '\xfe')
+    {
+        if (m_line[2] == '\0' && m_line[3] == '\0')
+        {
+            error() << "found UTF-32 LE BOM" << std::endl;
+            return false;
+        }
+        error() << "found UTF-16 LE BOM" << std::endl;
+        return false;
+    }
+    else if (m_line[0] == '\xfe' && m_line[1] == '\xff')
+    {
+        error() << "found UTF-16 BE BOM" << std::endl;
+        return false;
+    }
+    else if (m_line[0] == '\0' && m_line[1] == '\0' && m_line[2] == '\xfe' && m_line[3] == '\xff')
+    {
+        error() << "found UTF-32 BE BOM" << std::endl;
+        return false;
+    }
 
     if (m_line.compare(0, 4, "AC3D") != 0)
     {
