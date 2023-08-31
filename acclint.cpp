@@ -86,6 +86,7 @@ void usage()
     std::cerr << "  --splitMat                             Split objects with multiple materials into seperate objects." << std::endl;
     std::cerr << "  --flatten                              Flatten objects." << std::endl;
     std::cerr << "  --merge filename                       Merge filename with inputfile." << std::endl;
+    std::cerr << "  --removeObjects group|poly regex       Remove objects that match type and regex." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -169,6 +170,7 @@ int main(int argc, char *argv[])
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
+    std::vector<AC3D::RemoveInfo> removes;;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -510,6 +512,20 @@ int main(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
         }
+        else if (arg == "--removeObjects")
+        {
+            if ((i + 2) < argc)
+            {
+                removes.emplace_back(argv[i + 1], argv[i + 2]);
+                i += 2;
+            }
+            else
+            {
+                std::cerr << "Missing regex" << std::endl;
+                usage();
+                return EXIT_FAILURE;
+            }
+        }
         else if (arg == "--dump")
         {
             i++;
@@ -711,6 +727,9 @@ int main(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
         }
+
+        for (const auto & remove : removes)
+            ac3d.removeObjects(remove);
 
         if (flatten)
             ac3d.flatten();

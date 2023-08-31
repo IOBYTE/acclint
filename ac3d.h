@@ -30,11 +30,22 @@
 #include <array>
 #include <vector>
 #include <cmath>
+#include <regex>
 
 class AC3D
 {
 public:
     enum class DumpType { group, poly, surf};
+
+    struct RemoveInfo
+    {
+        RemoveInfo(const std::string &type, const std::string &expression)
+        : object_type(type), regular_expression(expression)
+        {
+        }
+        std::string object_type;
+        std::regex regular_expression;
+    };
 
     bool read(const std::string &file);
     bool write(const std::string &file, int version = 0);
@@ -501,6 +512,7 @@ public:
     bool splitMultipleMat();
     bool merge(const AC3D& ac3d);
     void flatten();
+    void removeObjects(const RemoveInfo &remove_info);
 
     class quoted_string : public std::string
     {
@@ -1166,6 +1178,7 @@ private:
         void dump(DumpType dump_type, size_t count, size_t level) const;
         void incrementMaterialIndex(size_t num_materials);
         void transform(const Matrix &matrix);
+        void removeKids(const RemoveInfo &remove_info);
     };
 
     std::string     m_file;

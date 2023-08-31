@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="1">
     <builddir>acclint-cppcheck-build-dir</builddir>
-    <platform>unknown</platform>
     <importproject>build/acclint.sln</importproject>
     <analyze-all-vs-configs>false</analyze-all-vs-configs>
     <check-headers>true</check-headers>
     <check-unused-templates>true</check-unused-templates>
     <max-ctu-depth>2</max-ctu-depth>
     <max-template-recursion>100</max-template-recursion>
+    <vs-configurations>
+        <config>Debug</config>
+        <config>MinSizeRel</config>
+        <config>RelWithDebInfo</config>
+        <config>Release</config>
+    </vs-configurations>
     <suppressions>
         <suppression>clang-tidy-modernize-use-trailing-return-type</suppression>
         <suppression>clang-tidy-fuchsia-overloaded-operator</suppression>
@@ -36,4 +41,5 @@
     <tools>
         <tool>clang-tidy</tool>
     </tools>
+    <check-level-exhaustive/>
 </project>

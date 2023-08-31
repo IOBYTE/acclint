@@ -296,7 +296,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
         return false;
     }
 
-    Point2 uv;
+    Point2 uv{ 0.0, 0.0 };
 
     in >> uv;
 
@@ -486,7 +486,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
     if (token == mat_token)
     {
-        size_t mat;
+        size_t mat = 0;
 
         iss >> std::ws;
         const std::streampos pos = iss.tellg();
@@ -877,7 +877,7 @@ bool AC3D::readColor(std::istringstream &in, Color &color, const std::string &ex
         in >> std::ws;
 
         std::streampos pos = in.tellg();
-        double value;
+        double value = 0.0;
 
         in >> value;
 
@@ -943,7 +943,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
     if (expected != actual)
     {
         std::istringstream iss(actual);
-        double number;
+        double number = 0.0;
         iss >> number;
         if (iss)
         {
@@ -1031,7 +1031,7 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
     if (actual != expected)
     {
         std::istringstream iss(actual);
-        double number;
+        double number = 0.0;
         iss >> number;
         if (iss)
         {
@@ -1394,7 +1394,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     std::string texture_name(texture.name);
                     std::filesystem::path texture_path(texture_name);
                     const bool absolute = texture_path.is_absolute() ||
-                        (std::isalpha(texture_name[0]) && texture_name[1] == ':');
+                        (std::isalpha(texture_name[0]) != 0 && texture_name[1] == ':');
 
                     // use parent path of file when available
                     // and texture path is not absolute
@@ -1791,7 +1791,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                                       << " should be 1" << std::endl;
                                             // find start of normal
                                             size_t offset = pos2;
-                                            while (offset < m_line.size() && std::isspace(m_line[offset]))
+                                            while (offset < m_line.size() && std::isspace(m_line[offset]) != 0)
                                                 offset++;
                                             showLine(iss2, offset);
                                         }
@@ -2090,6 +2090,21 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
     }
 
     return false;
+}
+
+void AC3D::Object::removeKids(const RemoveInfo &remove_info)
+{
+    auto kid = kids.begin();
+    while (kid != kids.end())
+    {
+        if (!kid->names.empty() && kid->type.type == remove_info.object_type && regex_match(kid->names[0].name, remove_info.regular_expression))
+            kid = kids.erase(kid);
+        else
+        {
+            kid->removeKids(remove_info);
+            kid++;
+        }
+    }
 }
 
 void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
@@ -3369,7 +3384,7 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
 
     const auto &triangles = surface.getTriangleStrip();
     bool hasOldNormal = false;
-    Point3 oldNormal;
+    Point3 oldNormal{ 0.0, 0.0, 0.0 };
     size_t oldTriangleIndex = 0;
     std::vector<size_t> holes;
 
@@ -3949,6 +3964,11 @@ bool AC3D::cleanObjects(std::vector<Object> &objects)
             it = objects.erase(it);
             cleaned = true;
         }
+        else if (it->type.type == "group" && it->kids.empty())
+        {
+            it = objects.erase(it);
+            cleaned = true;
+        }
         else
             ++it;
     }
@@ -4241,7 +4261,7 @@ void AC3D::Object::transform(const Matrix &matrix)
         rotations.clear();
     }
 
-    Matrix newMatrix = thisMatrix.multiply(matrix);
+    const Matrix newMatrix = thisMatrix.multiply(matrix);
 
     if (type.type == "poly")
     {
@@ -4268,9 +4288,15 @@ void AC3D::transform(const Matrix &matrix)
 
 void AC3D::flatten()
 {
-    Matrix matrix;
+    const Matrix matrix;
 
     transform(matrix);
 
     //TODO flatten the object hiearchy
+}
+
+void AC3D::removeObjects(const RemoveInfo &remove_info)
+{
+    for (auto &object : m_objects)
+        object.removeKids(remove_info);
 }
