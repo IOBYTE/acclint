@@ -86,7 +86,7 @@ void usage()
     std::cerr << "  --splitMat                             Split objects with multiple materials into seperate objects." << std::endl;
     std::cerr << "  --flatten                              Flatten objects." << std::endl;
     std::cerr << "  --merge filename                       Merge filename with inputfile." << std::endl;
-    std::cerr << "  --removeObjects group|poly regex       Remove objects that match type and regex." << std::endl;
+    std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -516,12 +516,32 @@ int main(int argc, char *argv[])
         {
             if ((i + 2) < argc)
             {
-                removes.emplace_back(argv[i + 1], argv[i + 2]);
-                i += 2;
+                const std::string type = argv[i + 1];
+                const std::string expression = argv[i + 2];
+                if (type == "group" || type == "poly" || type == "light")
+                {
+                    try
+                    {
+                        removes.emplace_back(type, expression);
+                        i += 2;
+                    }
+                    catch (std::regex_error &ex)
+                    {
+                        std::cerr << "Invalid removeObjects expression:  " << expression << " " << ex.what() << std::endl;
+                        usage();
+                        return EXIT_FAILURE;
+                    }
+                }
+                else
+                {
+                    std::cerr << "Invalid removeObjects type: " << type << std::endl;
+                    usage();
+                    return EXIT_FAILURE;
+                }
             }
             else
             {
-                std::cerr << "Missing regex" << std::endl;
+                std::cerr << "Missing removeObjects parameters" << std::endl;
                 usage();
                 return EXIT_FAILURE;
             }
