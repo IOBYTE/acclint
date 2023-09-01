@@ -139,3 +139,8 @@ cd extra-object
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd removeObjects
+echo "${PWD##*/}"
+bats test.bats
+cd ..
