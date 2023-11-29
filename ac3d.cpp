@@ -3310,7 +3310,7 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &o
             {
                 warning(surface.line_number) << "triangle strip with duplicate triangle" << std::endl;
                 showLine(in, surface.line_pos);
-                note(surface.triangleStrip[i].refs[2].line_number) << "first trianglex" << std::endl;
+                note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
                 showLine(in, surface.triangleStrip[i].refs[2].line_pos);
                 note(surface.triangleStrip[j].refs[2].line_number) << "duplicate triangle" << std::endl;
                 showLine(in, surface.triangleStrip[j].refs[2].line_pos);
@@ -3320,7 +3320,7 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &o
             {
                 warning(surface.line_number) << "triangle strip with duplicate triangle with different vertex order" << std::endl;
                 showLine(in, surface.line_pos);
-                note(surface.triangleStrip[i].refs[2].line_number) << "first trianglex" << std::endl;
+                note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
                 showLine(in, surface.triangleStrip[i].refs[2].line_pos);
                 note(surface.triangleStrip[j].refs[2].line_number) << "duplicate triangle" << std::endl;
                 showLine(in, surface.triangleStrip[j].refs[2].line_pos);
@@ -3330,7 +3330,7 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &o
             {
                 warning(surface.line_number) << "triangle strip with duplicate triangle with different winding" << std::endl;
                 showLine(in, surface.line_pos);
-                note(surface.triangleStrip[i].refs[2].line_number) << "first trianglex" << std::endl;
+                note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
                 showLine(in, surface.triangleStrip[i].refs[2].line_pos);
                 note(surface.triangleStrip[j].refs[2].line_number) << "duplicate triangle" << std::endl;
                 showLine(in, surface.triangleStrip[j].refs[2].line_pos);
