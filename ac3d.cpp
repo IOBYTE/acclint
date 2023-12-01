@@ -4286,6 +4286,57 @@ void AC3D::transform(const Matrix &matrix)
         object.transform(matrix);
 }
 
+bool AC3D::Object::splitPolygons()
+{
+    bool changed = false;
+
+    if (type.type == "poly")
+    {
+        for (size_t i = 0; i < surfaces.size(); ++i)
+        {
+            size_t size = surfaces[i].refs.size();
+
+            if (size > 3)
+            {
+                for (size_t j = 2; j < size - 1; j++)
+                {
+                    Surface surface;
+
+                    surface.flags = surfaces[i].flags;
+                    if (!surfaces[i].mats.empty())
+                        surface.mats.push_back(surfaces[i].mats.back());
+                    surface.refs.push_back(surfaces[i].refs[j]);
+                    surface.refs.push_back(surfaces[i].refs[j + 1]);
+                    surface.refs.push_back(surfaces[i].refs[0]);
+
+                    size_t index = i + j - 1;
+                    if (index < surfaces.size())
+                        surfaces.insert(surfaces.begin() + index, surface);
+                    else
+                        surfaces.push_back(surface);
+                }
+
+                surfaces[i].refs.resize(3);
+
+                // skip inserted surface
+                i += (size - 2);
+
+                changed = true;
+            }
+        }
+
+        if (changed)
+            numsurf.number = static_cast<int>(surfaces.size());
+    }
+    else
+    {
+        for (auto &kid : kids)
+            changed |= kid.splitPolygons();
+    }
+
+    return changed;
+}
+
 void AC3D::flatten()
 {
     const Matrix matrix;
@@ -4293,6 +4344,16 @@ void AC3D::flatten()
     transform(matrix);
 
     //TODO flatten the object hiearchy
+}
+
+bool AC3D::splitPolygons()
+{
+    bool changed = false;
+
+    for (auto &object : m_objects)
+        changed |= object.splitPolygons();
+
+    return changed;
 }
 
 void AC3D::removeObjects(const RemoveInfo &remove_info)

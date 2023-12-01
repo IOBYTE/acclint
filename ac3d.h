@@ -512,6 +512,7 @@ public:
     bool splitMultipleMat();
     bool merge(const AC3D& ac3d);
     void flatten();
+    bool splitPolygons();
     void removeObjects(const RemoveInfo &remove_info);
 
     class quoted_string : public std::string
@@ -1179,6 +1180,7 @@ private:
         void incrementMaterialIndex(size_t num_materials);
         void transform(const Matrix &matrix);
         void removeKids(const RemoveInfo &remove_info);
+        bool splitPolygons();
     };
 
     std::string     m_file;

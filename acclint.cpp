@@ -82,6 +82,7 @@ void usage()
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
+    std::cerr << "  --splitPolygon                         Split polygon surface into seperate triangle surfaces." << std::endl;
     std::cerr << "  --splitSURF                            Split objects with multiple surface types into seperate objects." << std::endl;
     std::cerr << "  --splitMat                             Split objects with multiple materials into seperate objects." << std::endl;
     std::cerr << "  --flatten                              Flatten objects." << std::endl;
@@ -167,6 +168,7 @@ int main(int argc, char *argv[])
     bool splitSURF = false;
     bool splitMat = false;
     bool flatten = false;
+    bool splitPolygon = false;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
@@ -498,6 +500,10 @@ int main(int argc, char *argv[])
         {
             flatten = true;
         }
+        else if (arg == "--splitPolygon")
+        {
+            splitPolygon = true;
+        }
         else if (arg == "--merge")
         {
             if (i < argc)
@@ -753,6 +759,9 @@ int main(int argc, char *argv[])
 
         if (flatten)
             ac3d.flatten();
+
+        if (splitPolygon)
+            ac3d.splitPolygons();
 
         if (ac3d.fixMultipleWorlds())
         {

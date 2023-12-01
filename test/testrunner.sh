@@ -144,3 +144,8 @@ cd removeObjects
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd splitPolygon
+echo "${PWD##*/}"
+bats test.bats
+cd ..
