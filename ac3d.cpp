@@ -4298,6 +4298,13 @@ bool AC3D::Object::splitPolygons()
 
             if (size > 3)
             {
+                // clear flags
+                for (auto &ref : surfaces[i].refs)
+                {
+                    ref.collinear = false;
+                    ref.duplicate = false;
+                }
+
                 for (size_t j = 2; j < size - 1; j++)
                 {
                     Surface surface;
