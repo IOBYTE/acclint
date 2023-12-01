@@ -18,4 +18,12 @@
   rm test1.2.output.ac
 }
 
+@test "test1.3" {
+  run acclint test1.3.ac --splitPolygon -Wno-collinear-surface-vertices -o test1.3.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat test1.3.output.ac)" = "$(cat test1.3.result.ac)" ]
+  rm test1.3.output.ac
+}
+
 ################################################################################

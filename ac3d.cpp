@@ -4294,7 +4294,7 @@ bool AC3D::Object::splitPolygons()
     {
         for (size_t i = 0; i < surfaces.size(); ++i)
         {
-            size_t size = surfaces[i].refs.size();
+            const size_t size = surfaces[i].refs.size();
 
             if (size > 3)
             {
@@ -4309,7 +4309,7 @@ bool AC3D::Object::splitPolygons()
                     surface.refs.push_back(surfaces[i].refs[j + 1]);
                     surface.refs.push_back(surfaces[i].refs[0]);
 
-                    size_t index = i + j - 1;
+                    const size_t index = i + j - 1;
                     if (index < surfaces.size())
                         surfaces.insert(surfaces.begin() + index, surface);
                     else

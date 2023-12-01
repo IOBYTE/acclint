@@ -116,3 +116,59 @@
   [ "$output" = "$(cat test10.result)" ]
 }
 
+################################################################################
+
+@test "test11.1" {
+  run acclint test11.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test11.result)" ]
+}
+
+@test "test11.2" {
+  run acclint -Wno-warnings test11.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+}
+
+@test "test11.3" {
+  run acclint -Wno-warnings -Wcollinear-surface-vertices test11.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test11.result)" ]
+}
+
+@test "test11.4" {
+  run acclint -Wno-warnings test11.ac -o test11.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat test11.output.ac)" = "$(cat test11.result.ac)" ]
+  rm test11.output.ac
+}
+
+################################################################################
+
+@test "test12.1" {
+  run acclint test12.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test12.result)" ]
+}
+
+@test "test12.2" {
+  run acclint -Wno-warnings test12.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+}
+
+@test "test12.3" {
+  run acclint -Wno-warnings -Wcollinear-surface-vertices test12.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test12.result)" ]
+}
+
+@test "test12.4" {
+  run acclint -Wno-warnings test12.ac -o test12.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat test12.output.ac)" = "$(cat test12.result.ac)" ]
+  rm test12.output.ac
+}
+

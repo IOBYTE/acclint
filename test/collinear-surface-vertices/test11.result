@@ -1,0 +1,37 @@
+test11.ac:21 warning: collinear verticies
+3 0 0
+^
+test11.ac:9 note: first vertex
+0 0 0
+^
+test11.ac:10 note: second vertex
+1 0 0
+^
+test11.ac:11 note: third vertex
+2 0 0
+^
+test11.ac:23 warning: collinear verticies
+5 0 0
+^
+test11.ac:11 note: first vertex
+2 0 0
+^
+test11.ac:12 note: second vertex
+1 1 0
+^
+test11.ac:13 note: third vertex
+0 2 0
+^
+test11.ac:19 warning: collinear verticies
+1 0 0
+^
+test11.ac:13 note: first vertex
+0 2 0
+^
+test11.ac:8 note: second vertex
+0 1 0
+^
+test11.ac:9 note: third vertex
+0 0 0
+^
+3 warnings
