@@ -4324,6 +4324,8 @@ bool AC3D::Object::splitPolygons()
                 }
 
                 surfaces[i].refs.resize(3);
+                surfaces[i].coplanar = true;
+                surfaces[i].concave = false;
 
                 // skip inserted surface
                 i += (size - 2);
