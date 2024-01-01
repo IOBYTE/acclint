@@ -2137,6 +2137,15 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
             for (const auto& name : names)
                 std::cout << " " << name.name;
 
+            if (!textures.empty())
+            {
+                std::cout << " texture";
+
+                for (const auto& texture : textures)
+                    std::cout << " " << texture.name;
+            }
+
+            std::cout << " " << vertices.size() << " vertices";
             std::cout << " " << surfaces.size() << " surface" << (surfaces.size() == 1 ? "" : "s") << std::endl;
 
             if (dump_type == DumpType::surf)
@@ -2160,7 +2169,17 @@ void AC3D::Surface::dump(DumpType dump_type, size_t count, size_t level) const
     for (size_t i = 0; i < level; i++)
         std::cout << "    ";
 
-    std::cout << (count + 1) << " surface " << refs.size() << " ref" << (refs.size() == 1 ? "" : "s") << std::endl;
+    std::cout << (count + 1) << " surface flags 0x" << std::hex << flags << std::dec;
+
+    if (!mats.empty())
+    {
+        std::cout << " mat";
+
+        for (const auto &mat : mats)
+            std::cout << " " << mat.mat;
+    }
+
+    std::cout << " " << refs.size() << " ref" << (refs.size() == 1 ? "" : "s") << std::endl;
 }
 
 void AC3D::Surface::setTriangleStrip(const Object &object)
