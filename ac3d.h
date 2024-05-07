@@ -514,6 +514,7 @@ public:
     void flatten();
     bool splitPolygons();
     void removeObjects(const RemoveInfo &remove_info);
+    void combineTexture();
 
     class quoted_string : public std::string
     {
@@ -1181,6 +1182,8 @@ private:
         void transform(const Matrix &matrix);
         void removeKids(const RemoveInfo &remove_info);
         bool splitPolygons();
+        bool addObject(const Object &object);
+        bool sameTextures(const Object &object);
     };
 
     std::string     m_file;
@@ -1247,12 +1250,12 @@ private:
     bool            m_multiple_world = true;
     bool            m_different_surf = true;
     bool            m_different_mat = true;
-    bool            m_has_world = false;
 
     Header m_header;
     std::vector<Material> m_materials;
     std::vector<Object> m_objects;
     std::vector<std::string> m_texture_paths;
+    bool m_has_world = false;
 
     bool readHeader(std::istream &in);
     void writeHeader(std::ostream &out, const Header &header) const;
@@ -1314,6 +1317,7 @@ private:
     bool splitMultipleSURF(std::vector<Object> &kids);
     bool splitMultipleMat(std::vector<Object> &kids);
     void transform(const Matrix &matrix);
+    void combineTexture(const Object &object, std::vector<Object> &objects);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);

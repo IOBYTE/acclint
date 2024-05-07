@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-project (acclint VERSION 0.1 LANGUAGES CXX)
+project(acclint VERSION 0.1 LANGUAGES CXX)
 
 configure_file(config.h.in config.h)
 

@@ -4389,3 +4389,89 @@ void AC3D::removeObjects(const RemoveInfo &remove_info)
     for (auto &object : m_objects)
         object.removeKids(remove_info);
 }
+
+bool AC3D::Object::sameTextures(const Object &object)
+{
+    if (object.textures.size() != textures.size())
+        return false;
+
+    for (size_t i = 0; i < textures.size(); ++i)
+    {
+        if (textures[i].name != object.textures[i].name)
+            return false;
+    }
+
+    return true;
+}
+
+bool AC3D::Object::addObject(const Object &object)
+{
+    if (!sameTextures(object))
+    {
+        std::cerr << "Couldn't add object: different texture" << std::endl;
+        return false;
+    }
+
+    size_t vertex_offset = vertices.size();
+    size_t surface_offset = surfaces.size();
+
+    // append new vertices
+    vertices.insert(vertices.end(), object.vertices.begin(), object.vertices.end());
+    numvert.number = static_cast<int>(vertices.size());
+
+    // append new surfaces
+    surfaces.insert(surfaces.end(), object.surfaces.begin(), object.surfaces.end());
+    numsurf.number = static_cast<int>(surfaces.size());
+
+    // adjust surface ref indexes
+    for (size_t i = surface_offset; i < surfaces.size(); i++)
+    {
+        for (int j = 0; j < surfaces[i].refs.size(); ++j)
+        {
+            surfaces[i].refs[j].index += vertex_offset;
+        }
+    }
+
+    return true;
+}
+
+void AC3D::combineTexture(const Object &object, std::vector<Object> &objects)
+{
+    if (object.type.type == "poly")
+    {
+        for (auto &obj : objects)
+        {
+            if (obj.sameTextures(object))
+            {
+                obj.addObject(object);
+                return;
+            }
+        }
+        objects.push_back(object);
+        std::string name("object");
+        name.append(std::to_string(objects.size()));
+        if (objects.back().names.size() == 1)
+            objects.back().names[0].name = quoted_string(name);
+        return;
+    }
+
+    if (object.type.type == "group" || object.type.type == "world")
+    {
+        for (auto &kid : object.kids)
+            combineTexture(kid, objects);
+    }
+}
+
+void AC3D::combineTexture()
+{
+    flatten();
+
+    std::vector<Object> new_objects;
+
+    for (auto &object : m_objects)
+        combineTexture(object, new_objects);
+
+    m_objects[0].kids.clear();
+
+    m_objects[0].kids.insert(m_objects[0].kids.begin(), new_objects.begin(), new_objects.end());
+}

@@ -34,6 +34,8 @@
         <suppression>clang-tidy-cppcoreguidelines-pro-bounds-pointer-arithmetic</suppression>
         <suppression>clang-tidy-altera-struct-pack-align</suppression>
         <suppression>missingIncludeSystem</suppression>
+        <suppression>clang-tidy-misc-include-cleaner</suppression>
+        <suppression>clang-tidy-performance-avoid-endl</suppression>
     </suppressions>
     <safe-checks>
         <class-public/>

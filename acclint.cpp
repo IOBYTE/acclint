@@ -88,6 +88,7 @@ void usage()
     std::cerr << "  --flatten                              Flatten objects." << std::endl;
     std::cerr << "  --merge filename                       Merge filename with inputfile." << std::endl;
     std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
+    std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -169,6 +170,7 @@ int main(int argc, char *argv[])
     bool splitMat = false;
     bool flatten = false;
     bool splitPolygon = false;
+    bool combineTexture = false;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
@@ -504,6 +506,10 @@ int main(int argc, char *argv[])
         {
             splitPolygon = true;
         }
+        else if (arg == "--combineTexture")
+        {
+            combineTexture = true;
+        }
         else if (arg == "--merge")
         {
             if (i < argc)
@@ -710,7 +716,7 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
 
-        for (const auto& filename : merge_files)
+        for (const auto &filename : merge_files)
         {
             std::cout << "Reading: " << filename << std::endl;
 
@@ -754,7 +760,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        for (const auto & remove : removes)
+        for (const auto &remove : removes)
             ac3d.removeObjects(remove);
 
         if (flatten)
@@ -771,6 +777,14 @@ int main(int argc, char *argv[])
             if (splitMat)
                 ac3d.splitMultipleMat();
 
+            ac3d.clean();
+
+            ac3d.write(out_file, version);
+        }
+
+        if (combineTexture)
+        {
+            ac3d.combineTexture();
             ac3d.clean();
 
             ac3d.write(out_file, version);
