@@ -154,6 +154,22 @@ public:
     {
         return m_invalid_ref_count;
     }
+    void notEnoughUVCoordinates(bool value)
+    {
+        m_not_enough_uv_coordinates = value;
+    }
+    bool notEnoughUVCoordinates() const
+    {
+        return m_not_enough_uv_coordinates;
+    }
+    void tooManyUVCoordinates(bool value)
+    {
+        m_too_many_uv_coordinates = value;
+    }
+    bool tooManyUVCoordinates() const
+    {
+        return m_too_many_uv_coordinates;
+    }
     void invalidSurfaceType(bool value)
     {
         m_invalid_surface_type = value;
@@ -1175,6 +1191,17 @@ private:
 
             return vertices[index1].vertex == vertices[index2].vertex;
         }
+        size_t getTexturesSize()
+        {
+            size_t actual_textures = 0;
+
+            for (const auto &texture : textures)
+            {
+                if (texture.name != "empty_texture_no_mapping")
+                    actual_textures++;
+            }
+            return actual_textures;
+        }
 
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
@@ -1207,6 +1234,8 @@ private:
     bool            m_invalid_material = true;
     bool            m_invalid_material_index = true;
     bool            m_invalid_ref_count = true;
+    bool            m_too_many_uv_coordinates = true;
+    bool            m_not_enough_uv_coordinates = true;
     bool            m_invalid_surface_type = true;
     bool            m_invalid_token = true;
     bool            m_duplicate_materials = true;

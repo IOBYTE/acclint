@@ -563,10 +563,22 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                     else
                         object.vertices[ref.index].used = true;
                 }
-
-                if (ref.coordinates.size() > 1 && ref.coordinates.size() > object.textures.size())
-                    error() << "more texture coordinates: " << ref.coordinates.size()
-                            << " than textures: " << object.textures.size() << std::endl;
+                size_t valid_textures = object.getTexturesSize();
+                if (ref.coordinates.size() > 1 && ref.coordinates.size() != valid_textures)
+                {
+                    if (m_not_enough_uv_coordinates && ref.coordinates.size() < valid_textures)
+                    {
+                        error() << "not enough uv coordinates: " << ref.coordinates.size()
+                                << " coordinates " << valid_textures << " textures" << std::endl;
+                        showLine(iss1, 0);
+                    }
+                    else if (m_too_many_uv_coordinates)
+                    {
+                        warning() << "too many uv coordinates: " << ref.coordinates.size()
+                                  << " coordinates " << valid_textures << " textures" << std::endl;
+                        showLine(iss1, 0);
+                    }
+                }
 
                 surface.refs.push_back(ref);
             }
