@@ -518,6 +518,10 @@ public:
     {
         m_texture_paths = paths;
     }
+    size_t getWorldKidCount() const
+    {
+        return m_objects[0].kids.size();
+    }
     bool clean();
     bool cleanObjects();
     bool cleanVertices();

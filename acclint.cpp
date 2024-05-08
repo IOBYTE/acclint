@@ -467,7 +467,7 @@ int main(int argc, char *argv[])
             invalid_vertex_index = false;
             invalid_texture_coordinate = false;
             not_enough_uv_coordinates = false;
-            }
+        }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
             not_ac3d_file = arg.compare(2, 3, "no-") != 0;
@@ -802,6 +802,8 @@ int main(int argc, char *argv[])
         {
             ac3d.combineTexture();
             ac3d.clean();
+
+            std::cout << "combineTexture: " << ac3d.getWorldKidCount() << " objects" << std::endl;
 
             ac3d.write(out_file, version);
         }
