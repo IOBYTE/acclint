@@ -146,7 +146,7 @@ std::string getTrailing(const std::istringstream &s)
 
 size_t offsetOfToken(const std::istringstream &in, size_t index)
 {
-    std::string text = in.str();
+    const std::string text = in.str();
     size_t token_count = 0;
     size_t current_offset = 0;
     bool in_token = false;
@@ -772,7 +772,7 @@ bool AC3D::readHeader(std::istream &in)
         return false;
     }
 
-    std::istringstream iss(m_line);
+    const std::istringstream iss(m_line);
 
     // remove UTF-8 BOM
     if (m_line[0] == '\xef' && m_line[1] == '\xbb' && m_line[2] == '\xbf')
@@ -882,7 +882,7 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
                         warning() << "trailing text: \"" << data.substr(size) << "\"" << std::endl;
                         if (m_line.back() == '\r') // remove DOS CR
                             m_line.pop_back();
-                        std::istringstream iss1(m_line);
+                        const std::istringstream iss1(m_line);
                         showLine(iss1, m_line.size() - (data.size() - size));
                     }
                     data.resize(size);
