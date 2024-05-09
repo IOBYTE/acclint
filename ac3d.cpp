@@ -157,7 +157,7 @@ void showLine(std::istringstream &in)
     std::cerr << '^' << std::endl;
 }
 
-void showLine(std::istringstream &in, const std::streampos &pos)
+void showLine(const std::istringstream &in, const std::streampos &pos)
 {
     std::cerr << in.str() << std::endl;
 
@@ -563,7 +563,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                     else
                         object.vertices[ref.index].used = true;
                 }
-                size_t valid_textures = object.getTexturesSize();
+                const size_t valid_textures = object.getTexturesSize();
                 if (ref.coordinates.size() > 1 && ref.coordinates.size() != valid_textures)
                 {
                     if (m_not_enough_uv_coordinates && ref.coordinates.size() < valid_textures)
@@ -4424,8 +4424,8 @@ bool AC3D::Object::addObject(const Object &object)
         return false;
     }
 
-    size_t vertex_offset = vertices.size();
-    size_t surface_offset = surfaces.size();
+    const size_t vertex_offset = vertices.size();
+    const size_t surface_offset = surfaces.size();
 
     // append new vertices
     vertices.insert(vertices.end(), object.vertices.begin(), object.vertices.end());
@@ -4438,9 +4438,9 @@ bool AC3D::Object::addObject(const Object &object)
     // adjust surface ref indexes
     for (size_t i = surface_offset; i < surfaces.size(); i++)
     {
-        for (int j = 0; j < surfaces[i].refs.size(); ++j)
+        for (auto &ref : surfaces[i].refs)
         {
-            surfaces[i].refs[j].index += vertex_offset;
+            ref.index += vertex_offset;
         }
     }
 
@@ -4472,28 +4472,26 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, st
             transparent_objects.back().kids.push_back(object);
             return;
         }
-        else
+
+        for (auto &obj : objects)
         {
-            for (auto &obj : objects)
+            if (obj.sameTextures(object))
             {
-                if (obj.sameTextures(object))
-                {
-                    obj.addObject(object);
-                    return;
-                }
+                obj.addObject(object);
+                return;
             }
-            objects.push_back(object);
-            std::string name("object");
-            name.append(std::to_string(objects.size()));
-            if (objects.back().names.size() == 1)
-                objects.back().names[0].name = quoted_string(name);
-            return;
         }
+        objects.push_back(object);
+        std::string name("object");
+        name.append(std::to_string(objects.size()));
+        if (objects.back().names.size() == 1)
+            objects.back().names[0].name = quoted_string(name);
+        return;
     }
 
     if (object.type.type == "group" || object.type.type == "world")
     {
-        for (auto &kid : object.kids)
+        for (const auto &kid : object.kids)
             combineTexture(kid, objects, transparent_objects);
     }
 }
@@ -4505,7 +4503,7 @@ void AC3D::combineTexture()
     std::vector<Object> new_objects;
     std::vector<Object> new_transparent_objects;
 
-    for (auto &object : m_objects)
+    for (const auto &object : m_objects)
         combineTexture(object, new_objects, new_transparent_objects);
 
     Object &world = m_objects[0];
