@@ -1,0 +1,13 @@
+test2.acc:17 warning: extra uv coordinates: 3 coordinates 1 texture
+0 0 0 0 0 0 0
+      ^
+test2.acc:18 warning: extra uv coordinates: 3 coordinates 1 texture
+1 1 0 1 0 1 0
+      ^
+test2.acc:19 warning: extra uv coordinates: 3 coordinates 1 texture
+2 1 1 1 1 1 1
+      ^
+test2.acc:20 warning: extra uv coordinates: 3 coordinates 1 texture
+3 0 1 0 1 0 1
+      ^
+4 warnings

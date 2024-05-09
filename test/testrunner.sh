@@ -149,3 +149,13 @@ cd splitPolygon
 echo "${PWD##*/}"
 bats test.bats
 cd ..
+
+cd extra-uv-coordinates
+echo "${PWD##*/}"
+bats test.bats
+cd ..
+
+cd missing-uv-coordinates
+echo "${PWD##*/}"
+bats test.bats
+cd ..

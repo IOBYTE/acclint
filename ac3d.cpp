@@ -144,6 +144,34 @@ std::string getTrailing(const std::istringstream &s)
     return s.str().substr(pos);
 }
 
+size_t offsetOfToken(const std::istringstream &in, size_t index)
+{
+    std::string text = in.str();
+    size_t token_count = 0;
+    size_t current_offset = 0;
+    bool in_token = false;
+
+    for (auto c : text)
+    {
+        if (!in_token && c != ' ')
+        {
+            in_token = true;
+
+            if (token_count == index)
+                return current_offset;
+
+            token_count++;
+        }
+        else if (in_token && c == ' ')
+        {
+            in_token = false;
+        }
+        current_offset++;
+    }
+
+    return current_offset;
+}
+
 void showLine(std::istringstream &in)
 {
     std::cerr << in.str() << std::endl;
@@ -564,19 +592,24 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                         object.vertices[ref.index].used = true;
                 }
                 const size_t valid_textures = object.getTexturesSize();
-                if (ref.coordinates.size() > 1 && ref.coordinates.size() != valid_textures)
+                if (ref.coordinates.size() < valid_textures)
                 {
-                    if (m_not_enough_uv_coordinates && ref.coordinates.size() < valid_textures)
+                    if (m_missing_uv_coordinates)
                     {
-                        error() << "not enough uv coordinates: " << ref.coordinates.size()
-                                << " coordinates " << valid_textures << " textures" << std::endl;
-                        showLine(iss1, 0);
+                        error() << "missing uv coordinates: "
+                                << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
+                                << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                        showLine(iss1, iss1.str().size() + 1);
                     }
-                    else if (m_too_many_uv_coordinates)
+                }
+                if (ref.coordinates.size() > 1 && ref.coordinates.size() > valid_textures)
+                {
+                    if (m_extra_uv_coordinates)
                     {
-                        warning() << "too many uv coordinates: " << ref.coordinates.size()
-                                  << " coordinates " << valid_textures << " textures" << std::endl;
-                        showLine(iss1, 0);
+                        warning() << "extra uv coordinates: "
+                                  << ref.coordinates.size() << " coordinates "
+                                  << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                        showLine(iss1, offsetOfToken(iss1, valid_textures * 2 + 1));
                     }
                 }
 

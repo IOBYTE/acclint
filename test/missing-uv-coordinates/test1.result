@@ -1,0 +1,13 @@
+test1.acc:20 error: missing uv coordinates: 1 coordinate 2 textures
+0 0 0
+      ^
+test1.acc:21 error: missing uv coordinates: 1 coordinate 2 textures
+1 1 0
+      ^
+test1.acc:22 error: missing uv coordinates: 1 coordinate 2 textures
+2 1 1
+      ^
+test1.acc:23 error: missing uv coordinates: 1 coordinate 2 textures
+3 0 1
+      ^
+4 errors

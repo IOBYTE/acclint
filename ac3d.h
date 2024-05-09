@@ -154,21 +154,21 @@ public:
     {
         return m_invalid_ref_count;
     }
-    void notEnoughUVCoordinates(bool value)
+    void missingUVCoordinates(bool value)
     {
-        m_not_enough_uv_coordinates = value;
+        m_missing_uv_coordinates = value;
     }
-    bool notEnoughUVCoordinates() const
+    bool missingUVCoordinates() const
     {
-        return m_not_enough_uv_coordinates;
+        return m_missing_uv_coordinates;
     }
-    void tooManyUVCoordinates(bool value)
+    void extraUVCoordinates(bool value)
     {
-        m_too_many_uv_coordinates = value;
+        m_extra_uv_coordinates = value;
     }
-    bool tooManyUVCoordinates() const
+    bool extraUVCoordinates() const
     {
-        return m_too_many_uv_coordinates;
+        return m_extra_uv_coordinates;
     }
     void invalidSurfaceType(bool value)
     {
@@ -1246,8 +1246,8 @@ private:
     bool            m_invalid_material = true;
     bool            m_invalid_material_index = true;
     bool            m_invalid_ref_count = true;
-    bool            m_too_many_uv_coordinates = true;
-    bool            m_not_enough_uv_coordinates = true;
+    bool            m_extra_uv_coordinates = true;
+    bool            m_missing_uv_coordinates = true;
     bool            m_invalid_surface_type = true;
     bool            m_invalid_token = true;
     bool            m_duplicate_materials = true;

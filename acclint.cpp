@@ -52,7 +52,7 @@ void usage()
     std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material                  Don't show invalid material warnings." << std::endl;
-    std::cerr << "  -Wno-too-many-uv-coordinates           Don't show too many uv coordinates count warnings." << std::endl;
+    std::cerr << "  -Wno-extra-uv-coordinates              Don't show extra uv coordinates warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
     std::cerr << "  -Wno-extra-object                      Don't show extra object warnings." << std::endl;
@@ -75,7 +75,7 @@ void usage()
     std::cerr << "  -Wno-group-with-geometry               Don't show group with geometry warnings." << std::endl;
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
-    std::cerr << "  -Wno-not-enough-uv-coordinates         Don't show not enough uv coordinates count errors." << std::endl;
+    std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
@@ -125,8 +125,8 @@ int main(int argc, char *argv[])
     bool invalid_material = true;
     bool invalid_material_index = true;
     bool invalid_ref_count = true;
-    bool too_many_uv_coordinates = true;
-    bool not_enough_uv_coordinates = true;
+    bool extra_uv_coordinates = true;
+    bool missing_uv_coordinates = true;
     bool invalid_surface_type = true;
     bool invalid_token = true;
     bool missing_surfaces = true;
@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
             unused_vertex = false;
             invalid_material = false;
             invalid_ref_count = false;
-            too_many_uv_coordinates = false;
+            extra_uv_coordinates = false;
             missing_surfaces = false;
             duplicate_surfaces = false;
             duplicate_surfaces_order = false;
@@ -301,6 +301,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
         {
             invalid_material = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-extra-uv-coordinates" || arg == "-Wextra-uv-coordinates")
+        {
+            extra_uv_coordinates = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-missing-surfaces" || arg == "-Wmissing-surfaces")
         {
@@ -466,11 +470,15 @@ int main(int argc, char *argv[])
             invalid_token = false;
             invalid_vertex_index = false;
             invalid_texture_coordinate = false;
-            not_enough_uv_coordinates = false;
+            missing_uv_coordinates = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
             not_ac3d_file = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-missing-uv-coordinates" || arg == "-Wmissing-uv-coordinates")
+        {
+            missing_uv_coordinates = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-material-index" || arg == "-Winvalid-material-index")
         {
@@ -479,14 +487,6 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-ref-count" || arg == "-Winvalid-ref-count")
         {
             invalid_ref_count = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-too_many_uv_coordinates" || arg == "-Wtoo_many_uv_coordinates")
-        {
-            too_many_uv_coordinates = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-not_enough_uv_coordinates" || arg == "-Wnot_enough_uv_coordinates")
-        {
-            not_enough_uv_coordinates = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-surface-type" || arg == "-Winvalid-surface-type")
         {
@@ -649,8 +649,8 @@ int main(int argc, char *argv[])
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.invalidRefCount(invalid_ref_count);
-    ac3d.notEnoughUVCoordinates(not_enough_uv_coordinates);
-    ac3d.tooManyUVCoordinates(too_many_uv_coordinates);
+    ac3d.missingUVCoordinates(missing_uv_coordinates);
+    ac3d.extraUVCoordinates(extra_uv_coordinates);
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidVertexIndex(invalid_vertex_index);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
