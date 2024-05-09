@@ -1206,6 +1206,14 @@ private:
             }
             return actual_textures;
         }
+        bool hasTransparentTexture() const
+        {
+            // FIXME do this right someday
+            if (!textures.empty() && !textures[0].name.empty() && textures[0].name.find("_n.") != std::string::npos)
+                return true;
+
+            return false;
+        }
 
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
@@ -1350,7 +1358,7 @@ private:
     bool splitMultipleSURF(std::vector<Object> &kids);
     bool splitMultipleMat(std::vector<Object> &kids);
     void transform(const Matrix &matrix);
-    void combineTexture(const Object &object, std::vector<Object> &objects);
+    void combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);

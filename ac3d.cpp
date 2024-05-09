@@ -4447,30 +4447,54 @@ bool AC3D::Object::addObject(const Object &object)
     return true;
 }
 
-void AC3D::combineTexture(const Object &object, std::vector<Object> &objects)
+void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects)
 {
     if (object.type.type == "poly")
     {
-        for (auto &obj : objects)
+        if (object.hasTransparentTexture())
         {
-            if (obj.sameTextures(object))
+            for (auto &obj : transparent_objects)
             {
-                obj.addObject(object);
-                return;
+                if (obj.kids[0].sameTextures(object))
+                {
+                    obj.kids.push_back(object);
+                    return;
+                }
             }
+            Object group;
+            group.type.type = "group";
+            transparent_objects.push_back(group);
+            std::string name("transparent_object");
+            name.append(std::to_string(transparent_objects.size()));
+            Name quoted_name;
+            quoted_name.name = quoted_string(name);
+            transparent_objects.back().names.emplace_back(quoted_name);
+            transparent_objects.back().kids.push_back(object);
+            return;
         }
-        objects.push_back(object);
-        std::string name("object");
-        name.append(std::to_string(objects.size()));
-        if (objects.back().names.size() == 1)
-            objects.back().names[0].name = quoted_string(name);
-        return;
+        else
+        {
+            for (auto &obj : objects)
+            {
+                if (obj.sameTextures(object))
+                {
+                    obj.addObject(object);
+                    return;
+                }
+            }
+            objects.push_back(object);
+            std::string name("object");
+            name.append(std::to_string(objects.size()));
+            if (objects.back().names.size() == 1)
+                objects.back().names[0].name = quoted_string(name);
+            return;
+        }
     }
 
     if (object.type.type == "group" || object.type.type == "world")
     {
         for (auto &kid : object.kids)
-            combineTexture(kid, objects);
+            combineTexture(kid, objects, transparent_objects);
     }
 }
 
@@ -4479,11 +4503,16 @@ void AC3D::combineTexture()
     flatten();
 
     std::vector<Object> new_objects;
+    std::vector<Object> new_transparent_objects;
 
     for (auto &object : m_objects)
-        combineTexture(object, new_objects);
+        combineTexture(object, new_objects, new_transparent_objects);
 
-    m_objects[0].kids.clear();
+    Object &world = m_objects[0];
 
-    m_objects[0].kids.insert(m_objects[0].kids.begin(), new_objects.begin(), new_objects.end());
+    world.kids.clear();
+    world.kids.insert(world.kids.begin(), new_objects.begin(), new_objects.end());
+    world.kids.insert(world.kids.end(), new_transparent_objects.begin(), new_transparent_objects.end());
+
+    //flatten();
 }
