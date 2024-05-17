@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
         std::string arg(argv[i]);
         if (arg == "-o")
         {
-            if (i < argc)
+            if (i < (argc - 1))
             {
                 out_file = argv[i + 1];
                 i++;

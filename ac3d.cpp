@@ -2234,7 +2234,7 @@ void AC3D::Surface::setTriangleStrip(const Object &object)
     {
         for (size_t i = 2; i < refs.size(); i++)
         {
-            if ((i & 1) == 0)
+            if ((i & 1u) == 0)
             {
                 triangleStrip.emplace_back(object.vertices[refs[i - 2].index],
                                            object.vertices[refs[i - 1].index],
@@ -4435,7 +4435,7 @@ void AC3D::removeObjects(const RemoveInfo &remove_info)
         object.removeKids(remove_info);
 }
 
-bool AC3D::Object::sameTextures(const Object &object)
+bool AC3D::Object::sameTextures(const Object &object) const
 {
     if (object.textures.size() != textures.size())
         return false;

@@ -1195,7 +1195,7 @@ private:
 
             return vertices[index1].vertex == vertices[index2].vertex;
         }
-        size_t getTexturesSize()
+        size_t getTexturesSize() const
         {
             size_t actual_textures = 0;
 
@@ -1222,7 +1222,7 @@ private:
         void removeKids(const RemoveInfo &remove_info);
         bool splitPolygons();
         bool addObject(const Object &object);
-        bool sameTextures(const Object &object);
+        bool sameTextures(const Object &object) const;
     };
 
     std::string     m_file;
