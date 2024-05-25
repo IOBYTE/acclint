@@ -73,6 +73,7 @@ void usage()
     std::cerr << "  -Wno-different-surf                    Don't show different surf warnings." << std::endl;
     std::cerr << "  -Wno-different-mat                     Don't show different mat warnings." << std::endl;
     std::cerr << "  -Wno-group-with-geometry               Don't show group with geometry warnings." << std::endl;
+    std::cerr << "  -Wno-back-to-back-two-sided-surface    Don't show back to back 2 sided surface warnings." << std::endl;
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
     std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
@@ -175,6 +176,7 @@ int main(int argc, char *argv[])
     bool flatten = false;
     bool splitPolygon = false;
     bool combineTexture = false;
+    bool back_to_back_two_sided_surface = false; // not finished
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
@@ -269,6 +271,7 @@ int main(int argc, char *argv[])
             multiple_world = false;
             different_surf = false;
             different_mat = false;
+            back_to_back_two_sided_surface = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -461,6 +464,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-different-mat" || arg == "-Wdifferent-mat")
         {
             different_mat = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-back-to-back-two-sided-surface" || arg == "-Wback-to-back-two-sided-surface")
+        {
+            back_to_back_two_sided_surface = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-errors")
         {
@@ -695,6 +702,7 @@ int main(int argc, char *argv[])
     ac3d.multipleWorld(multiple_world);
     ac3d.differentSURF(different_surf);
     ac3d.differentMat(different_mat);
+    ac3d.backToBackTwoSidedSurface(back_to_back_two_sided_surface);
 
     if (!ac3d.read(in_file))
     {

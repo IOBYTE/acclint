@@ -25,6 +25,8 @@
 #include <map>
 #include <set>
 
+#include "triangleintersects.hpp"
+
 const std::string MATERIAL_token("MATERIAL");
 const std::string rgb_token("rgb");
 const std::string amb_token("amb");
@@ -2411,6 +2413,8 @@ bool AC3D::read(const std::string &file)
     checkDuplicateMaterials(in);
     checkUnusedMaterial(in);
 
+    checkBackToBackTwoSided(in);
+
     return true;
 }
 
@@ -2480,6 +2484,106 @@ void AC3D::checkUnusedMaterial(std::istream &in)
                 showLine(in, material.line_pos);
             }
         }
+    }
+}
+
+void AC3D::addPoly(std::vector<const Object *> &polys, const Object &object) const
+{
+    // TODO check for loc and rot
+
+    if (object.type.type == "poly")
+        polys.push_back(&object);
+    else if (object.type.type == "group" || object.type.type == "world")
+    {
+        for (const auto &kid : object.kids)
+            addPoly(polys, kid);
+    }
+}
+
+void AC3D::checkBackToBackTwoSided(std::istream &in, const Object *object1, const Object *object2)
+{
+    for (const auto &surface1 : object1->surfaces)
+    {
+        if (surface1.isDoubleSided())
+        {
+            for (const auto &surface2 : object2->surfaces)
+            {
+                if (surface2.isDoubleSided())
+                {
+                    if ((surface1.isPolygon() || surface1.isTriangleStrip()) &&
+                        (surface2.isPolygon() || surface2.isTriangleStrip()))
+                    {
+                        if (surface1.isPolygon() && surface1.refs.size() >= 3 &&
+                            surface2.isPolygon() && surface2.refs.size() >= 3)
+                        {
+                            for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
+                            {
+                                if (degenerate(object1->vertices[surface1.refs[0].index].vertex,
+                                    object1->vertices[surface1.refs[i].index].vertex,
+                                    object1->vertices[surface1.refs[i + 1].index].vertex))
+                                    continue;
+
+                                for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
+                                {
+                                    if (degenerate(object2->vertices[surface2.refs[0].index].vertex,
+                                        object2->vertices[surface2.refs[i].index].vertex,
+                                        object2->vertices[surface2.refs[i + 1].index].vertex))
+                                        continue;
+
+                                    Point3 p1{ 0, 0, 0 }; // not used
+                                    Point3 p2{ 0, 0, 0 }; // not used
+                                    bool coplanar = false;
+                                    if (threeyd::moeller::TriangleIntersects<Point3>::triangle(
+                                        object1->vertices[surface1.refs[0].index].vertex,
+                                        object1->vertices[surface1.refs[i].index].vertex,
+                                        object1->vertices[surface1.refs[i + 1].index].vertex,
+                                        object2->vertices[surface2.refs[0].index].vertex,
+                                        object2->vertices[surface2.refs[j].index].vertex,
+                                        object2->vertices[surface2.refs[j + 1].index].vertex,
+                                        p1, p2, coplanar))
+                                    {
+                                        if (coplanar)
+                                        {
+                                            // TODO
+                                            std::cout << "!" << std::endl;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else if (surface1.isTriangleStrip() && surface2.isTriangleStrip())
+                        {
+                            // TODO
+                        }
+                        else if (surface1.isTriangle() && surface2.isTriangleStrip())
+                        {
+                            // TODO
+                        }
+                        else if (surface1.isTriangleStrip() && surface2.isTriangle())
+                        {
+                            // TODO
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void AC3D::checkBackToBackTwoSided(std::istream &in)
+{
+    if (!m_back_to_back_two_sided_surface)
+        return;
+
+    std::vector<const Object *> polys;
+
+    for (const auto &world : m_objects)
+        addPoly(polys, world);
+
+    for (size_t i = 0; i < (polys.size() - 1); ++i)
+    {
+        for (size_t j = i + 1; j < polys.size(); ++j)
+            checkBackToBackTwoSided(in, polys[i], polys[j]);
     }
 }
 

@@ -4,7 +4,7 @@ project(acclint VERSION 0.1 LANGUAGES CXX)
 
 configure_file(config.h.in config.h)
 
-add_executable(acclint acclint.cpp ac3d.cpp ac3d.h)
+add_executable(acclint acclint.cpp ac3d.cpp ac3d.h triangleintersects.hpp)
 
 target_compile_features(acclint PUBLIC cxx_std_20)
 target_include_directories(acclint PUBLIC "${PROJECT_BINARY_DIR}")

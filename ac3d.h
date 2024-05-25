@@ -514,6 +514,14 @@ public:
     {
         return m_different_mat;
     }
+    void backToBackTwoSidedSurface(bool value)
+    {
+        m_back_to_back_two_sided_surface = value;
+    }
+    bool backToBackTwoSidedSurface() const
+    {
+        return m_back_to_back_two_sided_surface;
+    }
     void texturePaths(const std::vector<std::string> &paths)
     {
         m_texture_paths = paths;
@@ -1291,6 +1299,7 @@ private:
     bool            m_multiple_world = true;
     bool            m_different_surf = true;
     bool            m_different_mat = true;
+    bool            m_back_to_back_two_sided_surface = true;
 
     Header m_header;
     std::vector<Material> m_materials;
@@ -1324,6 +1333,8 @@ private:
     std::ostream &note(size_t line_number = 0);
     void checkTrailing(std::istringstream &iss);
     void checkUnusedMaterial(std::istream &in);
+    void checkBackToBackTwoSided(std::istream &in);
+    void checkBackToBackTwoSided(std::istream &in, const Object *object1, const Object *object2);
     void checkDuplicateMaterials(std::istream &in);
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);
@@ -1359,6 +1370,7 @@ private:
     bool splitMultipleMat(std::vector<Object> &kids);
     void transform(const Matrix &matrix);
     void combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects);
+    void addPoly(std::vector<const Object *> &polys, const Object &object) const;
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
