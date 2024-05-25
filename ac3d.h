@@ -23,10 +23,6 @@
 
 #define _USE_MATH_DEFINES
 
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <sstream>
 #include <array>
 #include <vector>
 #include <cmath>
@@ -514,13 +510,13 @@ public:
     {
         return m_different_mat;
     }
-    void backToBackTwoSidedSurface(bool value)
+    void overlapping2SidedSurface(bool value)
     {
-        m_back_to_back_two_sided_surface = value;
+        m_overlapping_2_sided_surface = value;
     }
-    bool backToBackTwoSidedSurface() const
+    bool overlapping2SidedSurface() const
     {
-        return m_back_to_back_two_sided_surface;
+        return m_overlapping_2_sided_surface;
     }
     void texturePaths(const std::vector<std::string> &paths)
     {
@@ -591,7 +587,7 @@ private:
         {
             return x() * other.x() + y() * other.y();
         }
-        double cross(const Point2 &other)
+        double cross(const Point2 &other) const
         {
             return (x() * other.y()) - (y() * other.x());
         }
@@ -649,6 +645,14 @@ private:
                 y(y() / l);
                 z(z() / l);
             }
+        }
+        bool equals(const Point3 &other) const
+        {
+            constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
+
+            return std::abs(x() - other.x()) < SMALL_NUM &&
+                   std::abs(y() - other.y()) < SMALL_NUM &&
+                   std::abs(z() - other.z()) < SMALL_NUM;
         }
     };
 
@@ -876,6 +880,7 @@ private:
     };
 
     enum class WindingType { CCW, CW };
+    enum class PlaneType { xy, xz, yz };
 
     struct Plane
     {
@@ -883,6 +888,16 @@ private:
         Point3  normal = { 0.0, 0.0, 0.0 };
         bool valid = false;
 
+        explicit Plane(const std::array<Point3, 3> &points)
+        {
+            if (!AC3D::degenerate(points))
+            {
+                normal = (points[1] - points[0]).cross(points[2] - points[0]);
+                normal.normalize();
+                distance = normal.dot(points[0]);
+                valid = true;
+            }
+        }
         Plane(const Point3 &p0, const Point3 &p1, const Point3 &p2)
         {
             if (!AC3D::degenerate(p0, p1, p2))
@@ -937,6 +952,13 @@ private:
         bool isBelowPlane(const Point3 &point) const
         {
             return !isAbovePlane(point);
+        }
+
+        bool equals(const Plane &other) const
+        {
+            constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
+
+            return valid && other.valid && std::abs(distance - other.distance) < SMALL_NUM && normal.equals(other.normal);
         }
     };
 
@@ -1122,8 +1144,6 @@ private:
         std::vector<Surface> surfaces;
         std::vector<Object> kids;
 
-        enum class PlaneType { xy, xz, yz };
-
         bool empty() const
         {
             return (type.type == "poly" && vertices.empty() && surfaces.empty() && kids.empty());
@@ -1145,19 +1165,6 @@ private:
             if (!getVertex(index, vertex))
                 return false;
             return true;
-        }
-        PlaneType getPlaneType(const Point3 &normal) const
-        {
-            // z largest so use xy plane
-            if (std::fabs(normal.x()) < std::fabs(normal.z()) && std::fabs(normal.y()) < std::fabs(normal.z()))
-                return PlaneType::xy;
-
-            // y largest so use xz plane
-            if (std::fabs(normal.x()) < std::fabs(normal.y()) && std::fabs(normal.z()) < std::fabs(normal.y()))
-                return PlaneType::xz;
-
-            // use yz plane
-            return PlaneType::yz;
         }
         bool getVertex(size_t index, Point2 &vertex, PlaneType planeType) const
         {
@@ -1299,7 +1306,7 @@ private:
     bool            m_multiple_world = true;
     bool            m_different_surf = true;
     bool            m_different_mat = true;
-    bool            m_back_to_back_two_sided_surface = true;
+    bool            m_overlapping_2_sided_surface = true;
 
     Header m_header;
     std::vector<Material> m_materials;
@@ -1330,11 +1337,11 @@ private:
     bool ungetLine(std::istream &in);
     std::ostream &warning(size_t line_number = 0);
     std::ostream &error(size_t line_number = 0);
-    std::ostream &note(size_t line_number = 0);
+    std::ostream &note(size_t line_number = 0) const;
     void checkTrailing(std::istringstream &iss);
     void checkUnusedMaterial(std::istream &in);
-    void checkBackToBackTwoSided(std::istream &in);
-    void checkBackToBackTwoSided(std::istream &in, const Object *object1, const Object *object2);
+    void checkOverlapping2SidedSurface(std::istream &in);
+    void checkOverlapping2SidedSurface(std::istream &in, const Object *object1, const Object *object2);
     void checkDuplicateMaterials(std::istream &in);
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);
@@ -1378,6 +1385,12 @@ private:
     static double closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3);
     static Point3 normal(const Point3& p0, const Point3& p1, const Point3& p2);
     static bool degenerate(const Point3& p0, const Point3& p1, const Point3& p2);
+    static bool degenerate(const std::array<Point3, 3> &vertices);
+    static bool coplanar(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);
+    static bool trianglesOverlap(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);
+    static size_t getSharedVertexCount(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);
+    static PlaneType getPlaneType(const Point3 &normal);
+    static std::array<Point2, 3> convert2D(const std::array<Point3, 3> &vertices, PlaneType planeType);
 };
 
 #endif

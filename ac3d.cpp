@@ -19,11 +19,15 @@
 //---------------------------------------------------------------------------
 
 #include "ac3d.h"
-#include <algorithm>
 #include <limits>
 #include <filesystem>
 #include <map>
 #include <set>
+#include <string>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <sstream>
 
 #include "triangleintersects.hpp"
 
@@ -293,7 +297,7 @@ std::ostream &AC3D::error(size_t line_number)
     return std::cerr;
 }
 
-std::ostream &AC3D::note(size_t line_number)
+std::ostream &AC3D::note(size_t line_number) const
 {
     std::cerr << m_file << ":" << line_number << " note: ";
     return std::cerr;
@@ -2413,7 +2417,7 @@ bool AC3D::read(const std::string &file)
     checkDuplicateMaterials(in);
     checkUnusedMaterial(in);
 
-    checkBackToBackTwoSided(in);
+    checkOverlapping2SidedSurface(in);
 
     return true;
 }
@@ -2500,7 +2504,7 @@ void AC3D::addPoly(std::vector<const Object *> &polys, const Object &object) con
     }
 }
 
-void AC3D::checkBackToBackTwoSided(std::istream &in, const Object *object1, const Object *object2)
+void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1, const Object *object2)
 {
     for (const auto &surface1 : object1->surfaces)
     {
@@ -2518,35 +2522,40 @@ void AC3D::checkBackToBackTwoSided(std::istream &in, const Object *object1, cons
                         {
                             for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
                             {
-                                if (degenerate(object1->vertices[surface1.refs[0].index].vertex,
-                                    object1->vertices[surface1.refs[i].index].vertex,
-                                    object1->vertices[surface1.refs[i + 1].index].vertex))
+                                const std::array<Point3, 3> triangle1{ object1->vertices[surface1.refs[0].index].vertex,
+                                                                       object1->vertices[surface1.refs[i].index].vertex,
+                                                                       object1->vertices[surface1.refs[i + 1].index].vertex };
+
+                                if (degenerate(triangle1))
                                     continue;
 
                                 for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
                                 {
-                                    if (degenerate(object2->vertices[surface2.refs[0].index].vertex,
-                                        object2->vertices[surface2.refs[i].index].vertex,
-                                        object2->vertices[surface2.refs[i + 1].index].vertex))
+                                    const std::array<Point3, 3> triangle2{ object2->vertices[surface2.refs[0].index].vertex,
+                                                                           object2->vertices[surface2.refs[j].index].vertex,
+                                                                           object2->vertices[surface2.refs[j + 1].index].vertex };
+
+                                    if (degenerate(triangle2))
                                         continue;
 
-                                    Point3 p1{ 0, 0, 0 }; // not used
-                                    Point3 p2{ 0, 0, 0 }; // not used
-                                    bool coplanar = false;
-                                    if (threeyd::moeller::TriangleIntersects<Point3>::triangle(
-                                        object1->vertices[surface1.refs[0].index].vertex,
-                                        object1->vertices[surface1.refs[i].index].vertex,
-                                        object1->vertices[surface1.refs[i + 1].index].vertex,
-                                        object2->vertices[surface2.refs[0].index].vertex,
-                                        object2->vertices[surface2.refs[j].index].vertex,
-                                        object2->vertices[surface2.refs[j + 1].index].vertex,
-                                        p1, p2, coplanar))
+                                    if (trianglesOverlap(triangle1, triangle2))
                                     {
-                                        if (coplanar)
-                                        {
-                                            // TODO
-                                            std::cout << "!" << std::endl;
-                                        }
+                                        warning(surface2.line_number) << "overlapping 2 sided surface" << std::endl;
+                                        showLine(in, surface2.line_pos);
+                                        note(surface2.refs[0].line_number) << "ref" << std::endl;
+                                        showLine(in, surface2.refs[0].line_pos);
+                                        note(surface2.refs[j].line_number) << "ref" << std::endl;
+                                        showLine(in, surface2.refs[j].line_pos);
+                                        note(surface2.refs[j +1].line_number) << "ref" << std::endl;
+                                        showLine(in, surface2.refs[j + 1].line_pos);
+                                        note(surface1.line_number) << "first instance" << std::endl;
+                                        showLine(in, surface1.line_pos);
+                                        note(surface1.refs[0].line_number) << "ref" << std::endl;
+                                        showLine(in, surface1.refs[0].line_pos);
+                                        note(surface1.refs[i].line_number) << "ref" << std::endl;
+                                        showLine(in, surface1.refs[j].line_pos);
+                                        note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
+                                        showLine(in, surface1.refs[j + 1].line_pos);
                                     }
                                 }
                             }
@@ -2570,9 +2579,9 @@ void AC3D::checkBackToBackTwoSided(std::istream &in, const Object *object1, cons
     }
 }
 
-void AC3D::checkBackToBackTwoSided(std::istream &in)
+void AC3D::checkOverlapping2SidedSurface(std::istream &in)
 {
-    if (!m_back_to_back_two_sided_surface)
+    if (!m_overlapping_2_sided_surface)
         return;
 
     std::vector<const Object *> polys;
@@ -2580,10 +2589,13 @@ void AC3D::checkBackToBackTwoSided(std::istream &in)
     for (const auto &world : m_objects)
         addPoly(polys, world);
 
+    if (polys.size() == 0)
+        return;
+
     for (size_t i = 0; i < (polys.size() - 1); ++i)
     {
         for (size_t j = i + 1; j < polys.size(); ++j)
-            checkBackToBackTwoSided(in, polys[i], polys[j]);
+            checkOverlapping2SidedSurface(in, polys[i], polys[j]);
     }
 }
 
@@ -3281,7 +3293,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
         Point2 p2;
 
         // project 3d coordinates onto 2d plane
-        const Object::PlaneType planeType = object.getPlaneType(surface.normal);
+        const PlaneType planeType = getPlaneType(surface.normal);
 
         if (!object.getSurfaceVertex(surface, next++, p0, planeType))
             return;
@@ -3347,9 +3359,96 @@ AC3D::Point3 AC3D::normal(const Point3& p0, const Point3& p1, const Point3& p2)
     return normal;
 }
 
-bool AC3D::degenerate(const Point3& p0, const Point3& p1, const Point3& p2)
+bool AC3D::degenerate(const std::array<Point3, 3> &vertices)
+{
+    return vertices[0] == vertices[1] || vertices[0] == vertices[2] || vertices[1] == vertices[2];
+}
+
+bool AC3D::degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2)
 {
     return p0 == p1 || p0 == p2 || p1 == p2;
+}
+
+bool AC3D::coplanar(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2)
+{
+    Plane p1(vertices1);
+    Plane p2(vertices2);
+
+    return p1.equals(p2);
+}
+
+bool AC3D::trianglesOverlap(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2)
+{
+    if (getSharedVertexCount(vertices1, vertices2) == 3)
+        return true;
+
+    if (!coplanar(vertices1, vertices2))
+        return false;
+
+    Point3 p1{ 0, 0, 0 }; // not used
+    Point3 p2{ 0, 0, 0 }; // not used
+    bool coplanar = false; // not used
+
+    return threeyd::moeller::TriangleIntersects<Point3>::triangle(
+        vertices1[0], vertices1[1], vertices1[2],
+        vertices2[0], vertices2[1], vertices2[2],
+        p1, p2, coplanar);
+}
+
+AC3D::PlaneType AC3D::getPlaneType(const Point3 &normal)
+{
+    // z largest so use xy plane
+    if (std::fabs(normal.x()) < std::fabs(normal.z()) && std::fabs(normal.y()) < std::fabs(normal.z()))
+        return PlaneType::xy;
+
+    // y largest so use xz plane
+    if (std::fabs(normal.x()) < std::fabs(normal.y()) && std::fabs(normal.z()) < std::fabs(normal.y()))
+        return PlaneType::xz;
+
+    // use yz plane
+    return PlaneType::yz;
+}
+
+std::array<AC3D::Point2, 3> AC3D::convert2D(const std::array<Point3, 3> &vertices, PlaneType planeType)
+{
+    std::array<AC3D::Point2, 3> vertices2D;
+
+    for (size_t i = 0; i < 3; i++)
+    {
+        switch (planeType)
+        {
+        case PlaneType::xy:
+            vertices2D[i].x(vertices[i].x());
+            vertices2D[i].y(vertices[i].y());
+            break;
+        case PlaneType::xz:
+            vertices2D[i].x(vertices[i].x());
+            vertices2D[i].y(vertices[i].z());
+            break;
+        case PlaneType::yz:
+            vertices2D[i].x(vertices[i].y());
+            vertices2D[i].y(vertices[i].z());
+            break;
+        }
+
+    }
+    return vertices2D;
+}
+
+size_t AC3D::getSharedVertexCount(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2)
+{
+    size_t count = 0;
+
+    for (const auto &vertex1 : vertices1)
+    {
+        for (const auto &vertex2 : vertices2)
+        {
+            if (vertex1.equals(vertex2))
+                count++;
+        }
+    }
+
+    return count;
 }
 
 // from http://geomalgorithms.com/a07-_distance.html

@@ -21,6 +21,8 @@
 #include "ac3d.h"
 #include "config.h"
 
+#include <iostream>
+
 void usage()
 {
     std::cerr << "Usage: acclint [options] [-T texturepath] <inputfile> [--merge <inputfile>] [-o <outputfile>] [-v <11|12>]" << std::endl;
@@ -73,7 +75,7 @@ void usage()
     std::cerr << "  -Wno-different-surf                    Don't show different surf warnings." << std::endl;
     std::cerr << "  -Wno-different-mat                     Don't show different mat warnings." << std::endl;
     std::cerr << "  -Wno-group-with-geometry               Don't show group with geometry warnings." << std::endl;
-    std::cerr << "  -Wno-back-to-back-two-sided-surface    Don't show back to back 2 sided surface warnings." << std::endl;
+    std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
     std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
@@ -176,7 +178,7 @@ int main(int argc, char *argv[])
     bool flatten = false;
     bool splitPolygon = false;
     bool combineTexture = false;
-    bool back_to_back_two_sided_surface = false; // not finished
+    bool overlapping_2_sided_surface = true;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
@@ -271,7 +273,7 @@ int main(int argc, char *argv[])
             multiple_world = false;
             different_surf = false;
             different_mat = false;
-            back_to_back_two_sided_surface = false;
+            overlapping_2_sided_surface = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -465,9 +467,9 @@ int main(int argc, char *argv[])
         {
             different_mat = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-back-to-back-two-sided-surface" || arg == "-Wback-to-back-two-sided-surface")
+        else if (arg == "-Wno-overlapping-2-sided-surface" || arg == "-Woverlapping-2-sided-surface")
         {
-            back_to_back_two_sided_surface = arg.compare(2, 3, "no-") != 0;
+            overlapping_2_sided_surface = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-errors")
         {
@@ -702,7 +704,7 @@ int main(int argc, char *argv[])
     ac3d.multipleWorld(multiple_world);
     ac3d.differentSURF(different_surf);
     ac3d.differentMat(different_mat);
-    ac3d.backToBackTwoSidedSurface(back_to_back_two_sided_surface);
+    ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
 
     if (!ac3d.read(in_file))
     {

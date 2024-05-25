@@ -614,6 +614,23 @@ class TriangleIntersects
                                              const TemplatedVec& U1, const TemplatedVec& U2, const size_t i0,
                                              const size_t i1)
     {
+        // don't count exact edge matches or a single shared vertex as intersection
+        int count = 0;
+        if (V0[0] == U0[0] && V0[1] == U0[1] && V0[2] == U0[2])
+            count++;
+        if (V0[0] == U1[0] && V0[1] == U1[1] && V0[2] == U1[2])
+            count++;
+        if (V0[0] == U2[0] && V0[1] == U2[1] && V0[2] == U2[2])
+            count++;
+        if (V1[0] == U0[0] && V1[1] == U0[1] && V1[2] == U0[2])
+            count++;
+        if (V1[0] == U1[0] && V1[1] == U1[1] && V1[2] == U1[2])
+            count++;
+        if (V1[0] == U2[0] && V1[1] == U2[1] && V1[2] == U2[2])
+            count++;
+        if (count == 1 || count == 2)
+            return false;
+
         declfloat ax, ay;  // coordinates of the edge relative to  V0
 
         ax = V1[i0] - V0[i0];
