@@ -1231,6 +1231,24 @@ private:
 
             return false;
         }
+        const std::string &getName() const
+        {
+            if (!names.empty())
+                return names[0].name;
+
+            static const std::string none("");
+
+            return none;
+        }
+        const std::string &getTexture() const
+        {
+            if (!textures.empty())
+                return textures[0].name;
+
+            static const std::string none("");
+
+            return none;
+        }
 
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
