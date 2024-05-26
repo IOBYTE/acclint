@@ -2626,7 +2626,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                         }
                         else if (surface1.isPolygon() && surface2.isTriangleStrip())
                         {
-                            if (surface1.isPolygon() && surface1.refs.size() >= 3)
+                            if (surface1.refs.size() >= 3)
                             {
                                 for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
                                 {
@@ -5056,7 +5056,7 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
                         }
                         else if (surface1.isPolygon() && surface2.isTriangleStrip())
                         {
-                            if (surface1.isPolygon() && surface1.refs.size() >= 3)
+                            if (surface1.refs.size() >= 3)
                             {
                                 for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
                                 {
