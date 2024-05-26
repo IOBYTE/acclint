@@ -2589,7 +2589,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
     for (const auto &world : m_objects)
         addPoly(polys, world);
 
-    if (polys.size() == 0)
+    if (polys.empty())
         return;
 
     for (size_t i = 0; i < (polys.size() - 1); ++i)
@@ -3371,8 +3371,8 @@ bool AC3D::degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2)
 
 bool AC3D::coplanar(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2)
 {
-    Plane p1(vertices1);
-    Plane p2(vertices2);
+    const Plane p1(vertices1);
+    const Plane p2(vertices2);
 
     return p1.equals(p2);
 }
@@ -3387,12 +3387,12 @@ bool AC3D::trianglesOverlap(const std::array<Point3, 3> &vertices1, const std::a
 
     Point3 p1{ 0, 0, 0 }; // not used
     Point3 p2{ 0, 0, 0 }; // not used
-    bool coplanar = false; // not used
+    bool b = false; // not used
 
     return threeyd::moeller::TriangleIntersects<Point3>::triangle(
         vertices1[0], vertices1[1], vertices1[2],
         vertices2[0], vertices2[1], vertices2[2],
-        p1, p2, coplanar);
+        p1, p2, b);
 }
 
 AC3D::PlaneType AC3D::getPlaneType(const Point3 &normal)
@@ -4771,7 +4771,7 @@ void AC3D::fixOverlapping2SidedSurface()
     for (auto &world : m_objects)
         addPoly(polys, world);
 
-    if (polys.size() == 0)
+    if (polys.empty())
         return;
 
     std::set<Surface *> surfaces;
@@ -4782,7 +4782,7 @@ void AC3D::fixOverlapping2SidedSurface()
             fixOverlapping2SidedSurface(polys[i], polys[j], surfaces);
     }
 
-    for (auto surface : surfaces)
+    for (auto *surface : surfaces)
     {
         if (surface->isShaded())
             surface->flags = 0x10;
