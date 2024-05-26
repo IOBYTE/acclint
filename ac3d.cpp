@@ -2562,7 +2562,67 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                         }
                         else if (surface1.isTriangleStrip() && surface2.isTriangleStrip())
                         {
-                            // TODO
+                            for (size_t i = 2; i < surface1.refs.size(); i++)
+                            {
+                                std::array < Point3, 3> triangle1;
+
+                                if ((i & 1u) == 0)
+                                {
+                                    triangle1 = { object1->vertices[surface1.refs[i - 2].index].vertex,
+                                                 object1->vertices[surface1.refs[i - 1].index].vertex,
+                                                 object1->vertices[surface1.refs[i].index].vertex };
+                                }
+                                else // reverse winding to match drawing order
+                                {
+                                    triangle1 = { object1->vertices[surface1.refs[i - 1].index].vertex,
+                                                 object1->vertices[surface1.refs[i - 2].index].vertex,
+                                                 object1->vertices[surface1.refs[i].index].vertex };
+                                }
+
+                                if (!degenerate(triangle1))
+                                {
+                                    for (size_t j = 2; j < surface2.refs.size(); j++)
+                                    {
+                                        std::array < Point3, 3> triangle2;
+
+                                        if ((i & 1u) == 0)
+                                        {
+                                            triangle2 = { object2->vertices[surface2.refs[j - 2].index].vertex,
+                                                          object2->vertices[surface2.refs[j - 1].index].vertex,
+                                                          object2->vertices[surface2.refs[j].index].vertex };
+                                        }
+                                        else // reverse winding to match drawing order
+                                        {
+                                            triangle2 = { object2->vertices[surface2.refs[j - 1].index].vertex,
+                                                          object2->vertices[surface2.refs[j - 2].index].vertex,
+                                                          object2->vertices[surface2.refs[j].index].vertex };
+                                        }
+
+                                        if (!degenerate(triangle2))
+                                        {
+                                            if (trianglesOverlap(triangle1, triangle2))
+                                            {
+                                                warning(surface2.line_number) << "overlapping 2 sided surface" << std::endl;
+                                                showLine(in, surface2.line_pos);
+                                                note(surface2.refs[0].line_number) << "ref" << std::endl;
+                                                showLine(in, surface2.refs[0].line_pos);
+                                                note(surface2.refs[j].line_number) << "ref" << std::endl;
+                                                showLine(in, surface2.refs[j].line_pos);
+                                                note(surface2.refs[j + 1].line_number) << "ref" << std::endl;
+                                                showLine(in, surface2.refs[j + 1].line_pos);
+                                                note(surface1.line_number) << "first instance" << std::endl;
+                                                showLine(in, surface1.line_pos);
+                                                note(surface1.refs[0].line_number) << "ref" << std::endl;
+                                                showLine(in, surface1.refs[0].line_pos);
+                                                note(surface1.refs[i].line_number) << "ref" << std::endl;
+                                                showLine(in, surface1.refs[j].line_pos);
+                                                note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
+                                                showLine(in, surface1.refs[j + 1].line_pos);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                         else if (surface1.isTriangle() && surface2.isTriangleStrip())
                         {
@@ -4784,10 +4844,20 @@ void AC3D::fixOverlapping2SidedSurface()
 
     for (auto *surface : surfaces)
     {
-        if (surface->isShaded())
-            surface->flags = 0x10;
-        else
-            surface->flags = 0x0;
+        if (surface->isPolygon())
+        {
+            if (surface->isShaded())
+                surface->flags = 0x10;
+            else
+                surface->flags = 0x00;
+        }
+        else if (surface->isTriangleStrip())
+        {
+            if (surface->isShaded())
+                surface->flags = 0x14;
+            else
+                surface->flags = 0x04;
+        }
     }
 }
 
@@ -4835,7 +4905,53 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
                         }
                         else if (surface1.isTriangleStrip() && surface2.isTriangleStrip())
                         {
-                            // TODO
+                            for (size_t i = 2; i < surface1.refs.size(); i++)
+                            {
+                                std::array < Point3, 3> triangle1;
+
+                                if ((i & 1u) == 0)
+                                {
+                                    triangle1 = { object1->vertices[surface1.refs[i - 2].index].vertex,
+                                                 object1->vertices[surface1.refs[i - 1].index].vertex,
+                                                 object1->vertices[surface1.refs[i].index].vertex };
+                                }
+                                else // reverse winding to match drawing order
+                                {
+                                    triangle1 = { object1->vertices[surface1.refs[i - 1].index].vertex,
+                                                 object1->vertices[surface1.refs[i - 2].index].vertex,
+                                                 object1->vertices[surface1.refs[i].index].vertex };
+                                }
+
+                                if (!degenerate(triangle1))
+                                {
+                                    for (size_t j = 2; j < surface2.refs.size(); j++)
+                                    {
+                                        std::array < Point3, 3> triangle2;
+
+                                        if ((i & 1u) == 0)
+                                        {
+                                            triangle2 = { object2->vertices[surface2.refs[j - 2].index].vertex,
+                                                          object2->vertices[surface2.refs[j - 1].index].vertex,
+                                                          object2->vertices[surface2.refs[j].index].vertex };
+                                        }
+                                        else // reverse winding to match drawing order
+                                        {
+                                            triangle2 = { object2->vertices[surface2.refs[j - 1].index].vertex,
+                                                          object2->vertices[surface2.refs[j - 2].index].vertex,
+                                                          object2->vertices[surface2.refs[j].index].vertex };
+                                        }
+
+                                        if (!degenerate(triangle2))
+                                        {
+                                            if (trianglesOverlap(triangle1, triangle2))
+                                            {
+                                                surfaces.insert(&surface1);
+                                                surfaces.insert(&surface2);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                         else if (surface1.isTriangle() && surface2.isTriangleStrip())
                         {
