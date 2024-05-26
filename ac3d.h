@@ -24,6 +24,7 @@
 #define _USE_MATH_DEFINES
 
 #include <array>
+#include <set>
 #include <vector>
 #include <cmath>
 #include <regex>
@@ -539,6 +540,7 @@ public:
     bool splitPolygons();
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
+    void fixOverlapping2SidedSurface();
 
     class quoted_string : public std::string
     {
@@ -1378,6 +1380,8 @@ private:
     void transform(const Matrix &matrix);
     void combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects);
     void addPoly(std::vector<const Object *> &polys, const Object &object) const;
+    void addPoly(std::vector<Object *> &polys, Object &object) const;
+    void fixOverlapping2SidedSurface(Object *object1, Object *object2, std::set<Surface *> &surfaces);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);

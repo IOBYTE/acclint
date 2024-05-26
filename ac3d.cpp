@@ -4750,3 +4750,104 @@ void AC3D::combineTexture()
 
     //flatten();
 }
+
+void AC3D::addPoly(std::vector<Object *> &polys, Object &object) const
+{
+    // TODO check for loc and rot
+
+    if (object.type.type == "poly")
+        polys.push_back(&object);
+    else if (object.type.type == "group" || object.type.type == "world")
+    {
+        for (auto &kid : object.kids)
+            addPoly(polys, kid);
+    }
+}
+
+void AC3D::fixOverlapping2SidedSurface()
+{
+    std::vector<Object *> polys;
+
+    for (auto &world : m_objects)
+        addPoly(polys, world);
+
+    if (polys.size() == 0)
+        return;
+
+    std::set<Surface *> surfaces;
+
+    for (size_t i = 0; i < (polys.size() - 1); ++i)
+    {
+        for (size_t j = i + 1; j < polys.size(); ++j)
+            fixOverlapping2SidedSurface(polys[i], polys[j], surfaces);
+    }
+
+    for (auto surface : surfaces)
+    {
+        if (surface->isShaded())
+            surface->flags = 0x10;
+        else
+            surface->flags = 0x0;
+    }
+}
+
+void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::set<Surface *> &surfaces)
+{
+    for (auto &surface1 : object1->surfaces)
+    {
+        if (surface1.isDoubleSided())
+        {
+            for (auto &surface2 : object2->surfaces)
+            {
+                if (surface2.isDoubleSided())
+                {
+                    if ((surface1.isPolygon() || surface1.isTriangleStrip()) &&
+                        (surface2.isPolygon() || surface2.isTriangleStrip()))
+                    {
+                        if (surface1.isPolygon() && surface1.refs.size() >= 3 &&
+                            surface2.isPolygon() && surface2.refs.size() >= 3)
+                        {
+                            for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
+                            {
+                                const std::array<Point3, 3> triangle1{ object1->vertices[surface1.refs[0].index].vertex,
+                                                                       object1->vertices[surface1.refs[i].index].vertex,
+                                                                       object1->vertices[surface1.refs[i + 1].index].vertex };
+
+                                if (degenerate(triangle1))
+                                    continue;
+
+                                for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
+                                {
+                                    const std::array<Point3, 3> triangle2{ object2->vertices[surface2.refs[0].index].vertex,
+                                                                           object2->vertices[surface2.refs[j].index].vertex,
+                                                                           object2->vertices[surface2.refs[j + 1].index].vertex };
+
+                                    if (degenerate(triangle2))
+                                        continue;
+
+                                    if (trianglesOverlap(triangle1, triangle2))
+                                    {
+                                        surfaces.insert(&surface1);
+                                        surfaces.insert(&surface2);
+                                    }
+                                }
+                            }
+                        }
+                        else if (surface1.isTriangleStrip() && surface2.isTriangleStrip())
+                        {
+                            // TODO
+                        }
+                        else if (surface1.isTriangle() && surface2.isTriangleStrip())
+                        {
+                            // TODO
+                        }
+                        else if (surface1.isTriangleStrip() && surface2.isTriangle())
+                        {
+                            // TODO
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
