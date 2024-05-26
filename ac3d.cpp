@@ -2564,35 +2564,41 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                         {
                             for (size_t i = 2; i < surface1.refs.size(); i++)
                             {
-                                std::array < Point3, 3> triangle1;
+                                std::array<Point3, 3> triangle1;
+                                std::array<size_t, 3> index1;
 
                                 if ((i & 1u) == 0)
                                 {
+                                    index1 = { i - 2, i - 1, i };
                                     triangle1 = { object1->vertices[surface1.refs[i - 2].index].vertex,
-                                                 object1->vertices[surface1.refs[i - 1].index].vertex,
-                                                 object1->vertices[surface1.refs[i].index].vertex };
+                                                  object1->vertices[surface1.refs[i - 1].index].vertex,
+                                                  object1->vertices[surface1.refs[i].index].vertex };
                                 }
                                 else // reverse winding to match drawing order
                                 {
+                                    index1 = { i - 1, i - 2, i };
                                     triangle1 = { object1->vertices[surface1.refs[i - 1].index].vertex,
-                                                 object1->vertices[surface1.refs[i - 2].index].vertex,
-                                                 object1->vertices[surface1.refs[i].index].vertex };
+                                                  object1->vertices[surface1.refs[i - 2].index].vertex,
+                                                  object1->vertices[surface1.refs[i].index].vertex };
                                 }
 
                                 if (!degenerate(triangle1))
                                 {
                                     for (size_t j = 2; j < surface2.refs.size(); j++)
                                     {
-                                        std::array < Point3, 3> triangle2;
+                                        std::array<Point3, 3> triangle2;
+                                        std::array<size_t, 3> index2;
 
                                         if ((i & 1u) == 0)
                                         {
+                                            index2 = { j - 2, j - 1, j };
                                             triangle2 = { object2->vertices[surface2.refs[j - 2].index].vertex,
                                                           object2->vertices[surface2.refs[j - 1].index].vertex,
                                                           object2->vertices[surface2.refs[j].index].vertex };
                                         }
                                         else // reverse winding to match drawing order
                                         {
+                                            index2 = { j - 1, j - 2, j };
                                             triangle2 = { object2->vertices[surface2.refs[j - 1].index].vertex,
                                                           object2->vertices[surface2.refs[j - 2].index].vertex,
                                                           object2->vertices[surface2.refs[j].index].vertex };
@@ -2604,20 +2610,20 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                             {
                                                 warning(surface2.line_number) << "overlapping 2 sided surface" << std::endl;
                                                 showLine(in, surface2.line_pos);
-                                                note(surface2.refs[0].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[0].line_pos);
-                                                note(surface2.refs[j].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[j].line_pos);
-                                                note(surface2.refs[j + 1].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[j + 1].line_pos);
+                                                note(surface2.refs[index2[0]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface2.refs[index2[0]].line_pos);
+                                                note(surface2.refs[index2[1]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface2.refs[index2[1]].line_pos);
+                                                note(surface2.refs[index2[2]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface2.refs[index2[2]].line_pos);
                                                 note(surface1.line_number) << "first instance" << std::endl;
                                                 showLine(in, surface1.line_pos);
-                                                note(surface1.refs[0].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[0].line_pos);
-                                                note(surface1.refs[i].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[j].line_pos);
-                                                note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[j + 1].line_pos);
+                                                note(surface1.refs[index1[0]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface1.refs[index1[0]].line_pos);
+                                                note(surface1.refs[index1[1]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface1.refs[index1[1]].line_pos);
+                                                note(surface1.refs[index1[2]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface1.refs[index1[2]].line_pos);
                                             }
                                         }
                                     }
@@ -2639,16 +2645,19 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
 
                                     for (size_t j = 2; j < surface2.refs.size(); j++)
                                     {
-                                        std::array < Point3, 3> triangle2;
+                                        std::array<Point3, 3> triangle2;
+                                        std::array<size_t, 3> index2;
 
                                         if ((i & 1u) == 0)
                                         {
+                                            index2 = { j - 2, j - 1, j };
                                             triangle2 = { object2->vertices[surface2.refs[j - 2].index].vertex,
                                                           object2->vertices[surface2.refs[j - 1].index].vertex,
                                                           object2->vertices[surface2.refs[j].index].vertex };
                                         }
                                         else // reverse winding to match drawing order
                                         {
+                                            index2 = { j - 1, j - 2, j };
                                             triangle2 = { object2->vertices[surface2.refs[j - 1].index].vertex,
                                                           object2->vertices[surface2.refs[j - 2].index].vertex,
                                                           object2->vertices[surface2.refs[j].index].vertex };
@@ -2660,12 +2669,12 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                             {
                                                 warning(surface2.line_number) << "overlapping 2 sided surface" << std::endl;
                                                 showLine(in, surface2.line_pos);
-                                                note(surface2.refs[0].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[0].line_pos);
-                                                note(surface2.refs[j].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[j].line_pos);
-                                                note(surface2.refs[j + 1].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[j + 1].line_pos);
+                                                note(surface2.refs[index2[0]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface2.refs[index2[0]].line_pos);
+                                                note(surface2.refs[index2[1]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface2.refs[index2[1]].line_pos);
+                                                note(surface2.refs[index2[2]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface2.refs[index2[2]].line_pos);
                                                 note(surface1.line_number) << "first instance" << std::endl;
                                                 showLine(in, surface1.line_pos);
                                                 note(surface1.refs[0].line_number) << "ref" << std::endl;
@@ -2684,19 +2693,22 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                         {
                             for (size_t i = 2; i < surface1.refs.size(); i++)
                             {
-                                std::array < Point3, 3> triangle1;
+                                std::array<Point3, 3> triangle1;
+                                std::array<size_t, 3> index1;
 
                                 if ((i & 1u) == 0)
                                 {
+                                    index1 = { i - 2, i - 1, i };
                                     triangle1 = { object1->vertices[surface1.refs[i - 2].index].vertex,
-                                                 object1->vertices[surface1.refs[i - 1].index].vertex,
-                                                 object1->vertices[surface1.refs[i].index].vertex };
+                                                  object1->vertices[surface1.refs[i - 1].index].vertex,
+                                                  object1->vertices[surface1.refs[i].index].vertex };
                                 }
                                 else // reverse winding to match drawing order
                                 {
+                                    index1 = { i - 1, i - 2, i };
                                     triangle1 = { object1->vertices[surface1.refs[i - 1].index].vertex,
-                                                 object1->vertices[surface1.refs[i - 2].index].vertex,
-                                                 object1->vertices[surface1.refs[i].index].vertex };
+                                                  object1->vertices[surface1.refs[i - 2].index].vertex,
+                                                  object1->vertices[surface1.refs[i].index].vertex };
                                 }
 
                                 if (!degenerate(triangle1))
@@ -2724,12 +2736,12 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                                 showLine(in, surface2.refs[j + 1].line_pos);
                                                 note(surface1.line_number) << "first instance" << std::endl;
                                                 showLine(in, surface1.line_pos);
-                                                note(surface1.refs[0].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[0].line_pos);
-                                                note(surface1.refs[i].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[j].line_pos);
-                                                note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[j + 1].line_pos);
+                                                note(surface1.refs[index1[0]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface1.refs[index1[0]].line_pos);
+                                                note(surface1.refs[index1[1]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface1.refs[index1[1]].line_pos);
+                                                note(surface1.refs[index1[2]].line_number) << "ref" << std::endl;
+                                                showLine(in, surface1.refs[index1[2]].line_pos);
                                             }
                                         }
                                     }
