@@ -5242,7 +5242,7 @@ bool AC3D::Object::hasTransparentTexture() const
         return false;
     }
 
-    png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
+    size_t rowbytes = png_get_rowbytes(png_ptr, info_ptr);
     png_uint_32 *image_data;
 
     if ((image_data = (png_uint_32 *)malloc(rowbytes * height)) == NULL)
