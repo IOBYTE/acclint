@@ -527,6 +527,12 @@ public:
     {
         return m_objects[0].kids.size();
     }
+    size_t getWorldKidCount(size_t kid) const
+    {
+        if (!m_objects.empty() && m_objects[0].kids.size() > kid)
+            return m_objects[0].kids[kid].kids.size();
+        return 0;
+    }
     bool clean();
     bool cleanObjects();
     bool cleanVertices();
@@ -1223,14 +1229,6 @@ private:
             }
             return actual_textures;
         }
-        bool hasTransparentTexture() const
-        {
-            // FIXME do this right someday
-            if (!textures.empty() && !textures[0].name.empty() && textures[0].name.find("_n.") != std::string::npos)
-                return true;
-
-            return false;
-        }
         const std::string &getName() const
         {
             if (!names.empty())
@@ -1250,6 +1248,7 @@ private:
             return none;
         }
 
+        bool hasTransparentTexture() const;
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
         void incrementMaterialIndex(size_t num_materials);

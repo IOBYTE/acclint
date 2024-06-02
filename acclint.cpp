@@ -828,7 +828,9 @@ int main(int argc, char *argv[])
             ac3d.combineTexture();
             ac3d.clean();
 
-            std::cout << "combineTexture: " << ac3d.getWorldKidCount() << " objects" << std::endl;
+            std::cout << "combineTexture: " << ac3d.getWorldKidCount(0)
+                      << " opaque textures "  << ac3d.getWorldKidCount(1)
+                      << " transparent textures" << std::endl;
 
             ac3d.write(out_file, version);
         }

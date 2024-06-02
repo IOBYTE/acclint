@@ -28,6 +28,9 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
+#include <cstdio>
+
+#include <png.h>
 
 #include "triangleintersects.hpp"
 
@@ -4929,10 +4932,22 @@ void AC3D::combineTexture()
     Object &world = m_objects[0];
 
     world.kids.clear();
-    world.kids.insert(world.kids.begin(), new_objects.begin(), new_objects.end());
-    world.kids.insert(world.kids.end(), new_transparent_objects.begin(), new_transparent_objects.end());
 
-    //flatten();
+    Object opaque;
+    opaque.type.type = "group";
+    Name opaque_name;
+    opaque_name.name = quoted_string("OPAQUE");
+    opaque.names.emplace_back(opaque_name);
+    world.kids.push_back(opaque);
+    world.kids[0].kids.insert(world.kids[0].kids.begin(), new_objects.begin(), new_objects.end());
+
+    Object transparent;
+    transparent.type.type = "group";
+    Name transparent_name;
+    transparent_name.name = quoted_string("TRANSPARENT");
+    transparent.names.emplace_back(transparent_name);
+    world.kids.push_back(transparent);
+    world.kids[1].kids.insert(world.kids[1].kids.end(), new_transparent_objects.begin(), new_transparent_objects.end());
 }
 
 void AC3D::addPoly(std::vector<Object *> &polys, Object &object) const
@@ -5166,4 +5181,120 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
             }
         }
     }
+}
+
+bool AC3D::Object::hasTransparentTexture() const
+{
+    if (textures.empty() || textures[0].name.empty())
+        return false;
+
+    // try to read the texture file first
+    FILE *fp = fopen(textures[0].name.c_str(), "rb");
+    if (!fp)
+    {
+        // guess based on texture name
+        if (textures[0].name.find("_n.") != std::string::npos ||
+            textures[0].name.find("tree") != std::string::npos ||
+            textures[0].name.find("trans-") != std::string::npos ||
+            textures[0].name.find("arbor") != std::string::npos)
+            return true;
+        return false;
+    }
+
+    const size_t number = 8;
+    unsigned char header[number];
+
+    fread(header, 1, number, fp);
+    bool is_png = !png_sig_cmp(header, 0, number);
+    if (!is_png)
+    {
+        fclose(fp);
+        return false;
+    }
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png_ptr)
+    {
+        fclose(fp);
+        return false;
+    }
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr)
+    {
+        png_destroy_read_struct(&png_ptr, NULL, NULL);
+        fclose(fp);
+        return false;
+    }
+    png_init_io(png_ptr, fp);
+    png_set_sig_bytes(png_ptr, number);
+    png_read_info(png_ptr, info_ptr);
+
+    png_uint_32 width, height;
+    int bit_depth, color_type, interlace_type, compression_type, filter_method;
+    png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, &compression_type, &filter_method);
+    int channels = png_get_channels(png_ptr, info_ptr);
+
+    // look for RGBA with 4 8 bit channels
+    // TODO support more formats?
+    if (color_type != PNG_COLOR_TYPE_RGB_ALPHA || bit_depth != 8 || channels != 4)
+    {
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        fclose(fp);
+        return false;
+    }
+
+    png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
+    png_uint_32 *image_data;
+
+    if ((image_data = (png_uint_32 *)malloc(rowbytes * height)) == NULL)
+    {
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        fclose(fp);
+        return false;
+    }
+
+    png_bytepp row_pointers;
+
+    if ((row_pointers = (png_bytepp)malloc(sizeof(png_bytep) * height)) == NULL)
+    {
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        free(image_data);
+        fclose(fp);
+        return false;
+    }
+    for (png_uint_32 i = 0; i < height; ++i)
+        row_pointers[i] = (png_byte*)image_data + i * rowbytes;
+
+    png_set_rows(png_ptr, info_ptr, row_pointers);
+    png_read_image(png_ptr, row_pointers);
+    png_read_end(png_ptr, NULL);
+
+    // check if alpha channel is opaque
+    bool has_alpha = false;
+
+    for (png_uint_32 i = 0; i < (width * height); i++)
+    {
+        png_byte alpha = (image_data[i] >> 24) & 0x000000ff;
+        if (alpha != 255)
+        {
+            has_alpha = true;
+            break;
+        }
+    }
+
+    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    free(image_data);
+    free(row_pointers);
+    fclose(fp);
+
+#if 0
+    std::cerr << textures[0].name << " color_type: " << color_type
+              << " width: " << width
+              << " height: " << height
+              << " bit depth: " << bit_depth
+              << " channels: " << channels
+              << " has_alpha: " << has_alpha
+              << std::endl;
+#endif
+
+    return has_alpha;
 }
