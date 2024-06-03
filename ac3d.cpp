@@ -5205,7 +5205,7 @@ bool AC3D::Object::hasTransparentTexture() const
     unsigned char header[number];
 
     fread(header, 1, number, fp);
-    bool is_png = !png_sig_cmp(header, 0, number);
+    const bool is_png = !png_sig_cmp(header, 0, number);
     if (!is_png)
     {
         fclose(fp);
@@ -5242,19 +5242,19 @@ bool AC3D::Object::hasTransparentTexture() const
         return false;
     }
 
-    size_t rowbytes = png_get_rowbytes(png_ptr, info_ptr);
-    png_uint_32 *image_data;
+    const size_t rowbytes = png_get_rowbytes(png_ptr, info_ptr);
+    png_uint_32 *image_data = (png_uint_32 *)malloc(rowbytes * height);
 
-    if ((image_data = (png_uint_32 *)malloc(rowbytes * height)) == NULL)
+    if (image_data == NULL)
     {
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         fclose(fp);
         return false;
     }
 
-    png_bytepp row_pointers;
+    png_bytepp row_pointers = (png_bytepp)malloc(sizeof(png_bytep) * height);
 
-    if ((row_pointers = (png_bytepp)malloc(sizeof(png_bytep) * height)) == NULL)
+    if (row_pointers == NULL)
     {
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         free(image_data);
@@ -5273,7 +5273,7 @@ bool AC3D::Object::hasTransparentTexture() const
 
     for (png_uint_32 i = 0; i < (width * height); i++)
     {
-        png_byte alpha = (image_data[i] >> 24) & 0x000000ff;
+        const png_byte alpha = (image_data[i] >> 24) & 0x000000ff;
         if (alpha != 255)
         {
             has_alpha = true;
