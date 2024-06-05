@@ -845,13 +845,13 @@ private:
 
         bool operator == (const Vertex& other) const
         {
-            if (vertex != other.vertex)
+            if (!vertex.equals(other.vertex))
                 return false;
 
             if (has_normal != other.has_normal)
                 return false;
 
-            if (has_normal && normal != other.normal)
+            if (has_normal && !normal.equals(other.normal))
                 return false;
 
             return true;
