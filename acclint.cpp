@@ -816,6 +816,7 @@ int main(int argc, char *argv[])
 
         if (fix_overlapping_2_sided_surface)
         {
+            ac3d.flatten();
             ac3d.clean();
 
             ac3d.fixOverlapping2SidedSurface();
