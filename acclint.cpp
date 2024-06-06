@@ -48,6 +48,7 @@ void usage()
     std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
+    std::cerr << "  -Wno-surface-2-sided-opaque            Don't show surface 2 sided opaque warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-triangles               Don't show surface duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
@@ -95,6 +96,7 @@ void usage()
     std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
     std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
+    std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -147,6 +149,8 @@ int main(int argc, char *argv[])
     bool surface_strip_size = false;
     bool surface_strip_degenerate = false;
     bool surface_strip_duplicate_triangles = true;
+    bool surface_2_sided_opaque = false;
+    bool fix_surface_2_sided_opaque = false;
     bool duplicate_triangles = true;
     bool multiple_polygon_surface = true;
     bool floating_point = true;
@@ -184,7 +188,7 @@ int main(int argc, char *argv[])
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
-    std::vector<AC3D::RemoveInfo> removes;;
+    std::vector<AC3D::RemoveInfo> removes;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -250,6 +254,7 @@ int main(int argc, char *argv[])
             surface_strip_size = false;
             surface_strip_degenerate = false;
             surface_strip_duplicate_triangles = false;
+            surface_2_sided_opaque = false;
             duplicate_triangles = false;
             multiple_polygon_surface = false;
             floating_point = false;
@@ -368,6 +373,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-surface-strip-duplicate-triangles" || arg == "-Wsurface-strip-duplicate-triangles")
         {
             surface_strip_duplicate_triangles = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-2-sided-opaque" || arg == "-Wsurface-2-sided-opaque")
+        {
+            surface_2_sided_opaque = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-duplicate-triangles" || arg == "-Wduplicate-triangles")
         {
@@ -539,6 +548,10 @@ int main(int argc, char *argv[])
         {
             fix_overlapping_2_sided_surface = true;
         }
+        else if (arg == "--fixSurface2SidedOpaque")
+        {
+            fix_surface_2_sided_opaque = true;
+        }
         else if (arg == "--merge")
         {
             if (i < argc)
@@ -684,6 +697,7 @@ int main(int argc, char *argv[])
     ac3d.surfaceStripSize(surface_strip_size);
     ac3d.surfaceStripDegenerate(surface_strip_degenerate);
     ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
+    ac3d.surface2SidedOpaque(surface_2_sided_opaque);
     ac3d.duplicateTriangles(duplicate_triangles);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
@@ -801,18 +815,18 @@ int main(int argc, char *argv[])
         if (splitPolygon)
             ac3d.splitPolygons();
 
-        if (ac3d.fixMultipleWorlds())
-        {
-            if (splitSURF)
-                ac3d.splitMultipleSURF();
+        if (splitSURF)
+            ac3d.splitMultipleSURF();
 
-            if (splitMat)
-                ac3d.splitMultipleMat();
+        if (splitMat)
+            ac3d.splitMultipleMat();
 
-            ac3d.clean();
+        ac3d.fixMultipleWorlds();
 
-            ac3d.write(out_file, version);
-        }
+        ac3d.clean();
+
+        if (fix_surface_2_sided_opaque)
+            ac3d.fixSurface2SidedOpaque();
 
         if (fix_overlapping_2_sided_surface)
         {
@@ -820,8 +834,6 @@ int main(int argc, char *argv[])
             ac3d.clean();
 
             ac3d.fixOverlapping2SidedSurface();
-
-            ac3d.write(out_file, version);
         }
 
         if (combineTexture)
@@ -832,9 +844,9 @@ int main(int argc, char *argv[])
             std::cout << "combineTexture: " << ac3d.getWorldKidCount(0)
                       << " opaque textures "  << ac3d.getWorldKidCount(1)
                       << " transparent textures" << std::endl;
-
-            ac3d.write(out_file, version);
         }
+
+        ac3d.write(out_file, version);
     }
 
     if (dump)

@@ -25,6 +25,7 @@
 
 #include <array>
 #include <set>
+#include <map>
 #include <vector>
 #include <cmath>
 #include <regex>
@@ -319,6 +320,14 @@ public:
     {
         return m_surface_strip_duplicate_triangles;
     }
+    void surface2SidedOpaque(bool value)
+    {
+        m_surface_2_sided_opaque = value;
+    }
+    bool surface2SidedOpaque() const
+    {
+        return m_surface_2_sided_opaque;
+    }
     void duplicateTriangles(bool value)
     {
         m_duplicate_triangles = value;
@@ -547,6 +556,7 @@ public:
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
     void fixOverlapping2SidedSurface();
+    void fixSurface2SidedOpaque();
 
     class quoted_string : public std::string
     {
@@ -1032,6 +1042,10 @@ private:
         {
             return (flags & SideMask) != DoubleSided;
         }
+        void setSingleSided()
+        {
+            flags = flags & !DoubleSided;
+        }
         bool isDoubleSided() const
         {
             return (flags & SideMask) == DoubleSided;
@@ -1300,6 +1314,7 @@ private:
     bool            m_surface_strip_size = false;
     bool            m_surface_strip_degenerate = false;
     bool            m_surface_strip_duplicate_triangles = false;
+    bool            m_surface_2_sided_opaque = false;
     bool            m_duplicate_triangles = false;
     bool            m_multiple_polygon_surface = true;
     bool            m_floating_point = true;
@@ -1332,6 +1347,7 @@ private:
     std::vector<Object> m_objects;
     std::vector<std::string> m_texture_paths;
     bool m_has_world = false;
+    std::map<std::string, bool> m_transparent_textures;
 
     bool readHeader(std::istream &in);
     void writeHeader(std::ostream &out, const Header &header) const;
@@ -1377,6 +1393,7 @@ private:
     void checkSurfaceStripDegenerate(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceNoTexture(std::istream &in, const Object &object, const Surface &surface);
+    void checkSurface2SidedOpaque(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream& in, const Object& object);
     void checkDifferentUV(std::istream& in, const Object& object);
@@ -1399,6 +1416,9 @@ private:
     void addPoly(std::vector<const Object *> &polys, const Object &object) const;
     void addPoly(std::vector<Object *> &polys, Object &object) const;
     void fixOverlapping2SidedSurface(Object *object1, Object *object2, std::set<Surface *> &surfaces);
+    bool hasOpaqueTexture(const Object &object);
+    bool hasTransparentTexture(const Object &object);
+    void fixSurface2SidedOpaque(Object &object);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);

@@ -638,6 +638,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfaceStripDegenerate(in, object, surface);
         checkSurfaceStripDuplicateTriangles(in, object, surface);
         checkSurfaceNoTexture(in, object, surface);
+        checkSurface2SidedOpaque(in, object, surface);
     }
     else
     {
@@ -3462,6 +3463,24 @@ void AC3D::checkSurfaceNoTexture(std::istream &in, const Object &object, const S
     }
 }
 
+void AC3D::checkSurface2SidedOpaque(std::istream &in, const Object &object, const Surface &surface)
+{
+    if (!m_surface_2_sided_opaque)
+        return;
+
+    if (!surface.isPolygon())
+        return;
+
+    if (!surface.isDoubleSided())
+        return;
+
+    if (!hasTransparentTexture(object))
+    {
+        warning(surface.line_number) << "2 sided surface with opaque texture (" << object.getName() << " " << object.getTexture() << ")" << std::endl;
+        showLine(in, surface.line_pos);
+    }
+}
+
 void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface)
 {
     // only check coplanar polygon
@@ -3545,7 +3564,7 @@ AC3D::Point3 AC3D::normal(const Point3& p0, const Point3& p1, const Point3& p2)
 
 bool AC3D::degenerate(const std::array<Point3, 3> &vertices)
 {
-    return vertices[0] == vertices[1] || vertices[0] == vertices[2] || vertices[1] == vertices[2];
+    return vertices[0].equals(vertices[1]) || vertices[0].equals(vertices[2]) || vertices[1].equals(vertices[2]);
 }
 
 bool AC3D::degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2)
@@ -4237,7 +4256,7 @@ bool AC3D::fixMultipleWorlds()
 {
     // check for concatenated files
     if (!(m_objects.size() == 2 && m_objects[0].type.type == "world" && m_objects[1].type.type == "world"))
-        return true;
+        return false;
 
     size_t materials = 0;
     size_t line_number = m_objects[1].line_number - 1;
@@ -4871,7 +4890,7 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, st
 {
     if (object.type.type == "poly")
     {
-        if (object.hasTransparentTexture())
+        if (hasTransparentTexture(object))
         {
             for (auto &obj : transparent_objects)
             {
@@ -5180,6 +5199,67 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
     }
 }
 
+void AC3D::fixSurface2SidedOpaque()
+{
+    for (auto &object : m_objects)
+        fixSurface2SidedOpaque(object);
+}
+
+void AC3D::fixSurface2SidedOpaque(Object &object)
+{
+    if (object.type.type == "poly")
+    {
+        if (hasOpaqueTexture(object))
+        {
+            for (auto &surface : object.surfaces)
+            {
+                if ((surface.isPolygon() || surface.isTriangleStrip()) && surface.isDoubleSided())
+                    surface.setSingleSided();
+            }
+        }
+        return;
+    }
+    else if (object.type.type == "group" || object.type.type == "world")
+    {
+        for (auto &kid : object.kids)
+            fixSurface2SidedOpaque(kid);
+    }
+}
+
+bool AC3D::hasOpaqueTexture(const Object &object)
+{
+    if (object.textures.empty() || object.textures[0].name.empty())
+        return false;
+
+    const std::map<std::string, bool>::iterator it = m_transparent_textures.find(object.textures[0].name);
+
+    if (it != m_transparent_textures.end())
+        return !it->second;
+
+    const bool transparent = object.hasTransparentTexture();
+
+    m_transparent_textures[object.textures[0].name] = !transparent;
+
+    return !transparent;
+}
+
+bool AC3D::hasTransparentTexture(const Object &object)
+{
+    if (object.textures.empty() || object.textures[0].name.empty())
+        return false;
+
+    const std::map<std::string, bool>::iterator it = m_transparent_textures.find(object.textures[0].name);
+
+    if (it != m_transparent_textures.end())
+        return it->second;
+
+    const bool transparent = object.hasTransparentTexture();
+
+    m_transparent_textures[object.textures[0].name] = transparent;
+
+    return transparent;
+}
+
 bool AC3D::Object::hasTransparentTexture() const
 {
     if (textures.empty() || textures[0].name.empty())
@@ -5194,7 +5274,10 @@ bool AC3D::Object::hasTransparentTexture() const
             textures[0].name.find("tree") != std::string::npos ||
             textures[0].name.find("trans-") != std::string::npos ||
             textures[0].name.find("arbor") != std::string::npos)
+        {
             return true;
+        }
+
         return false;
     }
 
@@ -5228,7 +5311,7 @@ bool AC3D::Object::hasTransparentTexture() const
     png_uint_32 width, height;
     int bit_depth, color_type, interlace_type, compression_type, filter_method;
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, &compression_type, &filter_method);
-    int channels = png_get_channels(png_ptr, info_ptr);
+    const int channels = png_get_channels(png_ptr, info_ptr);
 
     // look for RGBA with 4 8 bit channels
     // TODO support more formats?

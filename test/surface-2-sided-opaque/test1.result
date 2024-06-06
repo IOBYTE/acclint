@@ -1,0 +1,5 @@
+libpng warning: iCCP: known incorrect sRGB profile
+test1.ac:13 warning: 2 sided surface with opaque texture (poly1 test.png)
+SURF 0x20
+^
+1 warning
