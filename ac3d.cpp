@@ -5217,7 +5217,6 @@ void AC3D::fixSurface2SidedOpaque(Object &object)
                     surface.setSingleSided();
             }
         }
-        return;
     }
     else if (object.type.type == "group" || object.type.type == "world")
     {

@@ -1,0 +1,4 @@
+test2.ac:13 warning: 2 sided surface with opaque texture (poly1 test.png)
+SURF 0x30
+^
+1 warning

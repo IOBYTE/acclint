@@ -1044,7 +1044,7 @@ private:
         }
         void setSingleSided()
         {
-            flags = flags & !DoubleSided;
+            flags = flags & ~DoubleSided;
         }
         bool isDoubleSided() const
         {
