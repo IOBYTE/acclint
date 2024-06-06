@@ -38,6 +38,7 @@
         <suppression>clang-tidy-misc-include-cleaner</suppression>
         <suppression>clang-tidy-performance-avoid-endl</suppression>
         <suppression>clang-tidy-cppcoreguidelines-owning-memory</suppression>
+        <suppression>clang-tidy-cert-err33-c</suppression>
     </suppressions>
     <safe-checks>
         <class-public/>

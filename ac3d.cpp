@@ -3901,10 +3901,10 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
         warning(surface.line_number) << "triangle strip with " << holes.size() << " possible hole"
             << s << " (reversed triangle" << s << ")" << std::endl;
         showLine(in, surface.line_pos);
-        for (size_t i = 0; i < holes.size(); i++)
+        for (auto hole : holes)
         {
-            note(triangles[holes[i]].refs[2].line_number) << "ref" << std::endl;
-            showLine(in, triangles[holes[i]].refs[2].line_pos);
+            note(triangles[hole].refs[2].line_number) << "ref" << std::endl;
+            showLine(in, triangles[hole].refs[2].line_pos);
         }
     }
 }
