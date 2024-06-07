@@ -808,6 +808,7 @@ private:
     {
         quoted_string name;
         std::string type;
+        std::string path;
     };
 
     struct TexRep : public LineInfo

@@ -1451,12 +1451,16 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     const bool absolute = texture_path.is_absolute() ||
                         (std::isalpha(texture_name[0]) != 0 && texture_name[1] == ':');
 
+                    texture.path = texture.name;
+
                     // use parent path of file when available
                     // and texture path is not absolute
                     if (!file_path.parent_path().empty() && !absolute)
                     {
-                        const std::string parent(file_path.parent_path().string());
-                        texture_path = parent + '/' + texture_name;
+                        texture_path = file_path.parent_path().append(texture_name);
+
+                        if (std::filesystem::exists(texture_path))
+                            texture.path = texture_path.string();
                     }
 
                     if (!std::filesystem::exists(texture_path))
@@ -1471,6 +1475,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                 if (std::filesystem::exists(path + '/' + texture_name))
                                 {
                                     found = true;
+                                    texture.path = path + '/' + texture_name;
                                     break;
                                 }
                             }
@@ -1491,6 +1496,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             const std::string other(path + '/' + texture_name);
                             if (std::filesystem::exists(other))
                             {
+                                if (texture.path.empty())
+                                    texture.path = other;
+
                                 if (size == std::filesystem::file_size(other))
                                 {
                                     std::ifstream file1(texture_path, std::ifstream::binary);
@@ -3476,7 +3484,8 @@ void AC3D::checkSurface2SidedOpaque(std::istream &in, const Object &object, cons
 
     if (!hasTransparentTexture(object))
     {
-        warning(surface.line_number) << "2 sided surface with opaque texture (" << object.getName() << " " << object.getTexture() << ")" << std::endl;
+        warning(surface.line_number) << "2 sided surface with opaque texture (object: "
+            << object.getName() << " texture: " << object.getTexture() << ")" << std::endl;
         showLine(in, surface.line_pos);
     }
 }
@@ -3614,7 +3623,7 @@ AC3D::PlaneType AC3D::getPlaneType(const Point3 &normal)
 
 std::array<AC3D::Point2, 3> AC3D::convert2D(const std::array<Point3, 3> &vertices, PlaneType planeType)
 {
-    std::array<AC3D::Point2, 3> vertices2D;
+    std::array<AC3D::Point2, 3> vertices2D = { 0, 0 };
 
     for (size_t i = 0; i < 3; i++)
     {
@@ -5214,7 +5223,13 @@ void AC3D::fixSurface2SidedOpaque(Object &object)
             for (auto &surface : object.surfaces)
             {
                 if ((surface.isPolygon() || surface.isTriangleStrip()) && surface.isDoubleSided())
+                {
+                    //unsigned int flags = surface.flags;
+
                     surface.setSingleSided();
+
+                    //std::cout << "changing " << object.getName() << " " << flags << " to " << surface.flags << std::endl;
+                }
             }
         }
     }
@@ -5230,14 +5245,14 @@ bool AC3D::hasOpaqueTexture(const Object &object)
     if (object.textures.empty() || object.textures[0].name.empty())
         return false;
 
-    const std::map<std::string, bool>::iterator it = m_transparent_textures.find(object.textures[0].name);
+    const std::map<std::string, bool>::iterator it = m_transparent_textures.find(object.textures[0].path);
 
     if (it != m_transparent_textures.end())
         return !it->second;
 
     const bool transparent = object.hasTransparentTexture();
 
-    m_transparent_textures[object.textures[0].name] = !transparent;
+    m_transparent_textures[object.textures[0].path] = transparent;
 
     return !transparent;
 }
@@ -5247,14 +5262,14 @@ bool AC3D::hasTransparentTexture(const Object &object)
     if (object.textures.empty() || object.textures[0].name.empty())
         return false;
 
-    const std::map<std::string, bool>::iterator it = m_transparent_textures.find(object.textures[0].name);
+    const std::map<std::string, bool>::iterator it = m_transparent_textures.find(object.textures[0].path);
 
     if (it != m_transparent_textures.end())
         return it->second;
 
     const bool transparent = object.hasTransparentTexture();
 
-    m_transparent_textures[object.textures[0].name] = transparent;
+    m_transparent_textures[object.textures[0].path] = transparent;
 
     return transparent;
 }
@@ -5265,7 +5280,7 @@ bool AC3D::Object::hasTransparentTexture() const
         return false;
 
     // try to read the texture file first
-    FILE *fp = fopen(textures[0].name.c_str(), "rb");
+    FILE *fp = fopen(textures[0].path.c_str(), "rb");
     if (!fp)
     {
         // guess based on texture name
