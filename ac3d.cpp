@@ -3443,7 +3443,7 @@ void AC3D::checkSurfaceNoTexture(std::istream &in, const Object &object, const S
     if (!m_surface_no_texture)
         return;
 
-    if (!surface.isPolygon())
+    if (!(surface.isPolygon() || surface.isTriangleStrip()))
         return;
 
     bool hasCoordinates = false;
@@ -3468,7 +3468,7 @@ void AC3D::checkSurface2SidedOpaque(std::istream &in, const Object &object, cons
     if (!m_surface_2_sided_opaque)
         return;
 
-    if (!surface.isPolygon())
+    if (!(surface.isPolygon() || surface.isTriangleStrip()))
         return;
 
     if (!surface.isDoubleSided())

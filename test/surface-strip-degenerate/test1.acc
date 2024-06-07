@@ -4,6 +4,7 @@ OBJECT world
 kids 1
 OBJECT poly
 name "test"
+texture "test.png"
 numvert 4
 -0.292794 1.10684 -0.142356 0 0 -1
 -0.28236 1.000926 -0.142356 0 0 -1

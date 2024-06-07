@@ -1,0 +1,4 @@
+test3.acc:14 warning: 2 sided surface with opaque texture (rect test.png)
+SURF 0x24
+^
+1 warning

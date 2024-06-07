@@ -19,3 +19,23 @@
   [ "$(cat test2.output.ac)" = "$(cat test2.result.ac)" ]
   rm test2.output.ac
 }
+
+################################################################################
+
+@test "test3.1" {
+  run acclint test3.acc --fixSurface2SidedOpaque -o test3.output.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat test3.output.acc)" = "$(cat test3.result.acc)" ]
+  rm test3.output.acc
+}
+
+################################################################################
+
+@test "test4.1" {
+  run acclint test4.acc --fixSurface2SidedOpaque -o test4.output.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat test4.output.acc)" = "$(cat test4.result.acc)" ]
+  rm test4.output.acc
+}
