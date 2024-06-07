@@ -1472,7 +1472,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             // look in alternate paths if available
                             for (const auto & path : m_texture_paths)
                             {
-                                std::filesystem::path new_path = std::filesystem::path(path).append(texture_name);
+                                const std::filesystem::path new_path = std::filesystem::path(path).append(texture_name);
                                 if (std::filesystem::exists(new_path))
                                 {
                                     found = true;
@@ -5285,15 +5285,10 @@ bool AC3D::Object::hasTransparentTexture() const
     if (!fp)
     {
         // guess based on texture name
-        if (textures[0].name.find("_n.") != std::string::npos ||
-            textures[0].name.find("tree") != std::string::npos ||
-            textures[0].name.find("trans-") != std::string::npos ||
-            textures[0].name.find("arbor") != std::string::npos)
-        {
-            return true;
-        }
-
-        return false;
+        return (textures[0].name.find("_n.") != std::string::npos ||
+                textures[0].name.find("tree") != std::string::npos ||
+                textures[0].name.find("trans-") != std::string::npos ||
+                textures[0].name.find("arbor") != std::string::npos);
     }
 
     const size_t number = 8;
