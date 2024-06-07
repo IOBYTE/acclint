@@ -1,4 +1,4 @@
-test1.ac:13 warning: 2 sided surface with opaque texture (poly1 test.png)
+test1.ac:13 warning: 2 sided surface with opaque texture (object: poly1 texture: test.png)
 SURF 0x20
 ^
 1 warning

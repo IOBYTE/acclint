@@ -1472,10 +1472,11 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             // look in alternate paths if available
                             for (const auto & path : m_texture_paths)
                             {
-                                if (std::filesystem::exists(path + '/' + texture_name))
+                                std::filesystem::path new_path = std::filesystem::path(path).append(texture_name);
+                                if (std::filesystem::exists(new_path))
                                 {
                                     found = true;
-                                    texture.path = path + '/' + texture_name;
+                                    texture.path = new_path.string();
                                     break;
                                 }
                             }
@@ -1493,11 +1494,11 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                         for (const auto & path : m_texture_paths)
                         {
-                            const std::string other(path + '/' + texture_name);
+                            const std::filesystem::path other = std::filesystem::path(path).append(texture_name);
                             if (std::filesystem::exists(other))
                             {
                                 if (texture.path.empty())
-                                    texture.path = other;
+                                    texture.path = other.string();
 
                                 if (size == std::filesystem::file_size(other))
                                 {
