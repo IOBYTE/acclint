@@ -1878,6 +1878,14 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                 }
                             }
                         }
+                        else
+                        {
+                            if (m_is_ac == false)
+                            {
+                                error() << "missing normal" << std::endl;
+                                showLine(iss2);
+                            }
+                        }
                     }
                     else
                     {
