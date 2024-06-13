@@ -114,6 +114,7 @@ void usage()
     std::cerr << "Examples:" << std::endl;
     std::cerr << "  acclint -Wno-trailing-text file.acc             Don't show trailing text warnings." << std::endl;
     std::cerr << "  acclint -Wno-warnings -Wunused-vertex file.acc  Only show unused vertex warnings." << std::endl;
+    std::cerr << "  acclint -Wno-warnings -j 8 -T ../../../data/textures original.ac --combineTexture -o new.ac" << std::endl;
 }
 
 int main(int argc, char *argv[])
