@@ -682,7 +682,7 @@ private:
         }
         bool equals(const Point3 &other) const
         {
-            constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
+            static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
 
             return std::abs(x() - other.x()) < SMALL_NUM &&
                    std::abs(y() - other.y()) < SMALL_NUM &&
@@ -969,7 +969,7 @@ private:
 
         bool isOnPlane(Point3 point) const
         {
-            constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
+            static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
 
             return std::abs(normal.dot(point) - distance) < SMALL_NUM;
         }
@@ -991,7 +991,7 @@ private:
 
         bool equals(const Plane &other) const
         {
-            constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
+            static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
 
             return valid && other.valid && std::abs(distance - other.distance) < SMALL_NUM && normal.equals(other.normal);
         }
