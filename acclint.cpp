@@ -18,11 +18,16 @@
 
 //---------------------------------------------------------------------------
 
+#if defined(_WIN32)
+#pragma warning( disable : 4996)
+#endif
+
 #include "ac3d.h"
 #include "config.h"
 
 #include <iostream>
 #include <sstream>
+#include <chrono>
 
 void usage()
 {
@@ -692,6 +697,17 @@ int main(int argc, char *argv[])
         }
     }
 
+    std::chrono::time_point<std::chrono::system_clock> start;
+
+    if (show_times)
+    {
+        start = std::chrono::system_clock::now();
+        auto start_time = std::chrono::system_clock::to_time_t(start);
+        std::string s(30, '\0');
+        std::strftime(&s[0], s.size(), "%a %b %d %H:%M:%S %p", std::localtime(&start_time));
+        std::cout << "acclint started at " << s << std::endl;
+    }
+
     AC3D ac3d;
 
     ac3d.notAC3DFile(not_ac3d_file);
@@ -881,6 +897,25 @@ int main(int argc, char *argv[])
 
     if (dump)
         ac3d.dump(dump_type);
+
+    if (show_times)
+    {
+        std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
+        std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+        const auto hrs = std::chrono::duration_cast<std::chrono::hours>(time_span);
+        const auto mins = std::chrono::duration_cast<std::chrono::minutes>(time_span - hrs);
+        const auto secs = std::chrono::duration_cast<std::chrono::seconds>(time_span - hrs - mins);
+        const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(time_span - hrs - mins - secs);
+        const auto end_time = std::chrono::system_clock::to_time_t(end);
+        std::string s(30, '\0');
+        std::strftime(&s[0], s.size(), "%a %b %d %H:%M:%S %p", std::localtime(&end_time));
+        std::cout << "acclint finished at " << s << " duration: ";
+        if (hrs.count() > 0)
+            std::cout << hrs.count() << " hours ";
+        if (mins.count() > 0)
+            std::cout << hrs.count() << " minutes ";
+        std::cout << secs.count() << "." << ns.count() << " seconds" << std::endl;
+    }
 
     return EXIT_SUCCESS;
 }
