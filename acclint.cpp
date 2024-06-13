@@ -22,10 +22,11 @@
 #include "config.h"
 
 #include <iostream>
+#include <sstream>
 
 void usage()
 {
-    std::cerr << "Usage: acclint [options] [-T texturepath] <inputfile> [--merge <inputfile>] [-o <outputfile>] [-v <11|12>]" << std::endl;
+    std::cerr << "Usage: acclint [options] [-j <#>] [-T texturepath] <inputfile> [--merge <inputfile>] [-o <outputfile>] [-v <11|12>]" << std::endl;
     std::cerr << "Options:" << std::endl;
     std::cerr << "  -Wno-warnings                          Don't show any warnings." << std::endl;
     std::cerr << "  -Wno-trailing-text                     Don't show trailing text warnings." << std::endl;
@@ -97,6 +98,8 @@ void usage()
     std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
+    std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
+    std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -189,6 +192,8 @@ int main(int argc, char *argv[])
     int version = 0;
     std::vector<std::string> merge_files;
     std::vector<AC3D::RemoveInfo> removes;
+    bool show_times = false;
+    unsigned int threads = 1;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -215,6 +220,25 @@ int main(int argc, char *argv[])
             }
             else
             {
+                usage();
+                return EXIT_FAILURE;
+            }
+        }
+        else if (arg == "-j")
+        {
+            i++;
+            if (i == argc)
+            {
+                std::cerr << "Missing number of threads" << std::endl;
+                usage();
+                return EXIT_FAILURE;
+            }
+            arg = argv[i];
+            std::istringstream iss(arg);
+            iss >> threads;
+            if (!iss || threads > 256)
+            {
+                std::cerr << "Invalid number of threads: " << arg << std::endl;
                 usage();
                 return EXIT_FAILURE;
             }
@@ -645,6 +669,10 @@ int main(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
         }
+        else if (arg == "--showTimes")
+        {
+            show_times = true;
+        }
         else if (arg[0] != '-')
         {
             if (in_file.empty())
@@ -725,6 +753,8 @@ int main(int argc, char *argv[])
     ac3d.differentSURF(different_surf);
     ac3d.differentMat(different_mat);
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
+    ac3d.showTimes(show_times);
+    ac3d.threads(threads);
 
     if (!ac3d.read(in_file))
     {

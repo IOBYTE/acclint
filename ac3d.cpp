@@ -29,6 +29,8 @@
 #include <fstream>
 #include <sstream>
 #include <cstdio>
+#include <chrono>
+#include <omp.h>
 
 #include <png.h>
 
@@ -2093,7 +2095,7 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
 
             // skip invalid vertex
             if (vertex1 >= vertices.size() || vertex2 >= vertices.size())
-                continue;
+                break;
 
             if (!(vertex1 == vertex2 || vertices[vertex1] == vertices[vertex2]))
                 return false;
@@ -3040,7 +3042,7 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
                 continue;
             }
 
-            // skip when triangle stripa
+            // skip when triangle strip
             if (object.surfaces[i].isTriangleStrip() || object.surfaces[j].isTriangleStrip())
                 continue;
 
@@ -4583,9 +4585,61 @@ bool AC3D::cleanVertices(Object &object)
     return true;
 }
 
+void AC3D::getObjects(std::vector<Object *> &polys, Object *object)
+{
+    if (object->type.type == "poly")
+    {
+        polys.push_back(object);
+        return;
+    }
+
+    if (object->type.type == "group" || object->type.type == "world")
+    {
+        for (auto &kid : object->kids)
+            getObjects(polys, &kid);
+    }
+}
+
 bool AC3D::cleanSurfaces()
 {
-    return cleanSurfaces(m_objects);
+    std::vector<Object *> polys;
+
+    // find all the polys
+    for (auto &object : m_objects)
+        getObjects(polys, &object);
+
+    bool cleaned = false;
+
+    std::chrono::high_resolution_clock::time_point start;
+
+    if (m_show_times)
+    {
+        std::cout << "cleanSurfaces starting with " << m_threads << " thread" << (m_threads > 1 ? "s" : "") << std::endl;
+        start = std::chrono::high_resolution_clock::now();
+    }
+
+    // clean them
+    {
+        int size = static_cast<int>(polys.size());
+
+        omp_set_dynamic(0);
+        omp_set_num_threads(m_threads);
+
+        #pragma omp parallel for reduction(|:cleaned)
+        for (int i = 0; i < size; i++)
+        {
+            cleaned |= cleanSurfaces(*polys[i]);
+        }
+    }
+
+    if (m_show_times)
+    {
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+        std::cout << "cleanSurfaces done: " << time_span.count() << " seconds." << std::endl << std::endl;
+    }
+
+    return cleaned;
 }
 
 bool AC3D::cleanSurfaces(std::vector<Object> &objects)
@@ -4663,6 +4717,7 @@ bool AC3D::cleanSurfaces(Object &object)
         }
     }
 
+    // remove duplicate surfaces
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
@@ -5292,6 +5347,8 @@ bool AC3D::Object::hasTransparentTexture() const
     FILE *fp = fopen(textures[0].path.c_str(), "rb");
     if (!fp)
     {
+        std::cout << "guessing texture type: " << textures[0].path.c_str() << std::endl;
+
         // guess based on texture name
         return (textures[0].name.find("_n.") != std::string::npos ||
                 textures[0].name.find("tree") != std::string::npos ||
@@ -5302,11 +5359,18 @@ bool AC3D::Object::hasTransparentTexture() const
     const size_t number = 8;
     unsigned char header[number];
 
-    fread(header, 1, number, fp);
+    if (fread(header, 1, number, fp) != number)
+    {
+        fclose(fp);
+        std::cerr << "error reading png header: " << textures[0].path.c_str() << std::endl;
+        return false;
+    }
+
     const bool is_png = !png_sig_cmp(header, 0, number);
     if (!is_png)
     {
         fclose(fp);
+        std::cerr << "invalid png header " << textures[0].path.c_str() << std::endl;
         return false;
     }
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);

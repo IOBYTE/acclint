@@ -542,6 +542,22 @@ public:
             return m_objects[0].kids[kid].kids.size();
         return 0;
     }
+    void showTimes(bool value)
+    {
+        m_show_times = value;
+    }
+    bool showTimes() const
+    {
+        return m_show_times;
+    }
+    void threads(unsigned int value)
+    {
+        m_threads = value;
+    }
+    unsigned int threads() const
+    {
+        return m_threads;
+    }
     bool clean();
     bool cleanObjects();
     bool cleanVertices();
@@ -1342,6 +1358,8 @@ private:
     bool            m_different_surf = true;
     bool            m_different_mat = true;
     bool            m_overlapping_2_sided_surface = true;
+    bool            m_show_times = false;
+    unsigned int    m_threads = 1;
 
     Header m_header;
     std::vector<Material> m_materials;
@@ -1420,6 +1438,7 @@ private:
     bool hasOpaqueTexture(const Object &object);
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
+    void getObjects(std::vector<Object *> &polys, Object *object);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
