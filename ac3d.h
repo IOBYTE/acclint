@@ -1,6 +1,6 @@
 /*
  * acclint - A tool that detects errors in AC3D files.
- * Copyright (C) 2020 Robert Reif
+ * Copyright (C) 2020-2024 Robert Reif
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <vector>
 #include <cmath>
 #include <regex>
+#include <chrono>
 
 class AC3D
 {
@@ -573,6 +574,9 @@ public:
     void combineTexture();
     void fixOverlapping2SidedSurface();
     void fixSurface2SidedOpaque();
+    static std::string getDuration(const std::chrono::time_point<std::chrono::system_clock> &start,
+                                   const std::chrono::time_point<std::chrono::system_clock> &end);
+    static std::string getTime(const std::chrono::time_point<std::chrono::system_clock> &time);
 
     class quoted_string : public std::string
     {

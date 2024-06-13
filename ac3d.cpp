@@ -1,6 +1,6 @@
 /*
  * acclint - A tool that detects errors in AC3D files.
- * Copyright (C) 2020 Robert Reif
+ * Copyright (C) 2020-2024 Robert Reif
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdio>
+#include <cmath>
 #include <chrono>
 #include <omp.h>
 
@@ -2565,6 +2566,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
 
                                 if (trianglesOverlap(triangle1, triangle2))
                                 {
+                                    #pragma omp ordered
                                     warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
                                         object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
                                     showLine(in, surface2.line_pos);
@@ -2635,6 +2637,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                     {
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
+                                            #pragma omp ordered
                                             warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
                                                 object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
                                             showLine(in, surface2.line_pos);
@@ -2696,6 +2699,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                     {
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
+                                            #pragma omp ordered
                                             warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
                                                 object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
                                             showLine(in, surface2.line_pos);
@@ -2757,6 +2761,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
 
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
+                                            #pragma omp ordered
                                             warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
                                                 object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
                                             showLine(in, surface2.line_pos);
@@ -2792,6 +2797,14 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
     if (!m_overlapping_2_sided_surface)
         return;
 
+    std::chrono::system_clock::time_point start;
+
+    if (m_show_times)
+    {
+        std::cout << "checkOverlapping2SidedSurface starting " << m_threads << " thread" << (m_threads > 1 ? "s" : "") << std::endl;
+        start = std::chrono::system_clock::now();
+    }
+
     std::vector<const Object *> polys;
 
     for (const auto &world : m_objects)
@@ -2800,10 +2813,19 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
     if (polys.empty())
         return;
 
-    for (size_t i = 0; i < (polys.size() - 1); ++i)
+    int size1 = static_cast<int>(polys.size() - 1);
+    int size2 = static_cast<int>(polys.size());
+    #pragma omp parallel for ordered
+    for (int i = 0; i < size1; ++i)
     {
-        for (size_t j = i + 1; j < polys.size(); ++j)
+        for (int j = i + 1; j < size2; ++j)
             checkOverlapping2SidedSurface(in, polys[i], polys[j]);
+    }
+
+    if (m_show_times)
+    {
+        std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+        std::cout << "checkOverlapping2SidedSurface done: duration: " << getDuration(start, end) << std::endl;
     }
 }
 
@@ -4614,12 +4636,12 @@ bool AC3D::cleanSurfaces()
 
     bool cleaned = false;
 
-    std::chrono::high_resolution_clock::time_point start;
+    std::chrono::system_clock::time_point start;
 
     if (m_show_times)
     {
         std::cout << "cleanSurfaces starting with " << m_threads << " thread" << (m_threads > 1 ? "s" : "") << std::endl;
-        start = std::chrono::high_resolution_clock::now();
+        start = std::chrono::system_clock::now();
     }
 
     // clean them
@@ -4638,9 +4660,8 @@ bool AC3D::cleanSurfaces()
 
     if (m_show_times)
     {
-        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-        std::cout << "cleanSurfaces done: " << time_span.count() << " seconds" << std::endl;
+        std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+        std::cout << "cleanSurfaces done: duration: " << getDuration(start, end) << std::endl;
     }
 
     return cleaned;
@@ -5463,4 +5484,32 @@ bool AC3D::Object::hasTransparentTexture() const
 #endif
 
     return has_alpha;
+}
+
+std::string AC3D::getTime(const std::chrono::time_point<std::chrono::system_clock> &time)
+{
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()) % 1000;
+    const auto local_time = std::chrono::system_clock::to_time_t(time);
+    std::tm bt = *std::localtime(&local_time);
+    std::ostringstream oss;
+    oss << std::put_time(&bt, "%a %b %d %H:%M:%S") << "." << std::setfill('0') << std::setw(3) << ms.count() << " " << std::put_time(&bt, "%p");
+    return oss.str();
+}
+
+std::string AC3D::getDuration(const std::chrono::time_point<std::chrono::system_clock> &start,
+                              const std::chrono::time_point<std::chrono::system_clock> &end)
+{
+    const std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    const auto hrs = std::chrono::duration_cast<std::chrono::hours>(time_span);
+    const auto mins = std::chrono::duration_cast<std::chrono::minutes>(time_span - hrs);
+    const auto secs = std::chrono::duration_cast<std::chrono::seconds>(time_span - hrs - mins);
+    const auto ms = std::chrono::duration_cast<std::chrono::microseconds>(time_span - hrs - mins - secs);
+    std::ostringstream oss;
+    if (hrs.count() > 0)
+        oss << hrs.count() << " hours ";
+    if (mins.count() > 0)
+        oss << hrs.count() << " minutes ";
+    oss << secs.count() << "." << std::setfill('0') << std::setw(6) << ms.count() << " seconds" << std::endl;
+
+    return oss.str();
 }
