@@ -2566,27 +2566,24 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
 
                                 if (trianglesOverlap(triangle1, triangle2))
                                 {
-//                                    #pragma omp ordered
-                                    {
-                                        warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
-                                            object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
-                                        showLine(in, surface2.line_pos);
-                                        note(surface2.refs[0].line_number) << "ref" << std::endl;
-                                        showLine(in, surface2.refs[0].line_pos);
-                                        note(surface2.refs[j].line_number) << "ref" << std::endl;
-                                        showLine(in, surface2.refs[j].line_pos);
-                                        note(surface2.refs[j + 1].line_number) << "ref" << std::endl;
-                                        showLine(in, surface2.refs[j + 1].line_pos);
-                                        note(surface1.line_number) << "first instance (object: " <<
-                                            object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
-                                        showLine(in, surface1.line_pos);
-                                        note(surface1.refs[0].line_number) << "ref" << std::endl;
-                                        showLine(in, surface1.refs[0].line_pos);
-                                        note(surface1.refs[i].line_number) << "ref" << std::endl;
-                                        showLine(in, surface1.refs[j].line_pos);
-                                        note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
-                                        showLine(in, surface1.refs[j + 1].line_pos);
-                                    }
+                                    warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
+                                        object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
+                                    showLine(in, surface2.line_pos);
+                                    note(surface2.refs[0].line_number) << "ref" << std::endl;
+                                    showLine(in, surface2.refs[0].line_pos);
+                                    note(surface2.refs[j].line_number) << "ref" << std::endl;
+                                    showLine(in, surface2.refs[j].line_pos);
+                                    note(surface2.refs[j + 1].line_number) << "ref" << std::endl;
+                                    showLine(in, surface2.refs[j + 1].line_pos);
+                                    note(surface1.line_number) << "first instance (object: " <<
+                                        object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
+                                    showLine(in, surface1.line_pos);
+                                    note(surface1.refs[0].line_number) << "ref" << std::endl;
+                                    showLine(in, surface1.refs[0].line_pos);
+                                    note(surface1.refs[i].line_number) << "ref" << std::endl;
+                                    showLine(in, surface1.refs[j].line_pos);
+                                    note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
+                                    showLine(in, surface1.refs[j + 1].line_pos);
                                 }
                             }
                         }
@@ -2639,27 +2636,24 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                     {
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
-//                                            #pragma omp ordered
-                                            {
-                                                warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
-                                                    object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
-                                                showLine(in, surface2.line_pos);
-                                                note(surface2.refs[index2[0]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[index2[0]].line_pos);
-                                                note(surface2.refs[index2[1]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[index2[1]].line_pos);
-                                                note(surface2.refs[index2[2]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[index2[2]].line_pos);
-                                                note(surface1.line_number) << "first instance (object: " <<
-                                                    object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
-                                                showLine(in, surface1.line_pos);
-                                                note(surface1.refs[index1[0]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[index1[0]].line_pos);
-                                                note(surface1.refs[index1[1]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[index1[1]].line_pos);
-                                                note(surface1.refs[index1[2]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[index1[2]].line_pos);
-                                            }
+                                            warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
+                                                object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
+                                            showLine(in, surface2.line_pos);
+                                            note(surface2.refs[index2[0]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface2.refs[index2[0]].line_pos);
+                                            note(surface2.refs[index2[1]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface2.refs[index2[1]].line_pos);
+                                            note(surface2.refs[index2[2]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface2.refs[index2[2]].line_pos);
+                                            note(surface1.line_number) << "first instance (object: " <<
+                                                object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
+                                            showLine(in, surface1.line_pos);
+                                            note(surface1.refs[index1[0]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface1.refs[index1[0]].line_pos);
+                                            note(surface1.refs[index1[1]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface1.refs[index1[1]].line_pos);
+                                            note(surface1.refs[index1[2]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface1.refs[index1[2]].line_pos);
                                         }
                                     }
                                 }
@@ -2703,27 +2697,24 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                     {
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
-//                                            #pragma omp ordered
-                                            {
-                                                warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
-                                                    object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
-                                                showLine(in, surface2.line_pos);
-                                                note(surface2.refs[index2[0]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[index2[0]].line_pos);
-                                                note(surface2.refs[index2[1]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[index2[1]].line_pos);
-                                                note(surface2.refs[index2[2]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[index2[2]].line_pos);
-                                                note(surface1.line_number) << "first instance (object: " <<
-                                                    object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
-                                                showLine(in, surface1.line_pos);
-                                                note(surface1.refs[0].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[0].line_pos);
-                                                note(surface1.refs[i].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[j].line_pos);
-                                                note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[j + 1].line_pos);
-                                            }
+                                            warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
+                                                object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
+                                            showLine(in, surface2.line_pos);
+                                            note(surface2.refs[index2[0]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface2.refs[index2[0]].line_pos);
+                                            note(surface2.refs[index2[1]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface2.refs[index2[1]].line_pos);
+                                            note(surface2.refs[index2[2]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface2.refs[index2[2]].line_pos);
+                                            note(surface1.line_number) << "first instance (object: " <<
+                                                object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
+                                            showLine(in, surface1.line_pos);
+                                            note(surface1.refs[0].line_number) << "ref" << std::endl;
+                                            showLine(in, surface1.refs[0].line_pos);
+                                            note(surface1.refs[i].line_number) << "ref" << std::endl;
+                                            showLine(in, surface1.refs[j].line_pos);
+                                            note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
+                                            showLine(in, surface1.refs[j + 1].line_pos);
                                         }
                                     }
                                 }
@@ -2767,27 +2758,24 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
 
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
-//                                            #pragma omp ordered
-                                            {
-                                                warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
-                                                    object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
-                                                showLine(in, surface2.line_pos);
-                                                note(surface2.refs[0].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[0].line_pos);
-                                                note(surface2.refs[j].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[j].line_pos);
-                                                note(surface2.refs[j + 1].line_number) << "ref" << std::endl;
-                                                showLine(in, surface2.refs[j + 1].line_pos);
-                                                note(surface1.line_number) << "first instance (object: " <<
-                                                    object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
-                                                showLine(in, surface1.line_pos);
-                                                note(surface1.refs[index1[0]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[index1[0]].line_pos);
-                                                note(surface1.refs[index1[1]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[index1[1]].line_pos);
-                                                note(surface1.refs[index1[2]].line_number) << "ref" << std::endl;
-                                                showLine(in, surface1.refs[index1[2]].line_pos);
-                                            }
+                                            warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
+                                                object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
+                                            showLine(in, surface2.line_pos);
+                                            note(surface2.refs[0].line_number) << "ref" << std::endl;
+                                            showLine(in, surface2.refs[0].line_pos);
+                                            note(surface2.refs[j].line_number) << "ref" << std::endl;
+                                            showLine(in, surface2.refs[j].line_pos);
+                                            note(surface2.refs[j + 1].line_number) << "ref" << std::endl;
+                                            showLine(in, surface2.refs[j + 1].line_pos);
+                                            note(surface1.line_number) << "first instance (object: " <<
+                                                object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
+                                            showLine(in, surface1.line_pos);
+                                            note(surface1.refs[index1[0]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface1.refs[index1[0]].line_pos);
+                                            note(surface1.refs[index1[1]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface1.refs[index1[1]].line_pos);
+                                            note(surface1.refs[index1[2]].line_number) << "ref" << std::endl;
+                                            showLine(in, surface1.refs[index1[2]].line_pos);
                                         }
                                     }
                                 }
@@ -2809,7 +2797,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
 
     if (m_show_times)
     {
-        std::cout << "checkOverlapping2SidedSurface starting " << m_threads << " thread" << (m_threads > 1 ? "s" : "") << std::endl;
+        std::cout << "checkOverlapping2SidedSurface starting" << std::endl;
         start = std::chrono::system_clock::now();
     }
 
@@ -2823,7 +2811,6 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
 
     int size1 = static_cast<int>(polys.size() - 1);
     int size2 = static_cast<int>(polys.size());
-//    #pragma omp parallel for ordered
     for (int i = 0; i < size1; ++i)
     {
         for (int j = i + 1; j < size2; ++j)
