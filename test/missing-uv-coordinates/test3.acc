@@ -9,10 +9,10 @@ texture "test2.png" tiled
 texture "test3.png" skids
 texture "test4.png" shad
 numvert 4
-0 0 0
-1 0 0
-1 1 0
-0 1 0
+0 0 0 0 0 1
+1 0 0 0 0 1
+1 1 0 0 0 1
+0 1 0 0 0 1
 numsurf 1
 SURF 0x20
 mat 0

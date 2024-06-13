@@ -6,9 +6,9 @@ OBJECT poly
 name "test"
 texture "test.png"
 numvert 3
-0 0 0
-1 0 0
-1 1 0
+0 0 0 0 0 1
+1 0 0 0 0 1
+1 1 0 0 0 1
 numsurf 1
 SURF 0x24
 mat 0

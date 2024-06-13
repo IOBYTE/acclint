@@ -5,11 +5,11 @@ kids 1
 OBJECT poly
 name "test"
 numvert 5
-0 0 0
-1 0 0
-1 1 0
-2 0 0
-2 1 0
+0 0 0 0 0 1
+1 0 0 0 0 1
+1 1 0 0 0 1
+2 0 0 0 0 1
+2 1 0 0 0 1
 numsurf 2
 SURF 0x14
 mat 0
