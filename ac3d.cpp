@@ -1685,6 +1685,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 }
 
                 object.rotations.push_back(rotation);
+                object.matrix.setRotation(rotation.rotation);
 
                 checkTrailing(iss1);
             }
@@ -1713,6 +1714,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 }
 
                 object.locations.push_back(location);
+                object.matrix.setLocation(location.location);
 
                 checkTrailing(iss1);
             }
@@ -2519,24 +2521,30 @@ void AC3D::checkUnusedMaterial(std::istream &in)
     }
 }
 
-void AC3D::addPoly(std::vector<const Object *> &polys, const Object &object) const
+void AC3D::addConstPoly(std::vector<ConstPoly> &polys, const Object &object, const Matrix &matrix) const
 {
-    // TODO check for loc and rot
-
     if (object.type.type == "poly")
-        polys.push_back(&object);
+    {
+        Matrix newMatrix = matrix;
+        newMatrix.multiply(object.matrix);
+        polys.emplace_back(&object, newMatrix);
+    }
     else if (object.type.type == "group" || object.type.type == "world")
     {
+        Matrix newMatrix = matrix;
+        newMatrix.multiply(object.matrix);
         for (const auto &kid : object.kids)
-            addPoly(polys, kid);
+        {
+            addConstPoly(polys, kid, newMatrix);
+        }
     }
 }
 
-void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1, const Object *object2)
+void AC3D::checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &object1, const ConstPoly &object2)
 {
-    for (const auto &surface1 : object1->surfaces)
+    for (const auto &surface1 : object1.object->surfaces)
     {
-        for (const auto &surface2 : object2->surfaces)
+        for (const auto &surface2 : object2.object->surfaces)
         {
             if (surface1.isDoubleSided() || surface2.isDoubleSided())
             {
@@ -2548,44 +2556,32 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                     {
                         for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
                         {
-                            std::array<Point3, 3> triangle1{ object1->vertices[surface1.refs[0].index].vertex,
-                                                             object1->vertices[surface1.refs[i].index].vertex,
-                                                             object1->vertices[surface1.refs[i + 1].index].vertex };
+                            std::array<Point3, 3> triangle1{ object1.object->vertices[surface1.refs[0].index].vertex,
+                                                             object1.object->vertices[surface1.refs[i].index].vertex,
+                                                             object1.object->vertices[surface1.refs[i + 1].index].vertex };
 
                             if (degenerate(triangle1))
                                 continue;
 
-                            // translate if necessary TODO add rot and add a matrix stack someday
-                            if (!object1->locations.empty() && object1->locations[0].location != Point3{ 0, 0, 0 })
-                            {
-                                for (auto &triangle : triangle1)
-                                {
-                                    //triangle += object1->locations[0].location;
-                                }
-                            }
+                            for (auto &triangle : triangle1)
+                                object1.matrix.transformPoint(triangle);
 
                             for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
                             {
-                                std::array<Point3, 3> triangle2{ object2->vertices[surface2.refs[0].index].vertex,
-                                                                 object2->vertices[surface2.refs[j].index].vertex,
-                                                                 object2->vertices[surface2.refs[j + 1].index].vertex };
+                                std::array<Point3, 3> triangle2{ object2.object->vertices[surface2.refs[0].index].vertex,
+                                                                 object2.object->vertices[surface2.refs[j].index].vertex,
+                                                                 object2.object->vertices[surface2.refs[j + 1].index].vertex };
 
                                 if (degenerate(triangle2))
                                     continue;
 
-                                // translate if necessary TODO add rot and add a matrix stack someday
-                                if (!object2->locations.empty() && object2->locations[0].location != Point3{ 0, 0, 0 })
-                                {
-                                    for (auto &triangle : triangle2)
-                                    {
-                                        //triangle += object2->locations[0].location;
-                                    }
-                                }
+                                for (auto &triangle : triangle2)
+                                    object2.matrix.transformPoint(triangle);
 
                                 if (trianglesOverlap(triangle1, triangle2))
                                 {
                                     warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
-                                        object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
+                                        object2.object->getName() << " texture: " << object2.object->getTexture() << ")" << std::endl;
                                     showLine(in, surface2.line_pos);
                                     note(surface2.refs[0].line_number) << "ref" << std::endl;
                                     showLine(in, surface2.refs[0].line_pos);
@@ -2594,7 +2590,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                     note(surface2.refs[j + 1].line_number) << "ref" << std::endl;
                                     showLine(in, surface2.refs[j + 1].line_pos);
                                     note(surface1.line_number) << "first instance (object: " <<
-                                        object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
+                                        object1.object->getName() << " texture: " << object1.object->getTexture() << ")" << std::endl;
                                     showLine(in, surface1.line_pos);
                                     note(surface1.refs[0].line_number) << "ref" << std::endl;
                                     showLine(in, surface1.refs[0].line_pos);
@@ -2616,20 +2612,23 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                             if ((i & 1u) == 0)
                             {
                                 index1 = { i - 2, i - 1, i };
-                                triangle1 = { object1->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1->vertices[surface1.refs[i].index].vertex };
+                                triangle1 = { object1.object->vertices[surface1.refs[i - 2].index].vertex,
+                                              object1.object->vertices[surface1.refs[i - 1].index].vertex,
+                                              object1.object->vertices[surface1.refs[i].index].vertex };
                             }
                             else // reverse winding to match drawing order
                             {
                                 index1 = { i - 1, i - 2, i };
-                                triangle1 = { object1->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1->vertices[surface1.refs[i].index].vertex };
+                                triangle1 = { object1.object->vertices[surface1.refs[i - 1].index].vertex,
+                                              object1.object->vertices[surface1.refs[i - 2].index].vertex,
+                                              object1.object->vertices[surface1.refs[i].index].vertex };
                             }
 
                             if (!degenerate(triangle1))
                             {
+                                for (auto &triangle : triangle1)
+                                    object1.matrix.transformPoint(triangle);
+
                                 for (size_t j = 2; j < surface2.refs.size(); j++)
                                 {
                                     std::array<Point3, 3> triangle2;
@@ -2638,24 +2637,27 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                     if ((i & 1u) == 0)
                                     {
                                         index2 = { j - 2, j - 1, j };
-                                        triangle2 = { object2->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2->vertices[surface2.refs[j].index].vertex };
+                                        triangle2 = { object2.object->vertices[surface2.refs[j - 2].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j - 1].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j].index].vertex };
                                     }
                                     else // reverse winding to match drawing order
                                     {
                                         index2 = { j - 1, j - 2, j };
-                                        triangle2 = { object2->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2->vertices[surface2.refs[j].index].vertex };
+                                        triangle2 = { object2.object->vertices[surface2.refs[j - 1].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j - 2].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j].index].vertex };
                                     }
 
                                     if (!degenerate(triangle2))
                                     {
+                                        for (auto &triangle : triangle2)
+                                            object2.matrix.transformPoint(triangle);
+
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
                                             warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
-                                                object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
+                                                object2.object->getName() << " texture: " << object2.object->getTexture() << ")" << std::endl;
                                             showLine(in, surface2.line_pos);
                                             note(surface2.refs[index2[0]].line_number) << "ref" << std::endl;
                                             showLine(in, surface2.refs[index2[0]].line_pos);
@@ -2664,7 +2666,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                             note(surface2.refs[index2[2]].line_number) << "ref" << std::endl;
                                             showLine(in, surface2.refs[index2[2]].line_pos);
                                             note(surface1.line_number) << "first instance (object: " <<
-                                                object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
+                                                object1.object->getName() << " texture: " << object1.object->getTexture() << ")" << std::endl;
                                             showLine(in, surface1.line_pos);
                                             note(surface1.refs[index1[0]].line_number) << "ref" << std::endl;
                                             showLine(in, surface1.refs[index1[0]].line_pos);
@@ -2684,12 +2686,15 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                         {
                             for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
                             {
-                                const std::array<Point3, 3> triangle1{ object1->vertices[surface1.refs[0].index].vertex,
-                                                                       object1->vertices[surface1.refs[i].index].vertex,
-                                                                       object1->vertices[surface1.refs[i + 1].index].vertex };
+                                std::array<Point3, 3> triangle1{ object1.object->vertices[surface1.refs[0].index].vertex,
+                                                                 object1.object->vertices[surface1.refs[i].index].vertex,
+                                                                 object1.object->vertices[surface1.refs[i + 1].index].vertex };
 
                                 if (degenerate(triangle1))
                                     continue;
+
+                                for (auto &triangle : triangle1)
+                                    object1.matrix.transformPoint(triangle);
 
                                 for (size_t j = 2; j < surface2.refs.size(); j++)
                                 {
@@ -2699,24 +2704,27 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                     if ((i & 1u) == 0)
                                     {
                                         index2 = { j - 2, j - 1, j };
-                                        triangle2 = { object2->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2->vertices[surface2.refs[j].index].vertex };
+                                        triangle2 = { object2.object->vertices[surface2.refs[j - 2].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j - 1].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j].index].vertex };
                                     }
                                     else // reverse winding to match drawing order
                                     {
                                         index2 = { j - 1, j - 2, j };
-                                        triangle2 = { object2->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2->vertices[surface2.refs[j].index].vertex };
+                                        triangle2 = { object2.object->vertices[surface2.refs[j - 1].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j - 2].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j].index].vertex };
                                     }
 
                                     if (!degenerate(triangle2))
                                     {
+                                        for (auto &triangle : triangle2)
+                                            object2.matrix.transformPoint(triangle);
+
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
                                             warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
-                                                object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
+                                                object2.object->getName() << " texture: " << object2.object->getTexture() << ")" << std::endl;
                                             showLine(in, surface2.line_pos);
                                             note(surface2.refs[index2[0]].line_number) << "ref" << std::endl;
                                             showLine(in, surface2.refs[index2[0]].line_pos);
@@ -2725,7 +2733,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                             note(surface2.refs[index2[2]].line_number) << "ref" << std::endl;
                                             showLine(in, surface2.refs[index2[2]].line_pos);
                                             note(surface1.line_number) << "first instance (object: " <<
-                                                object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
+                                                object1.object->getName() << " texture: " << object1.object->getTexture() << ")" << std::endl;
                                             showLine(in, surface1.line_pos);
                                             note(surface1.refs[0].line_number) << "ref" << std::endl;
                                             showLine(in, surface1.refs[0].line_pos);
@@ -2749,35 +2757,41 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                             if ((i & 1u) == 0)
                             {
                                 index1 = { i - 2, i - 1, i };
-                                triangle1 = { object1->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1->vertices[surface1.refs[i].index].vertex };
+                                triangle1 = { object1.object->vertices[surface1.refs[i - 2].index].vertex,
+                                              object1.object->vertices[surface1.refs[i - 1].index].vertex,
+                                              object1.object->vertices[surface1.refs[i].index].vertex };
                             }
                             else // reverse winding to match drawing order
                             {
                                 index1 = { i - 1, i - 2, i };
-                                triangle1 = { object1->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1->vertices[surface1.refs[i].index].vertex };
+                                triangle1 = { object1.object->vertices[surface1.refs[i - 1].index].vertex,
+                                              object1.object->vertices[surface1.refs[i - 2].index].vertex,
+                                              object1.object->vertices[surface1.refs[i].index].vertex };
                             }
 
                             if (!degenerate(triangle1))
                             {
+                                for (auto &triangle : triangle1)
+                                    object1.matrix.transformPoint(triangle);
+
                                 if (surface2.refs.size() >= 3)
                                 {
                                     for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
                                     {
-                                        const std::array<Point3, 3> triangle2{ object2->vertices[surface2.refs[0].index].vertex,
-                                                                               object2->vertices[surface2.refs[j].index].vertex,
-                                                                               object2->vertices[surface2.refs[j + 1].index].vertex };
+                                        std::array<Point3, 3> triangle2{ object2.object->vertices[surface2.refs[0].index].vertex,
+                                                                         object2.object->vertices[surface2.refs[j].index].vertex,
+                                                                         object2.object->vertices[surface2.refs[j + 1].index].vertex };
 
                                         if (degenerate(triangle2))
                                             continue;
 
+                                        for (auto &triangle : triangle2)
+                                            object2.matrix.transformPoint(triangle);
+
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
                                             warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
-                                                object2->getName() << " texture: " << object2->getTexture() << ")" << std::endl;
+                                                object2.object->getName() << " texture: " << object2.object->getTexture() << ")" << std::endl;
                                             showLine(in, surface2.line_pos);
                                             note(surface2.refs[0].line_number) << "ref" << std::endl;
                                             showLine(in, surface2.refs[0].line_pos);
@@ -2786,7 +2800,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                             note(surface2.refs[j + 1].line_number) << "ref" << std::endl;
                                             showLine(in, surface2.refs[j + 1].line_pos);
                                             note(surface1.line_number) << "first instance (object: " <<
-                                                object1->getName() << " texture: " << object1->getTexture() << ")" << std::endl;
+                                                object1.object->getName() << " texture: " << object1.object->getTexture() << ")" << std::endl;
                                             showLine(in, surface1.line_pos);
                                             note(surface1.refs[index1[0]].line_number) << "ref" << std::endl;
                                             showLine(in, surface1.refs[index1[0]].line_pos);
@@ -2819,16 +2833,17 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
         start = std::chrono::system_clock::now();
     }
 
-    std::vector<const Object *> polys;
+    std::vector<ConstPoly> polys;
+    const Matrix matrix;
 
     for (const auto &world : m_objects)
-        addPoly(polys, world);
+        addConstPoly(polys, world, matrix);
 
     if (polys.empty())
         return;
 
-    int size1 = static_cast<int>(polys.size() - 1);
-    int size2 = static_cast<int>(polys.size());
+    const int size1 = static_cast<int>(polys.size() - 1);
+    const int size2 = static_cast<int>(polys.size());
     for (int i = 0; i < size1; ++i)
     {
         for (int j = i + 1; j < size2; ++j)
@@ -2837,7 +2852,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
 
     if (m_show_times)
     {
-        std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+        const std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
         std::cout << "checkOverlapping2SidedSurface done: duration: " << getDuration(start, end) << std::endl;
     }
 }
@@ -4659,7 +4674,7 @@ bool AC3D::cleanSurfaces()
 
     // clean them
     {
-        int size = static_cast<int>(polys.size());
+        const int size = static_cast<int>(polys.size());
 
         omp_set_dynamic(0);
         omp_set_num_threads(m_threads);
@@ -4673,7 +4688,7 @@ bool AC3D::cleanSurfaces()
 
     if (m_show_times)
     {
-        std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+        const std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
         std::cout << "cleanSurfaces done: duration: " << getDuration(start, end) << std::endl;
     }
 
@@ -4826,7 +4841,7 @@ void AC3D::Object::incrementMaterialIndex(size_t num_materials)
     }
 }
 
-void AC3D::Object::transform(const Matrix &matrix)
+void AC3D::Object::transform(const Matrix &currentMatrix)
 {
     Matrix thisMatrix;
 
@@ -4834,15 +4849,17 @@ void AC3D::Object::transform(const Matrix &matrix)
     {
         thisMatrix.setLocation(locations.back().location);
         locations.clear();
+        matrix.setLocation({ 0, 0, 0 });
     }
 
     if (!rotations.empty())
     {
         thisMatrix.setRotation(rotations.back().rotation);
         rotations.clear();
+        matrix.setRotation({1, 0, 0, 0, 1, 0, 0, 0, 1});
     }
 
-    const Matrix newMatrix = thisMatrix.multiply(matrix);
+    const Matrix newMatrix = thisMatrix.multiply(currentMatrix);
 
     if (type.type == "poly")
     {
@@ -5077,25 +5094,30 @@ void AC3D::combineTexture()
     world.kids[1].kids.insert(world.kids[1].kids.end(), new_transparent_objects.begin(), new_transparent_objects.end());
 }
 
-void AC3D::addPoly(std::vector<Object *> &polys, Object &object) const
+void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix) const
 {
-    // TODO check for loc and rot
-
     if (object.type.type == "poly")
-        polys.push_back(&object);
+    {
+        Matrix newMatrix = matrix;
+        newMatrix.multiply(object.matrix);
+        polys.emplace_back(&object, newMatrix);
+    }
     else if (object.type.type == "group" || object.type.type == "world")
     {
+        Matrix newMatrix = matrix;
+        newMatrix.multiply(object.matrix);
         for (auto &kid : object.kids)
-            addPoly(polys, kid);
+            addPoly(polys, kid, newMatrix);
     }
 }
 
 void AC3D::fixOverlapping2SidedSurface()
 {
-    std::vector<Object *> polys;
+    std::vector<Poly> polys;
+    const Matrix matrix;
 
     for (auto &world : m_objects)
-        addPoly(polys, world);
+        addPoly(polys, world, matrix);
 
     if (polys.empty())
         return;
@@ -5130,11 +5152,11 @@ void AC3D::fixOverlapping2SidedSurface()
     }
 }
 
-void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::set<Surface *> &surfaces)
+void AC3D::fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface *> &surfaces)
 {
-    for (auto &surface1 : object1->surfaces)
+    for (auto &surface1 : object1.object->surfaces)
     {
-        for (auto &surface2 : object2->surfaces)
+        for (auto &surface2 : object2.object->surfaces)
         {
             if (surface1.isDoubleSided() || surface2.isDoubleSided())
             {
@@ -5146,21 +5168,27 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
                     {
                         for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
                         {
-                            const std::array<Point3, 3> triangle1{ object1->vertices[surface1.refs[0].index].vertex,
-                                                                   object1->vertices[surface1.refs[i].index].vertex,
-                                                                   object1->vertices[surface1.refs[i + 1].index].vertex };
+                            std::array<Point3, 3> triangle1{ object1.object->vertices[surface1.refs[0].index].vertex,
+                                                             object1.object->vertices[surface1.refs[i].index].vertex,
+                                                             object1.object->vertices[surface1.refs[i + 1].index].vertex };
 
                             if (degenerate(triangle1))
                                 continue;
 
+                            for (auto &triangle : triangle1)
+                                object1.matrix.transformPoint(triangle);
+
                             for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
                             {
-                                const std::array<Point3, 3> triangle2{ object2->vertices[surface2.refs[0].index].vertex,
-                                                                       object2->vertices[surface2.refs[j].index].vertex,
-                                                                       object2->vertices[surface2.refs[j + 1].index].vertex };
+                                std::array<Point3, 3> triangle2{ object2.object->vertices[surface2.refs[0].index].vertex,
+                                                                 object2.object->vertices[surface2.refs[j].index].vertex,
+                                                                 object2.object->vertices[surface2.refs[j + 1].index].vertex };
 
                                 if (degenerate(triangle2))
                                     continue;
+
+                                for (auto &triangle : triangle2)
+                                    object2.matrix.transformPoint(triangle);
 
                                 if (trianglesOverlap(triangle1, triangle2))
                                 {
@@ -5178,16 +5206,19 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
 
                             if ((i & 1u) == 0)
                             {
-                                triangle1 = { object1->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1->vertices[surface1.refs[i].index].vertex };
+                                triangle1 = { object1.object->vertices[surface1.refs[i - 2].index].vertex,
+                                              object1.object->vertices[surface1.refs[i - 1].index].vertex,
+                                              object1.object->vertices[surface1.refs[i].index].vertex };
                             }
                             else // reverse winding to match drawing order
                             {
-                                triangle1 = { object1->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1->vertices[surface1.refs[i].index].vertex };
+                                triangle1 = { object1.object->vertices[surface1.refs[i - 1].index].vertex,
+                                              object1.object->vertices[surface1.refs[i - 2].index].vertex,
+                                              object1.object->vertices[surface1.refs[i].index].vertex };
                             }
+
+                            for (auto &triangle : triangle1)
+                                object1.matrix.transformPoint(triangle);
 
                             if (!degenerate(triangle1))
                             {
@@ -5197,19 +5228,22 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
 
                                     if ((i & 1u) == 0)
                                     {
-                                        triangle2 = { object2->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2->vertices[surface2.refs[j].index].vertex };
+                                        triangle2 = { object2.object->vertices[surface2.refs[j - 2].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j - 1].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j].index].vertex };
                                     }
                                     else // reverse winding to match drawing order
                                     {
-                                        triangle2 = { object2->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2->vertices[surface2.refs[j].index].vertex };
+                                        triangle2 = { object2.object->vertices[surface2.refs[j - 1].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j - 2].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j].index].vertex };
                                     }
 
                                     if (!degenerate(triangle2))
                                     {
+                                        for (auto &triangle : triangle2)
+                                            object2.matrix.transformPoint(triangle);
+
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
                                             surfaces.insert(&surface1);
@@ -5226,12 +5260,15 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
                         {
                             for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
                             {
-                                const std::array<Point3, 3> triangle1{ object1->vertices[surface1.refs[0].index].vertex,
-                                                                       object1->vertices[surface1.refs[i].index].vertex,
-                                                                       object1->vertices[surface1.refs[i + 1].index].vertex };
+                                std::array<Point3, 3> triangle1{ object1.object->vertices[surface1.refs[0].index].vertex,
+                                                                 object1.object->vertices[surface1.refs[i].index].vertex,
+                                                                 object1.object->vertices[surface1.refs[i + 1].index].vertex };
 
                                 if (degenerate(triangle1))
                                     continue;
+
+                                for (auto &triangle : triangle1)
+                                    object1.matrix.transformPoint(triangle);
 
                                 for (size_t j = 2; j < surface2.refs.size(); j++)
                                 {
@@ -5239,19 +5276,22 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
 
                                     if ((i & 1u) == 0)
                                     {
-                                        triangle2 = { object2->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2->vertices[surface2.refs[j].index].vertex };
+                                        triangle2 = { object2.object->vertices[surface2.refs[j - 2].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j - 1].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j].index].vertex };
                                     }
                                     else // reverse winding to match drawing order
                                     {
-                                        triangle2 = { object2->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2->vertices[surface2.refs[j].index].vertex };
+                                        triangle2 = { object2.object->vertices[surface2.refs[j - 1].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j - 2].index].vertex,
+                                                      object2.object->vertices[surface2.refs[j].index].vertex };
                                     }
 
                                     if (!degenerate(triangle2))
                                     {
+                                        for (auto &triangle : triangle2)
+                                            object2.matrix.transformPoint(triangle);
+
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
                                             surfaces.insert(&surface1);
@@ -5270,29 +5310,35 @@ void AC3D::fixOverlapping2SidedSurface(Object *object1, Object *object2, std::se
 
                             if ((i & 1u) == 0)
                             {
-                                triangle1 = { object1->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1->vertices[surface1.refs[i].index].vertex };
+                                triangle1 = { object1.object->vertices[surface1.refs[i - 2].index].vertex,
+                                              object1.object->vertices[surface1.refs[i - 1].index].vertex,
+                                              object1.object->vertices[surface1.refs[i].index].vertex };
                             }
                             else // reverse winding to match drawing order
                             {
-                                triangle1 = { object1->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1->vertices[surface1.refs[i].index].vertex };
+                                triangle1 = { object1.object->vertices[surface1.refs[i - 1].index].vertex,
+                                              object1.object->vertices[surface1.refs[i - 2].index].vertex,
+                                              object1.object->vertices[surface1.refs[i].index].vertex };
                             }
 
                             if (!degenerate(triangle1))
                             {
+                                for (auto &triangle : triangle1)
+                                    object1.matrix.transformPoint(triangle);
+
                                 if (surface2.refs.size() >= 3)
                                 {
                                     for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
                                     {
-                                        const std::array<Point3, 3> triangle2{ object2->vertices[surface2.refs[0].index].vertex,
-                                                                               object2->vertices[surface2.refs[j].index].vertex,
-                                                                               object2->vertices[surface2.refs[j + 1].index].vertex };
+                                        std::array<Point3, 3> triangle2{ object2.object->vertices[surface2.refs[0].index].vertex,
+                                                                         object2.object->vertices[surface2.refs[j].index].vertex,
+                                                                         object2.object->vertices[surface2.refs[j + 1].index].vertex };
 
                                         if (degenerate(triangle2))
                                             continue;
+
+                                        for (auto &triangle : triangle2)
+                                            object2.matrix.transformPoint(triangle);
 
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
@@ -5503,7 +5549,7 @@ std::string AC3D::getTime(const std::chrono::time_point<std::chrono::system_cloc
 {
     const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()) % 1000;
     const auto local_time = std::chrono::system_clock::to_time_t(time);
-    std::tm bt = *std::localtime(&local_time);
+    const std::tm bt = *std::localtime(&local_time);
     std::ostringstream oss;
     oss << std::put_time(&bt, "%a %b %d %H:%M:%S") << "." << std::setfill('0') << std::setw(3) << ms.count() << " " << std::put_time(&bt, "%p");
     return oss.str();

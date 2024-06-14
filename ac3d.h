@@ -704,7 +704,7 @@ private:
     class Matrix : public std::array<std::array<double, 4>, 4>
     {
     public:
-        Matrix()
+        Matrix() // identity matrix
         {
             (*this)[0][0] = 1; (*this)[0][1] = 0; (*this)[0][2] = 0; (*this)[0][3] = 0;
             (*this)[1][0] = 0; (*this)[1][1] = 1; (*this)[1][2] = 0; (*this)[1][3] = 0;
@@ -1193,6 +1193,7 @@ private:
         Numvsurf numsurf;
         std::vector<Surface> surfaces;
         std::vector<Object> kids;
+        Matrix matrix;
 
         bool empty() const
         {
@@ -1294,7 +1295,7 @@ private:
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
         void incrementMaterialIndex(size_t num_materials);
-        void transform(const Matrix &matrix);
+        void transform(const Matrix &currentMatrix);
         void removeKids(const RemoveInfo &remove_info);
         bool splitPolygons();
         bool addObject(const Object &object);
@@ -1379,6 +1380,18 @@ private:
     bool m_has_world = false;
     std::map<std::string, bool> m_transparent_textures;
 
+    struct ConstPoly
+    {
+        const Object *object;
+        Matrix matrix;
+    };
+
+    struct Poly
+    {
+        Object *object;
+        Matrix matrix;
+    };
+
     bool readHeader(std::istream &in);
     void writeHeader(std::ostream &out, const Header &header) const;
     bool readTypeAndColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next);
@@ -1406,7 +1419,7 @@ private:
     void checkTrailing(std::istringstream &iss);
     void checkUnusedMaterial(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in);
-    void checkOverlapping2SidedSurface(std::istream &in, const Object *object1, const Object *object2);
+    void checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &object1, const ConstPoly &object2);
     void checkDuplicateMaterials(std::istream &in);
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);
@@ -1443,9 +1456,9 @@ private:
     bool splitMultipleMat(std::vector<Object> &kids);
     void transform(const Matrix &matrix);
     void combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects);
-    void addPoly(std::vector<const Object *> &polys, const Object &object) const;
-    void addPoly(std::vector<Object *> &polys, Object &object) const;
-    void fixOverlapping2SidedSurface(Object *object1, Object *object2, std::set<Surface *> &surfaces);
+    void addConstPoly(std::vector<ConstPoly> &polys, const Object &object, const Matrix &matrix) const;
+    void addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix) const;
+    void fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface *> &surfaces);
     bool hasOpaqueTexture(const Object &object);
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);

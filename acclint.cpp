@@ -898,7 +898,7 @@ int main(int argc, char *argv[])
 
     if (show_times)
     {
-        std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
+        const std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
         std::cout << "acclint finished at " << AC3D::getTime(end) << " duration: " << AC3D::getDuration(start, end) << std::endl;
     }
 
