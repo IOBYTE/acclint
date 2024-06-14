@@ -2548,21 +2548,39 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                     {
                         for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
                         {
-                            const std::array<Point3, 3> triangle1{ object1->vertices[surface1.refs[0].index].vertex,
-                                                                   object1->vertices[surface1.refs[i].index].vertex,
-                                                                   object1->vertices[surface1.refs[i + 1].index].vertex };
+                            std::array<Point3, 3> triangle1{ object1->vertices[surface1.refs[0].index].vertex,
+                                                             object1->vertices[surface1.refs[i].index].vertex,
+                                                             object1->vertices[surface1.refs[i + 1].index].vertex };
 
                             if (degenerate(triangle1))
                                 continue;
 
+                            // translate if necessary TODO add rot and add a matrix stack someday
+                            if (!object1->locations.empty() && object1->locations[0].location != Point3{ 0, 0, 0 })
+                            {
+                                for (auto &triangle : triangle1)
+                                {
+                                    //triangle += object1->locations[0].location;
+                                }
+                            }
+
                             for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
                             {
-                                const std::array<Point3, 3> triangle2{ object2->vertices[surface2.refs[0].index].vertex,
-                                                                       object2->vertices[surface2.refs[j].index].vertex,
-                                                                       object2->vertices[surface2.refs[j + 1].index].vertex };
+                                std::array<Point3, 3> triangle2{ object2->vertices[surface2.refs[0].index].vertex,
+                                                                 object2->vertices[surface2.refs[j].index].vertex,
+                                                                 object2->vertices[surface2.refs[j + 1].index].vertex };
 
                                 if (degenerate(triangle2))
                                     continue;
+
+                                // translate if necessary TODO add rot and add a matrix stack someday
+                                if (!object2->locations.empty() && object2->locations[0].location != Point3{ 0, 0, 0 })
+                                {
+                                    for (auto &triangle : triangle2)
+                                    {
+                                        //triangle += object2->locations[0].location;
+                                    }
+                                }
 
                                 if (trianglesOverlap(triangle1, triangle2))
                                 {
@@ -2583,7 +2601,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                     note(surface1.refs[i].line_number) << "ref" << std::endl;
                                     showLine(in, surface1.refs[j].line_pos);
                                     note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
-                                    showLine(in, surface1.refs[j + 1].line_pos);
+                                    showLine(in, surface1.refs[i + 1].line_pos);
                                 }
                             }
                         }
@@ -2714,7 +2732,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Object *object1
                                             note(surface1.refs[i].line_number) << "ref" << std::endl;
                                             showLine(in, surface1.refs[j].line_pos);
                                             note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
-                                            showLine(in, surface1.refs[j + 1].line_pos);
+                                            showLine(in, surface1.refs[i + 1].line_pos);
                                         }
                                     }
                                 }

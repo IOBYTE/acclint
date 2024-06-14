@@ -660,6 +660,13 @@ private:
         {
             return Point3{ -x(), -y(), -z() };
         }
+        Point3 &operator += (const Point3 &other)
+        {
+            x(x() + other.x());
+            y(y() + other.y());
+            z(z() + other.z());
+            return *this;
+        }
         double dot(const Point3 &other) const
         {
             return x() * other.x() + y() * other.y() + z() * other.z();
