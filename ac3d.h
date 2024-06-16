@@ -1281,6 +1281,11 @@ private:
 
             return none;
         }
+        void setName(const std::string &name)
+        {
+            names.resize(1);
+            names[0].name = quoted_string(name);
+        }
         const std::string &getTexture() const
         {
             if (!textures.empty())
@@ -1379,6 +1384,7 @@ private:
     std::vector<std::string> m_texture_paths;
     bool m_has_world = false;
     std::map<std::string, bool> m_transparent_textures;
+    bool m_rename_combine_texture = false;
 
     struct ConstPoly
     {

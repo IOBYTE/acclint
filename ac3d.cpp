@@ -3161,7 +3161,7 @@ void AC3D::checkDifferentSURF(std::istream& in, const Object& object)
     {
         if (object.surfaces[i].flags != flags)
         {
-            warning(object.surfaces[i].line_number) << "different SURF" << std::endl;
+            warning(object.surfaces[i].line_number) << "different SURF (object: " << object.getName() << ")" << std::endl;
             showLine(in, object.surfaces[i].line_pos);
             note(object.surfaces[0].line_number) << "SURF" << std::endl;
             showLine(in, object.surfaces[0].line_pos);
@@ -4179,6 +4179,14 @@ bool AC3D::setMaterialUsed(size_t index)
 
 bool AC3D::clean()
 {
+    std::chrono::system_clock::time_point start;
+
+    if (m_show_times)
+    {
+        std::cout << "clean starting" << std::endl;
+        start = std::chrono::system_clock::now();
+    }
+
     bool cleaned = false;
 
     cleaned |= cleanMaterials();
@@ -4186,6 +4194,12 @@ bool AC3D::clean()
     cleaned |= cleanSurfaces();
     cleaned |= cleanVertices(); // cleanSurfaces may create unused vertices
     cleaned |= cleanObjects();
+
+    if (m_show_times)
+    {
+        const std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+        std::cout << "clean done: duration: " << getDuration(start, end) << std::endl;
+    }
 
     return cleaned;
 }
@@ -4534,7 +4548,23 @@ bool AC3D::cleanObjects(std::vector<Object> &objects)
 
 bool AC3D::cleanVertices()
 {
-    return cleanVertices(m_objects);
+    std::chrono::system_clock::time_point start;
+
+    if (m_show_times)
+    {
+        std::cout << "cleanVertices starting" << std::endl;
+        start = std::chrono::system_clock::now();
+    }
+
+    bool result = cleanVertices(m_objects);
+
+    if (m_show_times)
+    {
+        const std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+        std::cout << "cleanVertices done: duration: " << getDuration(start, end) << std::endl;
+    }
+
+    return result;
 }
 
 bool AC3D::cleanVertices(std::vector<Object> &objects)
@@ -5043,7 +5073,7 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, st
             Object group;
             group.type.type = "group";
             transparent_objects.push_back(group);
-            std::string name("transparent_object");
+            std::string name("transparent_group");
             name.append(std::to_string(transparent_objects.size()));
             Name quoted_name;
             quoted_name.name = quoted_string(name);
@@ -5061,10 +5091,13 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, st
             }
         }
         objects.push_back(object);
-        std::string name("object");
-        name.append(std::to_string(objects.size()));
-        if (objects.back().names.size() == 1)
-            objects.back().names[0].name = quoted_string(name);
+        if (m_rename_combine_texture)
+        {
+            std::string name("object");
+            name.append(std::to_string(objects.size()));
+            if (objects.back().names.size() == 1)
+                objects.back().names[0].name = quoted_string(name);
+        }
         return;
     }
 
@@ -5077,6 +5110,14 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, st
 
 void AC3D::combineTexture()
 {
+    std::chrono::system_clock::time_point start;
+
+    if (m_show_times)
+    {
+        std::cout << "combineTexture starting" << std::endl;
+        start = std::chrono::system_clock::now();
+    }
+
     flatten();
 
     std::vector<Object> new_objects;
@@ -5104,6 +5145,12 @@ void AC3D::combineTexture()
     transparent.names.emplace_back(transparent_name);
     world.kids.push_back(transparent);
     world.kids[1].kids.insert(world.kids[1].kids.end(), new_transparent_objects.begin(), new_transparent_objects.end());
+
+    if (m_show_times)
+    {
+        const std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+        std::cout << "combineTexture done: duration: " << getDuration(start, end) << std::endl;
+    }
 }
 
 void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix) const
@@ -5579,8 +5626,8 @@ std::string AC3D::getDuration(const std::chrono::time_point<std::chrono::system_
     if (hrs.count() > 0)
         oss << hrs.count() << " hours ";
     if (mins.count() > 0)
-        oss << hrs.count() << " minutes ";
-    oss << secs.count() << "." << std::setfill('0') << std::setw(6) << ms.count() << " seconds" << std::endl;
+        oss << mins.count() << " minutes ";
+    oss << secs.count() << "." << std::setfill('0') << std::setw(6) << ms.count() << " seconds";
 
     return oss.str();
 }
