@@ -1,4 +1,4 @@
-test1.ac:19 warning: different SURF
+test1.ac:19 warning: different SURF (object: test)
 SURF 0x20
 ^
 test1.ac:13 note: SURF
