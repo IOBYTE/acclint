@@ -33,6 +33,81 @@
 
 class AC3D
 {
+#define CHECK(func, var, state)                        \
+public:                                                \
+    void func(bool value) { var = value; }             \
+    bool func() const { return var; }                  \
+    size_t func##Count() const { return var##_count; } \
+private:                                               \
+    bool var = state;                                  \
+    size_t var##_count = 0;
+
+    // warnings
+    CHECK(trailingText, m_trailing_text, true)
+    CHECK(blankLine, m_blank_line, false)
+    CHECK(duplicateVertices, m_duplicate_vertices, true)
+    CHECK(unusedVertex, m_unused_vertex, true)
+    CHECK(invalidNormal, m_invalid_normal, true)
+    CHECK(invalidMaterial, m_invalid_material, true)
+    CHECK(invalidRefCount, m_invalid_ref_count, true)
+    CHECK(extraUVCoordinates, m_extra_uv_coordinates, true)
+    CHECK(duplicateMaterials, m_duplicate_materials, true)
+    CHECK(unusedMaterial, m_unused_material, true)
+    CHECK(missingSurfaces, m_missing_surfaces, true)
+    CHECK(duplicateSurfaces, m_duplicate_surfaces, true)
+    CHECK(duplicateSurfacesOrder, m_duplicate_surfaces_order, true)
+    CHECK(duplicateSurfacesWinding, m_duplicate_surfaces_winding, true)
+    CHECK(duplicateSurfaceVertices, m_duplicate_surface_vertices, true)
+    CHECK(collinearSurfaceVertices, m_collinear_surface_vertices, true)
+    CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
+    CHECK(surfaceSelfIntersecting, m_surface_self_intersecting, true)
+    CHECK(surfaceNotCoplanar, m_surface_not_coplanar, true)
+    CHECK(surfaceNotConvex, m_surface_not_convex, true)
+    CHECK(surfaceNoTexture, m_surface_no_texture, true)
+    CHECK(surfaceStripHole, m_surface_strip_hole, false)
+    CHECK(surfaceStripSize, m_surface_strip_size, false)
+    CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
+    CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
+    CHECK(surface2SidedOpaque, m_surface_2_sided_opaque, false)
+    CHECK(duplicateTriangles, m_duplicate_triangles, false)
+    CHECK(floatingPoint, m_floating_point, true)
+    CHECK(emptyObject, m_empty_object, true)
+    CHECK(extraObject, m_extra_object, true)
+    CHECK(missingKids, m_missing_kids, true)
+    CHECK(missingTexture, m_missing_texture, true)
+    CHECK(duplicateTexture, m_duplicate_texture, true)
+    CHECK(ambiguousTexture, m_ambiguous_texture, true)
+    CHECK(multipleCrease, m_multiple_crease, true)
+    CHECK(multipleFolded, m_multiple_folded, true)
+    CHECK(multipleHidden, m_multiple_hidden, true)
+    CHECK(multipleLoc, m_multiple_loc, true)
+    CHECK(multipleLocked, m_multiple_locked, true)
+    CHECK(multipleName, m_multiple_name, true)
+    CHECK(multipleRot, m_multiple_rot, true)
+    CHECK(multipleSubdiv, m_multiple_subdiv, true)
+    CHECK(multipleTexoff, m_multiple_texoff, true)
+    CHECK(multipleTexrep, m_multiple_texrep, true)
+    CHECK(multipleTexture, m_multiple_texture, true)
+    CHECK(differentUV, m_different_uv, true)
+    CHECK(groupWithGeometry, m_group_with_geometry, true)
+    CHECK(multipleWorld, m_multiple_world, true)
+    CHECK(differentSURF, m_different_surf, true)
+    CHECK(differentMat, m_different_mat, true)
+    CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
+
+    // errors
+    CHECK(invalidVertexIndex, m_invalid_vertex_index, true)
+    CHECK(invalidTextureCoordinate, m_invalid_texture_coordinate, true)
+    CHECK(invalidMaterialIndex, m_invalid_material_index, true)
+    CHECK(invalidSurfaceType, m_invalid_surface_type, true)
+    CHECK(invalidToken, m_invalid_token, true)
+    CHECK(missingUVCoordinates, m_missing_uv_coordinates, true)
+#undef CHECK
+
+    void showLine(std::istringstream &in);
+    void showLine(const std::istringstream &in, const std::streampos &pos);
+    void showLine(std::istream &in, const std::streampos &pos, int offset = 0);
+
 public:
     enum class DumpType { group, poly, surf};
 
@@ -73,462 +148,6 @@ public:
     {
         return m_not_ac3d_file;
     }
-    void trailingText(bool value)
-    {
-        m_trailing_text = value;
-    }
-    bool trailingText() const
-    {
-        return m_trailing_text;
-    }
-    void blankLine(bool value)
-    {
-        m_blank_line = value;
-    }
-    bool blankLine() const
-    {
-        return m_blank_line;
-    }
-    void duplicateVertices(bool value)
-    {
-        m_duplicate_vertices = value;
-    }
-    bool duplicateVertices() const
-    {
-        return m_duplicate_vertices;
-    }
-    void unusedVertex(bool value)
-    {
-        m_unused_vertex = value;
-    }
-    bool unusedVertex() const
-    {
-        return m_unused_vertex;
-    }
-    void invalidNormal(bool value)
-    {
-        m_invalid_normal = value;
-    }
-    bool invalidNormal() const
-    {
-        return m_invalid_normal;
-    }
-    void invalidVertexIndex(bool value)
-    {
-        m_invalid_vertex_index = value;
-    }
-    bool invalidVertexIndex() const
-    {
-        return m_invalid_vertex_index;
-    }
-    void invalidTextureCoordinate(bool value)
-    {
-        m_invalid_texture_coordinate = value;
-    }
-    bool invalidTextureCoordinate() const
-    {
-        return m_invalid_texture_coordinate;
-    }
-    void invalidMaterial(bool value)
-    {
-        m_invalid_material = value;
-    }
-    bool invalidMaterial() const
-    {
-        return m_invalid_material;
-    }
-    void invalidMaterialIndex(bool value)
-    {
-        m_invalid_material_index = value;
-    }
-    bool invalidMaterialIndex() const
-    {
-        return m_invalid_material_index;
-    }
-    void invalidRefCount(bool value)
-    {
-        m_invalid_ref_count = value;
-    }
-    bool invalidRefCount() const
-    {
-        return m_invalid_ref_count;
-    }
-    void missingUVCoordinates(bool value)
-    {
-        m_missing_uv_coordinates = value;
-    }
-    bool missingUVCoordinates() const
-    {
-        return m_missing_uv_coordinates;
-    }
-    void extraUVCoordinates(bool value)
-    {
-        m_extra_uv_coordinates = value;
-    }
-    bool extraUVCoordinates() const
-    {
-        return m_extra_uv_coordinates;
-    }
-    void invalidSurfaceType(bool value)
-    {
-        m_invalid_surface_type = value;
-    }
-    bool invalidSurfaceType() const
-    {
-        return m_invalid_surface_type;
-    }
-    void invalidToken(bool value)
-    {
-        m_invalid_token = value;
-    }
-    bool invalidToken() const
-    {
-        return m_invalid_token;
-    }
-    void duplicateMaterials(bool value)
-    {
-        m_duplicate_materials = value;
-    }
-    bool duplicateMaterials() const
-    {
-        return m_duplicate_materials;
-    }
-    void unusedMaterial(bool value)
-    {
-        m_unused_material = value;
-    }
-    bool unusedMaterial() const
-    {
-        return m_unused_material;
-    }
-    void missingSurfaces(bool value)
-    {
-        m_missing_surfaces = value;
-    }
-    bool missingSurfaces() const
-    {
-        return m_missing_surfaces;
-    }
-    void duplicateSurfaces(bool value)
-    {
-        m_duplicate_surfaces = value;
-    }
-    bool duplicateSurfaces() const
-    {
-        return m_duplicate_surfaces;
-    }
-    void duplicateSurfacesOrder(bool value)
-    {
-        m_duplicate_surfaces_order = value;
-    }
-    bool duplicateSurfacesOrder() const
-    {
-        return m_duplicate_surfaces_order;
-    }
-    void duplicateSurfacesWinding(bool value)
-    {
-        m_duplicate_surfaces_winding = value;
-    }
-    bool duplicateSurfacesWinding() const
-    {
-        return m_duplicate_surfaces_winding;
-    }
-    void duplicateSurfaceVertices(bool value)
-    {
-        m_duplicate_surface_vertices = value;
-    }
-    bool duplicateSurfaceVertices() const
-    {
-        return m_duplicate_surface_vertices;
-    }
-    void collinearSurfaceVertices(bool value)
-    {
-        m_collinear_surface_vertices = value;
-    }
-    bool collinearSurfaceVertices() const
-    {
-        return m_collinear_surface_vertices;
-    }
-    void multiplePolygonSurface(bool value)
-    {
-        m_multiple_polygon_surface = value;
-    }
-    bool multiplePolygonSurface() const
-    {
-        return m_multiple_polygon_surface;
-    }
-    void surfaceSelfIntersecting(bool value)
-    {
-        m_surface_self_intersecting = value;
-    }
-    bool surfaceSelfIntersecting() const
-    {
-        return m_surface_self_intersecting;
-    }
-    void surfaceNotCoplanar(bool value)
-    {
-        m_surface_not_coplanar = value;
-    }
-    bool surfaceNotCoplanar() const
-    {
-        return m_surface_not_coplanar;
-    }
-    void surfaceNotConvex(bool value)
-    {
-        m_surface_not_convex = value;
-    }
-    bool surfaceNotConvex() const
-    {
-        return m_surface_not_convex;
-    }
-    void surfaceNoTexture(bool value)
-    {
-        m_surface_no_texture = value;
-    }
-    bool surfaceNoTexture() const
-    {
-        return m_surface_no_texture;
-    }
-    void surfaceStripHole(bool value)
-    {
-        m_surface_strip_hole = value;
-    }
-    bool surfaceStripHole() const
-    {
-        return m_surface_strip_hole;
-    }
-    void surfaceStripSize(bool value)
-    {
-        m_surface_strip_size = value;
-    }
-    bool surfaceStripSize() const
-    {
-        return m_surface_strip_size;
-    }
-    void surfaceStripDegenerate(bool value)
-    {
-        m_surface_strip_degenerate = value;
-    }
-    bool surfaceStripDegenerate() const
-    {
-        return m_surface_strip_degenerate;
-    }
-    void surfaceStripDuplicateTriangles(bool value)
-    {
-        m_surface_strip_duplicate_triangles = value;
-    }
-    bool surfaceStripDuplicateTriangles() const
-    {
-        return m_surface_strip_duplicate_triangles;
-    }
-    void surface2SidedOpaque(bool value)
-    {
-        m_surface_2_sided_opaque = value;
-    }
-    bool surface2SidedOpaque() const
-    {
-        return m_surface_2_sided_opaque;
-    }
-    void duplicateTriangles(bool value)
-    {
-        m_duplicate_triangles = value;
-    }
-    bool duplicateTriangles() const
-    {
-        return m_duplicate_triangles;
-    }
-    void floatingPoint(bool value)
-    {
-        m_floating_point = value;
-    }
-    bool floatingPoint() const
-    {
-        return m_floating_point;
-    }
-    void emptyObject(bool value)
-    {
-        m_empty_object = value;
-    }
-    bool emptyObject() const
-    {
-        return m_empty_object;
-    }
-    void extraObject(bool value)
-    {
-        m_extra_object = value;
-    }
-    bool extraObject() const
-    {
-        return m_extra_object;
-    }
-    void missingKids(bool value)
-    {
-        m_missing_kids = value;
-    }
-    bool missingKids() const
-    {
-        return m_missing_kids;
-    }
-    void missingTexture(bool value)
-    {
-        m_missing_texture = value;
-    }
-    bool missingTexture() const
-    {
-        return m_missing_texture;
-    }
-    void duplicateTexture(bool value)
-    {
-        m_duplicate_texture = value;
-    }
-    bool duplicateTexture() const
-    {
-        return m_duplicate_texture;
-    }
-    void ambiguousTexture(bool value)
-    {
-        m_ambiguous_texture = value;
-    }
-    bool ambiguousTexture() const
-    {
-        return m_ambiguous_texture;
-    }
-    void multipleCrease(bool value)
-    {
-        m_multiple_crease = value;
-    }
-    bool multipleCrease() const
-    {
-        return m_multiple_crease;
-    }
-    void multipleFolded(bool value)
-    {
-        m_multiple_folded = value;
-    }
-    bool multipleFolded() const
-    {
-        return m_multiple_folded;
-    }
-    void multipleHidden(bool value)
-    {
-        m_multiple_hidden = value;
-    }
-    bool multipleHidden() const
-    {
-        return m_multiple_hidden;
-    }
-    void multipleLoc(bool value)
-    {
-        m_multiple_loc = value;
-    }
-    bool multipleLoc() const
-    {
-        return m_multiple_loc;
-    }
-    void multipleLocked(bool value)
-    {
-        m_multiple_locked = value;
-    }
-    bool multipleLocked() const
-    {
-        return m_multiple_locked;
-    }
-    void multipleName(bool value)
-    {
-        m_multiple_name = value;
-    }
-    bool multipleName() const
-    {
-        return m_multiple_name;
-    }
-    void multipleRot(bool value)
-    {
-        m_multiple_rot = value;
-    }
-    bool multipleRot() const
-    {
-        return m_multiple_rot;
-    }
-    void multipleSubdiv(bool value)
-    {
-        m_multiple_subdiv = value;
-    }
-    bool multipleSubdiv() const
-    {
-        return m_multiple_subdiv;
-    }
-    void multipleTexoff(bool value)
-    {
-        m_multiple_texoff = value;
-    }
-    bool multipleTexoff() const
-    {
-        return m_multiple_texoff;
-    }
-    void multipleTexrep(bool value)
-    {
-        m_multiple_texrep= value;
-    }
-    bool multipleTexrep() const
-    {
-        return m_multiple_texrep;
-    }
-    void multipleTexture(bool value)
-    {
-        m_multiple_texture = value;
-    }
-    bool multipleTexture() const
-    {
-        return m_multiple_texture;
-    }
-    void differentUV(bool value)
-    {
-        m_different_uv = value;
-    }
-    bool differentUV() const
-    {
-        return m_different_uv;
-    }
-    void groupWithGeometry(bool value)
-    {
-        m_group_with_geometry = value;
-    }
-    bool groupWithGeometry() const
-    {
-        return m_group_with_geometry;
-    }
-    void multipleWorld(bool value)
-    {
-        m_multiple_world = value;
-    }
-    bool multipleWorld() const
-    {
-        return m_multiple_world;
-    }
-    void differentSURF(bool value)
-    {
-        m_different_surf = value;
-    }
-    bool differentSURF() const
-    {
-        return m_different_surf;
-    }
-    void differentMat(bool value)
-    {
-        m_different_mat = value;
-    }
-    bool differentMat() const
-    {
-        return m_different_mat;
-    }
-    void overlapping2SidedSurface(bool value)
-    {
-        m_overlapping_2_sided_surface = value;
-    }
-    bool overlapping2SidedSurface() const
-    {
-        return m_overlapping_2_sided_surface;
-    }
     void texturePaths(const std::vector<std::string> &paths)
     {
         m_texture_paths = paths;
@@ -558,6 +177,22 @@ public:
     unsigned int threads() const
     {
         return m_threads;
+    }
+    void quite(bool value)
+    {
+        m_quite = value;
+    }
+    bool quite() const
+    {
+        return m_quite;
+    }
+    void summary(bool value)
+    {
+        m_summary = value;
+    }
+    bool summary() const
+    {
+        return m_summary;
     }
     bool clean();
     bool cleanObjects();
@@ -1307,6 +942,18 @@ private:
         bool sameTextures(const Object &object) const;
     };
 
+    struct NullStream : public std::ostream
+    {
+    public:
+        NullStream() : std::ostream(nullptr) {}
+        NullStream(const NullStream &) : std::ostream(nullptr) {}
+
+        template<typename T>
+        NullStream &operator<<(T const &) { return *this; }
+    };
+
+    NullStream      m_null_stream;
+
     std::string     m_file;
     std::string     m_line;
     size_t          m_line_number = 0;
@@ -1318,63 +965,8 @@ private:
     bool            m_is_ac = false;
     bool            m_crlf = false;
     bool            m_not_ac3d_file = true;
-    bool            m_trailing_text = true;
-    bool            m_blank_line = false;
-    bool            m_duplicate_vertices = true;
-    bool            m_unused_vertex = true;
-    bool            m_invalid_vertex_index = true;
-    bool            m_invalid_texture_coordinate = true;
-    bool            m_invalid_normal = true;
-    bool            m_invalid_material = true;
-    bool            m_invalid_material_index = true;
-    bool            m_invalid_ref_count = true;
-    bool            m_extra_uv_coordinates = true;
-    bool            m_missing_uv_coordinates = true;
-    bool            m_invalid_surface_type = true;
-    bool            m_invalid_token = true;
-    bool            m_duplicate_materials = true;
-    bool            m_unused_material = true;
-    bool            m_missing_surfaces = true;
-    bool            m_duplicate_surfaces = true;
-    bool            m_duplicate_surfaces_order = true;
-    bool            m_duplicate_surfaces_winding = true;
-    bool            m_duplicate_surface_vertices = true;
-    bool            m_collinear_surface_vertices = true;
-    bool            m_surface_self_intersecting = true;
-    bool            m_surface_not_coplanar = true;
-    bool            m_surface_not_convex = true;
-    bool            m_surface_no_texture = true;
-    bool            m_surface_strip_hole = false;
-    bool            m_surface_strip_size = false;
-    bool            m_surface_strip_degenerate = false;
-    bool            m_surface_strip_duplicate_triangles = false;
-    bool            m_surface_2_sided_opaque = false;
-    bool            m_duplicate_triangles = false;
-    bool            m_multiple_polygon_surface = true;
-    bool            m_floating_point = true;
-    bool            m_empty_object = true;
-    bool            m_extra_object = true;
-    bool            m_missing_kids = true;
-    bool            m_missing_texture = true;
-    bool            m_duplicate_texture = true;
-    bool            m_ambiguous_texture = true;
-    bool            m_multiple_crease = true;
-    bool            m_multiple_folded = true;
-    bool            m_multiple_hidden = true;
-    bool            m_multiple_loc = true;
-    bool            m_multiple_locked = true;
-    bool            m_multiple_name = true;
-    bool            m_multiple_rot = true;
-    bool            m_multiple_subdiv = true;
-    bool            m_multiple_texoff = true;
-    bool            m_multiple_texrep = true;
-    bool            m_multiple_texture = true;
-    bool            m_different_uv = true;
-    bool            m_group_with_geometry = true;
-    bool            m_multiple_world = true;
-    bool            m_different_surf = true;
-    bool            m_different_mat = true;
-    bool            m_overlapping_2_sided_surface = true;
+    bool            m_quite = false;
+    bool            m_summary = false;
     bool            m_show_times = false;
     unsigned int    m_threads = 1;
 
@@ -1419,9 +1011,10 @@ private:
     void writeObject(std::ostream &out, const Object &object) const;
     bool getLine(std::istream &in);
     bool ungetLine(std::istream &in);
-    std::ostream &warning(size_t line_number = 0);
+    std::ostream &warning(size_t line_number = 0); // TODO remove
+    std::ostream &warningWithCount(size_t &count, size_t line_number = 0);
     std::ostream &error(size_t line_number = 0);
-    std::ostream &note(size_t line_number = 0) const;
+    std::ostream &note(size_t line_number = 0);
     void checkTrailing(std::istringstream &iss);
     void checkUnusedMaterial(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in);

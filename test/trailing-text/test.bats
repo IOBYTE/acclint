@@ -21,6 +21,24 @@
 }
 
 @test "test1.4" {
+  run acclint --quite test1.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test1.4.result)" ]
+}
+
+@test "test1.5" {
+  run acclint --summary test1.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test1.5.result)" ]
+}
+
+@test "test1.6" {
+  run acclint --quite --summary test1.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test1.6.result)" ]
+}
+
+@test "test1.7" {
   run acclint -Wno-warnings test1.ac -o test1.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]

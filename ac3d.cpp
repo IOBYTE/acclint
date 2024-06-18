@@ -188,47 +188,56 @@ size_t offsetOfToken(const std::istringstream &in, size_t index)
     return current_offset;
 }
 
-void showLine(std::istringstream &in)
+void AC3D::showLine(std::istringstream &in)
 {
-    std::cerr << in.str() << std::endl;
+    if (!m_quite)
+    {
+        std::cerr << in.str() << std::endl;
 
-    std::streambuf *buf = in.rdbuf();
-    const std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
-    buf->pubseekpos(pos, std::ios_base::in);
+        std::streambuf *buf = in.rdbuf();
+        const std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
+        buf->pubseekpos(pos, std::ios_base::in);
 
-    for (int i = 0; i < pos; ++i)
-        std::cerr << ' ';
-    std::cerr << '^' << std::endl;
+        for (int i = 0; i < pos; ++i)
+            std::cerr << ' ';
+        std::cerr << '^' << std::endl;
+    }
 }
 
-void showLine(const std::istringstream &in, const std::streampos &pos)
+void AC3D::showLine(const std::istringstream &in, const std::streampos &pos)
 {
-    std::cerr << in.str() << std::endl;
+    if (!m_quite)
+    {
+        std::cerr << in.str() << std::endl;
 
-    for (int i = 0; i < pos; ++i)
-        std::cerr << ' ';
-    std::cerr << '^' << std::endl;
+        for (int i = 0; i < pos; ++i)
+            std::cerr << ' ';
+        std::cerr << '^' << std::endl;
+    }
 }
 
-void showLine(std::istream &in, const std::streampos &pos, int offset = 0)
+void AC3D::showLine(std::istream &in, const std::streampos &pos, int offset)
 {
-    const std::streampos current = in.tellg();
-    std::string line;
+    if (!m_quite)
+    {
+        const std::streampos current = in.tellg();
+        std::string line;
 
-    in.seekg(pos);
-    std::getline(in, line);
+        in.seekg(pos);
+        std::getline(in, line);
 
-    // remove CR
-    if (line.back() == '\r')
-        line.pop_back();
-    std::cerr << line << std::endl;
-    if (offset < 0)
-        offset = static_cast<int>(line.size());
-    for (int i = 0; i < offset; ++i)
-        std::cerr << ' ';
-    std::cerr << '^' << std::endl;
+        // remove CR
+        if (line.back() == '\r')
+            line.pop_back();
+        std::cerr << line << std::endl;
+        if (offset < 0)
+            offset = static_cast<int>(line.size());
+        for (int i = 0; i < offset; ++i)
+            std::cerr << ' ';
+        std::cerr << '^' << std::endl;
 
-    in.seekg(current);
+        in.seekg(current);
+    }
 }
 
 class newline
@@ -272,7 +281,7 @@ bool AC3D::getLine(std::istream &in)
         if (m_line.empty() || isWhitespace(m_line))
         {
             if (m_blank_line)
-                warning() << "blank line" << std::endl;
+                warningWithCount(m_blank_line_count) << "blank line" << std::endl;
             empty = true;
         }
     } while (empty);
@@ -290,11 +299,29 @@ bool AC3D::ungetLine(std::istream &in)
 std::ostream &AC3D::warning(size_t line_number)
 {
     m_warnings++;
-    if (line_number > 0)
-        std::cerr << m_file << ":" << line_number << " warning: ";
-    else
-        std::cerr << m_file << ":" << m_line_number << " warning: ";
+    if (!m_quite)
+    {
+        if (line_number > 0)
+            std::cerr << m_file << ":" << line_number << " warning: ";
+        else
+            std::cerr << m_file << ":" << m_line_number << " warning: ";
+    }
     return std::cerr;
+}
+
+std::ostream &AC3D::warningWithCount(size_t &count, size_t line_number)
+{
+    count++;
+    m_warnings++;
+    if (!m_quite)
+    {
+        if (line_number > 0)
+            std::cerr << m_file << ":" << line_number << " warning: ";
+        else
+            std::cerr << m_file << ":" << m_line_number << " warning: ";
+        return std::cerr;
+    }
+    return m_null_stream;
 }
 
 std::ostream &AC3D::error(size_t line_number)
@@ -307,10 +334,14 @@ std::ostream &AC3D::error(size_t line_number)
     return std::cerr;
 }
 
-std::ostream &AC3D::note(size_t line_number) const
+std::ostream &AC3D::note(size_t line_number)
 {
-    std::cerr << m_file << ":" << line_number << " note: ";
-    return std::cerr;
+    if (!m_quite)
+    {
+        std::cerr << m_file << ":" << line_number << " note: ";
+        return std::cerr;
+    }
+    return m_null_stream;
 }
 
 void AC3D::checkTrailing(std::istringstream &iss)
@@ -321,7 +352,7 @@ void AC3D::checkTrailing(std::istringstream &iss)
     const std::streampos pos = iss.tellg();
     if (hasTrailing(iss))
     {
-        warning() << "trailing text: \"" << getTrailing(iss) << "\"" << std::endl;
+        warningWithCount(m_trailing_text_count) << "trailing text: \"" << getTrailing(iss) << "\"" << std::endl;
         showLine(iss, pos);
     }
 }
@@ -355,7 +386,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
             {
                 if (m_trailing_text)
                 {
-                    warning() << "trailing text: \"" << trailing << "\"" << std::endl;
+                    warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
                     showLine(in, pos);
                 }
             }
@@ -387,7 +418,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                                         {
                                             pos = in.tellg();
                                             trailing = getTrailing(in);
-                                            warning() << "trailing text: \"" << trailing << "\"" << std::endl;
+                                            warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
                                             showLine(in, pos);
                                         }
                                     }
@@ -398,7 +429,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                                     {
                                         if (m_trailing_text)
                                         {
-                                            warning() << "trailing text: \"" << trailing << "\"" << std::endl;
+                                            warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
                                             showLine(in, pos);
                                         }
                                     }
@@ -416,7 +447,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                             {
                                 if (m_trailing_text)
                                 {
-                                    warning() << "trailing text: \"" << trailing << "\"" << std::endl;
+                                    warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
                                     showLine(in, pos);
                                 }
                             }
@@ -434,7 +465,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                     {
                         if (m_trailing_text)
                         {
-                            warning() << "trailing text: \"" << trailing << "\"" << std::endl;
+                            warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
                             showLine(in, pos);
                         }
                     }
@@ -622,7 +653,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                 {
                     if (m_extra_uv_coordinates)
                     {
-                        warning() << "extra uv coordinates: "
+                        warningWithCount(m_extra_uv_coordinates_count) << "extra uv coordinates: "
                                   << ref.coordinates.size() << " coordinates "
                                   << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
                         showLine(iss1, offsetOfToken(iss1, valid_textures * 2 + 1));
@@ -848,7 +879,7 @@ bool AC3D::readHeader(std::istream &in)
     {
         if (m_trailing_text)
         {
-            warning(1) << "trailing text: \"" << m_line.substr(5) << "\"" << std::endl;
+            warningWithCount(m_trailing_text_count, 1) << "trailing text: \"" << m_line.substr(5) << "\"" << std::endl;
             showLine(iss, 5);
         }
     }
@@ -896,7 +927,7 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
                 {
                     if (m_trailing_text)
                     {
-                        warning() << "trailing text: \"" << data.substr(size) << "\"" << std::endl;
+                        warningWithCount(m_trailing_text_count) << "trailing text: \"" << data.substr(size) << "\"" << std::endl;
                         if (m_line.back() == '\r') // remove DOS CR
                             m_line.pop_back();
                         const std::istringstream iss1(m_line);
@@ -975,7 +1006,7 @@ bool AC3D::readColor(std::istringstream &in, Color &color, const std::string &ex
         {
             if (m_invalid_material)
             {
-                warning() << "invalid material " << expected << ": " << value << " range: 0 to 1" << std::endl;
+                warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << value << " range: 0 to 1" << std::endl;
                 showLine(in, pos);
             }
         }
@@ -1016,7 +1047,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
 
         if (m_invalid_material)
         {
-            warning() << "invalid material " << expected << ": " << actual << std::endl;
+            warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << actual << std::endl;
             showLine(in, pos);
         }
     }
@@ -1043,7 +1074,7 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string &e
             {
                 if (m_floating_point)
                 {
-                    warning() << "floating point " << expected << ": " << value_string << std::endl;
+                    warningWithCount(m_floating_point_count) << "floating point " << expected << ": " << value_string << std::endl;
                     showLine(in, pos);
                 }
             }
@@ -1052,7 +1083,7 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string &e
             {
                 if (m_invalid_material)
                 {
-                    warning() << "invalid material " << expected << ": " << value << " range: "
+                    warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << value << " range: "
                               << min << " to " << max << std::endl;
                     showLine(in, pos);
                 }
@@ -1104,7 +1135,7 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
 
         if (m_invalid_material)
         {
-            warning() << "invalid material " << expected << ": " << actual << std::endl;
+            warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << actual << std::endl;
             showLine(in, pos);
         }
     }
@@ -1317,7 +1348,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         {
             if (m_multiple_world && m_has_world)
             {
-                warning() << "multiple world" << std::endl;
+                warningWithCount(m_multiple_world_count) << "multiple world" << std::endl;
                 showLine(iss, object.type.type_offset);
             }
 
@@ -1362,7 +1393,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.names.empty() && m_multiple_name)
                 {
-                    warning() << "multiple name" << std::endl;
+                    warningWithCount(m_multiple_name_count) << "multiple name" << std::endl;
                     showLine(iss1, 0);
                     note(object.names.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.names.front().line_pos);
@@ -1413,7 +1444,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     {
                         if (m_trailing_text)
                         {
-                            warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
+                            warningWithCount(m_trailing_text_count) << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
                             showLine(iss1);
                         }
                     }
@@ -1426,7 +1457,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             {
                                 if (m_trailing_text)
                                 {
-                                    warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
+                                    warningWithCount(m_trailing_text_count) << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
                                     showLine(iss1);
                                 }
                             }
@@ -1435,7 +1466,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         {
                             if (m_trailing_text)
                             {
-                                warning() << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
+                                warningWithCount(m_trailing_text_count) << "trailing text: \"" << getTrailing(iss1) << "\"" << std::endl;
                                 showLine(iss1);
                             }
                         }
@@ -1444,7 +1475,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                 if (m_is_ac && !object.textures.empty() && m_multiple_texture)
                 {
-                    warning() << "multiple texture" << std::endl;
+                    warningWithCount(m_multiple_texture_count) << "multiple texture" << std::endl;
                     showLine(iss1, 0);
                     note(object.textures.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.textures.front().line_pos);
@@ -1491,7 +1522,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                         if (!found && m_missing_texture)
                         {
-                            warning() << "missing texture: " << texture_path.generic_string() << std::endl;
+                            warningWithCount(m_missing_texture_count) << "missing texture: " << texture_path.generic_string() << std::endl;
                             showLine(iss1, 0);
                         }
                     }
@@ -1519,7 +1550,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                         {
                                             if (m_duplicate_texture)
                                             {
-                                                warning() << "duplicate texture: " << texture_path
+                                                warningWithCount(m_duplicate_texture_count) << "duplicate texture: " << texture_path
                                                           << " and " << other << std::endl;
                                                 showLine(iss1, 0);
                                             }
@@ -1528,7 +1559,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                         {
                                             if (m_ambiguous_texture)
                                             {
-                                                warning() << "ambiguous texture: " << texture_path
+                                                warningWithCount(m_ambiguous_texture_count) << "ambiguous texture: " << texture_path
                                                           << " and " << other << std::endl;
                                                 showLine(iss1, 0);
                                             }
@@ -1537,7 +1568,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                 }
                                 else if (m_ambiguous_texture)
                                 {
-                                    warning() << "ambiguous texture: " << texture_path
+                                    warningWithCount(m_ambiguous_texture_count) << "ambiguous texture: " << texture_path
                                               << " and " << other << std::endl;
                                     showLine(iss1, 0);
                                 }
@@ -1566,7 +1597,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.texreps.empty() && m_multiple_texrep)
                 {
-                    warning() << "multiple texrep" << std::endl;
+                    warningWithCount(m_multiple_texrep_count) << "multiple texrep" << std::endl;
                     showLine(iss1, 0);
                     note(object.texreps.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.texreps.front().line_pos);
@@ -1594,7 +1625,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.texoffs.empty() && m_multiple_texoff)
                 {
-                    warning() << "multiple texoff" << std::endl;
+                    warningWithCount(m_multiple_texoff_count) << "multiple texoff" << std::endl;
                     showLine(iss1, 0);
                     note(object.texoffs.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.texoffs.front().line_pos);
@@ -1622,7 +1653,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.subdivs.empty() && m_multiple_subdiv)
                 {
-                    warning() << "multiple subdiv" << std::endl;
+                    warningWithCount(m_multiple_subdiv_count) << "multiple subdiv" << std::endl;
                     showLine(iss1, 0);
                     note(object.subdivs.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.subdivs.front().line_pos);
@@ -1650,7 +1681,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.creases.empty() && m_multiple_crease)
                 {
-                    warning() << "multiple crease" << std::endl;
+                    warningWithCount(m_multiple_crease_count) << "multiple crease" << std::endl;
                     showLine(iss1, 0);
                     note(object.creases.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.creases.front().line_pos);
@@ -1678,7 +1709,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.rotations.empty() && m_multiple_rot)
                 {
-                    warning() << "multiple rot" << std::endl;
+                    warningWithCount(m_multiple_rot_count) << "multiple rot" << std::endl;
                     showLine(iss1, 0);
                     note(object.rotations.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.rotations.front().line_pos);
@@ -1707,7 +1738,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.locations.empty() && m_multiple_loc)
                 {
-                    warning() << "multiple loc" << std::endl;
+                    warningWithCount(m_multiple_loc_count) << "multiple loc" << std::endl;
                     showLine(iss1, 0);
                     note(object.locations.front().line_number) << "first instance" << std::endl;
                     showLine(in, object.locations.front().line_pos);
@@ -1758,7 +1789,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (!object.locked.empty() && m_multiple_locked)
             {
-                warning() << "multiple locked" << std::endl;
+                warningWithCount(m_multiple_locked_count) << "multiple locked" << std::endl;
                 showLine(iss1, 0);
                 note(object.locked.front().line_number) << "first instance" << std::endl;
                 showLine(in, object.locked.front().line_pos);
@@ -1774,7 +1805,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (!object.hidden.empty() && m_multiple_hidden)
             {
-                warning() << "multiple hidden" << std::endl;
+                warningWithCount(m_multiple_hidden_count) << "multiple hidden" << std::endl;
                 showLine(iss1, 0);
                 note(object.hidden.front().line_number) << "first instance" << std::endl;
                 showLine(in, object.hidden.front().line_pos);
@@ -1790,7 +1821,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (!object.folded.empty() && m_multiple_folded)
             {
-                warning() << "multiple folded" << std::endl;
+                warningWithCount(m_multiple_folded_count) << "multiple folded" << std::endl;
                 showLine(iss1, 0);
                 note(object.folded.front().line_number) << "first instance" << std::endl;
                 showLine(in, object.folded.front().line_pos);
@@ -1841,7 +1872,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             {
                                 if (m_trailing_text)
                                 {
-                                    warning() << "trailing text: \"" << trailing << "\"" << std::endl;
+                                    warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
                                     showLine(iss2, pos2);
                                 }
                             }
@@ -1860,7 +1891,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                                         if (std::fabs(1 - length) > epsilon)
                                         {
-                                            warning() << "invalid normal length: " << length
+                                            warningWithCount(m_invalid_normal_count) << "invalid normal length: " << length
                                                       << " should be 1" << std::endl;
                                             // find start of normal
                                             size_t offset = pos2;
@@ -1877,7 +1908,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                     if (isWhitespace(trailing))
                                     {
                                         if (m_trailing_text)
-                                            warning() << "trailing text: \"" << trailing << "\"" << std::endl;
+                                            warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
                                     }
                                     else
                                     {
@@ -1992,7 +2023,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     else
                     {
                         if (m_missing_kids)
-                            warning(kids_line) << "missing kids: only " << i << " out of " << kids << " kids found" << std::endl;
+                            warningWithCount(m_missing_kids_count, kids_line) << "missing kids: only " << i << " out of " << kids << " kids found" << std::endl;
                         return false;
                     }
                 }
@@ -2065,7 +2096,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
     if (object.empty() && m_empty_object)
     {
-        warning(object.line_number) << "empty object: "
+        warningWithCount(m_empty_object_count, object.line_number) << "empty object: "
                                     << (!object.names.empty() ? object.names.back().name.c_str() : "")
                                     << std::endl;
         showLine(iss, 0);
@@ -2394,7 +2425,7 @@ bool AC3D::read(const std::string &file)
             {
                 if (m_extra_object && !m_objects.empty())
                 {
-                    warning(m_line_number) << "extra OBJECT" << std::endl;
+                    warningWithCount(m_extra_object_count) << "extra OBJECT" << std::endl;
                     showLine(in, m_line_pos);
                 }
                 Object object;
@@ -2412,7 +2443,7 @@ bool AC3D::read(const std::string &file)
         {
             if (m_extra_object && !m_objects.empty())
             {
-                warning(m_line_number) << "extra OBJECT" << std::endl;
+                warningWithCount(m_extra_object_count) << "extra OBJECT" << std::endl;
                 showLine(in, m_line_pos);
             }
             Object object;
@@ -2514,7 +2545,7 @@ void AC3D::checkUnusedMaterial(std::istream &in)
         {
             if (!material.used)
             {
-                warning(material.line_number) << "unused material" << std::endl;
+                warningWithCount(m_unused_material_count, material.line_number) << "unused material" << std::endl;
                 showLine(in, material.line_pos);
             }
         }
@@ -2580,7 +2611,8 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &obje
 
                                 if (trianglesOverlap(triangle1, triangle2))
                                 {
-                                    warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
+                                    warningWithCount(m_overlapping_2_sided_surface_count, surface2.line_number) <<
+                                        "overlapping 2 sided surface (object: " <<
                                         object2.object->getName() << " texture: " << object2.object->getTexture() <<
                                         " sides: " << (surface2.isDoubleSided() ? "2)" : "1)") << std::endl;
                                     showLine(in, surface2.line_pos);
@@ -2659,7 +2691,8 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &obje
 
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
-                                            warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
+                                            warningWithCount(m_overlapping_2_sided_surface_count, surface2.line_number) <<
+                                                "overlapping 2 sided surface (object: " <<
                                                 object2.object->getName() << " texture: " << object2.object->getTexture() <<
                                                 " sides: " << (surface2.isDoubleSided() ? "2)" : "1)") << std::endl;
                                             showLine(in, surface2.line_pos);
@@ -2729,7 +2762,8 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &obje
 
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
-                                            warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
+                                            warningWithCount(m_overlapping_2_sided_surface_count, surface2.line_number) <<
+                                                "overlapping 2 sided surface (object: " <<
                                                 object2.object->getName() << " texture: " << object2.object->getTexture() <<
                                                 " sides: " << (surface2.isDoubleSided() ? "2)" : "1)") << std::endl;
                                             showLine(in, surface2.line_pos);
@@ -2799,7 +2833,8 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &obje
 
                                         if (trianglesOverlap(triangle1, triangle2))
                                         {
-                                            warning(surface2.line_number) << "overlapping 2 sided surface (object: " <<
+                                            warningWithCount(m_overlapping_2_sided_surface_count, surface2.line_number) <<
+                                                "overlapping 2 sided surface (object: " <<
                                                 object2.object->getName() << " texture: " << object2.object->getTexture() <<
                                                 " sides: " << (surface2.isDoubleSided() ? "2)" : "1)") << std::endl;
                                             showLine(in, surface2.line_pos);
@@ -2962,7 +2997,7 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
 
                             if (triangle1.sameTriangle(triangle2, Difference::None))
                             {
-                                warning(surface2.line_number) << "duplicate triangle" << std::endl;
+                                warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle" << std::endl;
                                 showLine(in, surface2.line_pos);
                                 note(triangle2.refs[2].line_number) << "ref" << std::endl;
                                 showLine(in, triangle2.refs[2].line_pos);
@@ -3088,7 +3123,7 @@ void AC3D::checkMissingSurfaces(std::istream &in, const Object &object)
 
     if (object.surfaces.empty())
     {
-        warning(object.line_number) << "missing surfaces" << std::endl;
+        warningWithCount(m_missing_surfaces_count, object.line_number) << "missing surfaces" << std::endl;
         showLine(in, object.line_pos);
     }
 }
@@ -3101,7 +3136,7 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
         {
             if (m_duplicate_surfaces && object.sameSurface(i, j, Difference::None))
             {
-                warning(object.surfaces[j].line_number) << "duplicate surfaces" << std::endl;
+                warningWithCount(m_duplicate_surfaces_count, object.surfaces[j].line_number) << "duplicate surfaces" << std::endl;
                 showLine(in, object.surfaces[j].line_pos);
                 note(object.surfaces[i].line_number) << "first instance" << std::endl;
                 showLine(in, object.surfaces[i].line_pos);
@@ -3114,7 +3149,7 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
 
             if (m_duplicate_surfaces_order && object.sameSurface(i, j, Difference::Order))
             {
-                warning(object.surfaces[j].line_number) << "duplicate surfaces with different vertex order" << std::endl;
+                warningWithCount(m_duplicate_surfaces_order_count, object.surfaces[j].line_number) << "duplicate surfaces with different vertex order" << std::endl;
                 showLine(in, object.surfaces[j].line_pos);
                 note(object.surfaces[i].line_number) << "first instance" << std::endl;
                 showLine(in, object.surfaces[i].line_pos);
@@ -3123,7 +3158,7 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
 
             if (m_duplicate_surfaces_winding && object.sameSurface(i, j, Difference::Winding))
             {
-                warning(object.surfaces[j].line_number) << "duplicate surfaces with different winding" << std::endl;
+                warningWithCount(m_duplicate_surfaces_winding_count, object.surfaces[j].line_number) << "duplicate surfaces with different winding" << std::endl;
                 showLine(in, object.surfaces[j].line_pos);
                 note(object.surfaces[i].line_number) << "first instance" << std::endl;
                 showLine(in, object.surfaces[i].line_pos);
@@ -3141,7 +3176,7 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
     {
         if (!vertex.used)
         {
-            warning(vertex.line_number) << "unused vertex" << std::endl;
+            warningWithCount(m_unused_vertex_count, vertex.line_number) << "unused vertex" << std::endl;
             showLine(in, vertex.line_pos);
         }
     }
@@ -3161,7 +3196,7 @@ void AC3D::checkDifferentSURF(std::istream& in, const Object& object)
     {
         if (object.surfaces[i].flags != flags)
         {
-            warning(object.surfaces[i].line_number) << "different SURF (object: " << object.getName() << ")" << std::endl;
+            warningWithCount(m_different_surf_count, object.surfaces[i].line_number) << "different SURF (object: " << object.getName() << ")" << std::endl;
             showLine(in, object.surfaces[i].line_pos);
             note(object.surfaces[0].line_number) << "SURF" << std::endl;
             showLine(in, object.surfaces[0].line_pos);
@@ -3186,7 +3221,7 @@ void AC3D::checkDifferentMat(std::istream& in, const Object& object)
     {
         if (!object.surfaces[i].mats.empty() && object.surfaces[i].mats[0].mat != mat)
         {
-            warning(object.surfaces[i].mats[0].line_number) << "different mat" << std::endl;
+            warningWithCount(m_different_mat_count, object.surfaces[i].mats[0].line_number) << "different mat" << std::endl;
             showLine(in, object.surfaces[i].mats[0].line_pos);
             note(object.surfaces[0].mats[0].line_number) << "mat" << std::endl;
             showLine(in, object.surfaces[0].mats[0].line_pos);
@@ -3262,7 +3297,7 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
         {
             if (first)
             {
-                warning(entry->line_number) << "different uv" << std::endl;
+                warningWithCount(m_different_uv_count, entry->line_number) << "different uv" << std::endl;
                 showLine(in, entry->line_pos);
                 first = false;
             }
@@ -3282,7 +3317,7 @@ void AC3D::checkGroupWithGeometry(std::istream& in, const Object& object)
 
     if (object.type.type == "group" && !object.vertices.empty())
     {
-        warning(object.type.line_number) << "group with geometry" << std::endl;
+        warningWithCount(m_group_with_geometry_count, object.type.line_number) << "group with geometry" << std::endl;
         showLine(in, object.type.line_pos, object.type.type_offset);
         note(object.numvert.line_number) << "geometry" << std::endl;
         showLine(in, object.numvert.line_pos);
@@ -3312,7 +3347,7 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
 
                         if (m_duplicate_surface_vertices)
                         {
-                            warning(surface.refs[j].line_number) << "duplicate surface vertices" << std::endl;
+                            warningWithCount(m_duplicate_surface_vertices_count, surface.refs[j].line_number) << "duplicate surface vertices" << std::endl;
                             showLine(in, surface.refs[j].line_pos);
                             if (surface.refs[i].index != surface.refs[j].index)
                             {
@@ -3332,7 +3367,7 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
                     {
                         if (m_multiple_polygon_surface)
                         {
-                            warning(surface.refs[j].line_number) << "multiple polygon surface" << std::endl;
+                            warningWithCount(m_multiple_polygon_surface_count, surface.refs[j].line_number) << "multiple polygon surface" << std::endl;
                             showLine(in, surface.refs[j].line_pos);
                             if (surface.refs[i].index != surface.refs[j].index)
                             {
@@ -3372,7 +3407,7 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
             {
                 duplicates[j] = true;
 
-                warning(object.vertices[j].line_number) << "duplicate verticies" << std::endl;
+                warningWithCount(m_duplicate_vertices_count, object.vertices[j].line_number) << "duplicate verticies" << std::endl;
                 showLine(in, object.vertices[j].line_pos);
                 note(object.vertices[i].line_number) << "first instance" << std::endl;
                 showLine(in, object.vertices[i].line_pos);
@@ -3403,7 +3438,7 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
     {
         if (m_invalid_ref_count)
         {
-            warning(surface.refs.line_number) << "invalid ref count" << std::endl;
+            warningWithCount(m_invalid_ref_count_count, surface.refs.line_number) << "invalid ref count" << std::endl;
             showLine(in, surface.refs.line_pos);
         }
         return;
@@ -3427,7 +3462,7 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
             // don't show all combinations when all vertices are collinear
             if (found < (size - 2) && m_collinear_surface_vertices)
             {
-                warning(surface.refs[i % size].line_number) << "collinear verticies" << std::endl;
+                warningWithCount(m_collinear_surface_vertices_count, surface.refs[i % size].line_number) << "collinear verticies" << std::endl;
                 showLine(in, surface.refs[i % size].line_pos);
 
                 note(object.vertices[surface.refs[i - 2].index].line_number) << "first vertex" << std::endl;
@@ -3505,7 +3540,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
 
                 if (m_surface_not_coplanar)
                 {
-                    warning(surface.line_number) << "surface not coplanar" << std::endl;
+                    warningWithCount(m_surface_not_coplanar_count, surface.line_number) << "surface not coplanar" << std::endl;
                     showLine(in, surface.line_pos);
                 }
 
@@ -3543,7 +3578,7 @@ void AC3D::checkSurfaceNoTexture(std::istream &in, const Object &object, const S
 
     if (hasCoordinates && object.textures.empty())
     {
-        warning(surface.line_number) << "surface with texture coordinates but no texture" << std::endl;
+        warningWithCount(m_surface_no_texture_count, surface.line_number) << "surface with texture coordinates but no texture" << std::endl;
         showLine(in, surface.line_pos);
     }
 }
@@ -3561,7 +3596,7 @@ void AC3D::checkSurface2SidedOpaque(std::istream &in, const Object &object, cons
 
     if (!hasTransparentTexture(object))
     {
-        warning(surface.line_number) << "2 sided surface with opaque texture (object: "
+        warningWithCount(m_surface_2_sided_opaque_count, surface.line_number) << "2 sided surface with opaque texture (object: "
             << object.getName() << " texture: " << object.getTexture() << ")" << std::endl;
         showLine(in, surface.line_pos);
     }
@@ -3629,7 +3664,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
 
                 if (m_surface_not_convex)
                 {
-                    warning(surface.line_number) << "surface not convex" << std::endl;
+                    warningWithCount(m_surface_not_convex_count, surface.line_number) << "surface not convex" << std::endl;
                     showLine(in, surface.line_pos);
                     note(surface.refs[(next - 2) % size].line_number) << "concave vertex"  << std::endl;
                     showLine(in, surface.refs[(next - 2) % size].line_pos);
@@ -3825,7 +3860,7 @@ void AC3D::checkSurfaceStripSize(std::istream &in, const Object &object, const S
 
     if (surface.getTriangleStrip().size() < 2)
     {
-        warning(surface.line_number) << "triangle strip with" << (surface.getTriangleStrip().empty() ? " no triangles" : " 1 triangle") << std::endl;
+        warningWithCount(m_surface_strip_size_count, surface.line_number) << "triangle strip with" << (surface.getTriangleStrip().empty() ? " no triangles" : " 1 triangle") << std::endl;
         showLine(in, surface.line_pos);
     }
 }
@@ -3864,7 +3899,7 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &o
         {
             if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::None))
             {
-                warning(surface.line_number) << "triangle strip with duplicate triangle" << std::endl;
+                warningWithCount(m_surface_strip_duplicate_triangles_count, surface.line_number) << "triangle strip with duplicate triangle" << std::endl;
                 showLine(in, surface.line_pos);
                 note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
                 showLine(in, surface.triangleStrip[i].refs[2].line_pos);
@@ -3916,7 +3951,7 @@ void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Object &object, c
     if (count > 0)
     {
         const double size = static_cast<double>(surface.getTriangleStrip().size());
-        warning(surface.line_number) << "triangle strip " << count << " out of " << size << " ("
+        warningWithCount(m_surface_strip_degenerate_count, surface.line_number) << "triangle strip " << count << " out of " << size << " ("
             << ((count / size) * 100.0) << " percent) degenerate triangles" << std::endl;
         showLine(in, surface.line_pos);
     }
@@ -3984,7 +4019,7 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
     {
         const std::string s(holes.size() != 1 ? "s" : "");
 
-        warning(surface.line_number) << "triangle strip with " << holes.size() << " possible hole"
+        warningWithCount(m_surface_strip_hole_count, surface.line_number) << "triangle strip with " << holes.size() << " possible hole"
             << s << " (reversed triangle" << s << ")" << std::endl;
         showLine(in, surface.line_pos);
         for (auto hole : holes)
@@ -4071,7 +4106,7 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
                     {
                         if (m_surface_self_intersecting)
                         {
-                            warning(surface.line_number) << "surface self intersecting" << std::endl;
+                            warningWithCount(m_surface_self_intersecting_count, surface.line_number) << "surface self intersecting" << std::endl;
                             showLine(in, surface.line_pos);
                         }
                         return;

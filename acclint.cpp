@@ -104,6 +104,9 @@ void usage()
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
+    std::cerr << "  --quite                                Don't show warning messages." << std::endl;
+    std::cerr << "  --summary                              Show summary of warnings." << std::endl;
+
     std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
@@ -115,6 +118,12 @@ void usage()
     std::cerr << "  acclint -Wno-trailing-text file.acc             Don't show trailing text warnings." << std::endl;
     std::cerr << "  acclint -Wno-warnings -Wunused-vertex file.acc  Only show unused vertex warnings." << std::endl;
     std::cerr << "  acclint -Wno-warnings -j 8 -T ../../../data/textures original.ac --combineTexture -o new.ac" << std::endl;
+}
+
+void showCount(size_t count, const char *text)
+{
+    if (count > 0)
+        std::cout << text << count << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -199,6 +208,8 @@ int main(int argc, char *argv[])
     std::vector<std::string> merge_files;
     std::vector<AC3D::RemoveInfo> removes;
     bool show_times = false;
+    bool quite = false;
+    bool summary = false;
     unsigned int threads = 1;
 
     for (int i = 1; i < argc; ++i)
@@ -679,6 +690,14 @@ int main(int argc, char *argv[])
         {
             show_times = true;
         }
+        else if (arg == "--quite")
+        {
+            quite = true;
+        }
+        else if (arg == "--summary")
+        {
+            summary = true;
+        }
         else if (arg[0] != '-')
         {
             if (in_file.empty())
@@ -768,6 +787,8 @@ int main(int argc, char *argv[])
     ac3d.differentMat(different_mat);
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
     ac3d.showTimes(show_times);
+    ac3d.quite(quite);
+    ac3d.summary(summary);
     ac3d.threads(threads);
 
     if (!ac3d.read(in_file))
@@ -788,6 +809,61 @@ int main(int argc, char *argv[])
         if (ac3d.warnings() > 1)
             std::cerr << "s";
         std::cerr << std::endl;
+
+        if (ac3d.summary())
+        {
+            showCount(ac3d.trailingTextCount(), "trailing text: ");
+            showCount(ac3d.blankLineCount(), "blank line: ");
+            showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");;
+            showCount(ac3d.unusedVertexCount(), "unused vertex: ");
+            showCount(ac3d.invalidNormalCount(), "invalid normal: ");
+            showCount(ac3d.invalidMaterialCount(), "invalid material: ");
+            showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
+            showCount(ac3d.extraUVCoordinatesCount(), "extra uv coordinates: ");
+            showCount(ac3d.duplicateMaterialsCount(), "duplicate materials: ");
+            showCount(ac3d.unusedMaterialCount(), "unused material: ");
+            showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
+            showCount(ac3d.duplicateSurfacesCount(), "duplicate surfaces: ");
+            showCount(ac3d.duplicateSurfacesOrderCount(), "duplicate surfaces order: ");
+            showCount(ac3d.duplicateSurfacesWindingCount(), "duplicate surfaces winding: ");
+            showCount(ac3d.duplicateSurfaceVerticesCount(), "duplicate surface vertices: ");
+            showCount(ac3d.collinearSurfaceVerticesCount(), "collinear surface vertices: ");
+            showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
+            showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
+            showCount(ac3d.surfaceNotCoplanarCount(), "surface not coplanar: ");
+            showCount(ac3d.surfaceNotConvexCount(), "surface not convex: ");
+            showCount(ac3d.surfaceNoTextureCount(), "surface no texture: ");
+            showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
+            showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
+            showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
+            showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
+            showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
+            showCount(ac3d.duplicateTrianglesCount(), "duplicate triangles: ");
+            showCount(ac3d.floatingPointCount(), "floating point: ");
+            showCount(ac3d.emptyObjectCount(), "empty object: ");
+            showCount(ac3d.extraObjectCount(), "extra object: ");
+            showCount(ac3d.missingKidsCount(), "missing kids: ");
+            showCount(ac3d.missingTextureCount(), "missing texture: ");
+            showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
+            showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
+            showCount(ac3d.multipleCreaseCount(), "multiple crease: ");
+            showCount(ac3d.multipleFoldedCount(), "multiple folded: ");
+            showCount(ac3d.multipleHiddenCount(), "multiple hidden: ");
+            showCount(ac3d.multipleLocCount(), "multiple loc: ");
+            showCount(ac3d.multipleLockedCount(), "multiple locked: ");
+            showCount(ac3d.multipleNameCount(), "multiple name: ");
+            showCount(ac3d.multipleRotCount(), "multiple rot: ");
+            showCount(ac3d.multipleSubdivCount(), "multiple subdiv: ");
+            showCount(ac3d.multipleTexoffCount(), "multiple texoff: ");
+            showCount(ac3d.multipleTexrepCount(), "multiple texrep: ");
+            showCount(ac3d.multipleTextureCount(), "multiple texture: ");
+            showCount(ac3d.differentUVCount(), "different uv: ");
+            showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
+            showCount(ac3d.multipleWorldCount(), "multiple world: ");
+            showCount(ac3d.differentSURFCount(), "different surf: ");
+            showCount(ac3d.differentMatCount(), "different mat: ");
+            showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
+        }
     }
 
     if (ac3d.errors() > 0)
