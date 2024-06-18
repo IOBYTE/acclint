@@ -1,0 +1,8 @@
+test1.ac:11 warning: duplicate verticies
+0 0 0
+^
+test1.ac:8 note: first instance
+0 0 0
+^
+1 warning
+duplicate vertices: 1
