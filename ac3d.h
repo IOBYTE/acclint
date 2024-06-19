@@ -94,6 +94,7 @@ private:                                               \
     CHECK(differentSURF, m_different_surf, true)
     CHECK(differentMat, m_different_mat, true)
     CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
+    CHECK(missingNormal, m_missing_normal, true)
 
     // errors
     CHECK(invalidVertexIndex, m_invalid_vertex_index, true)

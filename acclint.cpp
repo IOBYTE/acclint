@@ -41,6 +41,7 @@ void usage()
     std::cerr << "  -Wno-duplicate-vertices                Don't show duplicate vertices warnings." << std::endl;
     std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
     std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal warnings." << std::endl;
+    std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
     std::cerr << "  -Wno-missing-surface                   Don't show missing surface warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces                Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces-order          Don't show duplicate surfaces with different vertex order warnings." << std::endl;
@@ -146,6 +147,7 @@ int main(int argc, char *argv[])
     bool invalid_vertex_index = true;
     bool invalid_texture_coordinate = true;
     bool invalid_normal = true;
+    bool missing_normal = true;
     bool invalid_material = true;
     bool invalid_material_index = true;
     bool invalid_ref_count = true;
@@ -350,6 +352,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-normal" || arg == "-Winvalid-normal")
         {
             invalid_normal = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-missing-normal" || arg == "-Wmissing-normal")
+        {
+            missing_normal = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
         {
@@ -735,6 +741,7 @@ int main(int argc, char *argv[])
     ac3d.duplicateVertices(duplicate_vertices);
     ac3d.unusedVertex(unused_vertex);
     ac3d.invalidNormal(invalid_normal);
+    ac3d.missingNormal(missing_normal);
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.invalidRefCount(invalid_ref_count);
@@ -863,6 +870,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.differentSURFCount(), "different surf: ");
             showCount(ac3d.differentMatCount(), "different mat: ");
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
+            showCount(ac3d.missingNormalCount(), "missing normal: ");
         }
     }
 

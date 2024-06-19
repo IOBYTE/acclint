@@ -1922,8 +1922,11 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         {
                             if (m_is_ac == false)
                             {
-                                error() << "missing normal" << std::endl;
-                                showLine(iss2);
+                                if (m_missing_normal)
+                                {
+                                    warningWithCount(m_missing_normal_count) << "missing normal" << std::endl;
+                                    showLine(iss2, m_line.size() + 1);
+                                }
                             }
                         }
                     }
