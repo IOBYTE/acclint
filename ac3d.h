@@ -1020,6 +1020,7 @@ private:
     std::ostream &warning(size_t line_number = 0); // TODO remove
     std::ostream &warningWithCount(size_t &count, size_t line_number = 0);
     std::ostream &error(size_t line_number = 0);
+    std::ostream &errorWithCount(size_t &count, size_t line_number = 0);
     std::ostream &note(size_t line_number = 0);
     void checkTrailing(std::istringstream &iss);
     void checkUnusedMaterial(std::istream &in);

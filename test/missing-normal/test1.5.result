@@ -1,0 +1,14 @@
+test1.acc:12 warning: missing normal
+0 0 0
+      ^
+test1.acc:13 warning: missing normal
+1 0 0
+      ^
+test1.acc:14 warning: missing normal
+1 1 0
+      ^
+test1.acc:15 warning: missing normal
+0 1 0
+      ^
+4 warnings
+missing normal: 4

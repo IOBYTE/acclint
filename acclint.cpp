@@ -41,7 +41,6 @@ void usage()
     std::cerr << "  -Wno-duplicate-vertices                Don't show duplicate vertices warnings." << std::endl;
     std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
     std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal warnings." << std::endl;
-    std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
     std::cerr << "  -Wno-missing-surface                   Don't show missing surface warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces                Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces-order          Don't show duplicate surfaces with different vertex order warnings." << std::endl;
@@ -62,7 +61,6 @@ void usage()
     std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material                  Don't show invalid material warnings." << std::endl;
-    std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates warnings." << std::endl;
     std::cerr << "  -Wno-extra-uv-coordinates              Don't show extra uv coordinates warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
@@ -93,6 +91,8 @@ void usage()
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
+    std::cerr << "  -Wno-missing-normal                    Don't show missing normal errors." << std::endl;
+    std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
     std::cerr << "  --splitPolygon                         Split polygon surface into seperate triangle surfaces." << std::endl;
@@ -137,7 +137,8 @@ int main(int argc, char *argv[])
 
     std::string in_file;
     std::string out_file;
-    bool not_ac3d_file = true;
+
+    //warnings
     bool trailing_text = true;
     bool blank_line = true;
     bool duplicate_materials = true;
@@ -196,6 +197,10 @@ int main(int argc, char *argv[])
     bool multiple_world = true;
     bool different_surf = true;
     bool different_mat = true;
+
+    // errors
+    bool not_ac3d_file = true;
+
     std::vector<std::string> texture_paths;
     bool dump = false;
     bool splitSURF = false;
@@ -324,6 +329,8 @@ int main(int argc, char *argv[])
             different_surf = false;
             different_mat = false;
             overlapping_2_sided_surface = false;
+            missing_uv_coordinates = false;
+            missing_normal = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -537,7 +544,6 @@ int main(int argc, char *argv[])
             invalid_token = false;
             invalid_vertex_index = false;
             invalid_texture_coordinate = false;
-            missing_uv_coordinates = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -870,8 +876,10 @@ int main(int argc, char *argv[])
             showCount(ac3d.differentSURFCount(), "different surf: ");
             showCount(ac3d.differentMatCount(), "different mat: ");
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
+
+            // errors
             showCount(ac3d.missingNormalCount(), "missing normal: ");
-            showCount(ac3d.missingNormalCount(), "missing normal: ");
+            showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
         }
     }
 

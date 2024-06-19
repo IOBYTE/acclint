@@ -1,0 +1,13 @@
+test3.acc:20 warning: missing uv coordinates: 3 coordinates 4 textures
+0 0 0 0 0 0 0
+              ^
+test3.acc:21 warning: missing uv coordinates: 3 coordinates 4 textures
+1 1 0 1 0 1 0
+              ^
+test3.acc:22 warning: missing uv coordinates: 3 coordinates 4 textures
+2 1 1 1 1 1 1
+              ^
+test3.acc:23 warning: missing uv coordinates: 3 coordinates 4 textures
+3 0 1 0 1 0 1
+              ^
+4 warnings

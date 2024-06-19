@@ -11,4 +11,3 @@ test1.acc:23 warning: missing uv coordinates: 1 coordinate 2 textures
 3 0 1
       ^
 4 warnings
-missing uv coordinates: 4

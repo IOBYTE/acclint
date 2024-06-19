@@ -334,6 +334,21 @@ std::ostream &AC3D::error(size_t line_number)
     return std::cerr;
 }
 
+std::ostream &AC3D::errorWithCount(size_t &count, size_t line_number)
+{
+    count++;
+    m_errors++;
+    if (!m_quite)
+    {
+        if (line_number > 0)
+            std::cerr << m_file << ":" << line_number << " error: ";
+        else
+            std::cerr << m_file << ":" << m_line_number << " error: ";
+        return std::cerr;
+    }
+    return m_null_stream;
+}
+
 std::ostream &AC3D::note(size_t line_number)
 {
     if (!m_quite)

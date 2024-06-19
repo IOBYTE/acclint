@@ -9,13 +9,13 @@
 }
 
 @test "test1.2" {
-  run acclint -Wno-errors test1.acc
+  run acclint -Wno-warnings test1.acc
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
 }
 
 @test "test1.3" {
-  run acclint -Wno-errors -Wmissing-uv-coordinates test1.acc
+  run acclint -Wno-warnings -Wmissing-uv-coordinates test1.acc
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }
@@ -47,13 +47,13 @@
 }
 
 @test "test2.2" {
-  run acclint -Wno-errors test2.acc
+  run acclint -Wno-warnings test2.acc
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
 }
 
 @test "test2.3" {
-  run acclint -Wno-errors -Wmissing-uv-coordinates test2.acc
+  run acclint -Wno-warnings -Wmissing-uv-coordinates test2.acc
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test2.result)" ]
 }
@@ -67,13 +67,13 @@
 }
 
 @test "test3.2" {
-  run acclint -Wno-errors test3.acc
+  run acclint -Wno-warnings test3.acc
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
 }
 
 @test "test3.3" {
-  run acclint -Wno-errors -Wmissing-uv-coordinates test3.acc
+  run acclint -Wno-warnings -Wmissing-uv-coordinates test3.acc
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test3.result)" ]
 }
@@ -87,13 +87,13 @@
 }
 
 @test "test4.2" {
-  run acclint -Wno-errors test4.acc
+  run acclint -Wno-warnings test4.acc
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
 }
 
 @test "test4.3" {
-  run acclint -Wno-errors -Wmissing-uv-coordinates test4.acc
+  run acclint -Wno-warnings -Wmissing-uv-coordinates test4.acc
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test4.result)" ]
 }
