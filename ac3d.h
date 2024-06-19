@@ -95,6 +95,7 @@ private:                                               \
     CHECK(differentMat, m_different_mat, true)
     CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
     CHECK(missingNormal, m_missing_normal, true)
+    CHECK(missingUVCoordinates, m_missing_uv_coordinates, true)
 
     // errors
     CHECK(invalidVertexIndex, m_invalid_vertex_index, true)
@@ -102,7 +103,6 @@ private:                                               \
     CHECK(invalidMaterialIndex, m_invalid_material_index, true)
     CHECK(invalidSurfaceType, m_invalid_surface_type, true)
     CHECK(invalidToken, m_invalid_token, true)
-    CHECK(missingUVCoordinates, m_missing_uv_coordinates, true)
 #undef CHECK
 
     void showLine(std::istringstream &in);
@@ -899,12 +899,17 @@ private:
         }
         size_t getTexturesSize() const
         {
-            size_t actual_textures = 0;
+            size_t actual_textures = textures.size();
 
-            for (const auto &texture : textures)
+            if (actual_textures == 0)
+                return 0;
+
+            for (size_t i = actual_textures - 1; i >= 0; i--)
             {
-                if (texture.name != "empty_texture_no_mapping")
-                    actual_textures++;
+                if (textures[i].name == "empty_texture_no_mapping")
+                    actual_textures--;
+                else
+                    break;
             }
             return actual_textures;
         }

@@ -643,9 +643,9 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                 {
                     if (m_missing_uv_coordinates)
                     {
-                        error() << "missing uv coordinates: "
-                                << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
-                                << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                        warningWithCount(m_missing_uv_coordinates_count) << "missing uv coordinates: "
+                            << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
+                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
                         showLine(iss1, iss1.str().size() + 1);
                     }
                 }
@@ -654,8 +654,8 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                     if (m_extra_uv_coordinates)
                     {
                         warningWithCount(m_extra_uv_coordinates_count) << "extra uv coordinates: "
-                                  << ref.coordinates.size() << " coordinates "
-                                  << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                            << ref.coordinates.size() << " coordinates "
+                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
                         showLine(iss1, offsetOfToken(iss1, valid_textures * 2 + 1));
                     }
                 }

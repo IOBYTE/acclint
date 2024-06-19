@@ -62,6 +62,7 @@ void usage()
     std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material                  Don't show invalid material warnings." << std::endl;
+    std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates warnings." << std::endl;
     std::cerr << "  -Wno-extra-uv-coordinates              Don't show extra uv coordinates warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
@@ -86,7 +87,6 @@ void usage()
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
-    std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
@@ -870,6 +870,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.differentSURFCount(), "different surf: ");
             showCount(ac3d.differentMatCount(), "different mat: ");
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
+            showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingNormalCount(), "missing normal: ");
         }
     }
