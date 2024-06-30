@@ -1893,12 +1893,16 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             }
                             else
                             {
-                                iss2 >> vertex.normal;
+                                Point3 normal{ std::numeric_limits<double>::quiet_NaN(),
+                                               std::numeric_limits<double>::quiet_NaN(),
+                                               std::numeric_limits<double>::quiet_NaN() };
+                                iss2 >> normal;
                                 if (iss2)
                                 {
+                                    vertex.normal = normal;
                                     vertex.has_normal = true;
 
-                                    if (m_invalid_normal)
+                                    if (m_invalid_normal_length)
                                     {
                                         const double length = vertex.normal.length();
                                         // assume truncated float values
@@ -1906,7 +1910,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                                         if (std::fabs(1 - length) > epsilon)
                                         {
-                                            warningWithCount(m_invalid_normal_count) << "invalid normal length: " << length
+                                            warningWithCount(m_invalid_normal_length_count) << "invalid normal length: " << length
                                                       << " should be 1" << std::endl;
                                             // find start of normal
                                             size_t offset = pos2;
@@ -1927,6 +1931,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                     }
                                     else
                                     {
+                                        int valid = 0;
+                                        for (auto value : normal)
+                                        {
+                                            if (std::isnan(value))
+                                                break;
+                                            valid++;
+                                        }
                                         error() << "reading normal" << std::endl;
                                         showLine(iss2);
                                     }

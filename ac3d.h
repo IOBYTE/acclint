@@ -47,7 +47,7 @@ private:                                               \
     CHECK(blankLine, m_blank_line, false)
     CHECK(duplicateVertices, m_duplicate_vertices, true)
     CHECK(unusedVertex, m_unused_vertex, true)
-    CHECK(invalidNormal, m_invalid_normal, true)
+    CHECK(invalidNormalLength, m_invalid_normal_length, true)
     CHECK(invalidMaterial, m_invalid_material, true)
     CHECK(invalidRefCount, m_invalid_ref_count, true)
     CHECK(extraUVCoordinates, m_extra_uv_coordinates, true)

@@ -40,7 +40,8 @@ void usage()
     std::cerr << "  -Wno-unused-material                   Don't show unused material warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-vertices                Don't show duplicate vertices warnings." << std::endl;
     std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
-    std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal warnings." << std::endl;
+    std::cerr << "  -Wno-invalid-normal-length             Don't show invalid normal length warnings." << std::endl;
+    std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
     std::cerr << "  -Wno-missing-surface                   Don't show missing surface warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces                Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces-order          Don't show duplicate surfaces with different vertex order warnings." << std::endl;
@@ -91,7 +92,6 @@ void usage()
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
-    std::cerr << "  -Wno-missing-normal                    Don't show missing normal errors." << std::endl;
     std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     bool unused_vertex = true;
     bool invalid_vertex_index = true;
     bool invalid_texture_coordinate = true;
-    bool invalid_normal = true;
+    bool invalid_normal_length = true;
     bool missing_normal = true;
     bool invalid_material = true;
     bool invalid_material_index = true;
@@ -331,6 +331,7 @@ int main(int argc, char *argv[])
             overlapping_2_sided_surface = false;
             missing_uv_coordinates = false;
             missing_normal = false;
+            invalid_normal_length = false;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -356,9 +357,9 @@ int main(int argc, char *argv[])
         {
             unused_vertex = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-normal" || arg == "-Winvalid-normal")
+        else if (arg == "-Wno-invalid-normal-length" || arg == "-Winvalid-normal-length")
         {
-            invalid_normal = arg.compare(2, 3, "no-") != 0;
+            invalid_normal_length = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-missing-normal" || arg == "-Wmissing-normal")
         {
@@ -746,7 +747,7 @@ int main(int argc, char *argv[])
     ac3d.unusedMaterial(unused_material);
     ac3d.duplicateVertices(duplicate_vertices);
     ac3d.unusedVertex(unused_vertex);
-    ac3d.invalidNormal(invalid_normal);
+    ac3d.invalidNormalLength(invalid_normal_length);
     ac3d.missingNormal(missing_normal);
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
@@ -829,7 +830,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.blankLineCount(), "blank line: ");
             showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");;
             showCount(ac3d.unusedVertexCount(), "unused vertex: ");
-            showCount(ac3d.invalidNormalCount(), "invalid normal: ");
+            showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
             showCount(ac3d.invalidMaterialCount(), "invalid material: ");
             showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
             showCount(ac3d.extraUVCoordinatesCount(), "extra uv coordinates: ");
