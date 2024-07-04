@@ -188,7 +188,7 @@ size_t offsetOfToken(const std::istringstream &in, size_t index)
     return current_offset;
 }
 
-void AC3D::showLine(std::istringstream &in)
+void AC3D::showLine(std::istringstream &in) const
 {
     if (!m_quite)
     {
@@ -204,7 +204,7 @@ void AC3D::showLine(std::istringstream &in)
     }
 }
 
-void AC3D::showLine(const std::istringstream &in, const std::streampos &pos)
+void AC3D::showLine(const std::istringstream &in, const std::streampos &pos) const
 {
     if (!m_quite)
     {
@@ -216,7 +216,7 @@ void AC3D::showLine(const std::istringstream &in, const std::streampos &pos)
     }
 }
 
-void AC3D::showLine(std::istream &in, const std::streampos &pos, int offset)
+void AC3D::showLine(std::istream &in, const std::streampos &pos, int offset) const
 {
     if (!m_quite)
     {
@@ -737,16 +737,16 @@ void AC3D::writeVertices(std::ostream &out, const Object &object) const
     }
 }
 
-void AC3D::convertObjects(std::vector<Object> &objects)
+void AC3D::convertObjectsToAc(std::vector<Object> &objects)
 {
     for (auto &object : objects)
     {
-        convertObject(object);
-        convertObjects(object.kids);
+        convertObjectToAc(object);
+        convertObjectsToAc(object.kids);
     }
 }
 
-void AC3D::convertObject(Object &object)
+void AC3D::convertObjectToAc(Object &object)
 {
     std::vector<Surface> surfaces;
 
@@ -825,6 +825,71 @@ void AC3D::convertObject(Object &object)
     // removing normals on vertices can create duplicate vertices
     cleanVertices(object);
     cleanSurfaces(object);
+}
+
+void AC3D::convertObjectsToAcc(std::vector<Object> &objects)
+{
+    for (auto &object : objects)
+    {
+        convertObjectToAcc(object);
+        convertObjectsToAcc(object.kids);
+    }
+}
+
+void AC3D::convertObjectToAcc(Object &object)
+{
+    struct Triangle
+    {
+        Triangle(unsigned int flags, size_t mat, const Point3 &v0, const Point3 &v1, const Point3 &v2)
+            : m_flags(flags), m_mat(mat)
+        {
+            m_vertices[0] = v0;
+            m_vertices[1] = v1;
+            m_vertices[2] = v2;
+            m_normal = normal(v0, v1, v2);
+        }
+
+        Point3 m_vertices[3];
+        Point3 m_normals[3]{ { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+        Point3 m_normal;
+        unsigned int m_flags;
+        size_t m_mat;
+    };
+
+    std::vector<Triangle> triangles;
+
+    for (auto &surface : object.surfaces)
+    {
+        if (surface.isPolygon())
+        {
+            if (surface.refs.size() > 3)
+            {
+                if (surface.concave)
+                {
+                    // TODO
+                }
+                else // triangle fan
+                {
+                    for (int i = 2; i < static_cast<int>(surface.refs.size()); i++)
+                    {
+                        triangles.emplace_back(surface.flags, surface.mats[0].mat,
+                            object.vertices[surface.refs[0].index].vertex,
+                            object.vertices[surface.refs[i - 1].index].vertex,
+                            object.vertices[surface.refs[i].index].vertex);
+                    }
+                }
+            }
+            else
+            {
+                triangles.emplace_back(surface.flags, surface.mats[0].mat,
+                    object.vertices[surface.refs[0].index].vertex,
+                    object.vertices[surface.refs[1].index].vertex,
+                    object.vertices[surface.refs[2].index].vertex);
+            }
+        }
+    }
+
+    // TODO calculate normals
 }
 
 bool AC3D::readHeader(std::istream &in)
@@ -2581,7 +2646,7 @@ void AC3D::checkUnusedMaterial(std::istream &in)
     }
 }
 
-void AC3D::addConstPoly(std::vector<ConstPoly> &polys, const Object &object, const Matrix &matrix) const
+void AC3D::addConstPoly(std::vector<ConstPoly> &polys, const Object &object, const Matrix &matrix)
 {
     if (object.type.type == "poly")
     {
@@ -4162,14 +4227,9 @@ bool AC3D::write(const std::string &file, int version)
     }
 
     if (m_is_ac && !is_ac) // convert .ac to .acc
-    {
-        std::cerr << "Can't convert " << m_file << " to " << file
-                  << "! Use accc from TORCS or Speed Dreams." << std::endl;
-        return false;
-    }
-
-    if (!m_is_ac && is_ac)
-        convertObjects(m_objects);
+        convertObjectsToAcc(m_objects);
+    else if (!m_is_ac && is_ac) // convert .acc to .ac
+        convertObjectsToAc(m_objects);
 
     std::ofstream of(file, std::ofstream::binary);
 
@@ -4202,12 +4262,12 @@ bool AC3D::write(const std::string &file, int version)
     return true;
 }
 
-bool AC3D::sameMaterial(const Material &material1, const Material &material2) const
+bool AC3D::sameMaterial(const Material &material1, const Material &material2)
 {
     return material1.name == material2.name && sameMaterialParameters(material1, material2);
 }
 
-bool AC3D::sameMaterialParameters(const Material &material1, const Material &material2) const
+bool AC3D::sameMaterialParameters(const Material &material1, const Material &material2)
 {
     if (material1.rgb == material2.rgb &&
         material1.amb == material2.amb &&
@@ -4620,7 +4680,7 @@ bool AC3D::cleanVertices()
         start = std::chrono::system_clock::now();
     }
 
-    bool result = cleanVertices(m_objects);
+    const bool result = cleanVertices(m_objects);
 
     if (m_show_times)
     {
@@ -5217,7 +5277,7 @@ void AC3D::combineTexture()
     }
 }
 
-void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix) const
+void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix)
 {
     if (object.type.type == "poly")
     {
@@ -5260,14 +5320,14 @@ void AC3D::fixOverlapping2SidedSurface()
 
         if (surface->isPolygon())
         {
-            if (surface->isShaded())
+            if (surface->isSmoothShaded())
                 surface->flags = 0x10;
             else
                 surface->flags = 0x00;
         }
         else if (surface->isTriangleStrip())
         {
-            if (surface->isShaded())
+            if (surface->isSmoothShaded())
                 surface->flags = 0x14;
             else
                 surface->flags = 0x04;

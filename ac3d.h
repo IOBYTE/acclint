@@ -105,9 +105,9 @@ private:                                               \
     CHECK(invalidToken, m_invalid_token, true)
 #undef CHECK
 
-    void showLine(std::istringstream &in);
-    void showLine(const std::istringstream &in, const std::streampos &pos);
-    void showLine(std::istream &in, const std::streampos &pos, int offset = 0);
+    void showLine(std::istringstream &in) const;
+    void showLine(const std::istringstream &in, const std::streampos &pos) const;
+    void showLine(std::istream &in, const std::streampos &pos, int offset = 0) const;
 
 public:
     enum class DumpType { group, poly, surf};
@@ -698,7 +698,11 @@ private:
         {
             return (flags & TypeMask) == TriangleStrip;
         }
-        bool isShaded() const
+        bool isFlatShaded() const
+        {
+            return (flags & ShadeMask) == 0;
+        }
+        bool isSmoothShaded() const
         {
             return (flags & ShadeMask) == Shaded;
         }
@@ -899,12 +903,12 @@ private:
         }
         size_t getTexturesSize() const
         {
-            size_t actual_textures = textures.size();
+            int actual_textures = static_cast<int>(textures.size());
 
             if (actual_textures == 0)
                 return 0;
 
-            for (size_t i = actual_textures - 1; i >= 0; i--)
+            for (int i = actual_textures - 1; i >= 0; i--)
             {
                 if (textures[i].name == "empty_texture_no_mapping")
                     actual_textures--;
@@ -1047,28 +1051,30 @@ private:
     void checkDifferentMat(std::istream& in, const Object& object);
     void checkDifferentUV(std::istream& in, const Object& object);
     void checkGroupWithGeometry(std::istream& in, const Object& object);
-    bool cleanObjects(std::vector<Object> &objects);
-    bool cleanVertices(std::vector<Object> &objects);
-    bool cleanVertices(Object &object);
-    bool cleanSurfaces(std::vector<Object> &objects);
-    bool cleanSurfaces(Object &object);
-    bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);
-    void convertObjects(std::vector<Object> &objects);
-    void convertObject(Object &object);
-    bool sameMaterial(const Material &material1, const Material &material2) const;
-    bool sameMaterialParameters(const Material &material1, const Material &material2) const;
+    static bool cleanObjects(std::vector<Object> &objects);
+    static bool cleanVertices(std::vector<Object> &objects);
+    static bool cleanVertices(Object &object);
+    static bool cleanSurfaces(std::vector<Object> &objects);
+    static bool cleanSurfaces(Object &object);
+    static bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);
+    static void convertObjectsToAc(std::vector<Object> &objects);
+    static void convertObjectToAc(Object &object);
+    static void convertObjectsToAcc(std::vector<Object> &objects);
+    static void convertObjectToAcc(Object &object);
+    static bool sameMaterial(const Material &material1, const Material &material2);
+    static bool sameMaterialParameters(const Material &material1, const Material &material2);
     bool setMaterialUsed(size_t index);
-    bool splitMultipleSURF(std::vector<Object> &kids);
-    bool splitMultipleMat(std::vector<Object> &kids);
+    static bool splitMultipleSURF(std::vector<Object> &kids);
+    static bool splitMultipleMat(std::vector<Object> &kids);
     void transform(const Matrix &matrix);
     void combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects);
-    void addConstPoly(std::vector<ConstPoly> &polys, const Object &object, const Matrix &matrix) const;
-    void addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix) const;
-    void fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface *> &surfaces);
+    static void addConstPoly(std::vector<ConstPoly> &polys, const Object &object, const Matrix &matrix);
+    static void addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix);
+    static void fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface *> &surfaces);
     bool hasOpaqueTexture(const Object &object);
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
-    void getObjects(std::vector<Object *> &polys, Object *object);
+    static void getObjects(std::vector<Object *> &polys, Object *object);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
