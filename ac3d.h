@@ -327,6 +327,11 @@ private:
                 z(z() / l);
             }
         }
+        double angle(const Point3 &other) const
+        {
+            return acos(dot(other) / (length() * other.length()));
+        }
+
         bool equals(const Point3 &other) const
         {
             static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
@@ -507,6 +512,7 @@ private:
     {
         size_t mat = 0;
 
+        explicit Mat(size_t index) : LineInfo(), mat(index) { };
         Mat(size_t number, const std::streampos& pos, size_t index) : LineInfo(number, pos), mat(index) { }
     };
 
@@ -555,7 +561,7 @@ private:
             degenerate = AC3D::degenerate(v0.vertex, v1.vertex, v2.vertex);
 
             if (!degenerate)
-                normal = AC3D::normal(v0.vertex, v1.vertex, v2.vertex);
+                normal = AC3D::normalizedNormal(v0.vertex, v1.vertex, v2.vertex);
         }
         bool sameTriangle(const Triangle &triangle, Difference difference) const;
         bool sameTriangle(const Object &object, const Surface &surface, Difference difference) const;
@@ -1080,7 +1086,8 @@ private:
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
     static bool ccw(const AC3D::Point2 &p1, const AC3D::Point2 &p2, const AC3D::Point2 &p3);
     static double closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3);
-    static Point3 normal(const Point3& p0, const Point3& p1, const Point3& p2);
+    static Point3 normalizedNormal(const Point3& p0, const Point3& p1, const Point3& p2);
+    static Point3 unnormalizedNormal(const Point3 &p0, const Point3 &p1, const Point3 &p2);
     static bool degenerate(const Point3& p0, const Point3& p1, const Point3& p2);
     static bool degenerate(const std::array<Point3, 3> &vertices);
     static bool coplanar(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);

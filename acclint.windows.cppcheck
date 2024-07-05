@@ -39,6 +39,8 @@
         <suppression>clang-tidy-performance-avoid-endl</suppression>
         <suppression>clang-tidy-cppcoreguidelines-owning-memory</suppression>
         <suppression>clang-tidy-cert-err33-c</suppression>
+        <suppression>clang-tidy-modernize-use-nodiscard</suppression>
+        <suppression>clang-tidy-misc-non-private-member-variables-in-classes</suppression>
     </suppressions>
     <safe-checks>
         <class-public/>
