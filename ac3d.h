@@ -327,9 +327,14 @@ private:
                 z(z() / l);
             }
         }
-        double angle(const Point3 &other) const
+        double angleRadians(const Point3 &other) const
         {
             return acos(dot(other) / (length() * other.length()));
+        }
+
+        double angleDegrees(const Point3 &other) const
+        {
+            return angleRadians(other) * 180.0 / M_PI;
         }
 
         bool equals(const Point3 &other) const

@@ -864,9 +864,9 @@ void AC3D::convertObjectToAcc(Object &object)
             else
             {
                 m_normal = unnormalizedNormal(v0, v1, v2);
-                const double a1 = (v1 - v0).angle(v2 - v0);
-                const double a2 = (v2 - v1).angle(v0 - v1);
-                const double a3 = (v0 - v2).angle(v1 - v2);
+                const double a1 = (v1 - v0).angleRadians(v2 - v0);
+                const double a2 = (v2 - v1).angleRadians(v0 - v1);
+                const double a3 = (v0 - v2).angleRadians(v1 - v2);
 
                 m_normals[0].push_back(m_normal * a1);
                 m_normals[1].push_back(m_normal * a2);
@@ -899,16 +899,16 @@ void AC3D::convertObjectToAcc(Object &object)
                 }
             }
         }
-        Vertex vertex(size_t index) const
+        Vertex vertex(size_t index, const Object &object) const
         {
-            // TODO use crease
             Vertex  vertex;
             vertex.has_normal = true;
             vertex.vertex = m_vertices[index];
             vertex.normal = m_normals[index][0];
             for (size_t i = 1; i < m_normals[index].size(); i++)
             {
-                vertex.normal += m_normals[index][i];
+                if (object.creases.empty() || vertex.normal.angleDegrees(m_normals[index][i]) < object.creases[0].crease)
+                    vertex.normal += m_normals[index][i];
             }
             vertex.normal.normalize();
             return vertex;
@@ -983,7 +983,7 @@ void AC3D::convertObjectToAcc(Object &object)
         for (int i = 0; i < 3; i++)
         {
             bool found = false;
-            const Vertex vertex = triangle.vertex(i);
+            const Vertex vertex = triangle.vertex(i, object);
             for (size_t j = 0; j < vertices.size(); j++)
             {
                 if (vertices[j] == vertex)
