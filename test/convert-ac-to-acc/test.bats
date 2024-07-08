@@ -6,7 +6,7 @@
   run acclint test1.ac -o test1.output.acc
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
-  [ "$(cat test1.output.ac)" = "$(cat test1.result.ac)" ]
+  [ "$(cat test1.output.acc)" = "$(cat test1.result.acc)" ]
   rm test1.output.acc
 }
 
@@ -16,7 +16,7 @@
   run acclint test2.ac -o test2.output.acc
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
-  [ "$(cat test2.output.ac)" = "$(cat test2.result.ac)" ]
+  [ "$(cat test2.output.acc)" = "$(cat test2.result.acc)" ]
   rm test2.output.acc
 }
 
@@ -26,7 +26,7 @@
   run acclint test3.ac -o test3.output.acc
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
-  [ "$(cat test3.output.ac)" = "$(cat test3.result.ac)" ]
+  [ "$(cat test3.output.acc)" = "$(cat test3.result.acc)" ]
   rm test3.output.acc
 }
 
@@ -36,8 +36,18 @@
   run acclint -Wno-different-uv test4.ac -o test4.output.acc
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
-  [ "$(cat test4.output.ac)" = "$(cat test4.result.ac)" ]
+  [ "$(cat test4.output.acc)" = "$(cat test4.result.acc)" ]
   rm test4.output.acc
+}
+
+################################################################################
+
+@test "test5" {
+  run acclint test5.ac -o test5.output.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat test5.output.acc)" = "$(cat test5.result.acc)" ]
+  rm test5.output.acc
 }
 
 ################################################################################

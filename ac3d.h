@@ -336,7 +336,6 @@ private:
         {
             return angleRadians(other) * 180.0 / M_PI;
         }
-
         bool equals(const Point3 &other) const
         {
             static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
