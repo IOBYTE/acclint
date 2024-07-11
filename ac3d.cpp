@@ -893,8 +893,8 @@ void AC3D::convertObjectToAcc(Object &object)
                 {
                     if (m_vertices[i] == other.m_vertices[j])
                     {
-                        m_normals[i].push_back(other.m_normals[j][0]);
-                        other.m_normals[j].push_back(m_normals[i][0]);
+                        m_normals[i].emplace_back(other.m_normals[j][0]);
+                        other.m_normals[j].emplace_back(m_normals[i][0]);
                     }
                 }
             }
@@ -907,7 +907,10 @@ void AC3D::convertObjectToAcc(Object &object)
             vertex.normal = m_normals[index][0];
             for (size_t i = 1; i < m_normals[index].size(); i++)
             {
-                if (object.creases.empty() || vertex.normal.angleDegrees(m_normals[index][i]) < object.creases[0].crease)
+                double angle = vertex.normal.angleDegrees(m_normals[index][i]);
+                if (!object.creases.empty() && angle < object.creases[0].crease)
+                    vertex.normal += m_normals[index][i];
+                else if (object.creases.empty() && angle < 179.999)
                     vertex.normal += m_normals[index][i];
             }
             vertex.normal.normalize();
@@ -967,9 +970,13 @@ void AC3D::convertObjectToAcc(Object &object)
         }
     }
 
-    for (size_t i = 0, end = triangles.size() - 1; i < end; i++)
+    if (triangles.empty())
+        return;
+
+    size_t size = triangles.size();
+    for (size_t i = 0, end = size - 1; i < end; i++)
     {
-        for (size_t j = i + 1; j < triangles.size(); j++)
+        for (size_t j = i + 1; j < size; j++)
         {
             if (triangles[i].isSmoothShaded() && triangles[j].isSmoothShaded())
                 triangles[i].smooth(triangles[j]);
@@ -996,7 +1003,7 @@ void AC3D::convertObjectToAcc(Object &object)
             if (!found)
             {
                 triangle.m_vertex_index[i] = vertices.size();
-                vertices.push_back(vertex);
+                vertices.emplace_back(vertex);
             }
         }
     }
@@ -1015,9 +1022,9 @@ void AC3D::convertObjectToAcc(Object &object)
             Ref ref;
             ref.index = triangle.m_vertex_index[i];
             ref.coordinates = triangle.m_coordinates[i];
-            surface.refs.push_back(ref);
+            surface.refs.emplace_back(ref);
         }
-        object.surfaces.push_back(surface);
+        object.surfaces.emplace_back(surface);
     }
 }
 
