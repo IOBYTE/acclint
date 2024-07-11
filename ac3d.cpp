@@ -907,7 +907,7 @@ void AC3D::convertObjectToAcc(Object &object)
             vertex.normal = m_normals[index][0];
             for (size_t i = 1; i < m_normals[index].size(); i++)
             {
-                double angle = vertex.normal.angleDegrees(m_normals[index][i]);
+                const double angle = vertex.normal.angleDegrees(m_normals[index][i]);
                 if (!object.creases.empty() && angle < object.creases[0].crease)
                     vertex.normal += m_normals[index][i];
                 else if (object.creases.empty() && angle < 179.999)
@@ -941,7 +941,7 @@ void AC3D::convertObjectToAcc(Object &object)
                 }
                 else // triangle fan
                 {
-                    for (int i = 2; i < static_cast<int>(surface.refs.size()); i++)
+                    for (size_t i = 2; i < static_cast<size_t>(surface.refs.size()); i++)
                     {
                         const Triangle triangle(surface.flags, surface.mats[0].mat,
                             object.vertices[surface.refs[0].index].vertex,
@@ -973,7 +973,7 @@ void AC3D::convertObjectToAcc(Object &object)
     if (triangles.empty())
         return;
 
-    size_t size = triangles.size();
+    const size_t size = triangles.size();
     for (size_t i = 0, end = size - 1; i < end; i++)
     {
         for (size_t j = i + 1; j < size; j++)
@@ -987,7 +987,7 @@ void AC3D::convertObjectToAcc(Object &object)
 
     for (auto &triangle : triangles)
     {
-        for (int i = 0; i < 3; i++)
+        for (size_t i = 0; i < 3; i++)
         {
             bool found = false;
             const Vertex vertex = triangle.vertex(i, object);
