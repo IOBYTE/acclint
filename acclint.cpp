@@ -109,6 +109,7 @@ void usage()
     std::cerr << "  --summary                              Show summary of warnings." << std::endl;
 
     std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
+    std::cerr << "  -l                                     Print the name of the input file." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -218,6 +219,7 @@ int main(int argc, char *argv[])
     bool quite = false;
     bool summary = false;
     unsigned int threads = 1;
+    bool listInput = false;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -711,6 +713,10 @@ int main(int argc, char *argv[])
         {
             summary = true;
         }
+        else if (arg == "-l")
+        {
+            listInput = true;
+        }
         else if (arg[0] != '-')
         {
             if (in_file.empty())
@@ -804,6 +810,9 @@ int main(int argc, char *argv[])
     ac3d.quite(quite);
     ac3d.summary(summary);
     ac3d.threads(threads);
+
+    if (listInput)
+       std::cerr << in_file << std::endl;
 
     if (!ac3d.read(in_file))
     {

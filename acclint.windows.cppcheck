@@ -42,9 +42,6 @@
         <suppression>clang-tidy-modernize-use-nodiscard</suppression>
         <suppression>clang-tidy-misc-non-private-member-variables-in-classes</suppression>
     </suppressions>
-    <safe-checks>
-        <class-public/>
-    </safe-checks>
     <tools>
         <tool>clang-tidy</tool>
     </tools>
