@@ -3205,7 +3205,10 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
     if (m_is_ac)
         return;
 
-    for (size_t i = 0; i < object.surfaces.size(); ++i)
+    if (object.surfaces.empty())
+        return;
+
+    for (size_t i = 0, endi = object.surfaces.size() - 1; i < endi; ++i)
     {
         const Surface &surface1 = object.surfaces[i];
 
@@ -3360,7 +3363,10 @@ void AC3D::checkMissingSurfaces(std::istream &in, const Object &object)
 
 void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
 {
-    for (size_t i = 0; i < object.surfaces.size(); ++i)
+    if (object.surfaces.empty())
+        return;
+
+    for (size_t i = 0, endi = object.surfaces.size(); i < endi; ++i)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
         {
@@ -3556,7 +3562,10 @@ void AC3D::checkGroupWithGeometry(std::istream& in, const Object& object)
 
 void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object, Surface &surface)
 {
-    for (size_t i = 0; i < surface.refs.size(); ++i)
+    if (surface.refs.empty())
+        return;
+
+    for (size_t i = 0, endi = surface.refs.size() - 1; i < endi; ++i)
     {
         for (size_t j = i + 1; j < surface.refs.size(); ++j)
         {

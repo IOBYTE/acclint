@@ -36,6 +36,9 @@ set(FLAG_CANDIDATES
     "-g -faddress-sanitizer"
 )
 
+IF(POLICY CMP0109)
+  CMAKE_POLICY(SET CMP0109 NEW)
+ENDIF(POLICY CMP0109)
 
 if (SANITIZE_ADDRESS AND (SANITIZE_THREAD OR SANITIZE_MEMORY))
     message(FATAL_ERROR "AddressSanitizer is not compatible with "

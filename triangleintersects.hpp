@@ -103,7 +103,7 @@ void solve_spd_linear_equations(T& x, T& y, bool& is_solution_unique, double a00
     // in exact arithmetics, 'det' cannot be negative; but we must take into account floating-point errors
     if (det < -1e-4)
     {
-        throw std::logic_error{};
+        throw std::logic_error{"det is negative"};
     }
     if (det < 0.0)
     {
@@ -1107,7 +1107,7 @@ class TriangleIntersects
             bool status = n.normalize();
             if (!status)
             {
-                throw std::logic_error{};
+                throw std::logic_error{"normalize filed"};
             }
             // xv1, xv2. xu1, xu2 are coordinates of V1,...,U2 projected onto the triline
             // in this coordinate system, position of U0 is its origin
