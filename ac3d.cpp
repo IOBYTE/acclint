@@ -2130,15 +2130,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                         if (m_trailing_text)
                                             warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
                                     }
-                                    else
+                                    else if (m_invalid_normal)
                                     {
-                                        int valid = 0;
-                                        for (auto value : normal)
-                                        {
-                                            if (std::isnan(value))
-                                                break;
-                                            valid++;
-                                        }
                                         error() << "reading normal" << std::endl;
                                         showLine(iss2);
                                     }

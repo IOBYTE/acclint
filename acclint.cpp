@@ -86,6 +86,7 @@ void usage()
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
+    std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal errors." << std::endl;
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
@@ -150,6 +151,7 @@ int main(int argc, char *argv[])
     bool invalid_texture_coordinate = true;
     bool invalid_normal_length = true;
     bool missing_normal = true;
+    bool invalid_normal = true;
     bool invalid_material = true;
     bool invalid_material_index = true;
     bool invalid_ref_count = true;
@@ -367,6 +369,10 @@ int main(int argc, char *argv[])
         {
             missing_normal = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-invalid-normal" || arg == "-Winvalid-normal")
+        {
+            invalid_normal = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
         {
             invalid_material = arg.compare(2, 3, "no-") != 0;
@@ -542,6 +548,7 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-errors")
         {
             not_ac3d_file = false;
+            invalid_normal = false;
             invalid_material_index = false;
             invalid_surface_type = false;
             invalid_token = false;
@@ -755,6 +762,7 @@ int main(int argc, char *argv[])
     ac3d.unusedVertex(unused_vertex);
     ac3d.invalidNormalLength(invalid_normal_length);
     ac3d.missingNormal(missing_normal);
+    ac3d.invalidNormal(invalid_normal);
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.invalidRefCount(invalid_ref_count);
@@ -890,6 +898,7 @@ int main(int argc, char *argv[])
             // errors
             showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
+            showCount(ac3d.invalidNormalCount(), "invalid normal:");
         }
     }
 
