@@ -898,7 +898,12 @@ int main(int argc, char *argv[])
             // errors
             showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
-            showCount(ac3d.invalidNormalCount(), "invalid normal:");
+            showCount(ac3d.invalidNormalCount(), "invalid normal: ");
+            showCount(ac3d.invalidVertexIndexCount(), "invalid vertex index: ");
+            showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
+            showCount(ac3d.invalidMaterialIndexCount(), "invalid material index: ");
+            showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
+            showCount(ac3d.invalidTokenCount(), "invalid token: ");
         }
     }
 
