@@ -18,7 +18,7 @@
 
 //---------------------------------------------------------------------------
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #pragma warning( disable : 4996)
 #endif
 
@@ -28,6 +28,8 @@
 #include <iostream>
 #include <sstream>
 #include <chrono>
+
+namespace {
 
 void usage()
 {
@@ -128,6 +130,8 @@ void showCount(size_t count, const char *text)
     if (count > 0)
         std::cout << text << count << std::endl;
 }
+
+} // namespace
 
 int main(int argc, char *argv[])
 {
