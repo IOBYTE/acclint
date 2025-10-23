@@ -1493,7 +1493,7 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
         else
         {
             if (m_invalid_token)
-                error() << "invalid token: " << token << std::endl;
+                errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
             return false;
         }
 
@@ -2159,10 +2159,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         iss2 >> token1;
                         if (token1 == numsurf_token || token1 == kids_token)
                         {
-                            error() << "missing vertex" << std::endl;
-                            showLine(iss2, 0);
-                            ungetLine(in);
-                            break;
+                            if (m_missing_vertex)
+                            {
+                                errorWithCount(m_missing_vertex_count) << "missing vertex" << std::endl;
+                                showLine(iss2, 0);
+                                ungetLine(in);
+                                break;
+                            }
                         }
 
                         error() << "reading vertex" << std::endl;

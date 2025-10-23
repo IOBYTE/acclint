@@ -96,6 +96,7 @@ void usage()
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
+    std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
     std::cerr << "  --splitPolygon                         Split polygon surface into seperate triangle surfaces." << std::endl;
@@ -155,14 +156,12 @@ int main(int argc, char *argv[])
     bool invalid_texture_coordinate = true;
     bool invalid_normal_length = true;
     bool missing_normal = true;
-    bool invalid_normal = true;
     bool invalid_material = true;
     bool invalid_material_index = true;
     bool invalid_ref_count = true;
     bool extra_uv_coordinates = true;
     bool missing_uv_coordinates = true;
     bool invalid_surface_type = true;
-    bool invalid_token = true;
     bool missing_surfaces = true;
     bool duplicate_surfaces = true;
     bool duplicate_surfaces_order = true;
@@ -206,6 +205,9 @@ int main(int argc, char *argv[])
     bool different_mat = true;
 
     // errors
+    bool invalid_normal = true;
+    bool invalid_token = true;
+    bool missing_vertex = true;
     bool not_ac3d_file = true;
 
     std::vector<std::string> texture_paths;
@@ -552,6 +554,8 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-errors")
         {
             not_ac3d_file = false;
+            missing_vertex = false;
+            missing_normal = false;
             invalid_normal = false;
             invalid_material_index = false;
             invalid_surface_type = false;
@@ -562,6 +566,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
             not_ac3d_file = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-missing-vertex" || arg == "-Wmissing-vertex")
+        {
+            missing_vertex = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-missing-uv-coordinates" || arg == "-Wmissing-uv-coordinates")
         {
@@ -770,6 +778,7 @@ int main(int argc, char *argv[])
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.invalidRefCount(invalid_ref_count);
+    ac3d.missingVertex(missing_vertex);
     ac3d.missingUVCoordinates(missing_uv_coordinates);
     ac3d.extraUVCoordinates(extra_uv_coordinates);
     ac3d.invalidSurfaceType(invalid_surface_type);
