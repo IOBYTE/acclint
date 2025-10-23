@@ -645,7 +645,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                     {
                         if (m_invalid_vertex_index)
                         {
-                            error() << "invalid vertex index: " << ref.index << " of "
+                            errorWithCount(m_invalid_vertex_index_count) << "invalid vertex index: " << ref.index << " of "
                                     << object.vertices.size() << std::endl;
                             showLine(iss1, 0);
                         }
