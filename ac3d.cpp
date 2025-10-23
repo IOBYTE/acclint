@@ -2053,17 +2053,20 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             object.numvert.line_pos = m_line_pos;
 
             iss1 >> std::ws;
-            object.numvert.number_offset = static_cast<int>(iss1.tellg());
+            if (iss1.eof())
+                object.numvert.number_offset = static_cast<int>(numvert_token.size() + 1);
+            else
+                object.numvert.number_offset = static_cast<int>(iss1.tellg());
             iss1 >> object.numvert.number;
 
-            if (iss1 && object.numvert.number >= 0)
+            if (iss1 && object.numvert.number > 0)
                 checkTrailing(iss1);
             else
             {
                 if (m_invalid_number_of_vertices)
                 {
                     errorWithCount(m_invalid_number_of_vertices_count) << "invalid number of verticies" << std::endl;
-                    showLine(iss1);
+                    showLine(iss1, object.numvert.number_offset);
                 }
                 continue;
             }
@@ -2187,7 +2190,10 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             object.numsurf.line_pos = m_line_pos;
 
             iss1 >> std::ws;
-            object.numsurf.number_offset = static_cast<int>(iss1.tellg());
+            if (iss1.eof())
+                object.numsurf.number_offset = static_cast<int>(numsurf_token.size() + 1);
+            else
+                object.numsurf.number_offset = static_cast<int>(iss1.tellg());
             iss1 >> object.numsurf.number;
 
             if (!iss1 || object.numsurf.number < 0)
@@ -2195,7 +2201,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 if (m_invalid_number_of_surfaces)
                 {
                     errorWithCount(m_invalid_number_of_surfaces_count) << "invalid number of surfaces" << std::endl;
-                    showLine(iss1);
+                    showLine(iss1, object.numsurf.number_offset);
                 }
                 continue;
             }
