@@ -2187,10 +2187,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             object.numsurf.number_offset = static_cast<int>(iss1.tellg());
             iss1 >> object.numsurf.number;
 
-            if (!iss1)
+            if (!iss1 || object.numsurf.number < 0)
             {
-                error() << "reading number of surfaces" << std::endl;
-                showLine(iss1);
+                if (m_invalid_number_of_surfaces)
+                {
+                    errorWithCount(m_invalid_number_of_surfaces_count) << "invalid number of surfaces" << std::endl;
+                    showLine(iss1);
+                }
                 continue;
             }
 

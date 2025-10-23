@@ -92,6 +92,7 @@ void usage()
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
+    std::cerr << "  -Wno-invalid-number-of-surfaces        Don't show invalid number of surfaces errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
@@ -209,6 +210,7 @@ int main(int argc, char *argv[])
     bool invalid_token = true;
     bool missing_vertex = true;
     bool not_ac3d_file = true;
+    bool invalid_number_of_surfaces = true;
 
     std::vector<std::string> texture_paths;
     bool dump = false;
@@ -562,6 +564,7 @@ int main(int argc, char *argv[])
             invalid_token = false;
             invalid_vertex_index = false;
             invalid_texture_coordinate = false;
+            invalid_number_of_surfaces = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -781,6 +784,7 @@ int main(int argc, char *argv[])
     ac3d.missingVertex(missing_vertex);
     ac3d.missingUVCoordinates(missing_uv_coordinates);
     ac3d.extraUVCoordinates(extra_uv_coordinates);
+    ac3d.invalidNumberOfSurfaces(invalid_number_of_surfaces);
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidVertexIndex(invalid_vertex_index);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
@@ -929,6 +933,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidNormalCount(), "invalid normal: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
+            showCount(ac3d.invalidNumberOfSurfacesCount(), "invalid number of surfaces: ");
         }
     }
 
