@@ -2063,9 +2063,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 checkTrailing(iss1);
             else
             {
-                if (m_invalid_number_of_vertices)
+                if (m_invalid_vertex_count)
                 {
-                    errorWithCount(m_invalid_number_of_vertices_count) << "invalid number of verticies" << std::endl;
+                    errorWithCount(m_invalid_vertex_count_count) << "invalid vertex count" << std::endl;
                     showLine(iss1, object.numvert.number_offset);
                 }
                 continue;
@@ -2138,7 +2138,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                     }
                                     else if (m_invalid_normal)
                                     {
-                                        errorWithCount(m_invalid_normal_count) << "reading normal" << std::endl;
+                                        errorWithCount(m_invalid_normal_count) << "invalid normal" << std::endl;
                                         showLine(iss2);
                                     }
                                 }
@@ -2198,9 +2198,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (!iss1 || object.numsurf.number < 0)
             {
-                if (m_invalid_number_of_surfaces)
+                if (m_invalid_surface_count)
                 {
-                    errorWithCount(m_invalid_number_of_surfaces_count) << "invalid number of surfaces" << std::endl;
+                    errorWithCount(m_invalid_surface_count_count) << "invalid surface count" << std::endl;
                     showLine(iss1, object.numsurf.number_offset);
                 }
                 continue;

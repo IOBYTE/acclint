@@ -92,8 +92,8 @@ void usage()
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
-    std::cerr << "  -Wno-invalid-number-of-surfaces        Don't show invalid number of surfaces errors." << std::endl;
-    std::cerr << "  -Wno-invalid-number-of-vertices        Don't show invalid number of vertices errors." << std::endl;
+    std::cerr << "  -Wno-invalid-surface-count             Don't show invalid surface count errors." << std::endl;
+    std::cerr << "  -Wno-invalid-vertex-count              Don't show invalid vertex count errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
@@ -211,8 +211,8 @@ int main(int argc, char *argv[])
     bool invalid_token = true;
     bool missing_vertex = true;
     bool not_ac3d_file = true;
-    bool invalid_number_of_surfaces = true;
-    bool invalid_number_of_vertices = true;
+    bool invalid_surface_count = true;
+    bool invalid_vertex_count = true;
 
     std::vector<std::string> texture_paths;
     bool dump = false;
@@ -566,8 +566,8 @@ int main(int argc, char *argv[])
             invalid_token = false;
             invalid_vertex_index = false;
             invalid_texture_coordinate = false;
-            invalid_number_of_surfaces = false;
-            invalid_number_of_vertices = false;
+            invalid_surface_count = false;
+            invalid_vertex_count = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -605,13 +605,13 @@ int main(int argc, char *argv[])
         {
             invalid_texture_coordinate = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-number-of-vertices" || arg == "-Winvalid-number-of-vertices")
+        else if (arg == "-Wno-invalid-vertex-count" || arg == "-Winvalid-vertex-count")
         {
-            invalid_number_of_vertices = arg.compare(2, 3, "no-") != 0;
+            invalid_vertex_count = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-number-of-surfaces" || arg == "-Winvalid-number-of-surfaces")
+        else if (arg == "-Wno-invalid-surface-count" || arg == "-Winvalid-surface-count")
         {
-            invalid_number_of_surfaces = arg.compare(2, 3, "no-") != 0;
+            invalid_surface_count = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "--splitSURF")
         {
@@ -785,7 +785,7 @@ int main(int argc, char *argv[])
     ac3d.duplicateMaterials(duplicate_materials);
     ac3d.unusedMaterial(unused_material);
     ac3d.duplicateVertices(duplicate_vertices);
-    ac3d.invalidNumberOfVertices(invalid_number_of_vertices);
+    ac3d.invalidVertexCount(invalid_vertex_count);
     ac3d.unusedVertex(unused_vertex);
     ac3d.invalidNormalLength(invalid_normal_length);
     ac3d.missingNormal(missing_normal);
@@ -796,7 +796,7 @@ int main(int argc, char *argv[])
     ac3d.missingVertex(missing_vertex);
     ac3d.missingUVCoordinates(missing_uv_coordinates);
     ac3d.extraUVCoordinates(extra_uv_coordinates);
-    ac3d.invalidNumberOfSurfaces(invalid_number_of_surfaces);
+    ac3d.invalidSurfaceCount(invalid_surface_count);
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidVertexIndex(invalid_vertex_index);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
@@ -945,8 +945,8 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidNormalCount(), "invalid normal: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
-            showCount(ac3d.invalidNumberOfSurfacesCount(), "invalid number of surfaces: ");
-            showCount(ac3d.invalidNumberOfVerticesCount(), "invalid number of vertices: ");
+            showCount(ac3d.invalidSurfaceCountCount(), "invalid surface count: ");
+            showCount(ac3d.invalidVertexCountCount(), "invalid vertex count: ");
         }
     }
 

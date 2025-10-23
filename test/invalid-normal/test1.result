@@ -1,13 +1,13 @@
-test1.acc:12 error: reading normal
+test1.acc:12 error: invalid normal
 0 0 0 0
        ^
-test1.acc:13 error: reading normal
+test1.acc:13 error: invalid normal
 1 0 0 0 0
          ^
-test1.acc:14 error: reading normal
+test1.acc:14 error: invalid normal
 1 1 0 0 0 nan
           ^
-test1.acc:15 error: reading normal
+test1.acc:15 error: invalid normal
 0 1 0 nan 0 0
       ^
 4 errors
