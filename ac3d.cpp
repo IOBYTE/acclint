@@ -450,7 +450,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                                     }
                                     else if (m_invalid_texture_coordinate)
                                     {
-                                        error() << "reading forth texture cordinate: \"" << trailing << "\"" << std::endl;
+                                        errorWithCount(m_invalid_texture_coordinate_count) << "reading forth texture cordinate: \"" << trailing << "\"" << std::endl;
                                         showLine(in);
                                     }
                                 }
@@ -2132,7 +2132,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                     }
                                     else if (m_invalid_normal)
                                     {
-                                        error() << "reading normal" << std::endl;
+                                        errorWithCount(m_invalid_normal_count) << "reading normal" << std::endl;
                                         showLine(iss2);
                                     }
                                 }

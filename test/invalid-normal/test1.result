@@ -11,4 +11,3 @@ test1.acc:15 error: reading normal
 0 1 0 nan 0 0
       ^
 4 errors
-invalid normal: 4

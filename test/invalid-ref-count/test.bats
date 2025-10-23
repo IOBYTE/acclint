@@ -34,6 +34,12 @@
   rm test1.output.ac
 }
 
+@test "test1.6" {
+  run acclint test1.ac --summary
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test1.6.result)" ]
+}
+
 ################################################################################
 
 @test "test2" {
