@@ -2239,7 +2239,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         }
                         else if (m_invalid_token)
                         {
-                            error() << "invalid token: " << token1 << std::endl;
+                            errorWithCount(m_invalid_token_count) << "invalid token: " << token1 << std::endl;
                             showLine(iss2, 0);
                         }
                     }
@@ -2312,7 +2312,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (m_invalid_token)
         {
-            error() << "invalid token: " << token << std::endl;
+            errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
             showLine(iss1, 0);
         }
     }
@@ -2658,7 +2658,7 @@ bool AC3D::read(const std::string &file)
             }
             else if (m_invalid_token)
             {
-                error() << "invalid token: " << token << std::endl;
+                errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
                 showLine(iss, 0);
             }
         }
@@ -2691,7 +2691,7 @@ bool AC3D::read(const std::string &file)
         }
         else if (m_invalid_token)
         {
-            error() << "invalid token: " << token << std::endl;
+            errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
             showLine(iss, 0);
         }
     }
