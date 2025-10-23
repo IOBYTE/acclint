@@ -94,6 +94,7 @@ void usage()
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-count             Don't show invalid surface count errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-count              Don't show invalid vertex count errors." << std::endl;
+    std::cerr << "  -Wno-invalid-kids-count                Don't show invalid kids count errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
@@ -213,6 +214,7 @@ int main(int argc, char *argv[])
     bool not_ac3d_file = true;
     bool invalid_surface_count = true;
     bool invalid_vertex_count = true;
+    bool invalid_kids_count = true;
 
     std::vector<std::string> texture_paths;
     bool dump = false;
@@ -568,6 +570,7 @@ int main(int argc, char *argv[])
             invalid_texture_coordinate = false;
             invalid_surface_count = false;
             invalid_vertex_count = false;
+            invalid_kids_count = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -612,6 +615,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-surface-count" || arg == "-Winvalid-surface-count")
         {
             invalid_surface_count = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-kids-count" || arg == "-Winvalid-kids-count")
+        {
+            invalid_kids_count = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "--splitSURF")
         {
@@ -786,6 +793,7 @@ int main(int argc, char *argv[])
     ac3d.unusedMaterial(unused_material);
     ac3d.duplicateVertices(duplicate_vertices);
     ac3d.invalidVertexCount(invalid_vertex_count);
+    ac3d.invalidKidsCount(invalid_vertex_count);
     ac3d.unusedVertex(unused_vertex);
     ac3d.invalidNormalLength(invalid_normal_length);
     ac3d.missingNormal(missing_normal);
@@ -947,6 +955,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
             showCount(ac3d.invalidSurfaceCountCount(), "invalid surface count: ");
             showCount(ac3d.invalidVertexCountCount(), "invalid vertex count: ");
+            showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
         }
     }
 

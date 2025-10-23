@@ -2221,16 +2221,26 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         else if (token == kids_token)
         {
             int kids = 0;
+            int number_offset = 0;
 
+            iss1 >> std::ws;
+            if (iss1.eof())
+                number_offset = static_cast<int>(kids_token.size() + 1);
+            else
+                number_offset = static_cast<int>(iss1.tellg());
             iss1 >> kids;
 
-            if (!iss1)
+            if (iss1 && kids >= 0)
+                checkTrailing(iss1);
+            else
             {
-                error() << "reading kids count" << std::endl;
+                if (m_invalid_kids_count)
+                {
+                    errorWithCount(m_invalid_kids_count_count) << "invalid kids count" << std::endl;
+                    showLine(iss1, number_offset);
+                }
                 continue;
             }
-
-            checkTrailing(iss1);
 
             if (kids > 0)
             {

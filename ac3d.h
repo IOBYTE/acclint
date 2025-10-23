@@ -105,6 +105,7 @@ private:                                               \
     CHECK(invalidSurfaceType, m_invalid_surface_type, true)
     CHECK(invalidSurfaceCount, m_invalid_surface_count, true)
     CHECK(invalidVertexCount, m_invalid_vertex_count, true)
+    CHECK(invalidKidsCount, m_invalid_kids_count, true)
     CHECK(invalidToken, m_invalid_token, true)
     CHECK(missingVertex, m_missing_vertex, true)
 #undef CHECK
