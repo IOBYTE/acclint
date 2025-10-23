@@ -93,6 +93,7 @@ void usage()
     std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-number-of-surfaces        Don't show invalid number of surfaces errors." << std::endl;
+    std::cerr << "  -Wno-invalid-number-of-vertices        Don't show invalid number of vertices errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
@@ -211,6 +212,7 @@ int main(int argc, char *argv[])
     bool missing_vertex = true;
     bool not_ac3d_file = true;
     bool invalid_number_of_surfaces = true;
+    bool invalid_number_of_vertices = true;
 
     std::vector<std::string> texture_paths;
     bool dump = false;
@@ -565,6 +567,7 @@ int main(int argc, char *argv[])
             invalid_vertex_index = false;
             invalid_texture_coordinate = false;
             invalid_number_of_surfaces = false;
+            invalid_number_of_vertices = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -601,6 +604,14 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
         {
             invalid_texture_coordinate = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-number-of-vertices" || arg == "-Winvalid-number-of-vertices")
+        {
+            invalid_number_of_vertices = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-number-of-surfaces" || arg == "-Winvalid-number-of-surfaces")
+        {
+            invalid_number_of_surfaces = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "--splitSURF")
         {
@@ -774,6 +785,7 @@ int main(int argc, char *argv[])
     ac3d.duplicateMaterials(duplicate_materials);
     ac3d.unusedMaterial(unused_material);
     ac3d.duplicateVertices(duplicate_vertices);
+    ac3d.invalidNumberOfVertices(invalid_number_of_vertices);
     ac3d.unusedVertex(unused_vertex);
     ac3d.invalidNormalLength(invalid_normal_length);
     ac3d.missingNormal(missing_normal);
@@ -934,6 +946,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
             showCount(ac3d.invalidNumberOfSurfacesCount(), "invalid number of surfaces: ");
+            showCount(ac3d.invalidNumberOfVerticesCount(), "invalid number of vertices: ");
         }
     }
 

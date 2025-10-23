@@ -104,6 +104,7 @@ private:                                               \
     CHECK(invalidMaterialIndex, m_invalid_material_index, true)
     CHECK(invalidSurfaceType, m_invalid_surface_type, true)
     CHECK(invalidNumberOfSurfaces, m_invalid_number_of_surfaces, true)
+    CHECK(invalidNumberOfVertices, m_invalid_number_of_vertices, true)
     CHECK(invalidToken, m_invalid_token, true)
     CHECK(missingVertex, m_missing_vertex, true)
 #undef CHECK

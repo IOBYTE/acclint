@@ -2056,12 +2056,15 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             object.numvert.number_offset = static_cast<int>(iss1.tellg());
             iss1 >> object.numvert.number;
 
-            if (iss1)
+            if (iss1 && object.numvert.number >= 0)
                 checkTrailing(iss1);
             else
             {
-                error() << "reading number of verticies" << std::endl;
-                showLine(iss1);
+                if (m_invalid_number_of_vertices)
+                {
+                    errorWithCount(m_invalid_number_of_vertices_count) << "invalid number of verticies" << std::endl;
+                    showLine(iss1);
+                }
                 continue;
             }
 
