@@ -793,7 +793,7 @@ int main(int argc, char *argv[])
     ac3d.unusedMaterial(unused_material);
     ac3d.duplicateVertices(duplicate_vertices);
     ac3d.invalidVertexCount(invalid_vertex_count);
-    ac3d.invalidKidsCount(invalid_vertex_count);
+    ac3d.invalidKidsCount(invalid_kids_count);
     ac3d.unusedVertex(unused_vertex);
     ac3d.invalidNormalLength(invalid_normal_length);
     ac3d.missingNormal(missing_normal);
