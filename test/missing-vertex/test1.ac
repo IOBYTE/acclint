@@ -1,0 +1,14 @@
+AC3Db
+OBJECT world
+kids 1
+OBJECT poly
+name "test"
+numvert 3
+0 0 0
+1 0 0
+numsurf 1
+SURF 0x02
+refs 2
+0 0 0
+1 0 0
+kids 0

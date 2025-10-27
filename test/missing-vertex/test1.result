@@ -1,0 +1,4 @@
+test1.ac:9 error: missing vertex
+numsurf 1
+^
+1 error
