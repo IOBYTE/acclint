@@ -956,6 +956,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidSurfaceCountCount(), "invalid surface count: ");
             showCount(ac3d.invalidVertexCountCount(), "invalid vertex count: ");
             showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
+            showCount(ac3d.missingVertexCount(), "missing vertex: ");
         }
     }
 
