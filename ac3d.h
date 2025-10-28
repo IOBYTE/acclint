@@ -108,6 +108,7 @@ private:                                               \
     CHECK(invalidKidsCount, m_invalid_kids_count, true)
     CHECK(invalidToken, m_invalid_token, true)
     CHECK(missingVertex, m_missing_vertex, true)
+    CHECK(moreSURFThanSpecified, m_more_surf_than_specified, true)
 #undef CHECK
 
     void showLine(std::istringstream &in) const;

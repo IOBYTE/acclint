@@ -215,6 +215,7 @@ int main(int argc, char *argv[])
     bool invalid_surface_count = true;
     bool invalid_vertex_count = true;
     bool invalid_kids_count = true;
+    bool more_surf_than_specified = true;
 
     std::vector<std::string> texture_paths;
     bool dump = false;
@@ -571,6 +572,7 @@ int main(int argc, char *argv[])
             invalid_surface_count = false;
             invalid_vertex_count = false;
             invalid_kids_count = false;
+            more_surf_than_specified = false;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -619,6 +621,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-kids-count" || arg == "-Winvalid-kids-count")
         {
             invalid_kids_count = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-more-surf-than-specified" || arg == "-Wmore-surf-than-specified")
+        {
+            more_surf_than_specified = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "--splitSURF")
         {
@@ -851,6 +857,7 @@ int main(int argc, char *argv[])
     ac3d.differentSURF(different_surf);
     ac3d.differentMat(different_mat);
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
+    ac3d.moreSURFThanSpecified(more_surf_than_specified);
     ac3d.showTimes(show_times);
     ac3d.quite(quite);
     ac3d.summary(summary);
@@ -957,6 +964,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidVertexCountCount(), "invalid vertex count: ");
             showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
             showCount(ac3d.missingVertexCount(), "missing vertex: ");
+            showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified");
         }
     }
 

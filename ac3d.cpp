@@ -2325,10 +2325,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == SURF_token)
         {
-            error() << "found more SURF than specified" << std::endl;
-            showLine(iss1, 0);
-            note(object.numsurf.line_number) << "number specified" << std::endl;
-            showLine(in, object.numsurf.line_pos, object.numsurf.number_offset);
+            if (m_more_surf_than_specified)
+            {
+                errorWithCount(m_more_surf_than_specified_count) << "more SURF than specified" << std::endl;
+                showLine(iss1, 0);
+                note(object.numsurf.line_number) << "number specified" << std::endl;
+                showLine(in, object.numsurf.line_pos, object.numsurf.number_offset);
+            }
 
             Surface surface;
 

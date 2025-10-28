@@ -1,0 +1,4 @@
+test1.ac:11 error: invalid surface count
+numsurf -1
+        ^
+1 error
