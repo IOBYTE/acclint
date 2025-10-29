@@ -1,0 +1,13 @@
+test2.acc:12 error: invalid vertex
+nan 0 0 0 0 1
+^
+test2.acc:13 error: invalid vertex
+1 nan 0 0 0 1
+  ^
+test2.acc:14 error: invalid vertex
+1 1 nan 0 0 1
+    ^
+test2.acc:15 error: invalid vertex
+ 0 1 nan 0 0 1
+     ^
+4 errors
