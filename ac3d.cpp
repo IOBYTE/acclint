@@ -2166,8 +2166,28 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             break;
                         }
 
-                        error() << "reading vertex" << std::endl;
-                        showLine(iss2, pos1 == -1 ? static_cast<std::streampos>(0) : pos1);
+                        if (m_invalid_vertex)
+                        {
+                            // reparse line to find error position
+                            std::istringstream iss3(m_line);
+                            std::streampos pos2;
+
+                            for (size_t j = 0; j < 3; j++)
+                            {
+                                iss3 >> std::ws;
+
+                                pos2 = iss3.tellg();
+                                double dummy;
+
+                                iss3 >> dummy;
+
+                                if (!iss3)
+                                    break;
+                            }
+
+                            errorWithCount(m_invalid_vertex_count) << "invalid vertex" << std::endl;
+                            showLine(iss3, pos2 == -1 ? static_cast<std::streampos>(m_line.size() + 1) : pos2);
+                        }
                     }
 
                     object.vertices.push_back(vertex);
@@ -2280,8 +2300,28 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             break;
                         }
 
-                        error() << "reading vertex" << std::endl;
-                        showLine(iss2, pos1 == -1 ? static_cast<std::streampos>(0) : pos1);
+                        if (m_invalid_vertex)
+                        {
+                            // reparse line to find error position
+                            std::istringstream iss3(m_line);
+                            std::streampos pos2;
+
+                            for (size_t j = 0; j < 3; j++)
+                            {
+                                iss3 >> std::ws;
+
+                                pos2 = iss3.tellg();
+                                double dummy;
+
+                                iss3 >> dummy;
+
+                                if (!iss3)
+                                    break;
+                            }
+
+                            errorWithCount(m_invalid_vertex_count) << "invalid vertex" << std::endl;
+                            showLine(iss3, pos2 == -1 ? static_cast<std::streampos>(m_line.size() + 1) : pos2);
+                        }
                     }
 
                     object.vertices.push_back(vertex);

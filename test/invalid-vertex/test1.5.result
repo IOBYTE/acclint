@@ -1,0 +1,14 @@
+test1.ac:8 error: invalid vertex
+ 0
+   ^
+test1.ac:9 error: invalid vertex
+0 0
+    ^
+test1.ac:10 error: invalid vertex
+0 0 nan
+    ^
+test1.ac:11 error: invalid vertex
+nan 0 0
+^
+4 errors
+invalid vertex: 4

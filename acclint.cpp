@@ -96,6 +96,7 @@ void usage()
     std::cerr << "  -Wno-invalid-vertex-count              Don't show invalid vertex count errors." << std::endl;
     std::cerr << "  -Wno-invalid-kids-count                Don't show invalid kids count errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
+    std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
@@ -155,6 +156,7 @@ int main(int argc, char *argv[])
     bool unused_material = true;
     bool duplicate_vertices = true;
     bool unused_vertex = true;
+    bool invalid_vertex = true;
     bool invalid_vertex_index = true;
     bool invalid_texture_coordinate = true;
     bool invalid_normal_length = true;
@@ -567,6 +569,7 @@ int main(int argc, char *argv[])
             invalid_material_index = false;
             invalid_surface_type = false;
             invalid_token = false;
+            invalid_vertex = false;
             invalid_vertex_index = false;
             invalid_texture_coordinate = false;
             invalid_numsurf = false;
@@ -605,6 +608,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-vertex-index" || arg == "-Winvalid-vertex-index")
         {
             invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-vertex-" || arg == "-Winvalid-vertex")
+        {
+            invalid_vertex = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
         {
@@ -812,6 +819,7 @@ int main(int argc, char *argv[])
     ac3d.extraUVCoordinates(extra_uv_coordinates);
     ac3d.invalidNumsurf(invalid_numsurf);
     ac3d.invalidSurfaceType(invalid_surface_type);
+    ac3d.invalidVertex(invalid_vertex);
     ac3d.invalidVertexIndex(invalid_vertex_index);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
     ac3d.invalidToken(invalid_token);
@@ -956,6 +964,7 @@ int main(int argc, char *argv[])
 
         if (ac3d.summary())
         {
+            showCount(ac3d.invalidVertexCount(), "invalid vertex: ");
             showCount(ac3d.invalidVertexIndexCount(), "invalid vertex index: ");
             showCount(ac3d.invalidNormalCount(), "invalid normal: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");

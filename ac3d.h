@@ -99,6 +99,7 @@ private:                                               \
 
     // errors
     CHECK(invalidNormal, m_invalid_normal, true)
+    CHECK(invalidVertex, m_invalid_vertex, true)
     CHECK(invalidVertexIndex, m_invalid_vertex_index, true)
     CHECK(invalidTextureCoordinate, m_invalid_texture_coordinate, true)
     CHECK(invalidMaterialIndex, m_invalid_material_index, true)
