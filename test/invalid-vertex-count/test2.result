@@ -1,0 +1,4 @@
+test2.ac:7 error: invalid vertex count
+numvert z
+        ^
+1 error

@@ -212,8 +212,8 @@ int main(int argc, char *argv[])
     bool invalid_token = true;
     bool missing_vertex = true;
     bool not_ac3d_file = true;
-    bool invalid_surface_count = true;
-    bool invalid_vertex_count = true;
+    bool invalid_numsurf = true;
+    bool invalid_numvert = true;
     bool invalid_kids_count = true;
     bool more_surf_than_specified = true;
 
@@ -569,8 +569,8 @@ int main(int argc, char *argv[])
             invalid_token = false;
             invalid_vertex_index = false;
             invalid_texture_coordinate = false;
-            invalid_surface_count = false;
-            invalid_vertex_count = false;
+            invalid_numsurf = false;
+            invalid_numvert = false;
             invalid_kids_count = false;
             more_surf_than_specified = false;
         }
@@ -612,11 +612,11 @@ int main(int argc, char *argv[])
         }
         else if (arg == "-Wno-invalid-vertex-count" || arg == "-Winvalid-vertex-count")
         {
-            invalid_vertex_count = arg.compare(2, 3, "no-") != 0;
+            invalid_numvert = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-surface-count" || arg == "-Winvalid-surface-count")
         {
-            invalid_surface_count = arg.compare(2, 3, "no-") != 0;
+            invalid_numsurf = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-kids-count" || arg == "-Winvalid-kids-count")
         {
@@ -798,7 +798,7 @@ int main(int argc, char *argv[])
     ac3d.duplicateMaterials(duplicate_materials);
     ac3d.unusedMaterial(unused_material);
     ac3d.duplicateVertices(duplicate_vertices);
-    ac3d.invalidVertexCount(invalid_vertex_count);
+    ac3d.invalidNumvert(invalid_numvert);
     ac3d.invalidKidsCount(invalid_kids_count);
     ac3d.unusedVertex(unused_vertex);
     ac3d.invalidNormalLength(invalid_normal_length);
@@ -810,7 +810,7 @@ int main(int argc, char *argv[])
     ac3d.missingVertex(missing_vertex);
     ac3d.missingUVCoordinates(missing_uv_coordinates);
     ac3d.extraUVCoordinates(extra_uv_coordinates);
-    ac3d.invalidSurfaceCount(invalid_surface_count);
+    ac3d.invalidNumsurf(invalid_numsurf);
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidVertexIndex(invalid_vertex_index);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
@@ -960,8 +960,8 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidNormalCount(), "invalid normal: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
-            showCount(ac3d.invalidSurfaceCountCount(), "invalid surface count: ");
-            showCount(ac3d.invalidVertexCountCount(), "invalid vertex count: ");
+            showCount(ac3d.invalidNumsurfCount(), "invalid surface count: ");
+            showCount(ac3d.invalidNumvertCount(), "invalid vertex count: ");
             showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
             showCount(ac3d.missingVertexCount(), "missing vertex: ");
             showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified");

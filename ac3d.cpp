@@ -2063,11 +2063,116 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 checkTrailing(iss1);
             else
             {
-                if (m_invalid_vertex_count)
+                if (m_invalid_numvert)
                 {
-                    errorWithCount(m_invalid_vertex_count_count) << "invalid vertex count" << std::endl;
+                    errorWithCount(m_invalid_numvert_count) << "invalid vertex count" << std::endl;
                     showLine(iss1, object.numvert.number_offset);
                 }
+
+                // add any vertices found
+                while (getLine(in))
+                {
+                    Vertex vertex;
+
+                    vertex.line_number = m_line_number;
+                    vertex.line_pos = m_line_pos;
+
+                    std::istringstream iss2(m_line);
+
+                    iss2 >> vertex.vertex;
+
+                    if (iss2)
+                    {
+                        if (hasTrailing(iss2))
+                        {
+                            const std::streampos pos2 = iss2.tellg();
+                            const std::string trailing = getTrailing(iss2);
+                            if (m_is_ac)
+                            {
+                                if (m_trailing_text)
+                                {
+                                    warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
+                                    showLine(iss2, pos2);
+                                }
+                            }
+                            else
+                            {
+                                Point3 normal{ std::numeric_limits<double>::quiet_NaN(),
+                                               std::numeric_limits<double>::quiet_NaN(),
+                                               std::numeric_limits<double>::quiet_NaN() };
+                                iss2 >> normal;
+                                if (iss2)
+                                {
+                                    vertex.normal = normal;
+                                    vertex.has_normal = true;
+
+                                    if (m_invalid_normal_length)
+                                    {
+                                        const double length = vertex.normal.length();
+                                        // assume truncated float values
+                                        constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 10;
+
+                                        if (std::fabs(1 - length) > epsilon)
+                                        {
+                                            warningWithCount(m_invalid_normal_length_count) << "invalid normal length: " << length
+                                                << " should be 1" << std::endl;
+                                            // find start of normal
+                                            size_t offset = pos2;
+                                            while (offset < m_line.size() && std::isspace(m_line[offset]) != 0)
+                                                offset++;
+                                            showLine(iss2, offset);
+                                        }
+                                    }
+
+                                    checkTrailing(iss2);
+                                }
+                                else
+                                {
+                                    if (isWhitespace(trailing))
+                                    {
+                                        if (m_trailing_text)
+                                            warningWithCount(m_trailing_text_count) << "trailing text: \"" << trailing << "\"" << std::endl;
+                                    }
+                                    else if (m_invalid_normal)
+                                    {
+                                        errorWithCount(m_invalid_normal_count) << "invalid normal" << std::endl;
+                                        showLine(iss2);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (m_is_ac == false)
+                            {
+                                if (m_missing_normal)
+                                {
+                                    warningWithCount(m_missing_normal_count) << "missing normal" << std::endl;
+                                    showLine(iss2, m_line.size() + 1);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        const std::streampos pos1 = iss2.tellg();
+                        iss2.clear();
+                        iss2.seekg(0, std::ios::beg);
+                        std::string token1;
+                        iss2 >> token1;
+                        if (token1 == numsurf_token || token1 == kids_token)
+                        {
+                            ungetLine(in);
+                            break;
+                        }
+
+                        error() << "reading vertex" << std::endl;
+                        showLine(iss2, pos1 == -1 ? static_cast<std::streampos>(0) : pos1);
+                    }
+
+                    object.vertices.push_back(vertex);
+                }
+
                 continue;
             }
 
@@ -2199,9 +2304,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (!iss1 || object.numsurf.number < 0)
             {
-                if (m_invalid_surface_count)
+                if (m_invalid_numsurf)
                 {
-                    errorWithCount(m_invalid_surface_count_count) << "invalid surface count" << std::endl;
+                    errorWithCount(m_invalid_numsurf_count) << "invalid surface count" << std::endl;
                     showLine(iss1, object.numsurf.number_offset);
                 }
                 continue;
