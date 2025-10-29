@@ -2167,11 +2167,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         {
                             if (m_missing_vertex)
                             {
-                                errorWithCount(m_missing_vertex_count) << "missing vertex" << std::endl;
+                                errorWithCount(m_missing_vertex_count) << "missing vertex: "
+                                    << i << " out of " << object.numvert.number << " found" << std::endl;
                                 showLine(iss2, 0);
                             }
                             ungetLine(in);
-                            continue;
+                            break;
                         }
 
                         error() << "reading vertex" << std::endl;
