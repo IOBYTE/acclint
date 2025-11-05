@@ -152,7 +152,7 @@ class TriangleIntersects
 
   public:
     // distances smaller than get_tolerance() may be treated as 0
-    static declfloat get_tolerance() { return detail::Tolerance::get_value(); }
+    [[maybe_unused]] static declfloat get_tolerance() { return detail::Tolerance::get_value(); }
 
     // angles smaller than this constant are candidates for coplanarity test
     static constexpr declfloat DEFAULT_COPLANARITY_THRESHOLD_ANGLE = 0.1f;  // wilde guess, so far
@@ -220,8 +220,8 @@ class TriangleIntersects
     }
 
     // tests if a triangle intersects a box with its faces parallel to the x-y-z Cartesian axis
-    static bool box(const TemplatedVec& triangleV1, const TemplatedVec& triangleV2, const TemplatedVec& triangleV3,
-                    const TemplatedVec& boxCenter, const TemplatedVec& boxHalfSize)
+    [[maybe_unused]] static bool box(const TemplatedVec& triangleV1, const TemplatedVec& triangleV2, const TemplatedVec& triangleV3,
+                                     const TemplatedVec& boxCenter, const TemplatedVec& boxHalfSize)
     {
         return tri_box_overlap(triangleV1, triangleV2, triangleV3, boxCenter, boxHalfSize);
     }
@@ -1004,7 +1004,7 @@ class TriangleIntersects
 
     // returns true iff two trilines (colinear triangles) self intersect
     // also computes and returns: coplanarity, isectpot1, isectpt2
-    static bool triline_triline_self_intersect_and_isectline(
+    [[maybe_unused]] static bool triline_triline_self_intersect_and_isectline(
         const TemplatedVec& V0, const TemplatedVec& EV1, const TemplatedVec& EV2,  // face 1
         const TemplatedVec& U0, const TemplatedVec& EU1, const TemplatedVec& EU2,  // face 2
         detail::Coplanarity& coplanarity,                                          // are the faces coplanar?

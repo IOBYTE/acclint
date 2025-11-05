@@ -140,11 +140,11 @@ public:
     {
         return m_errors;
     }
-    void crlf(bool value)
+    [[maybe_unused]] void crlf(bool value)
     {
         m_crlf = value;
     }
-    bool crlf() const
+    [[maybe_unused]] bool crlf() const
     {
         return m_crlf;
     }
@@ -631,7 +631,7 @@ private:
             }
         }
 
-        bool isOnPlane(Point3 point) const
+        [[maybe_unused]] bool isOnPlane(Point3 point) const
         {
             static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
 
@@ -648,7 +648,7 @@ private:
             return distanceToPoint(point) >= 0.0;
         }
 
-        bool isBelowPlane(const Point3 &point) const
+        [[maybe_unused]] bool isBelowPlane(const Point3 &point) const
         {
             return !isAbovePlane(point);
         }
@@ -723,7 +723,7 @@ private:
         {
             return (flags & ShadeMask) == Shaded;
         }
-        bool isSingleSided() const
+        [[maybe_unused]] bool isSingleSided() const
         {
             return (flags & SideMask) != DoubleSided;
         }
@@ -943,7 +943,7 @@ private:
 
             return none;
         }
-        void setName(const std::string &name)
+        [[maybe_unused]] void setName(const std::string &name)
         {
             names.resize(1);
             names[0].name = quoted_string(name);
