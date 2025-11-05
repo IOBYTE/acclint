@@ -109,6 +109,9 @@ std::istream & operator >> (std::istream &in, AC3D::quoted_string &s)
     return in;
 }
 
+namespace
+{
+
 template <size_t s>
 std::ostream & operator << (std::ostream &out, const std::array<double,s> &a)
 {
@@ -130,6 +133,8 @@ std::istream & operator >> (std::istream &in, std::array<double,s> &a)
     return in;
 }
 
+} // namespace
+
 std::ostream & operator << (std::ostream &out, const AC3D::Vertex &v)
 {
     out << v.vertex;
@@ -137,6 +142,9 @@ std::ostream & operator << (std::ostream &out, const AC3D::Vertex &v)
         out << " " << v.normal;
     return out;
 }
+
+namespace
+{
 
 bool isWhitespace(const std::string &s)
 {
@@ -187,6 +195,16 @@ size_t offsetOfToken(const std::istringstream &in, size_t index)
 
     return current_offset;
 }
+
+bool icasecmp(const std::string& l, const std::string& r)
+{
+    return l.size() == r.size() &&
+        equal(l.cbegin(), l.cend(), r.cbegin(),
+            [](std::string::value_type l1, std::string::value_type r1)
+            { return std::toupper(l1) == std::toupper(r1); });
+}
+
+} // namespace
 
 void AC3D::showLine(std::istringstream &in) const
 {
@@ -1531,14 +1549,6 @@ void AC3D::writeMaterial(std::ostream &out, const Material &material) const
             writeData(out, data.data);
         out << "ENDMAT" << newline(m_crlf);
     }
-}
-
-bool icasecmp(const std::string &l, const std::string &r)
-{
-    return l.size() == r.size() &&
-           equal(l.cbegin(), l.cend(), r.cbegin(),
-                 [](std::string::value_type l1, std::string::value_type r1)
-                 { return std::toupper(l1) == std::toupper(r1); });
 }
 
 bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
