@@ -388,17 +388,13 @@ private:
         }
         void transformPoint(Point3 &point) const
         {
-            Point3 dst;
-
             double t0 = point[0];
             double t1 = point[1];
             double t2 = point[2];
 
-            dst[0] = t0 * (*this)[0][0] + t1 * (*this)[1][0] + t2 * (*this)[2][0] + (*this)[3][0];
-            dst[1] = t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1] + (*this)[3][1];
-            dst[2] = t0 * (*this)[0][2] + t1 * (*this)[1][2] + t2 * (*this)[2][2] + (*this)[3][2];
-
-            point = dst;
+            point = { t0 * (*this)[0][0] + t1 * (*this)[1][0] + t2 * (*this)[2][0] + (*this)[3][0],
+                      t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1] + (*this)[3][1],
+                      t0 * (*this)[0][2] + t1 * (*this)[1][2] + t2 * (*this)[2][2] + (*this)[3][2] };
         }
         Matrix multiply(const Matrix &matrix)
         {
@@ -431,17 +427,13 @@ private:
         }
         void transformNormal(Point3 &normal) const
         {
-            Point3 dst;
-
             double t0 = normal[0];
             double t1 = normal[1];
             double t2 = normal[2];
 
-            dst[0] = t0 * (*this)[0][0] + t1 * (*this)[1][0] + t2 * (*this)[2][0];
-            dst[1] = t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1];
-            dst[2] = t0 * (*this)[0][2] + t1 * (*this)[1][2] + t2 * (*this)[2][2];
-
-            normal = dst;
+            normal = { t0 * (*this)[0][0] + t1 * (*this)[1][0] + t2 * (*this)[2][0],
+                       t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1],
+                       t0 * (*this)[0][2] + t1 * (*this)[1][2] + t2 * (*this)[2][2] };
         }
     };
 
