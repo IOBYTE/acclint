@@ -2165,7 +2165,6 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     }
                     else
                     {
-                        const std::streampos pos1 = iss2.tellg();
                         iss2.clear();
                         iss2.seekg(0, std::ios::beg);
                         std::string token1;
@@ -2293,7 +2292,6 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     }
                     else
                     {
-                        const std::streampos pos1 = iss2.tellg();
                         iss2.clear();
                         iss2.seekg(0, std::ios::beg);
                         std::string token1;
