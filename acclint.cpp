@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
         }
         else if (arg == "-T")
         {
-            if (i < argc)
+            if (i < argc - 1)
             {
                 texture_paths.emplace_back(argv[i + 1]);
                 i++;
