@@ -186,13 +186,13 @@ public:
     {
         return m_threads;
     }
-    void quite(bool value)
+    void quiet(bool value)
     {
-        m_quite = value;
+        m_quiet = value;
     }
-    bool quite() const
+    bool quiet() const
     {
-        return m_quite;
+        return m_quiet;
     }
     void summary(bool value)
     {
@@ -984,7 +984,7 @@ private:
     bool            m_is_ac = false;
     bool            m_crlf = false;
     bool            m_not_ac3d_file = true;
-    bool            m_quite = false;
+    bool            m_quiet = false;
     bool            m_summary = false;
     bool            m_show_times = false;
     unsigned int    m_threads = 1;

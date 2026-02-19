@@ -113,7 +113,7 @@ void usage()
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
-    std::cerr << "  --quite                                Don't show warning messages." << std::endl;
+    std::cerr << "  --quiet                                Don't show warning messages." << std::endl;
     std::cerr << "  --summary                              Show summary of warnings." << std::endl;
 
     std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
     std::vector<std::string> merge_files;
     std::vector<AC3D::RemoveInfo> removes;
     bool show_times = false;
-    bool quite = false;
+    bool quiet = false;
     bool summary = false;
     unsigned int threads = 1;
     bool listInput = false;
@@ -758,9 +758,9 @@ int main(int argc, char *argv[])
         {
             show_times = true;
         }
-        else if (arg == "--quite")
+        else if (arg == "--quiet")
         {
-            quite = true;
+            quiet = true;
         }
         else if (arg == "--summary")
         {
@@ -867,7 +867,7 @@ int main(int argc, char *argv[])
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
     ac3d.moreSURFThanSpecified(more_surf_than_specified);
     ac3d.showTimes(show_times);
-    ac3d.quite(quite);
+    ac3d.quiet(quiet);
     ac3d.summary(summary);
     ac3d.threads(threads);
 

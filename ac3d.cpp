@@ -208,7 +208,7 @@ bool icasecmp(const std::string& l, const std::string& r)
 
 void AC3D::showLine(std::istringstream &in) const
 {
-    if (!m_quite)
+    if (!m_quiet)
     {
         std::cerr << in.str() << std::endl;
 
@@ -224,7 +224,7 @@ void AC3D::showLine(std::istringstream &in) const
 
 void AC3D::showLine(const std::istringstream &in, const std::streampos &pos) const
 {
-    if (!m_quite)
+    if (!m_quiet)
     {
         std::cerr << in.str() << std::endl;
 
@@ -236,7 +236,7 @@ void AC3D::showLine(const std::istringstream &in, const std::streampos &pos) con
 
 void AC3D::showLine(std::istream &in, const std::streampos &pos, int offset) const
 {
-    if (!m_quite)
+    if (!m_quiet)
     {
         const std::streampos current = in.tellg();
         std::string line;
@@ -317,7 +317,7 @@ bool AC3D::ungetLine(std::istream &in)
 std::ostream &AC3D::warning(size_t line_number)
 {
     m_warnings++;
-    if (!m_quite)
+    if (!m_quiet)
     {
         if (line_number > 0)
             std::cerr << m_file << ":" << line_number << " warning: ";
@@ -331,7 +331,7 @@ std::ostream &AC3D::warningWithCount(size_t &count, size_t line_number)
 {
     count++;
     m_warnings++;
-    if (!m_quite)
+    if (!m_quiet)
     {
         if (line_number > 0)
             std::cerr << m_file << ":" << line_number << " warning: ";
@@ -356,7 +356,7 @@ std::ostream &AC3D::errorWithCount(size_t &count, size_t line_number)
 {
     count++;
     m_errors++;
-    if (!m_quite)
+    if (!m_quiet)
     {
         if (line_number > 0)
             std::cerr << m_file << ":" << line_number << " error: ";
@@ -369,7 +369,7 @@ std::ostream &AC3D::errorWithCount(size_t &count, size_t line_number)
 
 std::ostream &AC3D::note(size_t line_number)
 {
-    if (!m_quite)
+    if (!m_quiet)
     {
         std::cerr << m_file << ":" << line_number << " note: ";
         return std::cerr;
