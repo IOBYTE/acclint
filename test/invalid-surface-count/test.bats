@@ -21,7 +21,7 @@
 }
 
 @test "test1.4" {
-  run acclint -Wno-more-surf-than-specified --quite test1.ac
+  run acclint -Wno-more-surf-than-specified --quiet test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.4.result)" ]
 }
@@ -33,7 +33,7 @@
 }
 
 @test "test1.6" {
-  run acclint -Wno-more-surf-than-specified --quite --summary test1.ac
+  run acclint -Wno-more-surf-than-specified --quiet --summary test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.6.result)" ]
 }

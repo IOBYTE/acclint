@@ -23,7 +23,7 @@
 }
 
 @test "test1.4" {
-  run acclint -Wno-warnings --quite test1.ac
+  run acclint -Wno-warnings --quiet test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.4.result)" ]
 }
@@ -35,7 +35,7 @@
 }
 
 @test "test1.6" {
-  run acclint -Wno-warnings --quite --summary test1.ac
+  run acclint -Wno-warnings --quiet --summary test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.6.result)" ]
 }
