@@ -1406,7 +1406,7 @@ bool AC3D::readMaterial(std::istringstream &in, Material &material)
         failed |= readTypeAndValue(in, material.shi, shi_token, trans_token, 0, 128, false);
 
     if (!in.eof())
-        failed = readTypeAndValue(in, material.trans, trans_token, empty_token, 0, 1, true);
+        failed |= readTypeAndValue(in, material.trans, trans_token, empty_token, 0, 1, true);
 
     checkTrailing(in);
 
