@@ -898,7 +898,7 @@ int main(int argc, char *argv[])
         {
             showCount(ac3d.trailingTextCount(), "trailing text: ");
             showCount(ac3d.blankLineCount(), "blank line: ");
-            showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");;
+            showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");
             showCount(ac3d.unusedVertexCount(), "unused vertex: ");
             showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
             showCount(ac3d.invalidMaterialCount(), "invalid material: ");
