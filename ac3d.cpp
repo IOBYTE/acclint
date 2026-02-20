@@ -3150,7 +3150,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &obje
                                     std::array<Point3, 3> triangle2;
                                     std::array<size_t, 3> index2;
 
-                                    if ((i & 1u) == 0)
+                                    if ((j & 1u) == 0)
                                     {
                                         index2 = { j - 2, j - 1, j };
                                         triangle2 = { object2.object->vertices[surface2.refs[j - 2].index].vertex,
@@ -3191,7 +3191,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &obje
                                             note(surface1.refs[0].line_number) << "ref" << std::endl;
                                             showLine(in, surface1.refs[0].line_pos);
                                             note(surface1.refs[i].line_number) << "ref" << std::endl;
-                                            showLine(in, surface1.refs[j].line_pos);
+                                            showLine(in, surface1.refs[i].line_pos);
                                             note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
                                             showLine(in, surface1.refs[i + 1].line_pos);
                                         }
