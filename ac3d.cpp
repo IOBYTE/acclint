@@ -245,7 +245,7 @@ void AC3D::showLine(std::istream &in, const std::streampos &pos, int offset) con
         std::getline(in, line);
 
         // remove CR
-        if (line.back() == '\r')
+        if (!line.empty() && line.back() == '\r')
             line.pop_back();
         std::cerr << line << std::endl;
         if (offset < 0)
@@ -491,7 +491,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                             }
                             else if (m_invalid_texture_coordinate)
                             {
-                                error() << "reading third texture coordinate: \"" << trailing << "\"" << std::endl;
+                                errorWithCount(m_invalid_texture_coordinate_count) << "reading third texture coordinate: \"" << trailing << "\"" << std::endl;
                                 showLine(in);
                             }
                         }
@@ -509,7 +509,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                     }
                     else if (m_invalid_texture_coordinate)
                     {
-                        error() << "reading second texture coordinate: \"" << trailing << "\"" << std::endl;
+                        errorWithCount(m_invalid_texture_coordinate_count) << "reading second texture coordinate: \"" << trailing << "\"" << std::endl;
                         showLine(in);
                     }
                 }
@@ -518,7 +518,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
     }
     else if (m_invalid_texture_coordinate)
     {
-        error() << "reading texture coordinate" << std::endl;
+        errorWithCount(m_invalid_texture_coordinate_count) << "reading texture coordinate" << std::endl;
         showLine(in);
         return false;
     }
@@ -1062,13 +1062,13 @@ bool AC3D::readHeader(std::istream &in)
     const std::istringstream iss(m_line);
 
     // remove UTF-8 BOM
-    if (m_line[0] == '\xef' && m_line[1] == '\xbb' && m_line[2] == '\xbf')
+    if (m_line.size() >= 3 && m_line[0] == '\xef' && m_line[1] == '\xbb' && m_line[2] == '\xbf')
     {
         m_is_utf_8 = true;
         warning() << "found UTF-8 BOM" << std::endl;
         m_line.erase(0, 3);
     }
-    else if (m_line[0] == '\xff' && m_line[1] == '\xfe')
+    else if (m_line.size() >= 4 && m_line[0] == '\xff' && m_line[1] == '\xfe')
     {
         if (m_line[2] == '\0' && m_line[3] == '\0')
         {
@@ -1078,18 +1078,18 @@ bool AC3D::readHeader(std::istream &in)
         error() << "found UTF-16 LE BOM" << std::endl;
         return false;
     }
-    else if (m_line[0] == '\xfe' && m_line[1] == '\xff')
+    else if (m_line.size() >= 2 && m_line[0] == '\xfe' && m_line[1] == '\xff')
     {
         error() << "found UTF-16 BE BOM" << std::endl;
         return false;
     }
-    else if (m_line[0] == '\0' && m_line[1] == '\0' && m_line[2] == '\xfe' && m_line[3] == '\xff')
+    else if (m_line.size() >= 4 && m_line[0] == '\0' && m_line[1] == '\0' && m_line[2] == '\xfe' && m_line[3] == '\xff')
     {
         error() << "found UTF-32 BE BOM" << std::endl;
         return false;
     }
 
-    if (m_line.compare(0, 4, "AC3D") != 0)
+    if (!m_line.starts_with("AC3D"))
     {
         if (m_not_ac3d_file)
         {
