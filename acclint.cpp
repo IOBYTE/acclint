@@ -104,8 +104,8 @@ void usage()
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
     std::cerr << "  --splitPolygon                         Split polygon surface into seperate triangle surfaces." << std::endl;
-    std::cerr << "  --splitSURF                            Split objects with multiple surface types into seperate objects." << std::endl;
-    std::cerr << "  --splitMat                             Split objects with multiple materials into seperate objects." << std::endl;
+    std::cerr << "  --splitSURF                            Split objects with multiple surface types into separate objects." << std::endl;
+    std::cerr << "  --splitMat                             Split objects with multiple materials into separate objects." << std::endl;
     std::cerr << "  --flatten                              Flatten objects." << std::endl;
     std::cerr << "  --merge filename                       Merge filename with inputfile." << std::endl;
     std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
