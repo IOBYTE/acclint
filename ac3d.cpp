@@ -468,7 +468,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                                     }
                                     else if (m_invalid_texture_coordinate)
                                     {
-                                        errorWithCount(m_invalid_texture_coordinate_count) << "reading forth texture cordinate: \"" << trailing << "\"" << std::endl;
+                                        errorWithCount(m_invalid_texture_coordinate_count) << "reading fourth texture coordinate: \"" << trailing << "\"" << std::endl;
                                         showLine(in);
                                     }
                                 }
@@ -486,7 +486,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                             }
                             else if (m_invalid_texture_coordinate)
                             {
-                                error() << "reading third texture cordinate: \"" << trailing << "\"" << std::endl;
+                                error() << "reading third texture coordinate: \"" << trailing << "\"" << std::endl;
                                 showLine(in);
                             }
                         }
@@ -504,7 +504,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                     }
                     else if (m_invalid_texture_coordinate)
                     {
-                        error() << "reading second texture cordinate: \"" << trailing << "\"" << std::endl;
+                        error() << "reading second texture coordinate: \"" << trailing << "\"" << std::endl;
                         showLine(in);
                     }
                 }
