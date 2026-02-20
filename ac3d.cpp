@@ -3035,7 +3035,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &obje
                                     note(surface1.refs[0].line_number) << "ref" << std::endl;
                                     showLine(in, surface1.refs[0].line_pos);
                                     note(surface1.refs[i].line_number) << "ref" << std::endl;
-                                    showLine(in, surface1.refs[j].line_pos);
+                                    showLine(in, surface1.refs[i].line_pos);
                                     note(surface1.refs[i + 1].line_number) << "ref" << std::endl;
                                     showLine(in, surface1.refs[i + 1].line_pos);
                                 }
