@@ -3821,7 +3821,7 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
             {
                 duplicates[j] = true;
 
-                warningWithCount(m_duplicate_vertices_count, object.vertices[j].line_number) << "duplicate verticies" << std::endl;
+                warningWithCount(m_duplicate_vertices_count, object.vertices[j].line_number) << "duplicate vertices" << std::endl;
                 showLine(in, object.vertices[j].line_pos);
                 note(object.vertices[i].line_number) << "first instance" << std::endl;
                 showLine(in, object.vertices[i].line_pos);
@@ -5045,7 +5045,7 @@ bool AC3D::cleanVertices(Object &object)
 
     std::vector<Info> info(object.vertices.size());
 
-    // check for duplicate verticies
+    // check for duplicate vertices
     for (size_t i = 0; i < object.vertices.size(); i++)
     {
         if (!info[i].duplicate)

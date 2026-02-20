@@ -1,10 +1,10 @@
-test2.ac:11 warning: duplicate verticies
+test2.ac:11 warning: duplicate vertices
 0 0 0
 ^
 test2.ac:8 note: first instance
 0 0 0
 ^
-test2.ac:12 warning: duplicate verticies
+test2.ac:12 warning: duplicate vertices
 0 1 0
 ^
 test2.ac:10 note: first instance
