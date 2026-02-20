@@ -40,6 +40,12 @@
   [ "$output" = "$(cat test1.6.result)" ]
 }
 
+@test "test1.7" {
+  run acclint -Wno-warnings -Wno-invalid-vertex test1.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test1.7.result)" ]
+}
+
 ################################################################################
 
 @test "test2" {

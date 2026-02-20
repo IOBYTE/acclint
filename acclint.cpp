@@ -610,7 +610,7 @@ int main(int argc, char *argv[])
         {
             invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-vertex-" || arg == "-Winvalid-vertex")
+        else if (arg == "-Wno-invalid-vertex" || arg == "-Winvalid-vertex")
         {
             invalid_vertex = arg.compare(2, 3, "no-") != 0;
         }
