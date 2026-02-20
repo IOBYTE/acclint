@@ -5446,7 +5446,7 @@ void AC3D::flatten()
 
     transform(matrix);
 
-    //TODO flatten the object hiearchy
+    //TODO flatten the object hierarchy
 }
 
 bool AC3D::splitPolygons()
