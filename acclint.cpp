@@ -103,7 +103,7 @@ void usage()
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
-    std::cerr << "  --splitPolygon                         Split polygon surface into seperate triangle surfaces." << std::endl;
+    std::cerr << "  --splitPolygon                         Split polygon surface into separate triangle surfaces." << std::endl;
     std::cerr << "  --splitSURF                            Split objects with multiple surface types into separate objects." << std::endl;
     std::cerr << "  --splitMat                             Split objects with multiple materials into separate objects." << std::endl;
     std::cerr << "  --flatten                              Flatten objects." << std::endl;
