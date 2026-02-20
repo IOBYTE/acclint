@@ -162,7 +162,9 @@ public:
     }
     size_t getWorldKidCount() const
     {
-        return m_objects[0].kids.size();
+        if (!m_objects.empty())
+            return m_objects[0].kids.size();
+        return 0;
     }
     size_t getWorldKidCount(size_t kid) const
     {
