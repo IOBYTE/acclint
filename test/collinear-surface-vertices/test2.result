@@ -1,4 +1,4 @@
-test2.ac:18 warning: collinear verticies
+test2.ac:18 warning: collinear vertices
 2 0 0
 ^
 test2.ac:8 note: first vertex
@@ -10,7 +10,7 @@ test2.ac:9 note: second vertex
 test2.ac:10 note: third vertex
 2 2 0
 ^
-test2.ac:19 warning: collinear verticies
+test2.ac:19 warning: collinear vertices
 3 0 0
 ^
 test2.ac:9 note: first vertex

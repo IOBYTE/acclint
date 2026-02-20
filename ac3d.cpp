@@ -3876,7 +3876,7 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
             // don't show all combinations when all vertices are collinear
             if (found < (size - 2) && m_collinear_surface_vertices)
             {
-                warningWithCount(m_collinear_surface_vertices_count, surface.refs[i % size].line_number) << "collinear verticies" << std::endl;
+                warningWithCount(m_collinear_surface_vertices_count, surface.refs[i % size].line_number) << "collinear vertices" << std::endl;
                 showLine(in, surface.refs[i % size].line_pos);
 
                 note(object.vertices[surface.refs[i - 2].index].line_number) << "first vertex" << std::endl;
