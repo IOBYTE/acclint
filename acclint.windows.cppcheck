@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="1">
     <builddir>acclint-cppcheck-build-dir</builddir>
-    <importproject>build/acclint.sln</importproject>
+    <importproject>build/acclint.vcxproj</importproject>
     <analyze-all-vs-configs>false</analyze-all-vs-configs>
     <check-headers>true</check-headers>
     <check-unused-templates>true</check-unused-templates>
@@ -10,37 +10,38 @@
     <max-template-recursion>100</max-template-recursion>
     <vs-configurations>
         <config>Debug</config>
-        <config>MinSizeRel</config>
-        <config>RelWithDebInfo</config>
         <config>Release</config>
     </vs-configurations>
     <suppressions>
-        <suppression>clang-tidy-modernize-use-trailing-return-type</suppression>
-        <suppression>clang-tidy-fuchsia-overloaded-operator</suppression>
-        <suppression>clang-analyzer</suppression>
-        <suppression>clang-tidy-fuchsia-statically-constructed-objects</suppression>
-        <suppression>clang-tidy-cert-err58-cpp</suppression>
-        <suppression>clang-tidy-readability-identifier-length</suppression>
-        <suppression>clang-tidy-altera-unroll-loops</suppression>
-        <suppression>clang-tidy-fuchsia-default-arguments-calls</suppression>
-        <suppression>clang-tidy-altera-id-dependent-backward-branch</suppression>
-        <suppression>clang-tidy-google-readability-todo</suppression>
-        <suppression>clang-tidy-misc-no-recursion</suppression>
-        <suppression>clang-tidy-bugprone-easily-swappable-parameters</suppression>
-        <suppression>clang-tidy-readability-function-cognitive-complexity</suppression>
-        <suppression>clang-tidy-fuchsia-default-arguments-declarations</suppression>
-        <suppression>clang-tidy-cppcoreguidelines-pro-bounds-constant-array-index</suppression>
-        <suppression>clang-tidy-bugprone-branch-clone</suppression>
-        <suppression>clang-tidy-readability-isolate-declaration</suppression>
-        <suppression>clang-tidy-cppcoreguidelines-pro-bounds-pointer-arithmetic</suppression>
-        <suppression>clang-tidy-altera-struct-pack-align</suppression>
         <suppression>missingIncludeSystem</suppression>
-        <suppression>clang-tidy-misc-include-cleaner</suppression>
-        <suppression>clang-tidy-performance-avoid-endl</suppression>
-        <suppression>clang-tidy-cppcoreguidelines-owning-memory</suppression>
+        <suppression>clang-analyzer</suppression>
+        <suppression>clang-tidy-altera-id-dependent-backward-branch</suppression>
+        <suppression>clang-tidy-altera-struct-pack-align</suppression>
+        <suppression>clang-tidy-altera-unroll-loops</suppression>
+        <suppression>clang-tidy-android-cloexec-fopen</suppression>
+        <suppression>clang-tidy-bugprone-easily-swappable-parameters</suppression>
         <suppression>clang-tidy-cert-err33-c</suppression>
-        <suppression>clang-tidy-modernize-use-nodiscard</suppression>
+        <suppression>clang-tidy-cppcoreguidelines-avoid-do-while</suppression>
+        <suppression>clang-tidy-cppcoreguidelines-owning-memory</suppression>
+        <suppression>clang-tidy-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access</suppression>
+        <suppression>clang-tidy-cppcoreguidelines-pro-bounds-constant-array-index</suppression>
+        <suppression>clang-tidy-cppcoreguidelines-pro-bounds-pointer-arithmetic</suppression>
+        <suppression>clang-tidy-fuchsia-default-arguments-calls</suppression>
+        <suppression>clang-tidy-fuchsia-default-arguments-declarations</suppression>
+        <suppression>clang-tidy-fuchsia-overloaded-operator</suppression>
+        <suppression>clang-tidy-fuchsia-statically-constructed-objects</suppression>
+        <suppression>clang-tidy-google-readability-todo</suppression>
+        <suppression>clang-tidy-misc-include-cleaner</suppression>
         <suppression>clang-tidy-misc-non-private-member-variables-in-classes</suppression>
+        <suppression>clang-tidy-misc-no-recursion</suppression>
+        <suppression>clang-tidy-modernize-use-nodiscard</suppression>
+        <suppression>clang-tidy-modernize-use-trailing-return-type</suppression>
+        <suppression>clang-tidy-performance-avoid-endl</suppression>
+        <suppression>clang-tidy-readability-identifier-length</suppression>
+        <suppression>clang-tidy-readability-function-cognitive-complexity</suppression>
+        <suppression>clang-tidy-readability-inconsistent-ifelse-braces</suppression>
+        <suppression>clang-tidy-readability-isolate-declaration</suppression>
+        <suppression>clang-tidy-readability-math-missing-parentheses</suppression>
     </suppressions>
     <tools>
         <tool>clang-tidy</tool>
