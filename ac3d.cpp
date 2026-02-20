@@ -323,8 +323,9 @@ std::ostream &AC3D::warning(size_t line_number)
             std::cerr << m_file << ":" << line_number << " warning: ";
         else
             std::cerr << m_file << ":" << m_line_number << " warning: ";
+        return std::cerr;
     }
-    return std::cerr;
+    return m_null_stream;
 }
 
 std::ostream &AC3D::warningWithCount(size_t &count, size_t line_number)
@@ -345,11 +346,15 @@ std::ostream &AC3D::warningWithCount(size_t &count, size_t line_number)
 std::ostream &AC3D::error(size_t line_number)
 {
     m_errors++;
-    if (line_number > 0)
-        std::cerr << m_file << ":" << line_number << " error: ";
-    else
-        std::cerr << m_file << ":" << m_line_number << " error: ";
-    return std::cerr;
+    if (!m_quiet)
+    {
+        if (line_number > 0)
+            std::cerr << m_file << ":" << line_number << " error: ";
+        else
+            std::cerr << m_file << ":" << m_line_number << " error: ";
+        return std::cerr;
+    }
+    return m_null_stream;
 }
 
 std::ostream &AC3D::errorWithCount(size_t &count, size_t line_number)
