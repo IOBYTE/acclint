@@ -263,6 +263,7 @@ int main(int argc, char *argv[])
             }
             else
             {
+                std::cerr << "Missing texture path" << std::endl;
                 usage();
                 return EXIT_FAILURE;
             }
@@ -663,7 +664,7 @@ int main(int argc, char *argv[])
         }
         else if (arg == "--merge")
         {
-            if (i < argc)
+            if (i < argc - 1)
             {
                 merge_files.push_back(argv[i + 1]);
                 i++;
