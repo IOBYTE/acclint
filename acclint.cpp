@@ -974,7 +974,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidNumvertCount(), "invalid vertex count: ");
             showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
             showCount(ac3d.missingVertexCount(), "missing vertex: ");
-            showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified");
+            showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
         }
     }
 
