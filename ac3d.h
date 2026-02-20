@@ -336,7 +336,7 @@ private:
         }
         double angleRadians(const Point3 &other) const
         {
-            return acos(dot(other) / (length() * other.length()));
+            return acos(std::clamp(dot(other) / (length() * other.length()), -1.0, 1.0));
         }
 
         double angleDegrees(const Point3 &other) const
