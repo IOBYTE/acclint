@@ -1149,11 +1149,15 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
             if (data.back() == '\r') // remove DOS CR
                 data.pop_back();
 
-            while (data.size() < size)
+            while (!data.empty() && data.size() < size)
             {
                 data += '\n'; // add a newline removed by getline
 
-                std::getline(in, m_line);
+                if (!std::getline(in, m_line))
+                {
+                    error() << "unexpected end of file reading data" << std::endl;
+                    return false;
+                }
                 m_line_number++;
                 data += m_line;
                 if (data.back() == '\r') // remove DOS CR
@@ -3340,7 +3344,13 @@ bool AC3D::Triangle::sameTriangle(const Object &object, const Surface &surface, 
                     bool same = true;
                     for (size_t k = 1; k < 3; k++)
                     {
-                        if (vertices[(i + k) % 3].vertex != vertices[surface.refs[(j + k) % 3].index].vertex)
+                        const size_t idx = surface.refs[(j + k) % 3].index;
+                        if (idx >= object.vertices.size())  // guard against invalid file data
+                        {
+                            same = false;
+                            break;
+                        }
+                        if (vertices[(i + k) % 3].vertex != object.vertices[idx].vertex)
                         {
                             same = false;
                             break;
@@ -3364,7 +3374,13 @@ bool AC3D::Triangle::sameTriangle(const Object &object, const Surface &surface, 
                     bool same = true;
                     for (size_t k = 1; k < 3; k++)
                     {
-                        if (vertices[(i + k) % 3].vertex != vertices[surface.refs[(j + 3 - k) % 3].index].vertex)
+                        const size_t idx = surface.refs[(j + 3 - k) % 3].index;
+                        if (idx >= object.vertices.size())  // guard against invalid file data
+                        {
+                            same = false;
+                            break;
+                        }
+                        if (vertices[(i + k) % 3].vertex != object.vertices[idx].vertex)
                         {
                             same = false;
                             break;
