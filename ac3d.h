@@ -1013,10 +1013,10 @@ private:
 
     bool readHeader(std::istream &in);
     void writeHeader(std::ostream &out, const Header &header) const;
-    bool readTypeAndColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next);
-    bool readColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next);
-    bool readTypeAndValue(std::istringstream &in, double &value, const std::string &expected, const std::string &next, double min, double max, bool is_float);
-    bool readValue(std::istringstream &in, double &value, const std::string &expected, double min, double max, bool is_float);
+    bool readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next);
+    bool readColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next);
+    bool readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, const std::string_view &next, double min, double max, bool is_float);
+    bool readValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float);
     bool readData(std::istringstream &iss, std::istream &in, std::string &data);
     void writeData(std::ostream &out, const std::string &data) const;
     bool readMaterial(std::istringstream &in, Material &material);

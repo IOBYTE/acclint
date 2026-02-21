@@ -41,41 +41,41 @@
 
 #include "triangleintersects.hpp"
 
-const std::string MATERIAL_token("MATERIAL");
-const std::string rgb_token("rgb");
-const std::string amb_token("amb");
-const std::string emis_token("emis");
-const std::string spec_token("spec");
-const std::string shi_token("shi");
-const std::string trans_token("trans");
-const std::string data_token("data");
-const std::string MAT_token("MAT");
-const std::string ENDMAT_token("ENDMAT");
-const std::string OBJECT_token("OBJECT");
-const std::string name_token("name");
-const std::string texture_token("texture");
-const std::string shader_token("shader");
-const std::string texrep_token("texrep");
-const std::string texoff_token("texoff");
-const std::string subdiv_token("subdiv");
-const std::string crease_token("crease");
-const std::string rot_token("rot");
-const std::string loc_token("loc");
-const std::string url_token("url");
-const std::string hidden_token("hidden");
-const std::string locked_token("locked");
-const std::string folded_token("folded");
-const std::string numvert_token("numvert");
-const std::string numsurf_token("numsurf");
-const std::string SURF_token("SURF");
-const std::string mat_token("mat");
-const std::string refs_token("refs");
-const std::string kids_token("kids");
-const std::string empty_token;
-const std::string world_token("world");
-const std::string poly_token("poly");
-const std::string group_token("group");
-const std::string light_token("light");
+constexpr std::string_view MATERIAL_token("MATERIAL");
+constexpr std::string_view rgb_token("rgb");
+constexpr std::string_view amb_token("amb");
+constexpr std::string_view emis_token("emis");
+constexpr std::string_view spec_token("spec");
+constexpr std::string_view shi_token("shi");
+constexpr std::string_view trans_token("trans");
+constexpr std::string_view data_token("data");
+constexpr std::string_view MAT_token("MAT");
+constexpr std::string_view ENDMAT_token("ENDMAT");
+constexpr std::string_view OBJECT_token("OBJECT");
+constexpr std::string_view name_token("name");
+constexpr std::string_view texture_token("texture");
+constexpr std::string_view shader_token("shader");
+constexpr std::string_view texrep_token("texrep");
+constexpr std::string_view texoff_token("texoff");
+constexpr std::string_view subdiv_token("subdiv");
+constexpr std::string_view crease_token("crease");
+constexpr std::string_view rot_token("rot");
+constexpr std::string_view loc_token("loc");
+constexpr std::string_view url_token("url");
+constexpr std::string_view hidden_token("hidden");
+constexpr std::string_view locked_token("locked");
+constexpr std::string_view folded_token("folded");
+constexpr std::string_view numvert_token("numvert");
+constexpr std::string_view numsurf_token("numsurf");
+constexpr std::string_view SURF_token("SURF");
+constexpr std::string_view mat_token("mat");
+constexpr std::string_view refs_token("refs");
+constexpr std::string_view kids_token("kids");
+constexpr std::string_view empty_token;
+constexpr std::string_view world_token("world");
+constexpr std::string_view poly_token("poly");
+constexpr std::string_view group_token("group");
+constexpr std::string_view light_token("light");
 
 std::ostream & operator << (std::ostream &out, const AC3D::quoted_string &s)
 {
@@ -196,7 +196,7 @@ size_t offsetOfToken(const std::istringstream &in, size_t index)
     return current_offset;
 }
 
-bool icasecmp(const std::string& l, const std::string& r)
+bool icasecmp(const std::string& l, const std::string_view &r)
 {
     return l.size() == r.size() &&
         equal(l.cbegin(), l.cend(), r.cbegin(),
@@ -1201,7 +1201,7 @@ void AC3D::writeData(std::ostream &out, const std::string &data) const
     out << newline(m_crlf);
 }
 
-bool AC3D::readColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next)
+bool AC3D::readColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next)
 {
     bool status = true;
     for (auto & component : color)
@@ -1256,7 +1256,7 @@ bool AC3D::readColor(std::istringstream &in, Color &color, const std::string &ex
     return status;
 }
 
-bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::string &expected, const std::string &next)
+bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next)
 {
     in >> std::ws;
 
@@ -1294,7 +1294,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
     return readColor(in, color, expected, next);
 }
 
-bool AC3D::readValue(std::istringstream &in, double &value, const std::string &expected, double min, double max, bool is_float)
+bool AC3D::readValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float)
 {
     in >> std::ws;
     const std::streampos pos = in.tellg();
@@ -1345,7 +1345,7 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string &e
     return true;
 }
 
-bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::string &expected, const std::string &next, double min, double max, bool is_float)
+bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, const std::string_view &next, double min, double max, bool is_float)
 {
     in >> std::ws;
     const std::streampos pos = in.tellg();
