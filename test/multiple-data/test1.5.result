@@ -1,0 +1,7 @@
+test1.ac:10 warning: multiple data
+data 4
+^
+test1.ac:7 note: first instance
+data 4
+^
+1 warning

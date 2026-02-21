@@ -1650,10 +1650,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.data.empty())
                 {
-                    warning() << "multiple data" << std::endl;
-                    showLine(iss1, 0);
-                    note(object.data.front().line_number) << "first instance" << std::endl;
-                    showLine(in, object.data.front().line_pos);
+                    if (m_multiple_data)
+                    {
+                        warningWithCount(m_multiple_data_count) << "multiple data" << std::endl;
+                        showLine(iss1, 0);
+                        note(object.data.front().line_number) << "first instance" << std::endl;
+                        showLine(in, object.data.front().line_pos);
+                    }
                 }
 
                 object.data.push_back(data);

@@ -91,6 +91,7 @@ private:                                               \
     CHECK(differentUV, m_different_uv, true)
     CHECK(groupWithGeometry, m_group_with_geometry, true)
     CHECK(multipleWorld, m_multiple_world, true)
+    CHECK(multipleData, m_multiple_data, true)
     CHECK(differentSURF, m_different_surf, true)
     CHECK(differentMat, m_different_mat, true)
     CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
