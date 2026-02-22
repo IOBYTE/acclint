@@ -164,7 +164,6 @@ int main(int argc, char *argv[])
     bool invalid_normal_length = true;
     bool missing_normal = true;
     bool invalid_material = true;
-    bool invalid_material_index = true;
     bool invalid_ref_count = true;
     bool extra_uv_coordinates = true;
     bool missing_uv_coordinates = true;
@@ -222,6 +221,7 @@ int main(int argc, char *argv[])
     bool invalid_numvert = true;
     bool invalid_kids_count = true;
     bool more_surf_than_specified = true;
+    bool invalid_material_index = true;
 
     std::vector<std::string> texture_paths;
     bool dump = false;
@@ -969,7 +969,6 @@ int main(int argc, char *argv[])
             // errors
             showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
-            showCount(ac3d.invalidMaterialIndexCount(), "invalid material index: ");
             showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
         }
     }
@@ -983,6 +982,7 @@ int main(int argc, char *argv[])
 
         if (ac3d.summary())
         {
+            showCount(ac3d.invalidMaterialIndexCount(), "invalid material index: ");
             showCount(ac3d.invalidVertexCount(), "invalid vertex: ");
             showCount(ac3d.invalidVertexIndexCount(), "invalid vertex index: ");
             showCount(ac3d.invalidNormalCount(), "invalid normal: ");

@@ -1,0 +1,5 @@
+test2.ac:12 error: invalid material index: 0 of 0
+mat 0
+    ^
+1 error
+invalid material index: 1

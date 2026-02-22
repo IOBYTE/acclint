@@ -1,0 +1,4 @@
+test1.ac:13 error: invalid material index: 1 of 1
+mat 1
+    ^
+1 error

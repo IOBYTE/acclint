@@ -613,7 +613,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
             {
                 if (m_invalid_material_index)
                 {
-                    error() << "invalid material index: " << mat << " of "
+                    errorWithCount(m_invalid_material_index_count) << "invalid material index: " << mat << " of "
                             << m_materials.size() << std::endl;
                     showLine(iss, pos);
                 }
