@@ -5,3 +5,4 @@ test1.ac:7 note: first instance
 data 4
 ^
 1 warning
+multiple data: 1

@@ -1437,6 +1437,8 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
 
     first >> material.name;
 
+    checkTrailing(first);
+
     while (getLine(in))
     {
         std::istringstream iss(m_line);
@@ -1484,14 +1486,19 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
             {
                 if (!material.data.empty())
                 {
-                    warning() << "multiple data" << std::endl;
-                    showLine(iss, 0);
-                    note(material.data.front().line_number) << "first instance" << std::endl;
-                    showLine(in, material.data.front().line_pos);
+                    if (m_multiple_data)
+                    {
+                        warningWithCount(m_multiple_data_count) << "multiple data" << std::endl;
+                        showLine(iss, 0);
+                        note(material.data.front().line_number) << "first instance" << std::endl;
+                        showLine(in, material.data.front().line_pos);
+                    }
                 }
 
                 material.data.push_back(data);
             }
+
+            continue;
         }
         else if (token == ENDMAT_token)
         {
