@@ -1,0 +1,8 @@
+test1.ac:18 warning: duplicate surfaces
+SURF 0x20
+^
+test1.ac:12 note: first instance
+SURF 0x20
+^
+1 warning
+duplicate surfaces: 1

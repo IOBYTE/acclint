@@ -15,7 +15,7 @@
 }
 
 @test "test1.3" {
-  run acclint -Wno-warnings -Wduplicate-surfaces test1.ac
+  run acclint -Wno-warnings -Wduplicate-materials test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }

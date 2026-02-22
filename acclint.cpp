@@ -949,10 +949,10 @@ int main(int argc, char *argv[])
             showCount(ac3d.multipleTexoffCount(), "multiple texoff: ");
             showCount(ac3d.multipleTexrepCount(), "multiple texrep: ");
             showCount(ac3d.multipleTextureCount(), "multiple texture: ");
-            showCount(ac3d.multipleDataCount(), "multiple data: ");
             showCount(ac3d.differentUVCount(), "different uv: ");
             showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
             showCount(ac3d.multipleWorldCount(), "multiple world: ");
+            showCount(ac3d.multipleDataCount(), "multiple data: ");
             showCount(ac3d.differentSURFCount(), "different surf: ");
             showCount(ac3d.differentMatCount(), "different mat: ");
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");

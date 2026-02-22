@@ -2925,10 +2925,13 @@ void AC3D::checkDuplicateMaterials(std::istream &in)
                     if (sameMaterial(m_materials[i], m_materials[j]))
                     {
                         duplicates[j] = true;
-                        warning(m_materials[j].line_number) << "duplicate materials" << std::endl;
-                        showLine(in, m_materials[j].line_pos);
-                        note(m_materials[i].line_number) << "first instance" << std::endl;
-                        showLine(in, m_materials[i].line_pos);
+                        if (m_duplicate_materials)
+                        {
+                            warningWithCount(m_duplicate_materials_count, m_materials[j].line_number) << "duplicate materials" << std::endl;
+                            showLine(in, m_materials[j].line_pos);
+                            note(m_materials[i].line_number) << "first instance" << std::endl;
+                            showLine(in, m_materials[i].line_pos);
+                        }
                     }
                 }
             }
