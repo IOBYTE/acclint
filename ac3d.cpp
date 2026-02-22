@@ -2012,10 +2012,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.urls.empty())
                 {
-                    warning() << "multiple url" << std::endl;
-                    showLine(iss1, 0);
-                    note(object.urls.front().line_number) << "first instance" << std::endl;
-                    showLine(in, object.urls.front().line_pos);
+                    if (m_multiple_url)
+                    {
+                        warningWithCount(m_multiple_url_count) << "multiple url" << std::endl;
+                        showLine(iss1, 0);
+                        note(object.urls.front().line_number) << "first instance" << std::endl;
+                        showLine(in, object.urls.front().line_pos);
+                    }
                 }
 
                 object.urls.push_back(url);

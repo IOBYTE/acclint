@@ -82,6 +82,7 @@ void usage()
     std::cerr << "  -Wno-multiple-texture                  Don't show multiple texture warnings." << std::endl;
     std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-multiple-data                     Don't show multiple data warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-url                      Don't show multiple url warnings." << std::endl;
     std::cerr << "  -Wno-different-uv                      Don't show different uv warnings." << std::endl;
     std::cerr << "  -Wno-different-surf                    Don't show different surf warnings." << std::endl;
     std::cerr << "  -Wno-different-mat                     Don't show different mat warnings." << std::endl;
@@ -208,6 +209,7 @@ int main(int argc, char *argv[])
     bool group_with_geometry = true;
     bool multiple_world = true;
     bool multiple_data = true;
+    bool multiple_url = true;
     bool different_surf = true;
     bool different_mat = true;
 
@@ -349,6 +351,7 @@ int main(int argc, char *argv[])
             group_with_geometry = false;
             multiple_world = false;
             multiple_data = false;
+            multiple_url = false;
             different_surf = false;
             different_mat = false;
             overlapping_2_sided_surface = false;
@@ -555,6 +558,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-multiple-data" || arg == "-Wmultiple-data")
         {
             multiple_data = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-url" || arg == "-Wmultiple-url")
+        {
+            multiple_url = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-different-surf" || arg == "-Wdifferent-surf")
         {
@@ -871,6 +878,7 @@ int main(int argc, char *argv[])
     ac3d.groupWithGeometry(group_with_geometry);
     ac3d.multipleWorld(multiple_world);
     ac3d.multipleData(multiple_data);
+    ac3d.multipleUrl(multiple_url);
     ac3d.differentSURF(different_surf);
     ac3d.differentMat(different_mat);
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
@@ -953,6 +961,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
             showCount(ac3d.multipleWorldCount(), "multiple world: ");
             showCount(ac3d.multipleDataCount(), "multiple data: ");
+            showCount(ac3d.multipleUrlCount(), "multiple url: ");
             showCount(ac3d.differentSURFCount(), "different surf: ");
             showCount(ac3d.differentMatCount(), "different mat: ");
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");

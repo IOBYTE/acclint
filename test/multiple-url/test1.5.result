@@ -1,0 +1,8 @@
+test1.ac:8 warning: multiple url
+url file://file2
+^
+test1.ac:7 note: first instance
+url file://file1
+^
+1 warning
+multiple url: 1
