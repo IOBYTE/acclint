@@ -5814,7 +5814,7 @@ void AC3D::fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2,
                                 {
                                     std::array < Point3, 3> triangle2;
 
-                                    if ((i & 1u) == 0)
+                                    if ((j & 1u) == 0)
                                     {
                                         triangle2 = { object2.object->vertices[surface2.refs[j - 2].index].vertex,
                                                       object2.object->vertices[surface2.refs[j - 1].index].vertex,
