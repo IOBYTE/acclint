@@ -1,0 +1,8 @@
+test2.ac:3 warning: duplicate materials with different names
+MATERIAL "2" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+test2.ac:2 note: first instance
+MATERIAL "1" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+1 warning
+duplicate materials: 1
