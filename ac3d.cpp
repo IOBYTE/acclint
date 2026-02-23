@@ -778,62 +778,61 @@ void AC3D::convertObjectToAc(Object &object)
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         if (!object.surfaces[i].isTriangleStrip())
-            surfaces.push_back(object.surfaces[i]);
-        else
         {
-            for (size_t j = 0; j < object.surfaces[i].refs.size() - 2; ++j)
+            surfaces.push_back(object.surfaces[i]);
+            continue;
+        }
+
+        auto makeRef = [](const Ref &src) -> Ref
             {
-                if (object.surfaces[i].refs[j].index >= object.vertices.size() ||
-                    object.surfaces[i].refs[j + 1].index >= object.vertices.size() ||
-                    object.surfaces[i].refs[j + 2].index >= object.vertices.size())
-                    continue;
+                Ref ref;
+                ref.index = src.index;
+                // only copy first texture coordinate if it exists since
+                // AC3D only supports one texture coordinate per vertex
+                if (!src.coordinates.empty())
+                    ref.coordinates.push_back(src.coordinates[0]);
+                return ref;
+            };
 
-                if (object.vertices[object.surfaces[i].refs[j].index].vertex == object.vertices[object.surfaces[i].refs[j + 1].index].vertex ||
-                    object.vertices[object.surfaces[i].refs[j].index].vertex == object.vertices[object.surfaces[i].refs[j + 2].index].vertex ||
-                    object.vertices[object.surfaces[i].refs[j + 1].index].vertex == object.vertices[object.surfaces[i].refs[j + 2].index].vertex)
-                    continue;
+        for (size_t j = 0; j < object.surfaces[i].refs.size() - 2; ++j)
+        {
+            const Ref &r0 = object.surfaces[i].refs[j];
+            const Ref &r1 = object.surfaces[i].refs[j + 1];
+            const Ref &r2 = object.surfaces[i].refs[j + 2];
 
-                Surface surface;
-                surface.mats = object.surfaces[i].mats;
-                surface.flags = object.surfaces[i].flags & Surface::FaceMask;
+            if (r0.index >= object.vertices.size() ||
+                r1.index >= object.vertices.size() ||
+                r2.index >= object.vertices.size())
+                continue;
 
-                if ((j & 1U) == 0)
-                {
-                    Ref ref1;
-                    ref1.index = object.surfaces[i].refs[j].index;
-                    ref1.coordinates.push_back(object.surfaces[i].refs[j].coordinates.front());
-                    surface.refs.push_back(ref1);
+            if (object.vertices[r0.index].vertex == object.vertices[r1.index].vertex ||
+                object.vertices[r0.index].vertex == object.vertices[r2.index].vertex ||
+                object.vertices[r1.index].vertex == object.vertices[r2.index].vertex)
+                continue;
 
-                    Ref ref2;
-                    ref2.index = object.surfaces[i].refs[j + 1].index;
-                    ref2.coordinates.push_back(object.surfaces[i].refs[j + 1].coordinates.front());
-                    surface.refs.push_back(ref2);
-                }
-                else
-                {
-                    Ref ref1;
-                    ref1.index = object.surfaces[i].refs[j + 1].index;
-                    ref1.coordinates.push_back(object.surfaces[i].refs[j + 1].coordinates.front());
-                    surface.refs.push_back(ref1);
+            Surface surface;
+            surface.mats = object.surfaces[i].mats;
+            surface.flags = object.surfaces[i].flags & Surface::FaceMask;
 
-                    Ref ref2;
-                    ref2.index = object.surfaces[i].refs[j].index;
-                    ref2.coordinates.push_back(object.surfaces[i].refs[j].coordinates.front());
-                    surface.refs.push_back(ref2);
-                }
-
-                Ref ref3;
-                ref3.index = object.surfaces[i].refs[j + 2].index;
-                ref3.coordinates.push_back(object.surfaces[i].refs[j + 2].coordinates.front());
-                surface.refs.push_back(ref3);
-
-                surfaces.push_back(surface);
+            // Triangle strips alternate winding every other triangle; reverse
+            // vertex order on odd triangles so all output triangles wind the same way.
+            if ((j & 1U) == 0)
+            {
+                surface.refs.push_back(makeRef(r0));
+                surface.refs.push_back(makeRef(r1));
             }
+            else
+            {
+                surface.refs.push_back(makeRef(r1));
+                surface.refs.push_back(makeRef(r0));
+            }
+            surface.refs.push_back(makeRef(r2));
+
+            surfaces.push_back(surface);
         }
     }
 
-    object.surfaces.clear();
-    object.surfaces = surfaces;
+    object.surfaces = std::move(surfaces);
 
     // remove textures
     if (object.textures.size() > 1)

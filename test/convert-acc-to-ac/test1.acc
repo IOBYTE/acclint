@@ -1,0 +1,106 @@
+AC3Db
+MATERIAL "ac3dmat1" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+OBJECT world
+kids 1
+OBJECT poly
+name "cube"
+texture "test.png"
+numvert 24
+-1 -1 -1 0 0 -1
+-1 1 -1 0 0 -1
+1 1 -1 0 0 -1
+1 -1 -1 0 0 -1
+1 1 1 1 0 0
+1 -1 1 1 0 0
+1 -1 -1 1 0 0
+1 1 -1 1 -0 0
+1 -1 1 0 -0 1
+1 1 1 0 -0 1
+-1 1 1 0 -0 1
+-1 -1 1 0 0 1
+-1 -1 1 -1 0 0
+-1 1 1 -1 0 0
+-1 1 -1 -1 0 0
+-1 -1 -1 -1 -0 -0
+-1 1 -1 0 1 0
+-1 1 1 0 1 0
+1 1 1 0 1 0
+1 1 -1 -0 1 0
+-1 -1 1 0 -1 0
+-1 -1 -1 0 -1 0
+1 -1 -1 0 -1 0
+1 -1 1 0 -1 0
+numsurf 12
+SURF 0x0
+mat 0
+refs 3
+0 1 0
+1 1 1
+2 0 1
+SURF 0x0
+mat 0
+refs 3
+0 1 0
+2 0 1
+3 0 0
+SURF 0x0
+mat 0
+refs 3
+4 0 1
+5 0 0
+6 1 0
+SURF 0x0
+mat 0
+refs 3
+4 0 1
+6 1 0
+7 1 1
+SURF 0x0
+mat 0
+refs 3
+8 1 0
+9 1 1
+10 0 1
+SURF 0x0
+mat 0
+refs 3
+8 1 0
+10 0 1
+11 0 0
+SURF 0x0
+mat 0
+refs 3
+12 1 0
+13 1 1
+14 0 1
+SURF 0x0
+mat 0
+refs 3
+12 1 0
+14 0 1
+15 0 0
+SURF 0x0
+mat 0
+refs 3
+16 0 0
+17 1 0
+18 1 1
+SURF 0x0
+mat 0
+refs 3
+16 0 0
+18 1 1
+19 0 1
+SURF 0x0
+mat 0
+refs 3
+20 0 0
+21 1 0
+22 1 1
+SURF 0x0
+mat 0
+refs 3
+20 0 0
+22 1 1
+23 0 1
+kids 0
