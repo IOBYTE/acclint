@@ -34,6 +34,7 @@
 #include <sstream>
 #include <cstdio>
 #include <cmath>
+#include <cctype>
 #include <chrono>
 #include <omp.h>
 
@@ -1732,7 +1733,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     std::string texture_name(texture.name);
                     std::filesystem::path texture_path(texture_name);
                     const bool absolute = texture_path.is_absolute() ||
-                        (std::isalpha(texture_name[0]) != 0 && texture_name[1] == ':');
+                        (texture_name.size() >= 2 &&
+                         std::isalpha(static_cast<unsigned char>(texture_name[0])) != 0 &&
+                         texture_name[1] == ':');
 
                     texture.path = texture.name;
 
