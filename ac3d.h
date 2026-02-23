@@ -18,8 +18,8 @@
 
 //---------------------------------------------------------------------------
 
-#ifndef _AC3D_H_
-#define _AC3D_H_
+#ifndef AC3D_H
+#define AC3D_H
 
 #include <array>
 #include <set>
