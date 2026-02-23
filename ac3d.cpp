@@ -81,9 +81,9 @@ constexpr std::string_view light_token("light");
 std::ostream & operator << (std::ostream &out, const AC3D::quoted_string &s)
 {
     if (s == "empty_texture_no_mapping")
-        out << reinterpret_cast<const std::string &>(s);
+        out << static_cast<const std::string &>(s);
     else
-        out << '\"' << reinterpret_cast<const std::string &>(s) << '\"';
+        out << '\"' << static_cast<const std::string &>(s) << '\"';
     return out;
 }
 
