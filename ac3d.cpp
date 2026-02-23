@@ -4148,7 +4148,7 @@ bool AC3D::degenerate(const std::array<Point3, 3> &vertices)
 
 bool AC3D::degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2)
 {
-    return p0 == p1 || p0 == p2 || p1 == p2;
+    return p0.equals(p1) || p0.equals(p2) || p1.equals(p2);
 }
 
 bool AC3D::coplanar(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2)
