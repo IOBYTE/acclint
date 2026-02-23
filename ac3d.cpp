@@ -2564,7 +2564,7 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
 
             // skip invalid vertex
             if (vertex1 >= vertices.size() || vertex2 >= vertices.size())
-                break;
+                return false;
 
             if (!(vertex1 == vertex2 || vertices[vertex1] == vertices[vertex2]))
                 return false;
