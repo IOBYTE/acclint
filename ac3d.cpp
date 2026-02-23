@@ -202,7 +202,8 @@ bool icasecmp(const std::string& l, const std::string_view &r)
     return l.size() == r.size() &&
         equal(l.cbegin(), l.cend(), r.cbegin(),
             [](std::string::value_type l1, std::string::value_type r1)
-            { return std::toupper(l1) == std::toupper(r1); });
+            { return std::toupper(static_cast<unsigned char>(l1)) ==
+                     std::toupper(static_cast<unsigned char>(r1)); });
 }
 
 } // namespace
