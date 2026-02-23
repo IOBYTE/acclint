@@ -218,7 +218,7 @@ void AC3D::showLine(std::istringstream &in) const
         const std::streampos pos = buf->pubseekoff(0, std::ios_base::cur, std::ios_base::in);
         buf->pubseekpos(pos, std::ios_base::in);
 
-        for (int i = 0; i < pos; ++i)
+        for (std::streamoff i = 0; i < static_cast<std::streamoff>(pos); ++i)
             std::cerr << ' ';
         std::cerr << '^' << std::endl;
     }
@@ -230,7 +230,7 @@ void AC3D::showLine(const std::istringstream &in, const std::streampos &pos) con
     {
         std::cerr << in.str() << std::endl;
 
-        for (int i = 0; i < pos; ++i)
+        for (std::streamoff i = 0; i < static_cast<std::streamoff>(pos); ++i)
             std::cerr << ' ';
         std::cerr << '^' << std::endl;
     }
