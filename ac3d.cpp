@@ -3716,7 +3716,7 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
                     if (surface1.refs[k].index == surface2.refs[l].index &&
                         surface1.refs[k].coordinates != surface2.refs[l].coordinates)
                     {
-                        const double angle = std::acos(surface1.normal.dot(surface2.normal)) * 180.0 / M_PI;
+                        const double angle = std::acos(surface1.normal.dot(surface2.normal)) * 180.0 / std::numbers::pi;
                         const double crease = object.creases.empty() ? 45.0 : object.creases[0].crease;
 
                         if (angle < crease)

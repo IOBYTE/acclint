@@ -21,8 +21,6 @@
 #ifndef _AC3D_H_
 #define _AC3D_H_
 
-#define _USE_MATH_DEFINES
-
 #include <array>
 #include <set>
 #include <map>
@@ -30,6 +28,7 @@
 #include <cmath>
 #include <regex>
 #include <chrono>
+#include <numbers>
 
 class AC3D
 {
@@ -345,7 +344,7 @@ private:
 
         double angleDegrees(const Point3 &other) const
         {
-            return angleRadians(other) * 180.0 / M_PI;
+            return angleRadians(other) * 180.0 / std::numbers::pi;
         }
         bool equals(const Point3 &other) const
         {
