@@ -279,6 +279,7 @@ private:
 
     class Point3 : public std::array<double,3>
     {
+        static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<float>::epsilon());
     public:
         double x() const { return (*this)[0]; }
         double y() const { return (*this)[1]; }
@@ -330,7 +331,7 @@ private:
         void normalize()
         {
             const double l = length();
-            if (l != 0.0)
+            if (l > SMALL_NUM)
             {
                 x(x() / l);
                 y(y() / l);
@@ -348,8 +349,6 @@ private:
         }
         bool equals(const Point3 &other) const
         {
-            static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<float>::epsilon());
-
             return std::abs(x() - other.x()) < SMALL_NUM &&
                    std::abs(y() - other.y()) < SMALL_NUM &&
                    std::abs(z() - other.z()) < SMALL_NUM;
