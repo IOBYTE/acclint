@@ -5202,17 +5202,12 @@ bool AC3D::cleanSurfaces()
     }
 
     // clean them
+    const int size = static_cast<int>(polys.size());
+
+    #pragma omp parallel for reduction(|:cleaned) num_threads(m_threads)
+    for (int i = 0; i < size; i++)
     {
-        const int size = static_cast<int>(polys.size());
-
-        omp_set_dynamic(0);
-        omp_set_num_threads(m_threads);
-
-        #pragma omp parallel for reduction(|:cleaned)
-        for (int i = 0; i < size; i++)
-        {
-            cleaned |= cleanSurfaces(*polys[i]);
-        }
+        cleaned |= cleanSurfaces(*polys[i]);
     }
 
     if (m_show_times)
