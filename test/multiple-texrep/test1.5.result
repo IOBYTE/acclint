@@ -1,0 +1,8 @@
+test1.ac:8 warning: multiple texrep
+texrep 1 1
+^
+test1.ac:7 note: first instance
+texrep 1 1
+^
+1 warning
+multiple texrep: 1
