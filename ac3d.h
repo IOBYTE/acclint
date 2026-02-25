@@ -73,6 +73,7 @@ private:                                               \
     CHECK(multipleSubdiv, m_multiple_subdiv, true)
     CHECK(multipleTexoff, m_multiple_texoff, true)
     CHECK(multipleTexrep, m_multiple_texrep, true)
+    CHECK(multipleTexture, m_multiple_texture, true)
     CHECK(multipleUrl, m_multiple_url, true)
     CHECK(multipleWorld, m_multiple_world, true)
     CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
@@ -98,7 +99,6 @@ private:                                               \
     CHECK(missingTexture, m_missing_texture, true)
     CHECK(duplicateTexture, m_duplicate_texture, true)
     CHECK(ambiguousTexture, m_ambiguous_texture, true)
-    CHECK(multipleTexture, m_multiple_texture, true)
     CHECK(missingUVCoordinates, m_missing_uv_coordinates, true)
 
     // errors

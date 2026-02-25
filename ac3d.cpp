@@ -681,7 +681,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                 const size_t valid_textures = object.getTexturesSize();
                 if (ref.coordinates.size() < valid_textures)
                 {
-                    if (m_missing_uv_coordinates)
+                    if (!m_is_ac && m_missing_uv_coordinates)
                     {
                         warningWithCount(m_missing_uv_coordinates_count) << "missing uv coordinates: "
                             << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
