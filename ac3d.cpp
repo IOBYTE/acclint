@@ -6011,6 +6011,12 @@ bool AC3D::Object::hasTransparentTexture() const
         fclose(fp);
         return false;
     }
+    if (setjmp(png_jmpbuf(png_ptr)))
+    {
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        fclose(fp);
+        return false;
+    }
     png_init_io(png_ptr, fp);
     png_set_sig_bytes(png_ptr, number);
     png_read_info(png_ptr, info_ptr);
