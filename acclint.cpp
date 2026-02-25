@@ -67,6 +67,7 @@ void usage()
     std::cerr << "  -Wno-multiple-locked                   Don't show multiple locked warnings." << std::endl;
     std::cerr << "  -Wno-multiple-name                     Don't show multiple name warnings." << std::endl;
     std::cerr << "  -Wno-multiple-shader                   Don't show multiple shader warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-subdiv                   Don't show multiple subdiv warnings." << std::endl;
     std::cerr << "  -Wno-multiple-url                      Don't show multiple url warnings." << std::endl;
     std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
@@ -91,7 +92,6 @@ void usage()
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
     std::cerr << "  -Wno-multiple-rot                      Don't show multiple rot warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-subdiv                   Don't show multiple subdiv warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texoff                   Don't show multiple texoff warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texrep                   Don't show multiple texrep warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texture                  Don't show multiple texture warnings." << std::endl;
@@ -196,6 +196,7 @@ int main(int argc, char *argv[])
     bool multiple_locked = true;
     bool multiple_name = true;
     bool multiple_shader = true;
+    bool multiple_subdiv = true;
     bool multiple_url = true;
     bool multiple_world = true;
     bool overlapping_2_sided_surface = true;
@@ -228,7 +229,6 @@ int main(int argc, char *argv[])
     bool duplicate_texture = true;
     bool ambiguous_texture = true;
     bool multiple_rot = true;
-    bool multiple_subdiv = true;
     bool multiple_texoff = true;
     bool multiple_texrep = true;
     bool multiple_texture = true;
@@ -353,6 +353,7 @@ int main(int argc, char *argv[])
             multiple_locked = value;
             multiple_name = value;
             multiple_shader = value;
+            multiple_subdiv = value;
             multiple_url = value;
             multiple_world = value;
             overlapping_2_sided_surface = value;
@@ -379,7 +380,6 @@ int main(int argc, char *argv[])
             duplicate_texture = value;
             ambiguous_texture = value;
             multiple_rot = value;
-            multiple_subdiv = value;
             multiple_texoff = value;
             multiple_texrep = value;
             multiple_texture = value;
@@ -873,8 +873,9 @@ int main(int argc, char *argv[])
     ac3d.multipleLoc(multiple_loc);
     ac3d.multipleLocked(multiple_locked);
     ac3d.multipleName(multiple_name);
-    ac3d.multipleUrl(multiple_url);
     ac3d.multipleShader(multiple_shader);
+    ac3d.multipleSubdiv(multiple_subdiv);
+    ac3d.multipleUrl(multiple_url);
     ac3d.multipleWorld(multiple_world);
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
     ac3d.surface2SidedOpaque(surface_2_sided_opaque);
@@ -914,7 +915,6 @@ int main(int argc, char *argv[])
     ac3d.ambiguousTexture(ambiguous_texture);
     ac3d.texturePaths(texture_paths);
     ac3d.multipleRot(multiple_rot);
-    ac3d.multipleSubdiv(multiple_subdiv);
     ac3d.multipleTexoff(multiple_texoff);
     ac3d.multipleTexrep(multiple_texrep);
     ac3d.multipleTexture(multiple_texture);
@@ -975,8 +975,9 @@ int main(int argc, char *argv[])
             showCount(ac3d.multipleLocCount(), "multiple loc: ");
             showCount(ac3d.multipleLockedCount(), "multiple locked: ");
             showCount(ac3d.multipleNameCount(), "multiple name: ");
-            showCount(ac3d.multipleUrlCount(), "multiple url: ");
             showCount(ac3d.multipleShaderCount(), "multiple shader: ");
+            showCount(ac3d.multipleSubdivCount(), "multiple subdiv: ");
+            showCount(ac3d.multipleUrlCount(), "multiple url: ");
             showCount(ac3d.multipleWorldCount(), "multiple world: ");
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
             showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
@@ -1002,7 +1003,6 @@ int main(int argc, char *argv[])
             showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
             showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
             showCount(ac3d.multipleRotCount(), "multiple rot: ");
-            showCount(ac3d.multipleSubdivCount(), "multiple subdiv: ");
             showCount(ac3d.multipleTexoffCount(), "multiple texoff: ");
             showCount(ac3d.multipleTexrepCount(), "multiple texrep: ");
             showCount(ac3d.multipleTextureCount(), "multiple texture: ");

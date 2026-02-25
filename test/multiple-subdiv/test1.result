@@ -1,0 +1,7 @@
+test1.ac:7 warning: multiple subdiv
+subdiv 2
+^
+test1.ac:6 note: first instance
+subdiv 1
+^
+1 warning
