@@ -1,0 +1,7 @@
+test1.ac:8 warning: multiple texoff
+texoff 1 1
+^
+test1.ac:7 note: first instance
+texoff 0 0
+^
+1 warning
