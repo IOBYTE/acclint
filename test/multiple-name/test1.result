@@ -1,0 +1,7 @@
+test1.ac:7 warning: multiple name
+name "test2"
+^
+test1.ac:6 note: first instance
+name "test1"
+^
+1 warning
