@@ -1,0 +1,22 @@
+test1.ac:2 warning: invalid material rgb: png
+MATERIAL "" png 2 1 1  amb 2 0.2 0.2  emis 0 2 0  spec 0.5 0.5 2  shi 300  trans 2
+            ^
+test1.ac:2 warning: invalid material rgb: 2 range: 0 to 1
+MATERIAL "" png 2 1 1  amb 2 0.2 0.2  emis 0 2 0  spec 0.5 0.5 2  shi 300  trans 2
+                ^
+test1.ac:2 warning: invalid material amb: 2 range: 0 to 1
+MATERIAL "" png 2 1 1  amb 2 0.2 0.2  emis 0 2 0  spec 0.5 0.5 2  shi 300  trans 2
+                           ^
+test1.ac:2 warning: invalid material emis: 2 range: 0 to 1
+MATERIAL "" png 2 1 1  amb 2 0.2 0.2  emis 0 2 0  spec 0.5 0.5 2  shi 300  trans 2
+                                             ^
+test1.ac:2 warning: invalid material spec: 2 range: 0 to 1
+MATERIAL "" png 2 1 1  amb 2 0.2 0.2  emis 0 2 0  spec 0.5 0.5 2  shi 300  trans 2
+                                                               ^
+test1.ac:2 warning: invalid material shi: 300 range: 0 to 128
+MATERIAL "" png 2 1 1  amb 2 0.2 0.2  emis 0 2 0  spec 0.5 0.5 2  shi 300  trans 2
+                                                                      ^
+test1.ac:2 warning: invalid material trans: 2 range: 0 to 1
+MATERIAL "" png 2 1 1  amb 2 0.2 0.2  emis 0 2 0  spec 0.5 0.5 2  shi 300  trans 2
+                                                                                 ^
+7 warnings

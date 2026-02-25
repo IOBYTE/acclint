@@ -57,6 +57,7 @@ private:                                               \
     CHECK(extraObject, m_extra_object, true)
     CHECK(extraUVCoordinates, m_extra_uv_coordinates, true)
     CHECK(groupWithGeometry, m_group_with_geometry, true)
+    CHECK(invalidMaterial, m_invalid_material, true)
     CHECK(invalidNormalLength, m_invalid_normal_length, true)
     CHECK(invalidRefCount, m_invalid_ref_count, true)
     CHECK(missingKids, m_missing_kids, true)
@@ -88,7 +89,6 @@ private:                                               \
     CHECK(unusedVertex, m_unused_vertex, true)
 
     // warnings without tests
-    CHECK(invalidMaterial, m_invalid_material, true)
     CHECK(unusedMaterial, m_unused_material, true)
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
     CHECK(surfaceStripHole, m_surface_strip_hole, false)

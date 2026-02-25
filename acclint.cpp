@@ -55,6 +55,7 @@ void usage()
     std::cerr << "  -Wno-extra-object                      Don't show extra object warnings." << std::endl;
     std::cerr << "  -Wno-extra-uv-coordinates              Don't show extra uv coordinates warnings." << std::endl;
     std::cerr << "  -Wno-group-with-geometry               Don't show group with geometry warnings." << std::endl;
+    std::cerr << "  -Wno-invalid-material                  Don't show invalid material warnings." << std::endl;
     std::cerr << "  -Wno-invalid-normal-length             Don't show invalid normal length warnings." << std::endl;
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids                      Don't show missing kids warnings." << std::endl;
@@ -89,7 +90,6 @@ void usage()
     std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
-    std::cerr << "  -Wno-invalid-material                  Don't show invalid material warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
     std::cerr << "  -Wno-multiple-rot                      Don't show multiple rot warnings." << std::endl;
@@ -184,6 +184,7 @@ int main(int argc, char *argv[])
     bool extra_object = true;
     bool extra_uv_coordinates = true;
     bool group_with_geometry = true;
+    bool invalid_material = true;
     bool invalid_normal_length = true;
     bool invalid_ref_count = true;
     bool missing_kids = true;
@@ -219,7 +220,6 @@ int main(int argc, char *argv[])
     bool invalid_vertex = true;
     bool invalid_vertex_index = true;
     bool invalid_texture_coordinate = true;
-    bool invalid_material = true;
     bool missing_uv_coordinates = true;
     bool invalid_surface_type = true;
     bool surface_strip_hole = false;
@@ -341,6 +341,7 @@ int main(int argc, char *argv[])
             extra_object = value;
             extra_uv_coordinates = value;
             group_with_geometry = value;
+            invalid_material = value;
             invalid_normal_length = value;
             invalid_ref_count = value;
             missing_kids = value;
@@ -373,7 +374,6 @@ int main(int argc, char *argv[])
 
             // warnings with no tests
             unused_material = value;
-            invalid_material = value;
             surface_strip_hole = value;
             surface_strip_degenerate = value;
             surface_strip_duplicate_triangles = value;
@@ -862,6 +862,7 @@ int main(int argc, char *argv[])
     ac3d.extraObject(extra_object);
     ac3d.extraUVCoordinates(extra_uv_coordinates);
     ac3d.groupWithGeometry(group_with_geometry);
+    ac3d.invalidMaterial(invalid_material);
     ac3d.invalidNormalLength(invalid_normal_length);
     ac3d.invalidRefCount(invalid_ref_count);
     ac3d.missingKids(missing_kids);
@@ -898,7 +899,6 @@ int main(int argc, char *argv[])
     ac3d.invalidNumvert(invalid_numvert);
     ac3d.invalidKidsCount(invalid_kids_count);
     ac3d.invalidNormal(invalid_normal);
-    ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.missingVertex(missing_vertex);
     ac3d.missingUVCoordinates(missing_uv_coordinates);
@@ -964,7 +964,9 @@ int main(int argc, char *argv[])
             showCount(ac3d.emptyObjectCount(), "empty object: ");
             showCount(ac3d.extraUVCoordinatesCount(), "extra uv coordinates: ");
             showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
+            showCount(ac3d.invalidMaterialCount(), "invalid material: ");
             showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
+            showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
             showCount(ac3d.missingKidsCount(), "missing kids: ");
             showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
@@ -994,8 +996,6 @@ int main(int argc, char *argv[])
             showCount(ac3d.unusedVertexCount(), "unused vertex: ");
 
             // warnings with no test
-            showCount(ac3d.invalidMaterialCount(), "invalid material: ");
-            showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
             showCount(ac3d.unusedMaterialCount(), "unused material: ");
             showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
             showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
