@@ -301,63 +301,65 @@ int main(int argc, char *argv[])
             usage();
             return EXIT_SUCCESS;
         }
-        else if (arg == "-Wno-warnings")
+        else if (arg == "-Wno-warnings" || arg == "-Wwarnings")
         {
-            trailing_text = false;
-            blank_line = false;
-            duplicate_materials = false;
-            unused_material = false;
-            duplicate_vertices = false;
-            unused_vertex = false;
-            invalid_material = false;
-            invalid_ref_count = false;
-            extra_uv_coordinates = false;
-            missing_surfaces = false;
-            duplicate_surfaces = false;
-            duplicate_surfaces_order = false;
-            duplicate_surfaces_winding = false;
-            duplicate_surface_vertices = false;
-            collinear_surface_vertices = false;
-            surface_not_coplanar = false;
-            surface_self_intersecting = false;
-            surface_not_convex = false;
-            surface_no_texture = false;
-            surface_strip_hole = false;
-            surface_strip_size = false;
-            surface_strip_degenerate = false;
-            surface_strip_duplicate_triangles = false;
-            surface_2_sided_opaque = false;
-            duplicate_triangles = false;
-            multiple_polygon_surface = false;
-            floating_point = false;
-            empty_object = false;
-            extra_object = false;
-            missing_kids = false;
-            missing_texture = false;
-            duplicate_texture = false;
-            ambiguous_texture = false;
-            multiple_crease = false;
-            multiple_folded = false;
-            multiple_hidden = false;
-            multiple_loc = false;
-            multiple_locked = false;
-            multiple_name = false;
-            multiple_rot = false;
-            multiple_subdiv = false;
-            multiple_texoff = false;
-            multiple_texrep = false;
-            multiple_texture = false;
-            different_uv = false;
-            group_with_geometry = false;
-            multiple_world = false;
-            multiple_data = false;
-            multiple_url = false;
-            different_surf = false;
-            different_mat = false;
-            overlapping_2_sided_surface = false;
-            missing_uv_coordinates = false;
-            missing_normal = false;
-            invalid_normal_length = false;
+            const bool value = arg.starts_with("-Wno-") ? false : true;
+
+            trailing_text = value;
+            blank_line = value;
+            duplicate_materials = value;
+            unused_material = value;
+            duplicate_vertices = value;
+            unused_vertex = value;
+            invalid_material = value;
+            invalid_ref_count = value;
+            extra_uv_coordinates = value;
+            missing_surfaces = value;
+            duplicate_surfaces = value;
+            duplicate_surfaces_order = value;
+            duplicate_surfaces_winding = value;
+            duplicate_surface_vertices = value;
+            collinear_surface_vertices = value;
+            surface_not_coplanar = value;
+            surface_self_intersecting = value;
+            surface_not_convex = value;
+            surface_no_texture = value;
+            surface_strip_hole = value;
+            surface_strip_size = value;
+            surface_strip_degenerate = value;
+            surface_strip_duplicate_triangles = value;
+            surface_2_sided_opaque = value;
+            duplicate_triangles = value;
+            multiple_polygon_surface = value;
+            floating_point = value;
+            empty_object = value;
+            extra_object = value;
+            missing_kids = value;
+            missing_texture = value;
+            duplicate_texture = value;
+            ambiguous_texture = value;
+            multiple_crease = value;
+            multiple_folded = value;
+            multiple_hidden = value;
+            multiple_loc = value;
+            multiple_locked = value;
+            multiple_name = value;
+            multiple_rot = value;
+            multiple_subdiv = value;
+            multiple_texoff = value;
+            multiple_texrep = value;
+            multiple_texture = value;
+            different_uv = value;
+            group_with_geometry = value;
+            multiple_world = value;
+            multiple_data = value;
+            multiple_url = value;
+            different_surf = value;
+            different_mat = value;
+            overlapping_2_sided_surface = value;
+            missing_uv_coordinates = value;
+            missing_normal = value;
+            invalid_normal_length = value;
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -575,22 +577,24 @@ int main(int argc, char *argv[])
         {
             overlapping_2_sided_surface = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-errors")
+        else if (arg == "-Wno-errors" || arg == "-Werrors")
         {
-            not_ac3d_file = false;
-            missing_vertex = false;
-            missing_normal = false;
-            invalid_normal = false;
-            invalid_material_index = false;
-            invalid_surface_type = false;
-            invalid_token = false;
-            invalid_vertex = false;
-            invalid_vertex_index = false;
-            invalid_texture_coordinate = false;
-            invalid_numsurf = false;
-            invalid_numvert = false;
-            invalid_kids_count = false;
-            more_surf_than_specified = false;
+            bool value = arg.starts_with("-Wno-") ? false : true;
+
+            not_ac3d_file = value;
+            missing_vertex = value;
+            missing_normal = value;
+            invalid_normal = value;
+            invalid_material_index = value;
+            invalid_surface_type = value;
+            invalid_token = value;
+            invalid_vertex = value;
+            invalid_vertex_index = value;
+            invalid_texture_coordinate = value;
+            invalid_numsurf = value;
+            invalid_numvert = value;
+            invalid_kids_count = value;
+            more_surf_than_specified = value;
         }
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {

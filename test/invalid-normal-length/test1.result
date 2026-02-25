@@ -1,0 +1,10 @@
+test1.acc:13 warning: invalid normal length: 2 should be 1
+1 0 0 0 0 2
+      ^
+test1.acc:14 warning: invalid normal length: 3 should be 1
+1 1 0 0 0 3
+      ^
+test1.acc:15 warning: invalid normal length: 4 should be 1
+0 1 0 0 0 4
+      ^
+3 warnings
