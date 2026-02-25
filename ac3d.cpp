@@ -2470,10 +2470,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (!object.shaders.empty())
                 {
-                    warning() << "multiple shaders" << std::endl;
-                    showLine(iss1, 0);
-                    note(object.shaders.front().line_number) << "first instance" << std::endl;
-                    showLine(in, object.shaders.front().line_pos);
+                    if (m_multiple_shader)
+                    {
+                        warningWithCount(m_multiple_shader_count) << "multiple shaders" << std::endl;
+                        showLine(iss1, 0);
+                        note(object.shaders.front().line_number) << "first instance" << std::endl;
+                        showLine(in, object.shaders.front().line_pos);
+                    }
                 }
 
                 object.shaders.push_back(shader);

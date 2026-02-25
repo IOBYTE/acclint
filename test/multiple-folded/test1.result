@@ -1,0 +1,7 @@
+test1.ac:8 warning: multiple folded
+folded
+^
+test1.ac:7 note: first instance
+folded
+^
+1 warning

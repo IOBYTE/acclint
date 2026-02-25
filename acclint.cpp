@@ -35,74 +35,89 @@ void usage()
 {
     std::cerr << "Usage: acclint [options] [-j <#>] [-T texturepath] <inputfile> [--merge <inputfile>] [-o <outputfile>] [-v <11|12>]" << std::endl;
     std::cerr << "Options:" << std::endl;
+
+    // warnings
     std::cerr << "  -Wno-warnings                          Don't show any warnings." << std::endl;
-    std::cerr << "  -Wno-trailing-text                     Don't show trailing text warnings." << std::endl;
+
+    // warinings with tests
     std::cerr << "  -Wno-blank-line                        Don't show blank line warnings." << std::endl;
+    std::cerr << "  -Wno-collinear-surface-vertices        Don't show collinear surface vertices warnings." << std::endl;
+    std::cerr << "  -Wno-different-mat                     Don't show different mat warnings." << std::endl;
+    std::cerr << "  -Wno-different-surf                    Don't show different surf warnings." << std::endl;
+    std::cerr << "  -Wno-different-uv                      Don't show different uv warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-materials               Don't show duplicate materials warnings." << std::endl;
-    std::cerr << "  -Wno-unused-material                   Don't show unused material warnings." << std::endl;
-    std::cerr << "  -Wno-duplicate-vertices                Don't show duplicate vertices warnings." << std::endl;
-    std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
-    std::cerr << "  -Wno-invalid-normal-length             Don't show invalid normal length warnings." << std::endl;
-    std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
-    std::cerr << "  -Wno-missing-surface                   Don't show missing surface warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces                Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces-order          Don't show duplicate surfaces with different vertex order warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces-winding        Don't show duplicate surfaces with different winding warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surface-vertices        Don't show duplicate surface vertices warnings." << std::endl;
-    std::cerr << "  -Wno-collinear-surface-vertices        Don't show collinear surface vertices warnings." << std::endl;
-    std::cerr << "  -Wno-surface-self-intersecting         Don't show surface self intersecting warnings." << std::endl;
-    std::cerr << "  -Wno-surface-not-coplanar              Don't show surface not coplanar warnings." << std::endl;
-    std::cerr << "  -Wno-surface-not-convex                Don't show surface not convex warnings." << std::endl;
-    std::cerr << "  -Wno-surface-no-texture                Don't show surface no texture warnings." << std::endl;
-    std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
-    std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
-    std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
-    std::cerr << "  -Wno-surface-2-sided-opaque            Don't show surface 2 sided opaque warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-triangles               Don't show surface duplicate triangle warnings." << std::endl;
+    std::cerr << "  -Wno-duplicate-vertices                Don't show duplicate vertices warnings." << std::endl;
+    std::cerr << "  -Wno-extra-object                      Don't show extra object warnings." << std::endl;
+    std::cerr << "  -Wno-extra-uv-coordinates              Don't show extra uv coordinates warnings." << std::endl;
+    std::cerr << "  -Wno-group-with-geometry               Don't show group with geometry warnings." << std::endl;
+    std::cerr << "  -Wno-invalid-normal-length             Don't show invalid normal length warnings." << std::endl;
+    std::cerr << "  -Wno-missing-kids                      Don't show missing kids warnings." << std::endl;
+    std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
+    std::cerr << "  -Wno-missing-surfaces                  Don't show missing surfaces warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-crease                   Don't show multiple crease warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-data                     Don't show multiple data warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-folded                   Don't show multiple folded warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-hidden                   Don't show multiple hidden warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-loc                      Don't show multiple loc warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-locked                   Don't show multiple locked warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-shader                   Don't show multiple shader warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-url                      Don't show multiple url warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
+    std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
+    std::cerr << "  -Wno-surface-2-sided-opaque            Don't show surface 2 sided opaque warnings." << std::endl;
+    std::cerr << "  -Wno-surface-not-convex                Don't show surface not convex warnings." << std::endl;
+    std::cerr << "  -Wno-surface-not-coplanar              Don't show surface not coplanar warnings." << std::endl;
+    std::cerr << "  -Wno-surface-no-texture                Don't show surface no texture warnings." << std::endl;
+    std::cerr << "  -Wno-surface-self-intersecting         Don't show surface self intersecting warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
+    std::cerr << "  -Wno-trailing-text                     Don't show trailing text warnings." << std::endl;
+    std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
+
+    // warnings without tests
+    std::cerr << "  -Wno-unused-material                   Don't show unused material warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material                  Don't show invalid material warnings." << std::endl;
-    std::cerr << "  -Wno-extra-uv-coordinates              Don't show extra uv coordinates warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
-    std::cerr << "  -Wno-extra-object                      Don't show extra object warnings." << std::endl;
-    std::cerr << "  -Wno-missing-kids                      Don't show missing kids warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-crease                   Don't show multiple crease warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-folded                   Don't show multiple folded warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-hidden                   Don't show multiple hidden warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-loc                      Don't show multiple loc warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-locked                   Don't show multiple locked warnings." << std::endl;
     std::cerr << "  -Wno-multiple-name                     Don't show multiple name warnings." << std::endl;
     std::cerr << "  -Wno-multiple-rot                      Don't show multiple rot warnings." << std::endl;
     std::cerr << "  -Wno-multiple-subdiv                   Don't show multiple subdiv warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texoff                   Don't show multiple texoff warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texrep                   Don't show multiple texrep warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texture                  Don't show multiple texture warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-data                     Don't show multiple data warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-url                      Don't show multiple url warnings." << std::endl;
-    std::cerr << "  -Wno-different-uv                      Don't show different uv warnings." << std::endl;
-    std::cerr << "  -Wno-different-surf                    Don't show different surf warnings." << std::endl;
-    std::cerr << "  -Wno-different-mat                     Don't show different mat warnings." << std::endl;
-    std::cerr << "  -Wno-group-with-geometry               Don't show group with geometry warnings." << std::endl;
-    std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
+
+    // errors
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
-    std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
+
+    // errors with tests
+    std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal errors." << std::endl;
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count errors." << std::endl;
-    std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
-    std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-count             Don't show invalid surface count errors." << std::endl;
+    std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
+    std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
+    std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
+
+    // errors without tests
+    std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
+    std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-count              Don't show invalid vertex count errors." << std::endl;
     std::cerr << "  -Wno-invalid-kids-count                Don't show invalid kids count errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
-    std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
-    std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
-    std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
+
+    // options
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
     std::cerr << "  --splitPolygon                         Split polygon surface into separate triangle surfaces." << std::endl;
@@ -206,6 +221,7 @@ int main(int argc, char *argv[])
     bool multiple_texoff = true;
     bool multiple_texrep = true;
     bool multiple_texture = true;
+    bool multiple_shader = true;
     bool different_uv = true;
     bool group_with_geometry = true;
     bool multiple_world = true;
@@ -351,6 +367,7 @@ int main(int argc, char *argv[])
             multiple_texoff = value;
             multiple_texrep = value;
             multiple_texture = value;
+            multiple_shader = value;
             different_uv = value;
             group_with_geometry = value;
             multiple_world = value;
@@ -546,6 +563,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-multiple-texture" || arg == "-Wmultiple-texture")
         {
             multiple_texture = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-shader" || arg == "-Wmultiple-shader")
+        {
+            multiple_shader = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-different-uv" || arg == "-Wdifferent-uv")
         {
@@ -820,74 +841,78 @@ int main(int argc, char *argv[])
 
     AC3D ac3d;
 
-    ac3d.notAC3DFile(not_ac3d_file);
-    ac3d.trailingText(trailing_text);
+    // warnings with tests
     ac3d.blankLine(blank_line);
+    ac3d.collinearSurfaceVertices(collinear_surface_vertices);
+    ac3d.differentMat(different_mat);
+    ac3d.differentSURF(different_surf);
+    ac3d.differentUV(different_uv);
     ac3d.duplicateMaterials(duplicate_materials);
-    ac3d.unusedMaterial(unused_material);
+    ac3d.duplicateSurfaces(duplicate_surfaces);
+    ac3d.duplicateSurfacesOrder(duplicate_surfaces_order);
+    ac3d.duplicateSurfacesWinding(duplicate_surfaces_winding);
+    ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
+    ac3d.duplicateTriangles(duplicate_triangles);
     ac3d.duplicateVertices(duplicate_vertices);
+    ac3d.extraObject(extra_object);
+    ac3d.extraUVCoordinates(extra_uv_coordinates);
+    ac3d.groupWithGeometry(group_with_geometry);
+    ac3d.invalidNormalLength(invalid_normal_length);
+    ac3d.missingKids(missing_kids);
+    ac3d.missingNormal(missing_normal);
+    ac3d.missingSurfaces(missing_surfaces);
+    ac3d.multipleCrease(multiple_crease);
+    ac3d.multipleData(multiple_data);
+    ac3d.multipleFolded(multiple_folded);
+    ac3d.multipleHidden(multiple_hidden);
+    ac3d.multipleLoc(multiple_loc);
+    ac3d.multipleLocked(multiple_locked);
+    ac3d.multipleUrl(multiple_url);
+    ac3d.multipleShader(multiple_shader);
+    ac3d.multipleWorld(multiple_world);
+    ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
+    ac3d.surface2SidedOpaque(surface_2_sided_opaque);
+    ac3d.surfaceNotConvex(surface_not_convex);
+    ac3d.surfaceNotCoplanar(surface_not_coplanar);
+    ac3d.surfaceNoTexture(surface_no_texture);
+    ac3d.surfaceSelfIntersecting(surface_self_intersecting);
+    ac3d.surfaceStripSize(surface_strip_size);
+    ac3d.trailingText(trailing_text);
+    ac3d.unusedVertex(unused_vertex);
+
+    // warnings with no tests
+    ac3d.notAC3DFile(not_ac3d_file);
+    ac3d.unusedMaterial(unused_material);
     ac3d.invalidNumvert(invalid_numvert);
     ac3d.invalidKidsCount(invalid_kids_count);
-    ac3d.unusedVertex(unused_vertex);
-    ac3d.invalidNormalLength(invalid_normal_length);
-    ac3d.missingNormal(missing_normal);
     ac3d.invalidNormal(invalid_normal);
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.invalidRefCount(invalid_ref_count);
     ac3d.missingVertex(missing_vertex);
     ac3d.missingUVCoordinates(missing_uv_coordinates);
-    ac3d.extraUVCoordinates(extra_uv_coordinates);
     ac3d.invalidNumsurf(invalid_numsurf);
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidVertex(invalid_vertex);
     ac3d.invalidVertexIndex(invalid_vertex_index);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
     ac3d.invalidToken(invalid_token);
-    ac3d.missingSurfaces(missing_surfaces);
-    ac3d.duplicateSurfaces(duplicate_surfaces);
-    ac3d.duplicateSurfacesOrder(duplicate_surfaces_order);
-    ac3d.duplicateSurfacesWinding(duplicate_surfaces_winding);
-    ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
-    ac3d.collinearSurfaceVertices(collinear_surface_vertices);
-    ac3d.surfaceSelfIntersecting(surface_self_intersecting);
-    ac3d.surfaceNotCoplanar(surface_not_coplanar);
-    ac3d.surfaceNotConvex(surface_not_convex);
-    ac3d.surfaceNoTexture(surface_no_texture);
     ac3d.surfaceStripHole(surface_strip_hole);
-    ac3d.surfaceStripSize(surface_strip_size);
     ac3d.surfaceStripDegenerate(surface_strip_degenerate);
     ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
-    ac3d.surface2SidedOpaque(surface_2_sided_opaque);
-    ac3d.duplicateTriangles(duplicate_triangles);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
     ac3d.emptyObject(empty_object);
-    ac3d.extraObject(extra_object);
-    ac3d.missingKids(missing_kids);
     ac3d.missingTexture(missing_texture);
     ac3d.duplicateTexture(duplicate_texture);
     ac3d.ambiguousTexture(ambiguous_texture);
     ac3d.texturePaths(texture_paths);
-    ac3d.multipleCrease(multiple_crease);
-    ac3d.multipleFolded(multiple_folded);
-    ac3d.multipleHidden(multiple_hidden);
-    ac3d.multipleLoc(multiple_loc);
-    ac3d.multipleLocked(multiple_locked);
     ac3d.multipleName(multiple_name);
     ac3d.multipleRot(multiple_rot);
     ac3d.multipleSubdiv(multiple_subdiv);
     ac3d.multipleTexoff(multiple_texoff);
     ac3d.multipleTexrep(multiple_texrep);
     ac3d.multipleTexture(multiple_texture);
-    ac3d.differentUV(different_uv);
-    ac3d.groupWithGeometry(group_with_geometry);
-    ac3d.multipleWorld(multiple_world);
-    ac3d.multipleData(multiple_data);
-    ac3d.multipleUrl(multiple_url);
-    ac3d.differentSURF(different_surf);
-    ac3d.differentMat(different_mat);
-    ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
     ac3d.moreSURFThanSpecified(more_surf_than_specified);
     ac3d.showTimes(show_times);
     ac3d.quiet(quiet);
@@ -918,62 +943,66 @@ int main(int argc, char *argv[])
 
         if (ac3d.summary())
         {
-            showCount(ac3d.trailingTextCount(), "trailing text: ");
+            // warnings with tests
             showCount(ac3d.blankLineCount(), "blank line: ");
-            showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");
-            showCount(ac3d.unusedVertexCount(), "unused vertex: ");
-            showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
-            showCount(ac3d.invalidMaterialCount(), "invalid material: ");
-            showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
-            showCount(ac3d.extraUVCoordinatesCount(), "extra uv coordinates: ");
+            showCount(ac3d.collinearSurfaceVerticesCount(), "collinear surface vertices: ");
+            showCount(ac3d.differentMatCount(), "different mat: ");
+            showCount(ac3d.differentSURFCount(), "different surf: ");
+            showCount(ac3d.differentUVCount(), "different uv: ");
             showCount(ac3d.duplicateMaterialsCount(), "duplicate materials: ");
-            showCount(ac3d.unusedMaterialCount(), "unused material: ");
-            showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
             showCount(ac3d.duplicateSurfacesCount(), "duplicate surfaces: ");
             showCount(ac3d.duplicateSurfacesOrderCount(), "duplicate surfaces order: ");
             showCount(ac3d.duplicateSurfacesWindingCount(), "duplicate surfaces winding: ");
             showCount(ac3d.duplicateSurfaceVerticesCount(), "duplicate surface vertices: ");
-            showCount(ac3d.collinearSurfaceVerticesCount(), "collinear surface vertices: ");
-            showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
-            showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
-            showCount(ac3d.surfaceNotCoplanarCount(), "surface not coplanar: ");
-            showCount(ac3d.surfaceNotConvexCount(), "surface not convex: ");
-            showCount(ac3d.surfaceNoTextureCount(), "surface no texture: ");
-            showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
-            showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
-            showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
-            showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
-            showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
             showCount(ac3d.duplicateTrianglesCount(), "duplicate triangles: ");
-            showCount(ac3d.floatingPointCount(), "floating point: ");
+            showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");
             showCount(ac3d.emptyObjectCount(), "empty object: ");
-            showCount(ac3d.extraObjectCount(), "extra object: ");
+            showCount(ac3d.extraUVCoordinatesCount(), "extra uv coordinates: ");
+            showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
+            showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
             showCount(ac3d.missingKidsCount(), "missing kids: ");
-            showCount(ac3d.missingTextureCount(), "missing texture: ");
-            showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
-            showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
+            showCount(ac3d.missingNormalCount(), "missing normal: ");
+            showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
             showCount(ac3d.multipleCreaseCount(), "multiple crease: ");
+            showCount(ac3d.multipleDataCount(), "multiple data: ");
             showCount(ac3d.multipleFoldedCount(), "multiple folded: ");
             showCount(ac3d.multipleHiddenCount(), "multiple hidden: ");
             showCount(ac3d.multipleLocCount(), "multiple loc: ");
             showCount(ac3d.multipleLockedCount(), "multiple locked: ");
+            showCount(ac3d.multipleUrlCount(), "multiple url: ");
+            showCount(ac3d.multipleShaderCount(), "multiple shader: ");
+            showCount(ac3d.multipleWorldCount(), "multiple world: ");
+            showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
+            showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
+            showCount(ac3d.surfaceNotConvexCount(), "surface not convex: ");
+            showCount(ac3d.surfaceNotCoplanarCount(), "surface not coplanar: ");
+            showCount(ac3d.surfaceNoTextureCount(), "surface no texture: ");
+            showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
+            showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
+            showCount(ac3d.trailingTextCount(), "trailing text: ");
+            showCount(ac3d.unusedVertexCount(), "unused vertex: ");
+
+            // warnings with no test
+            showCount(ac3d.invalidMaterialCount(), "invalid material: ");
+            showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
+            showCount(ac3d.unusedMaterialCount(), "unused material: ");
+            showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
+            showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
+            showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
+            showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
+            showCount(ac3d.floatingPointCount(), "floating point: ");
+            showCount(ac3d.extraObjectCount(), "extra object: ");
+            showCount(ac3d.missingTextureCount(), "missing texture: ");
+            showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
+            showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
             showCount(ac3d.multipleNameCount(), "multiple name: ");
             showCount(ac3d.multipleRotCount(), "multiple rot: ");
             showCount(ac3d.multipleSubdivCount(), "multiple subdiv: ");
             showCount(ac3d.multipleTexoffCount(), "multiple texoff: ");
             showCount(ac3d.multipleTexrepCount(), "multiple texrep: ");
             showCount(ac3d.multipleTextureCount(), "multiple texture: ");
-            showCount(ac3d.differentUVCount(), "different uv: ");
-            showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
-            showCount(ac3d.multipleWorldCount(), "multiple world: ");
-            showCount(ac3d.multipleDataCount(), "multiple data: ");
-            showCount(ac3d.multipleUrlCount(), "multiple url: ");
-            showCount(ac3d.differentSURFCount(), "different surf: ");
-            showCount(ac3d.differentMatCount(), "different mat: ");
-            showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
 
             // errors
-            showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
             showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
         }

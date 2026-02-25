@@ -1,0 +1,7 @@
+test1.ac:8 warning: multiple crease
+crease 60
+^
+test1.ac:7 note: first instance
+crease 30
+^
+1 warning

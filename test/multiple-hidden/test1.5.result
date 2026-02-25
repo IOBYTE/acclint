@@ -1,0 +1,8 @@
+test1.ac:8 warning: multiple hidden
+hidden
+^
+test1.ac:7 note: first instance
+hidden
+^
+1 warning
+multiple hidden: 1

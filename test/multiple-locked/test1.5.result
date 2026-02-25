@@ -1,0 +1,8 @@
+test1.ac:8 warning: multiple locked
+locked
+^
+test1.ac:7 note: first instance
+locked
+^
+1 warning
+multiple locked: 1

@@ -1,0 +1,8 @@
+test1.acc:8 warning: multiple shaders
+shader second
+^
+test1.acc:7 note: first instance
+shader first
+^
+1 warning
+multiple shader: 1
