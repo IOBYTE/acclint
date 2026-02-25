@@ -195,6 +195,7 @@ int main(int argc, char *argv[])
     bool multiple_loc = true;
     bool multiple_locked = true;
     bool multiple_name = true;
+    bool multiple_rot = true;
     bool multiple_shader = true;
     bool multiple_subdiv = true;
     bool multiple_url = true;
@@ -228,7 +229,6 @@ int main(int argc, char *argv[])
     bool missing_texture = true;
     bool duplicate_texture = true;
     bool ambiguous_texture = true;
-    bool multiple_rot = true;
     bool multiple_texoff = true;
     bool multiple_texrep = true;
     bool multiple_texture = true;
@@ -352,6 +352,7 @@ int main(int argc, char *argv[])
             multiple_loc = value;
             multiple_locked = value;
             multiple_name = value;
+            multiple_rot = value;
             multiple_shader = value;
             multiple_subdiv = value;
             multiple_url = value;
@@ -379,7 +380,6 @@ int main(int argc, char *argv[])
             missing_texture = value;
             duplicate_texture = value;
             ambiguous_texture = value;
-            multiple_rot = value;
             multiple_texoff = value;
             multiple_texrep = value;
             multiple_texture = value;
@@ -873,6 +873,7 @@ int main(int argc, char *argv[])
     ac3d.multipleLoc(multiple_loc);
     ac3d.multipleLocked(multiple_locked);
     ac3d.multipleName(multiple_name);
+    ac3d.multipleRot(multiple_rot);
     ac3d.multipleShader(multiple_shader);
     ac3d.multipleSubdiv(multiple_subdiv);
     ac3d.multipleUrl(multiple_url);
@@ -914,7 +915,6 @@ int main(int argc, char *argv[])
     ac3d.duplicateTexture(duplicate_texture);
     ac3d.ambiguousTexture(ambiguous_texture);
     ac3d.texturePaths(texture_paths);
-    ac3d.multipleRot(multiple_rot);
     ac3d.multipleTexoff(multiple_texoff);
     ac3d.multipleTexrep(multiple_texrep);
     ac3d.multipleTexture(multiple_texture);
@@ -975,6 +975,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.multipleLocCount(), "multiple loc: ");
             showCount(ac3d.multipleLockedCount(), "multiple locked: ");
             showCount(ac3d.multipleNameCount(), "multiple name: ");
+            showCount(ac3d.multipleRotCount(), "multiple rot: ");
             showCount(ac3d.multipleShaderCount(), "multiple shader: ");
             showCount(ac3d.multipleSubdivCount(), "multiple subdiv: ");
             showCount(ac3d.multipleUrlCount(), "multiple url: ");
@@ -1002,7 +1003,6 @@ int main(int argc, char *argv[])
             showCount(ac3d.missingTextureCount(), "missing texture: ");
             showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
             showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
-            showCount(ac3d.multipleRotCount(), "multiple rot: ");
             showCount(ac3d.multipleTexoffCount(), "multiple texoff: ");
             showCount(ac3d.multipleTexrepCount(), "multiple texrep: ");
             showCount(ac3d.multipleTextureCount(), "multiple texture: ");

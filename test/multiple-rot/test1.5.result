@@ -1,0 +1,8 @@
+test1.ac:8 warning: multiple rot
+rot 1 0 0 0 0 1 0 -1 0
+^
+test1.ac:7 note: first instance
+rot 1 0 0 0 0 1 0 -1 0
+^
+1 warning
+multiple rot: 1
