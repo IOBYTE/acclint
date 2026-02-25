@@ -121,10 +121,12 @@ void usage()
     std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
     std::cerr << "  -l                                     Print the name of the input file." << std::endl;
     std::cerr << std::endl;
-    std::cerr << "By default all warnings (except surface-strip-*) and errors are enabled." << std::endl;
+    std::cerr << "By default all warnings (except blank-line and surface-strip-*) and errors are enabled." << std::endl;
+    std::cerr << "You can enable all warnings using -Wwarnings" << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
     std::cerr << "You can also disable all warnings or errors and then reenable specific ones" << std::endl;
     std::cerr << "using the options above but without \"no-\"." << std::endl;
+
     std::cerr << std::endl;
     std::cerr << "Examples:" << std::endl;
     std::cerr << "  acclint -Wno-trailing-text file.acc             Don't show trailing text warnings." << std::endl;
@@ -153,7 +155,7 @@ int main(int argc, char *argv[])
 
     //warnings
     bool trailing_text = true;
-    bool blank_line = true;
+    bool blank_line = false;
     bool duplicate_materials = true;
     bool unused_material = true;
     bool duplicate_vertices = true;
