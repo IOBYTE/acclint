@@ -913,7 +913,7 @@ private:
             if (index1 >= vertices.size() || index2 >= vertices.size())
                 return false;
 
-            return vertices[index1].vertex == vertices[index2].vertex;
+            return vertices[index1].vertex.equals(vertices[index2].vertex);
         }
         size_t getTexturesSize() const
         {
