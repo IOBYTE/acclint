@@ -104,6 +104,7 @@ void usage()
     std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal errors." << std::endl;
     std::cerr << "  -Wno-invalid-numsurf                   Don't show invalid numsurf errors." << std::endl;
     std::cerr << "  -Wno-invalid-numvert                   Don't show invalid numvert errors." << std::endl;
+    std::cerr << "  -Wno-invalid-refs-count                Don't show invalid refs count errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
@@ -111,7 +112,6 @@ void usage()
 
     // errors without tests
     std::cerr << "  -Wno-invalid-ref-index                 Don't show invalid ref index errors." << std::endl;
-    std::cerr << "  -Wno-invalid-refs-count                Don't show invalid refs count errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
 
@@ -234,6 +234,7 @@ int main(int argc, char *argv[])
     bool invalid_normal = true;
     bool invalid_numsurf = true;
     bool invalid_numvert = true;
+    bool invalid_refs_count = true;
     bool invalid_surface_type = true;
     bool invalid_vertex = true;
     bool invalid_vertex_index = true;
@@ -241,7 +242,6 @@ int main(int argc, char *argv[])
 
     // errors without tests
     bool invalid_ref_index = true;
-    bool invalid_refs_count = true;
     bool invalid_texture_coordinate = true;
     bool invalid_token = true;
     bool more_surf_than_specified = true;
@@ -632,6 +632,7 @@ int main(int argc, char *argv[])
             invalid_normal = value;
             invalid_numsurf = value;
             invalid_numvert = value;
+            invalid_refs_count = value;
             invalid_surface_type = value;
             invalid_vertex = value;
             invalid_vertex_index = value;
@@ -639,7 +640,6 @@ int main(int argc, char *argv[])
 
             // errors without tests
             invalid_ref_index = value;
-            invalid_refs_count = value;
             invalid_texture_coordinate = value;
             invalid_token = value;
             more_surf_than_specified = value;
@@ -672,6 +672,10 @@ int main(int argc, char *argv[])
         {
             invalid_vertex = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-invalid-refs-count" || arg == "-Winvalid-refs-count")
+        {
+            invalid_refs_count = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-invalid-surface-type" || arg == "-Winvalid-surface-type")
         {
             invalid_surface_type = arg.compare(2, 3, "no-") != 0;
@@ -689,10 +693,6 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-ref-index" || arg == "-Winvalid-ref-index")
         {
             invalid_ref_index = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-invalid-refs-count" || arg == "-Winvalid-refs-count")
-        {
-            invalid_refs_count = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
         {
@@ -943,6 +943,7 @@ int main(int argc, char *argv[])
     ac3d.invalidNormal(invalid_normal);
     ac3d.invalidNumsurf(invalid_numsurf);
     ac3d.invalidNumvert(invalid_numvert);
+    ac3d.invalidRefsCount(invalid_refs_count);
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidVertex(invalid_vertex);
     ac3d.invalidVertexIndex(invalid_vertex_index);
@@ -950,7 +951,6 @@ int main(int argc, char *argv[])
 
     // errors without tests
     ac3d.invalidRefIndex(invalid_ref_index);
-    ac3d.invalidRefsCount(invalid_refs_count);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
     ac3d.invalidToken(invalid_token);
     ac3d.moreSURFThanSpecified(more_surf_than_specified);
@@ -1063,6 +1063,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidNormalCount(), "invalid normal: ");
             showCount(ac3d.invalidNumsurfCount(), "invalid numsurf: ");
             showCount(ac3d.invalidNumvertCount(), "invalid numvert: ");
+            showCount(ac3d.invalidRefsCountCount(), "invalid refs count: ");
             showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
             showCount(ac3d.invalidVertexCount(), "invalid vertex: ");
             showCount(ac3d.invalidVertexIndexCount(), "invalid vertex index: ");
@@ -1070,7 +1071,6 @@ int main(int argc, char *argv[])
 
             // errors without tests
             showCount(ac3d.invalidRefIndexCount(), "invalid ref index: ");
-            showCount(ac3d.invalidRefsCountCount(), "invalid refs count: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
             showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");

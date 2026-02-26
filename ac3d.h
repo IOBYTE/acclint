@@ -112,13 +112,13 @@ private:                                               \
     CHECK(invalidNormal, m_invalid_normal, true)
     CHECK(invalidNumsurf, m_invalid_numsurf, true)
     CHECK(invalidNumvert, m_invalid_numvert, true)
+    CHECK(invalidRefsCount, m_invalid_refs_count, true)
     CHECK(invalidSurfaceType, m_invalid_surface_type, true)
     CHECK(invalidVertex, m_invalid_vertex, true)
     CHECK(invalidVertexIndex, m_invalid_vertex_index, true)
     CHECK(missingVertex, m_missing_vertex, true)
 
     //errors without tests
-    CHECK(invalidRefsCount, m_invalid_refs_count, true)
     CHECK(invalidRefIndex, m_invalid_ref_index, true)
     CHECK(invalidTextureCoordinate, m_invalid_texture_coordinate, true)
     CHECK(invalidToken, m_invalid_token, true)
