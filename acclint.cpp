@@ -607,7 +607,7 @@ int main(int argc, char *argv[])
         }
         else if (arg == "-Wno-errors" || arg == "-Werrors")
         {
-            bool value = arg.starts_with("-Wno-") ? false : true;
+            const bool value = arg.starts_with("-Wno-") ? false : true;
 
             not_ac3d_file = value;
             missing_vertex = value;
