@@ -15,7 +15,7 @@
 }
 
 @test "test1.3" {
-  run acclint -Wno-errors -Winvalid-vertex-index test1.ac
+  run acclint -Wno-errors -Winvalid-ref-vertex-index test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }
@@ -61,7 +61,7 @@
 }
 
 @test "test3.3" {
-  run acclint -Wno-errors -Winvalid-vertex-index test3.ac -Wno-unused-vertex
+  run acclint -Wno-errors -Winvalid-ref-vertex-index test3.ac -Wno-unused-vertex
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test3.result)" ]
 }

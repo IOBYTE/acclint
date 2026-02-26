@@ -105,10 +105,10 @@ void usage()
     std::cerr << "  -Wno-invalid-numsurf                   Don't show invalid numsurf errors." << std::endl;
     std::cerr << "  -Wno-invalid-numvert                   Don't show invalid numvert errors." << std::endl;
     std::cerr << "  -Wno-invalid-refs-count                Don't show invalid refs count errors." << std::endl;
+    std::cerr << "  -Wno-invalid-ref-vertex-index          Don't show invalid ref vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
-    std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
 
     // errors without tests
@@ -234,10 +234,10 @@ int main(int argc, char *argv[])
     bool invalid_numsurf = true;
     bool invalid_numvert = true;
     bool invalid_refs_count = true;
+    bool invalid_ref_vertex_index = true;
     bool invalid_surface_type = true;
     bool invalid_texture_coordinate = true;
     bool invalid_vertex = true;
-    bool invalid_vertex_index = true;
     bool missing_vertex = true;
 
     // errors without tests
@@ -631,10 +631,10 @@ int main(int argc, char *argv[])
             invalid_numsurf = value;
             invalid_numvert = value;
             invalid_refs_count = value;
+            invalid_ref_vertex_index = value;
             invalid_surface_type = value;
             invalid_texture_coordinate = value;
             invalid_vertex = value;
-            invalid_vertex_index = value;
             missing_vertex = value;
 
             // errors without tests
@@ -673,6 +673,10 @@ int main(int argc, char *argv[])
         {
             invalid_refs_count = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-invalid-ref-vertex-index" || arg == "-Winvalid-ref-vertex-index")
+        {
+            invalid_ref_vertex_index = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-invalid-surface-type" || arg == "-Winvalid-surface-type")
         {
             invalid_surface_type = arg.compare(2, 3, "no-") != 0;
@@ -680,10 +684,6 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
         {
             invalid_texture_coordinate = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-invalid-vertex-index" || arg == "-Winvalid-vertex-index")
-        {
-            invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-missing-vertex" || arg == "-Wmissing-vertex")
         {
@@ -940,7 +940,7 @@ int main(int argc, char *argv[])
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
     ac3d.invalidVertex(invalid_vertex);
-    ac3d.invalidVertexIndex(invalid_vertex_index);
+    ac3d.invalidRefVertexIndex(invalid_ref_vertex_index);
     ac3d.missingVertex(missing_vertex);
 
     // errors without tests
@@ -1059,7 +1059,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidVertexCount(), "invalid vertex: ");
-            showCount(ac3d.invalidVertexIndexCount(), "invalid vertex index: ");
+            showCount(ac3d.invalidRefVertexIndexCount(), "invalid ref vertex index: ");
             showCount(ac3d.missingVertexCount(), "missing vertex: ");
 
             // errors without tests
