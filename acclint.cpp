@@ -213,10 +213,10 @@ int main(int argc, char *argv[])
     bool surface_self_intersecting = true;
     bool surface_strip_size = false;
     bool trailing_text = true;
+    bool unused_material = true;
     bool unused_vertex = true;
 
     // warnings without tests
-    bool unused_material = true;
     bool invalid_vertex = true;
     bool invalid_vertex_index = true;
     bool invalid_texture_coordinate = true;
@@ -370,10 +370,10 @@ int main(int argc, char *argv[])
             surface_self_intersecting = value;
             surface_strip_size = value;
             trailing_text = value;
+            unused_material = value;
             unused_vertex = value;
 
             // warnings with no tests
-            unused_material = value;
             surface_strip_hole = value;
             surface_strip_degenerate = value;
             surface_strip_duplicate_triangles = value;
@@ -891,11 +891,11 @@ int main(int argc, char *argv[])
     ac3d.surfaceSelfIntersecting(surface_self_intersecting);
     ac3d.surfaceStripSize(surface_strip_size);
     ac3d.trailingText(trailing_text);
+    ac3d.unusedMaterial(unused_material);
     ac3d.unusedVertex(unused_vertex);
 
     // warnings with no tests
     ac3d.notAC3DFile(not_ac3d_file);
-    ac3d.unusedMaterial(unused_material);
     ac3d.invalidNumvert(invalid_numvert);
     ac3d.invalidKidsCount(invalid_kids_count);
     ac3d.invalidNormal(invalid_normal);
@@ -993,10 +993,10 @@ int main(int argc, char *argv[])
             showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
             showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
             showCount(ac3d.trailingTextCount(), "trailing text: ");
+            showCount(ac3d.unusedMaterialCount(), "unused material: ");
             showCount(ac3d.unusedVertexCount(), "unused vertex: ");
 
             // warnings with no test
-            showCount(ac3d.unusedMaterialCount(), "unused material: ");
             showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
             showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
             showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
