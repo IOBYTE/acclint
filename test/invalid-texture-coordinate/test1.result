@@ -1,0 +1,13 @@
+test1.acc:20 error: invalid texture coordinate: "z 0 0 0 0 0 0 0"
+0 z 0 0 0 0 0 0 0
+  ^
+test1.acc:21 error: invalid second texture coordinate: " z 0 1 0 1 0"
+1 1 0 z 0 1 0 1 0
+      ^
+test1.acc:22 error: invalid third texture coordinate: " z 1 1 1"
+2 1 1 1 1 z 1 1 1
+          ^
+test1.acc:23 error: invalid fourth texture coordinate: " 0 z"
+3 0 1 0 1 0 1 0 z
+                ^
+4 errors

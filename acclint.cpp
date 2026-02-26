@@ -110,6 +110,8 @@ void usage()
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
 
     // errors without tests
+    std::cerr << "  -Wno-invalid-ref-index                 Don't show invalid ref index errors." << std::endl;
+    std::cerr << "  -Wno-invalid-refs-count                Don't show invalid refs count errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
 
@@ -238,6 +240,8 @@ int main(int argc, char *argv[])
     bool missing_vertex = true;
 
     // errors without tests
+    bool invalid_ref_index = true;
+    bool invalid_refs_count = true;
     bool invalid_texture_coordinate = true;
     bool invalid_token = true;
     bool more_surf_than_specified = true;
@@ -634,6 +638,8 @@ int main(int argc, char *argv[])
             missing_vertex = value;
 
             // errors without tests
+            invalid_ref_index = value;
+            invalid_refs_count = value;
             invalid_texture_coordinate = value;
             invalid_token = value;
             more_surf_than_specified = value;
@@ -680,6 +686,14 @@ int main(int argc, char *argv[])
         }
 
         // errors without tests
+        else if (arg == "-Wno-invalid-ref-index" || arg == "-Winvalid-ref-index")
+        {
+            invalid_ref_index = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-refs-count" || arg == "-Winvalid-refs-count")
+        {
+            invalid_refs_count = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
         {
             invalid_texture_coordinate = arg.compare(2, 3, "no-") != 0;
@@ -935,6 +949,8 @@ int main(int argc, char *argv[])
     ac3d.missingVertex(missing_vertex);
 
     // errors without tests
+    ac3d.invalidRefIndex(invalid_ref_index);
+    ac3d.invalidRefsCount(invalid_refs_count);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
     ac3d.invalidToken(invalid_token);
     ac3d.moreSURFThanSpecified(more_surf_than_specified);
@@ -1053,6 +1069,8 @@ int main(int argc, char *argv[])
             showCount(ac3d.missingVertexCount(), "missing vertex: ");
 
             // errors without tests
+            showCount(ac3d.invalidRefIndexCount(), "invalid ref index: ");
+            showCount(ac3d.invalidRefsCountCount(), "invalid refs count: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
             showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
