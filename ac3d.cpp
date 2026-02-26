@@ -4249,7 +4249,7 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
     const double  D = a*c - b*b;        // always >= 0
     double  sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
     double  tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
-    constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<double>::epsilon());
+    constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<float>::epsilon());
 
     // compute the line parameters of the two closest points
     if (D < SMALL_NUM) { // the lines are almost parallel
