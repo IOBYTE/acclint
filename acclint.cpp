@@ -52,6 +52,7 @@ void usage()
     std::cerr << "  -Wno-duplicate-surface-vertices        Don't show duplicate surface vertices warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-triangles               Don't show surface duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-vertices                Don't show duplicate vertices warnings." << std::endl;
+    std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
     std::cerr << "  -Wno-extra-object                      Don't show extra object warnings." << std::endl;
     std::cerr << "  -Wno-extra-uv-coordinates              Don't show extra uv coordinates warnings." << std::endl;
     std::cerr << "  -Wno-group-with-geometry               Don't show group with geometry warnings." << std::endl;
@@ -95,7 +96,6 @@ void usage()
     std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
-    std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
 
     // errors
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
