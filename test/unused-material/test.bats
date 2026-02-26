@@ -15,7 +15,7 @@
 }
 
 @test "test1.3" {
-  run acclint -Wno-warnings -Wubused-material test1.ac
+  run acclint -Wno-warnings -Wunused-material test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }
