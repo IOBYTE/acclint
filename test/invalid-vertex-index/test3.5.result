@@ -1,0 +1,5 @@
+test3.ac:15 error: invalid vertex index
+z 0 0
+^
+1 error
+invalid vertex index: 1

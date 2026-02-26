@@ -45,3 +45,43 @@
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test2.result)" ]
 }
+
+################################################################################
+
+@test "test3.1" {
+  run acclint test3.ac -Wno-unused-vertex
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test3.result)" ]
+}
+
+@test "test3.2" {
+  run acclint -Wno-errors test3.ac -Wno-unused-vertex
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+}
+
+@test "test3.3" {
+  run acclint -Wno-errors -Winvalid-vertex-index test3.ac -Wno-unused-vertex
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test3.result)" ]
+}
+
+@test "test3.4" {
+  run acclint --quiet test3.ac -Wno-unused-vertex
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test3.4.result)" ]
+}
+
+@test "test3.5" {
+  run acclint --summary test3.ac -Wno-unused-vertex
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test3.5.result)" ]
+}
+
+@test "test3.6" {
+  run acclint --quiet --summary test3.ac -Wno-unused-vertex
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test3.6.result)" ]
+}
+
+################################################################################

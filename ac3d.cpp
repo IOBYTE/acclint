@@ -399,9 +399,9 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
 
     if (!in)
     {
-        if (m_invalid_ref_index)
+        if (m_invalid_vertex_index)
         {
-            errorWithCount(m_invalid_ref_index_count) << "reading index" << std::endl;
+            errorWithCount(m_invalid_vertex_index_count) << "invalid vertex index" << std::endl;
             showLine(in);
         }
         ref.invalid_index = true;
