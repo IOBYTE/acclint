@@ -1,0 +1,5 @@
+test1.ac:4 error: invalid kids count
+kids -1
+     ^
+1 error
+invalid kids count: 1

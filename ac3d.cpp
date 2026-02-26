@@ -23,24 +23,17 @@
 #endif
 
 #include "ac3d.h"
-#include <limits>
+#include "triangleintersects.hpp"
+
+#include <cctype>
+#include <cstdio>
 #include <filesystem>
-#include <map>
-#include <set>
-#include <string>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
-#include <fstream>
-#include <sstream>
-#include <cstdio>
-#include <cmath>
-#include <cctype>
-#include <chrono>
+#include <map>
 #include <omp.h>
-
 #include <png.h>
-
-#include "triangleintersects.hpp"
 
 constexpr std::string_view MATERIAL_token("MATERIAL");
 constexpr std::string_view rgb_token("rgb");
@@ -2417,6 +2410,27 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 {
                     errorWithCount(m_invalid_kids_count_count) << "invalid kids count" << std::endl;
                     showLine(iss1, number_offset);
+                }
+
+                // try to recover by looking for OBJECT tokens
+                while (getLine(in))
+                {
+                    std::istringstream iss2(m_line);
+                    std::string token1;
+
+                    iss2 >> token1;
+
+                    if (token1 == OBJECT_token)
+                    {
+                        Object kid;
+                        readObject(iss2, in, kid);
+                        object.kids.push_back(kid);
+                    }
+                    else if (m_invalid_token)
+                    {
+                        ungetLine(in);
+                        break;
+                    }
                 }
                 continue;
             }

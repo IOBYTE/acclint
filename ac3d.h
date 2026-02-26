@@ -21,14 +21,19 @@
 #ifndef AC3D_H
 #define AC3D_H
 
+#include <algorithm>
 #include <array>
-#include <set>
-#include <map>
-#include <vector>
-#include <cmath>
-#include <regex>
 #include <chrono>
+#include <cmath>
+#include <iostream>
+#include <limits>
+#include <map>
 #include <numbers>
+#include <set>
+#include <regex>
+#include <sstream>
+#include <string>
+#include <vector>
 
 class AC3D
 {
@@ -89,6 +94,7 @@ private:                                               \
     CHECK(surfaceNotCoplanar, m_surface_not_coplanar, true)
     CHECK(surfaceNoTexture, m_surface_no_texture, true)
     CHECK(surfaceSelfIntersecting, m_surface_self_intersecting, true)
+    CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
     CHECK(surfaceStripSize, m_surface_strip_size, false)
     CHECK(trailingText, m_trailing_text, true)
     CHECK(unusedMaterial, m_unused_material, true)
@@ -97,11 +103,11 @@ private:                                               \
     // warnings without tests
     CHECK(floatingPoint, m_floating_point, true)
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
-    CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
     CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
     CHECK(surfaceStripHole, m_surface_strip_hole, false)
 
     // errors with tests
+    CHECK(invalidKidsCount, m_invalid_kids_count, true)
     CHECK(invalidMaterialIndex, m_invalid_material_index, true)
     CHECK(invalidNormal, m_invalid_normal, true)
     CHECK(invalidNumsurf, m_invalid_numsurf, true)
@@ -111,7 +117,6 @@ private:                                               \
     CHECK(missingVertex, m_missing_vertex, true)
 
     //errors without tests
-    CHECK(invalidKidsCount, m_invalid_kids_count, true)
     CHECK(invalidSurfaceType, m_invalid_surface_type, true)
     CHECK(invalidTextureCoordinate, m_invalid_texture_coordinate, true)
     CHECK(invalidToken, m_invalid_token, true)

@@ -25,10 +25,6 @@
 #include "ac3d.h"
 #include "config.h"
 
-#include <iostream>
-#include <sstream>
-#include <chrono>
-
 namespace {
 
 void usage()
@@ -87,6 +83,7 @@ void usage()
     std::cerr << "  -Wno-surface-not-coplanar              Don't show surface not coplanar warnings." << std::endl;
     std::cerr << "  -Wno-surface-no-texture                Don't show surface no texture warnings." << std::endl;
     std::cerr << "  -Wno-surface-self-intersecting         Don't show surface self intersecting warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-degenerate          Don't show surface triangle strip degenerate warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-trailing-text                     Don't show trailing text warnings." << std::endl;
     std::cerr << "  -Wno-unused-material                   Don't show unused material warnings." << std::endl;
@@ -95,7 +92,6 @@ void usage()
     // warnings without tests
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
-    std::cerr << "  -Wno-surface-strip-degenerate          Don't show surface triangle strip degenerate warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
 
@@ -103,6 +99,7 @@ void usage()
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
 
     // errors with tests
+    std::cerr << "  -Wno-invalid-kids-count                Don't show invalid kids count errors." << std::endl;
     std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal errors." << std::endl;
     std::cerr << "  -Wno-invalid-numsurf                   Don't show invalid numsurf errors." << std::endl;
@@ -112,7 +109,6 @@ void usage()
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
 
     // errors without tests
-    std::cerr << "  -Wno-invalid-kids-count                Don't show invalid kids count errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
@@ -218,6 +214,7 @@ int main(int argc, char *argv[])
     bool surface_not_coplanar = true;
     bool surface_no_texture = true;
     bool surface_self_intersecting = true;
+    bool surface_strip_degenerate = false;
     bool surface_strip_size = false;
     bool trailing_text = true;
     bool unused_material = true;
@@ -226,11 +223,11 @@ int main(int argc, char *argv[])
     // warnings without tests
     bool floating_point = true;
     bool multiple_polygon_surface = true;
-    bool surface_strip_degenerate = false;
     bool surface_strip_duplicate_triangles = true;
     bool surface_strip_hole = false;
 
     // errors with tests
+    bool invalid_kids_count = true;
     bool invalid_material_index = true;
     bool invalid_normal = true;
     bool invalid_numsurf = true;
@@ -240,7 +237,6 @@ int main(int argc, char *argv[])
     bool missing_vertex = true;
 
     // errors without tests
-    bool invalid_kids_count = true;
     bool invalid_surface_type = true;
     bool invalid_texture_coordinate = true;
     bool invalid_token = true;
@@ -380,6 +376,7 @@ int main(int argc, char *argv[])
             surface_not_coplanar = value;
             surface_no_texture = value;
             surface_self_intersecting = value;
+            surface_strip_degenerate = value;
             surface_strip_size = value;
             trailing_text = value;
             unused_material = value;
@@ -388,7 +385,6 @@ int main(int argc, char *argv[])
             // warnings with no tests
             floating_point = value;
             multiple_polygon_surface = value;
-            surface_strip_degenerate = value;
             surface_strip_duplicate_triangles = value;
             surface_strip_hole = value;
         }
@@ -582,6 +578,10 @@ int main(int argc, char *argv[])
         {
             surface_self_intersecting = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-surface-strip-degenerate" || arg == "-Wsurface-strip-degenerate")
+        {
+            surface_strip_degenerate = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-surface-strip-size" || arg == "-Wsurface-strip-size")
         {
             surface_strip_size = arg.compare(2, 3, "no-") != 0;
@@ -612,10 +612,6 @@ int main(int argc, char *argv[])
         {
             surface_strip_hole = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-surface-strip-degenerate" || arg == "-Wsurface-strip-degenerate")
-        {
-            surface_strip_degenerate = arg.compare(2, 3, "no-") != 0;
-        }
         else if (arg == "-Wno-surface-strip-duplicate-triangles" || arg == "-Wsurface-strip-duplicate-triangles")
         {
             surface_strip_duplicate_triangles = arg.compare(2, 3, "no-") != 0;
@@ -627,6 +623,7 @@ int main(int argc, char *argv[])
             const bool value = arg.starts_with("-Wno-") ? false : true;
 
             // errors with tests
+            invalid_kids_count = value;
             invalid_material_index = value;
             invalid_normal = value;
             invalid_numsurf = value;
@@ -636,7 +633,6 @@ int main(int argc, char *argv[])
             missing_vertex = value;
 
             // errors without tests
-            invalid_kids_count = value;
             invalid_surface_type = value;
             invalid_texture_coordinate = value;
             invalid_token = value;
@@ -646,6 +642,10 @@ int main(int argc, char *argv[])
         }
 
         // errors with tests
+        else if (arg == "-Wno-invalid-kids-count" || arg == "-Winvalid-kids-count")
+        {
+            invalid_kids_count = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-invalid-material-index" || arg == "-Winvalid-material-index")
         {
             invalid_material_index = arg.compare(2, 3, "no-") != 0;
@@ -676,10 +676,6 @@ int main(int argc, char *argv[])
         }
 
         // errors without tests
-        else if (arg == "-Wno-invalid-kids-count" || arg == "-Winvalid-kids-count")
-        {
-            invalid_kids_count = arg.compare(2, 3, "no-") != 0;
-        }
         else if (arg == "-Wno-invalid-surface-type" || arg == "-Winvalid-surface-type")
         {
             invalid_surface_type = arg.compare(2, 3, "no-") != 0;
@@ -915,6 +911,7 @@ int main(int argc, char *argv[])
     ac3d.surfaceNotCoplanar(surface_not_coplanar);
     ac3d.surfaceNoTexture(surface_no_texture);
     ac3d.surfaceSelfIntersecting(surface_self_intersecting);
+    ac3d.surfaceStripDegenerate(surface_strip_degenerate);
     ac3d.surfaceStripSize(surface_strip_size);
     ac3d.trailingText(trailing_text);
     ac3d.unusedMaterial(unused_material);
@@ -924,10 +921,10 @@ int main(int argc, char *argv[])
     ac3d.floatingPoint(floating_point);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.surfaceStripHole(surface_strip_hole);
-    ac3d.surfaceStripDegenerate(surface_strip_degenerate);
     ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
 
     // errors with tests
+    ac3d.invalidKidsCount(invalid_kids_count);
     ac3d.invalidMaterialIndex(invalid_material_index);
     ac3d.invalidNormal(invalid_normal);
     ac3d.invalidNumsurf(invalid_numsurf);
@@ -937,7 +934,6 @@ int main(int argc, char *argv[])
     ac3d.missingVertex(missing_vertex);
 
     // errors without tests
-    ac3d.invalidKidsCount(invalid_kids_count);
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
     ac3d.invalidToken(invalid_token);
@@ -1022,6 +1018,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.surfaceNotCoplanarCount(), "surface not coplanar: ");
             showCount(ac3d.surfaceNoTextureCount(), "surface no texture: ");
             showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
+            showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
             showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
             showCount(ac3d.trailingTextCount(), "trailing text: ");
             showCount(ac3d.unusedMaterialCount(), "unused material: ");
@@ -1031,7 +1028,6 @@ int main(int argc, char *argv[])
             showCount(ac3d.floatingPointCount(), "floating point: ");
             showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
             showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
-            showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
             showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
         }
     }
@@ -1046,6 +1042,7 @@ int main(int argc, char *argv[])
         if (ac3d.summary())
         {
             // errors with tests
+            showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
             showCount(ac3d.invalidMaterialIndexCount(), "invalid material index: ");
             showCount(ac3d.invalidNormalCount(), "invalid normal: ");
             showCount(ac3d.invalidNumsurfCount(), "invalid numsurf: ");
@@ -1055,7 +1052,6 @@ int main(int argc, char *argv[])
             showCount(ac3d.missingVertexCount(), "missing vertex: ");
 
             // errors without tests
-            showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
             showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
