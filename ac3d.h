@@ -118,6 +118,8 @@ private:                                               \
     CHECK(missingVertex, m_missing_vertex, true)
 
     //errors without tests
+    CHECK(invalidRefsCount, m_invalid_refs_count, true)
+    CHECK(invalidRefIndex, m_invalid_ref_index, true)
     CHECK(invalidTextureCoordinate, m_invalid_texture_coordinate, true)
     CHECK(invalidToken, m_invalid_token, true)
     CHECK(moreSURFThanSpecified, m_more_surf_than_specified, true)
@@ -513,6 +515,8 @@ private:
     {
         size_t index = 0;
         std::vector<Point2> coordinates;
+        bool invalid_index = false;
+        bool invalid_coordinates = false;
         bool duplicate = false;
         bool collinear = false;
     };

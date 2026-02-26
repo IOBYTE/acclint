@@ -399,8 +399,12 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
 
     if (!in)
     {
-        error() << "reading index" << std::endl;
-        showLine(in);
+        if (m_invalid_ref_index)
+        {
+            errorWithCount(m_invalid_ref_index_count) << "reading index" << std::endl;
+            showLine(in);
+        }
+        ref.invalid_index = true;
         return false;
     }
 
@@ -466,10 +470,14 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                                             showLine(in, pos);
                                         }
                                     }
-                                    else if (m_invalid_texture_coordinate)
+                                    else
                                     {
-                                        errorWithCount(m_invalid_texture_coordinate_count) << "reading fourth texture coordinate: \"" << trailing << "\"" << std::endl;
-                                        showLine(in);
+                                        if (m_invalid_texture_coordinate)
+                                        {
+                                            errorWithCount(m_invalid_texture_coordinate_count) << "invalid fourth texture coordinate: \"" << trailing << "\"" << std::endl;
+                                            showLine(in);
+                                        }
+                                        ref.invalid_coordinates = true;
                                     }
                                 }
                             }
@@ -484,10 +492,14 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                                     showLine(in, pos);
                                 }
                             }
-                            else if (m_invalid_texture_coordinate)
+                            else
                             {
-                                errorWithCount(m_invalid_texture_coordinate_count) << "reading third texture coordinate: \"" << trailing << "\"" << std::endl;
-                                showLine(in);
+                                if (m_invalid_texture_coordinate)
+                                {
+                                    errorWithCount(m_invalid_texture_coordinate_count) << "invalid third texture coordinate: \"" << trailing << "\"" << std::endl;
+                                    showLine(in);
+                                }
+                                ref.invalid_coordinates = true;
                             }
                         }
                     }
@@ -502,20 +514,29 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
                             showLine(in, pos);
                         }
                     }
-                    else if (m_invalid_texture_coordinate)
+                    else
                     {
-                        errorWithCount(m_invalid_texture_coordinate_count) << "reading second texture coordinate: \"" << trailing << "\"" << std::endl;
-                        showLine(in);
+                        if (m_invalid_texture_coordinate)
+                        {
+                            errorWithCount(m_invalid_texture_coordinate_count) << "invalid second texture coordinate: \"" << trailing << "\"" << std::endl;
+                            showLine(in);
+                        }
+                        ref.invalid_coordinates = true;
                     }
                 }
             }
         }
     }
-    else if (m_invalid_texture_coordinate)
+    else
     {
-        errorWithCount(m_invalid_texture_coordinate_count) << "reading texture coordinate" << std::endl;
-        showLine(in);
-        return false;
+        if (m_invalid_texture_coordinate)
+        {
+            std::streampos pos = in.tellg();
+            std::string trailing = getTrailing(in);
+            errorWithCount(m_invalid_texture_coordinate_count) << "invalid texture coordinate: \"" << trailing << "\"" << std::endl;
+            showLine(in);
+        }
+        ref.invalid_coordinates = true;
     }
 
     return true;
@@ -650,9 +671,9 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
         if (iss)
             checkTrailing(iss);
-        else
+        else if (m_invalid_refs_count)
         {
-            error() << "reading refs count" << std::endl;
+            errorWithCount(m_invalid_refs_count_count) << "invalid refs count" << std::endl;
             showLine(iss);
         }
 
@@ -678,25 +699,28 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                     else
                         object.vertices[ref.index].used = true;
                 }
-                const size_t valid_textures = object.getTexturesSize();
-                if (ref.coordinates.size() < valid_textures)
+                if (!ref.invalid_coordinates) // skip when invalid
                 {
-                    if (!m_is_ac && m_missing_uv_coordinates)
+                    const size_t valid_textures = object.getTexturesSize();
+                    if (ref.coordinates.size() < valid_textures)
                     {
-                        warningWithCount(m_missing_uv_coordinates_count) << "missing uv coordinates: "
-                            << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
-                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
-                        showLine(iss1, iss1.str().size() + 1);
+                        if (!m_is_ac && m_missing_uv_coordinates)
+                        {
+                            warningWithCount(m_missing_uv_coordinates_count) << "missing uv coordinates: "
+                                << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
+                                << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                            showLine(iss1, iss1.str().size() + 1);
+                        }
                     }
-                }
-                if (ref.coordinates.size() > 1 && ref.coordinates.size() > valid_textures)
-                {
-                    if (m_extra_uv_coordinates)
+                    if (ref.coordinates.size() > 1 && ref.coordinates.size() > valid_textures)
                     {
-                        warningWithCount(m_extra_uv_coordinates_count) << "extra uv coordinates: "
-                            << ref.coordinates.size() << " coordinates "
-                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
-                        showLine(iss1, offsetOfToken(iss1, valid_textures * 2 + 1));
+                        if (m_extra_uv_coordinates)
+                        {
+                            warningWithCount(m_extra_uv_coordinates_count) << "extra uv coordinates: "
+                                << ref.coordinates.size() << " coordinates "
+                                << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                            showLine(iss1, offsetOfToken(iss1, valid_textures * 2 + 1));
+                        }
                     }
                 }
 
