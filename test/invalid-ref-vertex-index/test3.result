@@ -1,4 +1,4 @@
-test3.ac:15 error: ref invalid vertex index
+test3.ac:15 error: invalid ref vertex index
 z 0 0
 ^
 1 error

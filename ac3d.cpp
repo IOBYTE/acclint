@@ -399,9 +399,9 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
 
     if (!in)
     {
-        if (m_invalid_vertex_index)
+        if (m_invalid_ref_vertex_index)
         {
-            errorWithCount(m_invalid_vertex_index_count) << "invalid vertex index" << std::endl;
+            errorWithCount(m_invalid_ref_vertex_index_count) << "invalid ref vertex index" << std::endl;
             showLine(in);
         }
         ref.invalid_index = true;
@@ -689,9 +689,9 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                 {
                     if (ref.index >= object.vertices.size())
                     {
-                        if (m_invalid_vertex_index)
+                        if (m_invalid_ref_vertex_index)
                         {
-                            errorWithCount(m_invalid_vertex_index_count) << "invalid vertex index: " << ref.index << " of "
+                            errorWithCount(m_invalid_ref_vertex_index_count) << "invalid ref vertex index: " << ref.index << " of "
                                     << object.vertices.size() << std::endl;
                             showLine(iss1, 0);
                         }
