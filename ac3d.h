@@ -42,6 +42,7 @@ private:                                               \
     size_t var##_count = 0;
 
     // warnings with tests
+    CHECK(ambiguousTexture, m_ambiguous_texture, true)
     CHECK(blankLine, m_blank_line, false)
     CHECK(collinearSurfaceVertices, m_collinear_surface_vertices, true)
     CHECK(differentMat, m_different_mat, true)
@@ -52,6 +53,7 @@ private:                                               \
     CHECK(duplicateSurfacesOrder, m_duplicate_surfaces_order, true)
     CHECK(duplicateSurfacesWinding, m_duplicate_surfaces_winding, true)
     CHECK(duplicateSurfaceVertices, m_duplicate_surface_vertices, true)
+    CHECK(duplicateTexture, m_duplicate_texture, true)
     CHECK(duplicateTriangles, m_duplicate_triangles, false)
     CHECK(duplicateVertices, m_duplicate_vertices, true)
     CHECK(emptyObject, m_empty_object, true)
@@ -93,13 +95,11 @@ private:                                               \
     CHECK(unusedVertex, m_unused_vertex, true)
 
     // warnings without tests
-    CHECK(ambiguousTexture, m_ambiguous_texture, true)
-    CHECK(duplicateTexture, m_duplicate_texture, true)
     CHECK(floatingPoint, m_floating_point, true)
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
-    CHECK(surfaceStripHole, m_surface_strip_hole, false)
     CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
     CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
+    CHECK(surfaceStripHole, m_surface_strip_hole, false)
 
     // errors with tests
     CHECK(invalidMaterialIndex, m_invalid_material_index, true)

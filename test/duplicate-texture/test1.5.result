@@ -1,0 +1,5 @@
+test1.ac:7 warning: duplicate texture: "test1.png" and "textures\\test1.png"
+texture test1.png
+^
+1 warning
+duplicate texture: 1

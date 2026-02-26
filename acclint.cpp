@@ -40,6 +40,7 @@ void usage()
     std::cerr << "  -Wno-warnings                          Don't show any warnings." << std::endl;
 
     // warinings with tests
+    std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-blank-line                        Don't show blank line warnings." << std::endl;
     std::cerr << "  -Wno-collinear-surface-vertices        Don't show collinear surface vertices warnings." << std::endl;
     std::cerr << "  -Wno-different-mat                     Don't show different mat warnings." << std::endl;
@@ -50,6 +51,7 @@ void usage()
     std::cerr << "  -Wno-duplicate-surfaces-order          Don't show duplicate surfaces with different vertex order warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces-winding        Don't show duplicate surfaces with different winding warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surface-vertices        Don't show duplicate surface vertices warnings." << std::endl;
+    std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-triangles               Don't show surface duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-vertices                Don't show duplicate vertices warnings." << std::endl;
     std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
@@ -91,13 +93,11 @@ void usage()
     std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
 
     // warnings without tests
-    std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
-    std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
-    std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-degenerate          Don't show surface triangle strip degenerate warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
 
     // errors
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
@@ -171,6 +171,7 @@ int main(int argc, char *argv[])
     std::string out_file;
 
     //warnings with tests
+    bool ambiguous_texture = true;
     bool blank_line = false;
     bool collinear_surface_vertices = true;
     bool different_mat = true;
@@ -181,6 +182,7 @@ int main(int argc, char *argv[])
     bool duplicate_surfaces_order = true;
     bool duplicate_surfaces_winding = true;
     bool duplicate_surface_vertices = true;
+    bool duplicate_texture = true;
     bool duplicate_triangles = true;
     bool duplicate_vertices = true;
     bool empty_object = true;
@@ -222,13 +224,11 @@ int main(int argc, char *argv[])
     bool unused_vertex = true;
 
     // warnings without tests
-    bool ambiguous_texture = true;
-    bool duplicate_texture = true;
     bool floating_point = true;
     bool multiple_polygon_surface = true;
-    bool surface_strip_hole = false;
     bool surface_strip_degenerate = false;
     bool surface_strip_duplicate_triangles = true;
+    bool surface_strip_hole = false;
 
     // errors with tests
     bool invalid_material_index = true;
@@ -333,6 +333,7 @@ int main(int argc, char *argv[])
             const bool value = arg.starts_with("-Wno-") ? false : true;
 
             // warnings with tests
+            ambiguous_texture = value;
             blank_line = value;
             collinear_surface_vertices = value;
             different_mat = value;
@@ -343,6 +344,7 @@ int main(int argc, char *argv[])
             duplicate_surfaces_order = value;
             duplicate_surfaces_winding = value;
             duplicate_surface_vertices = value;
+            duplicate_texture = value;
             duplicate_triangles = value;
             duplicate_vertices = value;
             empty_object = value;
@@ -384,16 +386,18 @@ int main(int argc, char *argv[])
             unused_vertex = value;
 
             // warnings with no tests
-            surface_strip_hole = value;
+            floating_point = value;
+            multiple_polygon_surface = value;
             surface_strip_degenerate = value;
             surface_strip_duplicate_triangles = value;
-            multiple_polygon_surface = value;
-            floating_point = value;
-            duplicate_texture = value;
-            ambiguous_texture = value;
+            surface_strip_hole = value;
         }
 
         // warnings with tests
+        else if (arg == "-Wno-ambiguous-texture" || arg == "-Wambiguous-texture")
+        {
+            ambiguous_texture = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-blank-line" || arg == "-Wblank-line")
         {
             blank_line = arg.compare(2, 3, "no-") != 0;
@@ -429,6 +433,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-duplicate-surfaces-winding" || arg == "-Wduplicate-surfaces-winding")
         {
             duplicate_surfaces_winding = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-duplicate-texture" || arg == "-Wduplicate-texture")
+        {
+            duplicate_texture = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-duplicate-surface-vertices" || arg == "-Wduplicate-surface-vertices")
         {
@@ -592,14 +600,6 @@ int main(int argc, char *argv[])
         }
 
         // warnings without tests
-        else if (arg == "-Wno-ambiguous-texture" || arg == "-Wambiguous-texture")
-        {
-            ambiguous_texture = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-duplicate-texture" || arg == "-Wduplicate-texture")
-        {
-            duplicate_texture = arg.compare(2, 3, "no-") != 0;
-        }
         else if (arg == "-Wno-floating-point" || arg == "-Wfloating-point")
         {
             floating_point = arg.compare(2, 3, "no-") != 0;
@@ -868,6 +868,7 @@ int main(int argc, char *argv[])
     AC3D ac3d;
 
     // warnings with tests
+    ac3d.ambiguousTexture(ambiguous_texture);
     ac3d.blankLine(blank_line);
     ac3d.collinearSurfaceVertices(collinear_surface_vertices);
     ac3d.differentMat(different_mat);
@@ -879,6 +880,7 @@ int main(int argc, char *argv[])
     ac3d.duplicateSurfacesWinding(duplicate_surfaces_winding);
     ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
     ac3d.duplicateTriangles(duplicate_triangles);
+    ac3d.duplicateTexture(duplicate_texture);
     ac3d.duplicateVertices(duplicate_vertices);
     ac3d.emptyObject(empty_object);
     ac3d.extraObject(extra_object);
@@ -919,8 +921,6 @@ int main(int argc, char *argv[])
     ac3d.unusedVertex(unused_vertex);
 
     // warnings without tests
-    ac3d.ambiguousTexture(ambiguous_texture);
-    ac3d.duplicateTexture(duplicate_texture);
     ac3d.floatingPoint(floating_point);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.surfaceStripHole(surface_strip_hole);
@@ -975,6 +975,7 @@ int main(int argc, char *argv[])
         if (ac3d.summary())
         {
             // warnings with tests
+            showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
             showCount(ac3d.blankLineCount(), "blank line: ");
             showCount(ac3d.collinearSurfaceVerticesCount(), "collinear surface vertices: ");
             showCount(ac3d.differentMatCount(), "different mat: ");
@@ -985,6 +986,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.duplicateSurfacesOrderCount(), "duplicate surfaces order: ");
             showCount(ac3d.duplicateSurfacesWindingCount(), "duplicate surfaces winding: ");
             showCount(ac3d.duplicateSurfaceVerticesCount(), "duplicate surface vertices: ");
+            showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
             showCount(ac3d.duplicateTrianglesCount(), "duplicate triangles: ");
             showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");
             showCount(ac3d.emptyObjectCount(), "empty object: ");
@@ -1026,8 +1028,6 @@ int main(int argc, char *argv[])
             showCount(ac3d.unusedVertexCount(), "unused vertex: ");
 
             // warnings without test
-            showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
-            showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
             showCount(ac3d.floatingPointCount(), "floating point: ");
             showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
             showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
