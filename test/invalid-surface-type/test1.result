@@ -1,0 +1,4 @@
+test1.ac:12 error: invalid surface type: 80
+SURF 0x80
+     ^
+1 error

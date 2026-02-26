@@ -1,0 +1,5 @@
+test2.ac:12 error: invalid surface type: z
+SURF z
+     ^
+1 error
+invalid surface type: 1

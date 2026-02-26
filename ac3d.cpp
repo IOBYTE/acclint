@@ -555,7 +555,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         {
             if (m_invalid_surface_type && !surface.isValidFlags(m_is_ac))
             {
-                error() << "invalid surface type" << std::endl;
+                errorWithCount(m_invalid_surface_type_count) << "invalid surface type: " << std::hex << surface.flags << std::endl;
                 showLine(iss, pos);
             }
 
@@ -563,8 +563,15 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         }
         else
         {
-            error() << "reading type" << std::endl;
-            showLine(iss, pos);
+            if (m_invalid_surface_type)
+            {
+                std::string junk;
+                iss.clear();
+                iss.seekg(pos);
+                iss >> junk;
+                errorWithCount(m_invalid_surface_type_count) << "invalid surface type: " << junk << std::endl;
+                showLine(iss, pos);
+            }
         }
 
         if (!getLine(in))
