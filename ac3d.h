@@ -65,6 +65,7 @@ private:                                               \
     CHECK(missingNormal, m_missing_normal, true)
     CHECK(missingSurfaces, m_missing_surfaces, true)
     CHECK(missingTexture, m_missing_texture, true)
+    CHECK(missingUVCoordinates, m_missing_uv_coordinates, true)
     CHECK(multipleCrease, m_multiple_crease, true)
     CHECK(multipleData, m_multiple_data, true)
     CHECK(multipleFolded, m_multiple_folded, true)
@@ -92,27 +93,28 @@ private:                                               \
     CHECK(unusedVertex, m_unused_vertex, true)
 
     // warnings without tests
+    CHECK(ambiguousTexture, m_ambiguous_texture, true)
+    CHECK(duplicateTexture, m_duplicate_texture, true)
+    CHECK(floatingPoint, m_floating_point, true)
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
     CHECK(surfaceStripHole, m_surface_strip_hole, false)
     CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
     CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
-    CHECK(floatingPoint, m_floating_point, true)
-    CHECK(duplicateTexture, m_duplicate_texture, true)
-    CHECK(ambiguousTexture, m_ambiguous_texture, true)
-    CHECK(missingUVCoordinates, m_missing_uv_coordinates, true)
 
-    // errors
-    CHECK(invalidNormal, m_invalid_normal, true)
-    CHECK(invalidVertex, m_invalid_vertex, true)
-    CHECK(invalidVertexIndex, m_invalid_vertex_index, true)
-    CHECK(invalidTextureCoordinate, m_invalid_texture_coordinate, true)
+    // errors with tests
     CHECK(invalidMaterialIndex, m_invalid_material_index, true)
-    CHECK(invalidSurfaceType, m_invalid_surface_type, true)
+    CHECK(invalidNormal, m_invalid_normal, true)
     CHECK(invalidNumsurf, m_invalid_numsurf, true)
     CHECK(invalidNumvert, m_invalid_numvert, true)
-    CHECK(invalidKidsCount, m_invalid_kids_count, true)
-    CHECK(invalidToken, m_invalid_token, true)
+    CHECK(invalidVertex, m_invalid_vertex, true)
+    CHECK(invalidVertexIndex, m_invalid_vertex_index, true)
     CHECK(missingVertex, m_missing_vertex, true)
+
+    //errors without tests
+    CHECK(invalidKidsCount, m_invalid_kids_count, true)
+    CHECK(invalidSurfaceType, m_invalid_surface_type, true)
+    CHECK(invalidTextureCoordinate, m_invalid_texture_coordinate, true)
+    CHECK(invalidToken, m_invalid_token, true)
     CHECK(moreSURFThanSpecified, m_more_surf_than_specified, true)
 #undef CHECK
 

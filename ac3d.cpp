@@ -2100,7 +2100,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (m_invalid_numvert)
                 {
-                    errorWithCount(m_invalid_numvert_count) << "invalid vertex count" << std::endl;
+                    errorWithCount(m_invalid_numvert_count) << "invalid numvert" << std::endl;
                     showLine(iss1, object.numvert.number_offset);
                 }
 
@@ -2379,7 +2379,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 if (m_invalid_numsurf)
                 {
-                    errorWithCount(m_invalid_numsurf_count) << "invalid surface count" << std::endl;
+                    errorWithCount(m_invalid_numsurf_count) << "invalid numsurf" << std::endl;
                     showLine(iss1, object.numsurf.number_offset);
                 }
                 continue;

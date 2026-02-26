@@ -1,0 +1,4 @@
+test1.ac:7 error: invalid numvert
+numvert -1
+        ^
+1 error

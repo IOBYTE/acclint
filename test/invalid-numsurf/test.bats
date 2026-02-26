@@ -15,7 +15,7 @@
 }
 
 @test "test1.3" {
-  run acclint -Wno-errors -Winvalid-surface-count test1.ac
+  run acclint -Wno-errors -Winvalid-numsurf test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }

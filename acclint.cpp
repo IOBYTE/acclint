@@ -63,6 +63,7 @@ void usage()
     std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
     std::cerr << "  -Wno-missing-surfaces                  Don't show missing surfaces warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
+    std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates warnings." << std::endl;
     std::cerr << "  -Wno-multiple-crease                   Don't show multiple crease warnings." << std::endl;
     std::cerr << "  -Wno-multiple-data                     Don't show multiple data warnings." << std::endl;
     std::cerr << "  -Wno-multiple-folded                   Don't show multiple folded warnings." << std::endl;
@@ -90,12 +91,13 @@ void usage()
     std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
 
     // warnings without tests
-    std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
-    std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
-    std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
+    std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-degenerate          Don't show surface triangle strip degenerate warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
 
     // errors
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
@@ -103,19 +105,19 @@ void usage()
     // errors with tests
     std::cerr << "  -Wno-invalid-material-index            Don't show invalid material index errors." << std::endl;
     std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal errors." << std::endl;
-    std::cerr << "  -Wno-invalid-surface-count             Don't show invalid surface count errors." << std::endl;
+    std::cerr << "  -Wno-invalid-numsurf                   Don't show invalid numsurf errors." << std::endl;
+    std::cerr << "  -Wno-invalid-numvert                   Don't show invalid numvert errors." << std::endl;
+    std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex-index              Don't show invalid vertex index errors." << std::endl;
-    std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates errors." << std::endl;
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
 
     // errors without tests
-    std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
-    std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
-    std::cerr << "  -Wno-invalid-vertex-count              Don't show invalid vertex count errors." << std::endl;
     std::cerr << "  -Wno-invalid-kids-count                Don't show invalid kids count errors." << std::endl;
-    std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
-    std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
+    std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
+    std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
+
+    std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
 
     // options
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
@@ -192,6 +194,7 @@ int main(int argc, char *argv[])
     bool missing_normal = true;
     bool missing_surfaces = true;
     bool missing_texture = true;
+    bool missing_uv_coordinates = true;
     bool multiple_crease = true;
     bool multiple_data = true;
     bool multiple_folded = true;
@@ -219,32 +222,34 @@ int main(int argc, char *argv[])
     bool unused_vertex = true;
 
     // warnings without tests
-    bool invalid_vertex = true;
-    bool invalid_vertex_index = true;
-    bool invalid_texture_coordinate = true;
-    bool missing_uv_coordinates = true;
-    bool invalid_surface_type = true;
+    bool ambiguous_texture = true;
+    bool duplicate_texture = true;
+    bool floating_point = true;
+    bool multiple_polygon_surface = true;
     bool surface_strip_hole = false;
     bool surface_strip_degenerate = false;
     bool surface_strip_duplicate_triangles = true;
-    bool fix_surface_2_sided_opaque = false;
-    bool multiple_polygon_surface = true;
-    bool floating_point = true;
-    bool duplicate_texture = true;
-    bool ambiguous_texture = true;
 
-    // errors
+    // errors with tests
+    bool invalid_material_index = true;
     bool invalid_normal = true;
-    bool invalid_token = true;
-    bool missing_vertex = true;
-    bool not_ac3d_file = true;
     bool invalid_numsurf = true;
     bool invalid_numvert = true;
+    bool invalid_vertex = true;
+    bool invalid_vertex_index = true;
+    bool missing_vertex = true;
+
+    // errors without tests
     bool invalid_kids_count = true;
+    bool invalid_surface_type = true;
+    bool invalid_texture_coordinate = true;
+    bool invalid_token = true;
     bool more_surf_than_specified = true;
-    bool invalid_material_index = true;
+
+    bool not_ac3d_file = true;
 
     std::vector<std::string> texture_paths;
+    bool fix_surface_2_sided_opaque = false;
     bool dump = false;
     bool splitSURF = false;
     bool splitMat = false;
@@ -321,6 +326,8 @@ int main(int argc, char *argv[])
             usage();
             return EXIT_SUCCESS;
         }
+
+        // warnings
         else if (arg == "-Wno-warnings" || arg == "-Wwarnings")
         {
             const bool value = arg.starts_with("-Wno-") ? false : true;
@@ -349,6 +356,7 @@ int main(int argc, char *argv[])
             missing_normal = value;
             missing_surfaces = value;
             missing_texture = value;
+            missing_uv_coordinates = value;
             multiple_crease = value;
             multiple_data = value;
             multiple_folded = value;
@@ -383,55 +391,32 @@ int main(int argc, char *argv[])
             floating_point = value;
             duplicate_texture = value;
             ambiguous_texture = value;
-            missing_uv_coordinates = value;
         }
-        else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
-        {
-            trailing_text = arg.compare(2, 3, "no-") != 0;
-        }
+
+        // warnings with tests
         else if (arg == "-Wno-blank-line" || arg == "-Wblank-line")
         {
             blank_line = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-collinear-surface-vertices" || arg == "-Wcollinear-surface-vertices")
+        {
+            collinear_surface_vertices = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-different-mat" || arg == "-Wdifferent-mat")
+        {
+            different_mat = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-different-surf" || arg == "-Wdifferent-surf")
+        {
+            different_surf = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-different-uv" || arg == "-Wdifferent-uv")
+        {
+            different_uv = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-duplicate-materials" || arg == "-Wduplicate-materials")
         {
             duplicate_materials = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-unused-material" || arg == "-Wunused-material")
-        {
-            unused_material = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-duplicate-vertices" || arg == "-Wduplicate-vertices")
-        {
-            duplicate_vertices = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-unused-vertex" || arg == "-Wunused-vertex")
-        {
-            unused_vertex = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-invalid-normal-length" || arg == "-Winvalid-normal-length")
-        {
-            invalid_normal_length = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-missing-normal" || arg == "-Wmissing-normal")
-        {
-            missing_normal = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-invalid-normal" || arg == "-Winvalid-normal")
-        {
-            invalid_normal = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
-        {
-            invalid_material = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-extra-uv-coordinates" || arg == "-Wextra-uv-coordinates")
-        {
-            extra_uv_coordinates = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-missing-surfaces" || arg == "-Wmissing-surfaces")
-        {
-            missing_surfaces = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-duplicate-surfaces" || arg == "-Wduplicate-surfaces")
         {
@@ -449,57 +434,13 @@ int main(int argc, char *argv[])
         {
             duplicate_surface_vertices = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-collinear-surface-vertices" || arg == "-Wcollinear-surface-vertices")
-        {
-            collinear_surface_vertices = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-self-intersecting" || arg == "-Wsurface-self-intersecting")
-        {
-            surface_self_intersecting = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-not-coplanar" || arg == "-Wsurface-not-coplanar")
-        {
-            surface_not_coplanar = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-not-convex" || arg == "-Wsurface-not-convex")
-        {
-            surface_not_convex = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-no-texture" || arg == "-Wsurface-no-texture")
-        {
-            surface_no_texture = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-strip-hole" || arg == "-Wsurface-strip-hole")
-        {
-            surface_strip_hole = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-strip-size" || arg == "-Wsurface-strip-size")
-        {
-            surface_strip_size = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-strip-degenerate" || arg == "-Wsurface-strip-degenerate")
-        {
-            surface_strip_degenerate = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-strip-duplicate-triangles" || arg == "-Wsurface-strip-duplicate-triangles")
-        {
-            surface_strip_duplicate_triangles = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-surface-2-sided-opaque" || arg == "-Wsurface-2-sided-opaque")
-        {
-            surface_2_sided_opaque = arg.compare(2, 3, "no-") != 0;
-        }
         else if (arg == "-Wno-duplicate-triangles" || arg == "-Wduplicate-triangles")
         {
             duplicate_triangles = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-multiple-polygon-surface" || arg == "-Wmultiple-polygon-surface")
+        else if (arg == "-Wno-duplicate-vertices" || arg == "-Wduplicate-vertices")
         {
-            multiple_polygon_surface = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-floating-point" || arg == "-Wfloating-point")
-        {
-            floating_point = arg.compare(2, 3, "no-") != 0;
+            duplicate_vertices = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-empty-object" || arg == "-Wempty-object")
         {
@@ -509,25 +450,53 @@ int main(int argc, char *argv[])
         {
             extra_object = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-extra-uv-coordinates" || arg == "-Wextra-uv-coordinates")
+        {
+            extra_uv_coordinates = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
+        {
+            group_with_geometry = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
+        {
+            invalid_material = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-normal-length" || arg == "-Winvalid-normal-length")
+        {
+            invalid_normal_length = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-ref-count" || arg == "-Winvalid-ref-count")
+        {
+            invalid_ref_count = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-missing-kids" || arg == "-Wmissing-kids")
         {
             missing_kids = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-missing-normal" || arg == "-Wmissing-normal")
+        {
+            missing_normal = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-missing-surfaces" || arg == "-Wmissing-surfaces")
+        {
+            missing_surfaces = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-missing-texture" || arg == "-Wmissing-texture")
         {
             missing_texture = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-duplicate-texture" || arg == "-Wduplicate-texture")
+        else if (arg == "-Wno-missing-uv-coordinates" || arg == "-Wmissing-uv-coordinates")
         {
-            duplicate_texture = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-ambiguous-texture" || arg == "-Wambiguous-texture")
-        {
-            ambiguous_texture = arg.compare(2, 3, "no-") != 0;
+            missing_uv_coordinates = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-multiple-crease" || arg == "-Wmultiple-crease")
         {
             multiple_crease = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-data" || arg == "-Wmultiple-data")
+        {
+            multiple_data = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-multiple-folded" || arg == "-Wmultiple-folded")
         {
@@ -553,6 +522,10 @@ int main(int argc, char *argv[])
         {
             multiple_rot = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-multiple-shader" || arg == "-Wmultiple-shader")
+        {
+            multiple_shader = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-multiple-subdiv" || arg == "-Wmultiple-subdiv")
         {
             multiple_subdiv = arg.compare(2, 3, "no-") != 0;
@@ -569,116 +542,164 @@ int main(int argc, char *argv[])
         {
             multiple_texture = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-multiple-shader" || arg == "-Wmultiple-shader")
+        else if (arg == "-Wno-multiple-url" || arg == "-Wmultiple-url")
         {
-            multiple_shader = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-different-uv" || arg == "-Wdifferent-uv")
-        {
-            different_uv = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
-        {
-            group_with_geometry = arg.compare(2, 3, "no-") != 0;
+            multiple_url = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-multiple-world" || arg == "-Wmultiple-world")
         {
             multiple_world = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-multiple-data" || arg == "-Wmultiple-data")
-        {
-            multiple_data = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-multiple-url" || arg == "-Wmultiple-url")
-        {
-            multiple_url = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-different-surf" || arg == "-Wdifferent-surf")
-        {
-            different_surf = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-different-mat" || arg == "-Wdifferent-mat")
-        {
-            different_mat = arg.compare(2, 3, "no-") != 0;
-        }
         else if (arg == "-Wno-overlapping-2-sided-surface" || arg == "-Woverlapping-2-sided-surface")
         {
             overlapping_2_sided_surface = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-surface-2-sided-opaque" || arg == "-Wsurface-2-sided-opaque")
+        {
+            surface_2_sided_opaque = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-not-convex" || arg == "-Wsurface-not-convex")
+        {
+            surface_not_convex = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-not-coplanar" || arg == "-Wsurface-not-coplanar")
+        {
+            surface_not_coplanar = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-no-texture" || arg == "-Wsurface-no-texture")
+        {
+            surface_no_texture = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-self-intersecting" || arg == "-Wsurface-self-intersecting")
+        {
+            surface_self_intersecting = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-strip-size" || arg == "-Wsurface-strip-size")
+        {
+            surface_strip_size = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
+        {
+            trailing_text = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-unused-material" || arg == "-Wunused-material")
+        {
+            unused_material = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-unused-vertex" || arg == "-Wunused-vertex")
+        {
+            unused_vertex = arg.compare(2, 3, "no-") != 0;
+        }
+
+        // warnings without tests
+        else if (arg == "-Wno-ambiguous-texture" || arg == "-Wambiguous-texture")
+        {
+            ambiguous_texture = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-duplicate-texture" || arg == "-Wduplicate-texture")
+        {
+            duplicate_texture = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-floating-point" || arg == "-Wfloating-point")
+        {
+            floating_point = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-multiple-polygon-surface" || arg == "-Wmultiple-polygon-surface")
+        {
+            multiple_polygon_surface = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-strip-hole" || arg == "-Wsurface-strip-hole")
+        {
+            surface_strip_hole = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-strip-degenerate" || arg == "-Wsurface-strip-degenerate")
+        {
+            surface_strip_degenerate = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-surface-strip-duplicate-triangles" || arg == "-Wsurface-strip-duplicate-triangles")
+        {
+            surface_strip_duplicate_triangles = arg.compare(2, 3, "no-") != 0;
+        }
+
+        // errors
         else if (arg == "-Wno-errors" || arg == "-Werrors")
         {
             const bool value = arg.starts_with("-Wno-") ? false : true;
 
-            not_ac3d_file = value;
-            missing_vertex = value;
-            missing_normal = value;
-            invalid_normal = value;
+            // errors with tests
             invalid_material_index = value;
-            invalid_surface_type = value;
-            invalid_token = value;
-            invalid_vertex = value;
-            invalid_vertex_index = value;
-            invalid_texture_coordinate = value;
+            invalid_normal = value;
             invalid_numsurf = value;
             invalid_numvert = value;
+            invalid_vertex = value;
+            invalid_vertex_index = value;
+            missing_vertex = value;
+
+            // errors without tests
             invalid_kids_count = value;
+            invalid_surface_type = value;
+            invalid_texture_coordinate = value;
+            invalid_token = value;
             more_surf_than_specified = value;
+
+            not_ac3d_file = value;
         }
-        else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
-        {
-            not_ac3d_file = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-missing-vertex" || arg == "-Wmissing-vertex")
-        {
-            missing_vertex = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-missing-uv-coordinates" || arg == "-Wmissing-uv-coordinates")
-        {
-            missing_uv_coordinates = arg.compare(2, 3, "no-") != 0;
-        }
+
+        // errors with tests
         else if (arg == "-Wno-invalid-material-index" || arg == "-Winvalid-material-index")
         {
             invalid_material_index = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-ref-count" || arg == "-Winvalid-ref-count")
+        else if (arg == "-Wno-invalid-normal" || arg == "-Winvalid-normal")
         {
-            invalid_ref_count = arg.compare(2, 3, "no-") != 0;
+            invalid_normal = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-surface-type" || arg == "-Winvalid-surface-type")
+        else if (arg == "-Wno-invalid-numsurf" || arg == "-Winvalid-numsurf")
         {
-            invalid_surface_type = arg.compare(2, 3, "no-") != 0;
+            invalid_numsurf = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-token" || arg == "-Winvalid-token")
+        else if (arg == "-Wno-invalid-numvert" || arg == "-Winvalid-numvert")
         {
-            invalid_token = arg.compare(2, 3, "no-") != 0;
-        }
-        else if (arg == "-Wno-invalid-vertex-index" || arg == "-Winvalid-vertex-index")
-        {
-            invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
+            invalid_numvert = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-vertex" || arg == "-Winvalid-vertex")
         {
             invalid_vertex = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
+        else if (arg == "-Wno-invalid-vertex-index" || arg == "-Winvalid-vertex-index")
         {
-            invalid_texture_coordinate = arg.compare(2, 3, "no-") != 0;
+            invalid_vertex_index = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-vertex-count" || arg == "-Winvalid-vertex-count")
+        else if (arg == "-Wno-missing-vertex" || arg == "-Wmissing-vertex")
         {
-            invalid_numvert = arg.compare(2, 3, "no-") != 0;
+            missing_vertex = arg.compare(2, 3, "no-") != 0;
         }
-        else if (arg == "-Wno-invalid-surface-count" || arg == "-Winvalid-surface-count")
-        {
-            invalid_numsurf = arg.compare(2, 3, "no-") != 0;
-        }
+
+        // errors without tests
         else if (arg == "-Wno-invalid-kids-count" || arg == "-Winvalid-kids-count")
         {
             invalid_kids_count = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-invalid-surface-type" || arg == "-Winvalid-surface-type")
+        {
+            invalid_surface_type = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
+        {
+            invalid_texture_coordinate = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-token" || arg == "-Winvalid-token")
+        {
+            invalid_token = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-more-surf-than-specified" || arg == "-Wmore-surf-than-specified")
         {
             more_surf_than_specified = arg.compare(2, 3, "no-") != 0;
+        }
+
+        else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
+        {
+            not_ac3d_file = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "--splitSURF")
         {
@@ -870,6 +891,7 @@ int main(int argc, char *argv[])
     ac3d.missingNormal(missing_normal);
     ac3d.missingSurfaces(missing_surfaces);
     ac3d.missingTexture(missing_texture);
+    ac3d.missingUVCoordinates(missing_uv_coordinates);
     ac3d.multipleCrease(multiple_crease);
     ac3d.multipleData(multiple_data);
     ac3d.multipleFolded(multiple_folded);
@@ -896,29 +918,33 @@ int main(int argc, char *argv[])
     ac3d.unusedMaterial(unused_material);
     ac3d.unusedVertex(unused_vertex);
 
-    // warnings with no tests
-    ac3d.notAC3DFile(not_ac3d_file);
-    ac3d.invalidNumvert(invalid_numvert);
-    ac3d.invalidKidsCount(invalid_kids_count);
-    ac3d.invalidNormal(invalid_normal);
-    ac3d.invalidMaterialIndex(invalid_material_index);
-    ac3d.missingVertex(missing_vertex);
-    ac3d.missingUVCoordinates(missing_uv_coordinates);
-    ac3d.invalidNumsurf(invalid_numsurf);
-    ac3d.invalidSurfaceType(invalid_surface_type);
-    ac3d.invalidVertex(invalid_vertex);
-    ac3d.invalidVertexIndex(invalid_vertex_index);
-    ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
-    ac3d.invalidToken(invalid_token);
+    // warnings without tests
+    ac3d.ambiguousTexture(ambiguous_texture);
+    ac3d.duplicateTexture(duplicate_texture);
+    ac3d.floatingPoint(floating_point);
+    ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.surfaceStripHole(surface_strip_hole);
     ac3d.surfaceStripDegenerate(surface_strip_degenerate);
     ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
-    ac3d.multiplePolygonSurface(multiple_polygon_surface);
-    ac3d.floatingPoint(floating_point);
-    ac3d.duplicateTexture(duplicate_texture);
-    ac3d.ambiguousTexture(ambiguous_texture);
-    ac3d.texturePaths(texture_paths);
+
+    // errors with tests
+    ac3d.invalidMaterialIndex(invalid_material_index);
+    ac3d.invalidNormal(invalid_normal);
+    ac3d.invalidNumsurf(invalid_numsurf);
+    ac3d.invalidNumvert(invalid_numvert);
+    ac3d.invalidVertex(invalid_vertex);
+    ac3d.invalidVertexIndex(invalid_vertex_index);
+    ac3d.missingVertex(missing_vertex);
+
+    // errors without tests
+    ac3d.invalidKidsCount(invalid_kids_count);
+    ac3d.invalidSurfaceType(invalid_surface_type);
+    ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
+    ac3d.invalidToken(invalid_token);
     ac3d.moreSURFThanSpecified(more_surf_than_specified);
+
+    ac3d.notAC3DFile(not_ac3d_file);
+    ac3d.texturePaths(texture_paths);
     ac3d.showTimes(show_times);
     ac3d.quiet(quiet);
     ac3d.summary(summary);
@@ -972,6 +998,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
             showCount(ac3d.missingTextureCount(), "missing texture: ");
+            showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
             showCount(ac3d.multipleCreaseCount(), "multiple crease: ");
             showCount(ac3d.multipleDataCount(), "multiple data: ");
             showCount(ac3d.multipleFoldedCount(), "multiple folded: ");
@@ -998,18 +1025,14 @@ int main(int argc, char *argv[])
             showCount(ac3d.unusedMaterialCount(), "unused material: ");
             showCount(ac3d.unusedVertexCount(), "unused vertex: ");
 
-            // warnings with no test
+            // warnings without test
+            showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
+            showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
+            showCount(ac3d.floatingPointCount(), "floating point: ");
             showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
             showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
             showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
             showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
-            showCount(ac3d.floatingPointCount(), "floating point: ");
-            showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
-            showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
-
-            // errors
-            showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
-            showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
         }
     }
 
@@ -1022,16 +1045,20 @@ int main(int argc, char *argv[])
 
         if (ac3d.summary())
         {
+            // errors with tests
             showCount(ac3d.invalidMaterialIndexCount(), "invalid material index: ");
+            showCount(ac3d.invalidNormalCount(), "invalid normal: ");
+            showCount(ac3d.invalidNumsurfCount(), "invalid numsurf: ");
+            showCount(ac3d.invalidNumvertCount(), "invalid numvert: ");
             showCount(ac3d.invalidVertexCount(), "invalid vertex: ");
             showCount(ac3d.invalidVertexIndexCount(), "invalid vertex index: ");
-            showCount(ac3d.invalidNormalCount(), "invalid normal: ");
+            showCount(ac3d.missingVertexCount(), "missing vertex: ");
+
+            // errors without tests
+            showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
+            showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
-            showCount(ac3d.invalidNumsurfCount(), "invalid surface count: ");
-            showCount(ac3d.invalidNumvertCount(), "invalid vertex count: ");
-            showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
-            showCount(ac3d.missingVertexCount(), "missing vertex: ");
             showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
         }
     }
