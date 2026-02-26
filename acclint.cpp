@@ -68,8 +68,12 @@ void usage()
     std::cerr << "  -Wno-multiple-loc                      Don't show multiple loc warnings." << std::endl;
     std::cerr << "  -Wno-multiple-locked                   Don't show multiple locked warnings." << std::endl;
     std::cerr << "  -Wno-multiple-name                     Don't show multiple name warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-rot                      Don't show multiple rot warnings." << std::endl;
     std::cerr << "  -Wno-multiple-shader                   Don't show multiple shader warnings." << std::endl;
     std::cerr << "  -Wno-multiple-subdiv                   Don't show multiple subdiv warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-texoff                   Don't show multiple texoff warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-texrep                   Don't show multiple texrep warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-texture                  Don't show multiple texture warnings." << std::endl;
     std::cerr << "  -Wno-multiple-url                      Don't show multiple url warnings." << std::endl;
     std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
@@ -80,10 +84,10 @@ void usage()
     std::cerr << "  -Wno-surface-self-intersecting         Don't show surface self intersecting warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-trailing-text                     Don't show trailing text warnings." << std::endl;
+    std::cerr << "  -Wno-unused-material                   Don't show unused material warnings." << std::endl;
     std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
 
     // warnings without tests
-    std::cerr << "  -Wno-unused-material                   Don't show unused material warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
@@ -92,10 +96,6 @@ void usage()
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-rot                      Don't show multiple rot warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-texoff                   Don't show multiple texoff warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-texrep                   Don't show multiple texrep warnings." << std::endl;
-    std::cerr << "  -Wno-multiple-texture                  Don't show multiple texture warnings." << std::endl;
 
     // errors
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;

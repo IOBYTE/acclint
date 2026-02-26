@@ -86,10 +86,10 @@ private:                                               \
     CHECK(surfaceSelfIntersecting, m_surface_self_intersecting, true)
     CHECK(surfaceStripSize, m_surface_strip_size, false)
     CHECK(trailingText, m_trailing_text, true)
+    CHECK(unusedMaterial, m_unused_material, true)
     CHECK(unusedVertex, m_unused_vertex, true)
 
     // warnings without tests
-    CHECK(unusedMaterial, m_unused_material, true)
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
     CHECK(surfaceStripHole, m_surface_strip_hole, false)
     CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)

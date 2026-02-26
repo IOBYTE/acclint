@@ -2979,11 +2979,8 @@ void AC3D::checkUnusedMaterial(std::istream &in)
         {
             if (!material.used)
             {
-                if (m_unused_material)
-                {
-                    warningWithCount(m_unused_material_count, material.line_number) << "unused material" << std::endl;
-                    showLine(in, material.line_pos);
-                }
+                warningWithCount(m_unused_material_count, material.line_number) << "unused material" << std::endl;
+                showLine(in, material.line_pos);
             }
         }
     }
