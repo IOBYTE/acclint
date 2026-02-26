@@ -181,6 +181,7 @@ int main(int argc, char *argv[])
     bool duplicate_surface_vertices = true;
     bool duplicate_triangles = true;
     bool duplicate_vertices = true;
+    bool empty_object = true;
     bool extra_object = true;
     bool extra_uv_coordinates = true;
     bool group_with_geometry = true;
@@ -228,7 +229,6 @@ int main(int argc, char *argv[])
     bool fix_surface_2_sided_opaque = false;
     bool multiple_polygon_surface = true;
     bool floating_point = true;
-    bool empty_object = true;
     bool missing_texture = true;
     bool duplicate_texture = true;
     bool ambiguous_texture = true;
@@ -338,6 +338,7 @@ int main(int argc, char *argv[])
             duplicate_surface_vertices = value;
             duplicate_triangles = value;
             duplicate_vertices = value;
+            empty_object = value;
             extra_object = value;
             extra_uv_coordinates = value;
             group_with_geometry = value;
@@ -379,7 +380,6 @@ int main(int argc, char *argv[])
             surface_strip_duplicate_triangles = value;
             multiple_polygon_surface = value;
             floating_point = value;
-            empty_object = value;
             missing_texture = value;
             duplicate_texture = value;
             ambiguous_texture = value;
@@ -859,6 +859,7 @@ int main(int argc, char *argv[])
     ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
     ac3d.duplicateTriangles(duplicate_triangles);
     ac3d.duplicateVertices(duplicate_vertices);
+    ac3d.emptyObject(empty_object);
     ac3d.extraObject(extra_object);
     ac3d.extraUVCoordinates(extra_uv_coordinates);
     ac3d.groupWithGeometry(group_with_geometry);
@@ -913,7 +914,6 @@ int main(int argc, char *argv[])
     ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
-    ac3d.emptyObject(empty_object);
     ac3d.missingTexture(missing_texture);
     ac3d.duplicateTexture(duplicate_texture);
     ac3d.ambiguousTexture(ambiguous_texture);
@@ -962,6 +962,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.duplicateTrianglesCount(), "duplicate triangles: ");
             showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");
             showCount(ac3d.emptyObjectCount(), "empty object: ");
+            showCount(ac3d.extraObjectCount(), "extra object: ");
             showCount(ac3d.extraUVCoordinatesCount(), "extra uv coordinates: ");
             showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
             showCount(ac3d.invalidMaterialCount(), "invalid material: ");
@@ -1002,7 +1003,6 @@ int main(int argc, char *argv[])
             showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
             showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
             showCount(ac3d.floatingPointCount(), "floating point: ");
-            showCount(ac3d.extraObjectCount(), "extra object: ");
             showCount(ac3d.missingTextureCount(), "missing texture: ");
             showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
             showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
