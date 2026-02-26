@@ -62,6 +62,7 @@ void usage()
     std::cerr << "  -Wno-missing-kids                      Don't show missing kids warnings." << std::endl;
     std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
     std::cerr << "  -Wno-missing-surfaces                  Don't show missing surfaces warnings." << std::endl;
+    std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-multiple-crease                   Don't show multiple crease warnings." << std::endl;
     std::cerr << "  -Wno-multiple-data                     Don't show multiple data warnings." << std::endl;
     std::cerr << "  -Wno-multiple-folded                   Don't show multiple folded warnings." << std::endl;
@@ -92,7 +93,6 @@ void usage()
     std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
-    std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-texture                 Don't show duplicate texture warnings." << std::endl;
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
@@ -191,6 +191,7 @@ int main(int argc, char *argv[])
     bool missing_kids = true;
     bool missing_normal = true;
     bool missing_surfaces = true;
+    bool missing_texture = true;
     bool multiple_crease = true;
     bool multiple_data = true;
     bool multiple_folded = true;
@@ -229,7 +230,6 @@ int main(int argc, char *argv[])
     bool fix_surface_2_sided_opaque = false;
     bool multiple_polygon_surface = true;
     bool floating_point = true;
-    bool missing_texture = true;
     bool duplicate_texture = true;
     bool ambiguous_texture = true;
 
@@ -348,6 +348,7 @@ int main(int argc, char *argv[])
             missing_kids = value;
             missing_normal = value;
             missing_surfaces = value;
+            missing_texture = value;
             multiple_crease = value;
             multiple_data = value;
             multiple_folded = value;
@@ -380,7 +381,6 @@ int main(int argc, char *argv[])
             surface_strip_duplicate_triangles = value;
             multiple_polygon_surface = value;
             floating_point = value;
-            missing_texture = value;
             duplicate_texture = value;
             ambiguous_texture = value;
             missing_uv_coordinates = value;
@@ -869,6 +869,7 @@ int main(int argc, char *argv[])
     ac3d.missingKids(missing_kids);
     ac3d.missingNormal(missing_normal);
     ac3d.missingSurfaces(missing_surfaces);
+    ac3d.missingTexture(missing_texture);
     ac3d.multipleCrease(multiple_crease);
     ac3d.multipleData(multiple_data);
     ac3d.multipleFolded(multiple_folded);
@@ -914,7 +915,6 @@ int main(int argc, char *argv[])
     ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.floatingPoint(floating_point);
-    ac3d.missingTexture(missing_texture);
     ac3d.duplicateTexture(duplicate_texture);
     ac3d.ambiguousTexture(ambiguous_texture);
     ac3d.texturePaths(texture_paths);
@@ -971,6 +971,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.missingKidsCount(), "missing kids: ");
             showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
+            showCount(ac3d.missingTextureCount(), "missing texture: ");
             showCount(ac3d.multipleCreaseCount(), "multiple crease: ");
             showCount(ac3d.multipleDataCount(), "multiple data: ");
             showCount(ac3d.multipleFoldedCount(), "multiple folded: ");
@@ -1003,7 +1004,6 @@ int main(int argc, char *argv[])
             showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
             showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
             showCount(ac3d.floatingPointCount(), "floating point: ");
-            showCount(ac3d.missingTextureCount(), "missing texture: ");
             showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
             showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
 
