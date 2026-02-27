@@ -107,12 +107,13 @@ void usage()
     std::cerr << "  -Wno-invalid-refs-count                Don't show invalid refs count errors." << std::endl;
     std::cerr << "  -Wno-invalid-ref-vertex-index          Don't show invalid ref vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
+    std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
 
     // errors without tests
-    std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
+    std::cerr << "  -Wno-more-surf-than-specified          Don't show more surf than specified errors." << std::endl;
 
     std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
 
@@ -236,12 +237,12 @@ int main(int argc, char *argv[])
     bool invalid_refs_count = true;
     bool invalid_ref_vertex_index = true;
     bool invalid_surface_type = true;
+    bool invalid_token = true;
     bool invalid_texture_coordinate = true;
     bool invalid_vertex = true;
     bool missing_vertex = true;
 
     // errors without tests
-    bool invalid_token = true;
     bool more_surf_than_specified = true;
 
     bool not_ac3d_file = true;
@@ -633,12 +634,12 @@ int main(int argc, char *argv[])
             invalid_refs_count = value;
             invalid_ref_vertex_index = value;
             invalid_surface_type = value;
+            invalid_token = value;
             invalid_texture_coordinate = value;
             invalid_vertex = value;
             missing_vertex = value;
 
             // errors without tests
-            invalid_token = value;
             more_surf_than_specified = value;
 
             not_ac3d_file = value;
@@ -681,6 +682,10 @@ int main(int argc, char *argv[])
         {
             invalid_surface_type = arg.compare(2, 3, "no-") != 0;
         }
+        else if (arg == "-Wno-invalid-token" || arg == "-Winvalid-token")
+        {
+            invalid_token = arg.compare(2, 3, "no-") != 0;
+        }
         else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
         {
             invalid_texture_coordinate = arg.compare(2, 3, "no-") != 0;
@@ -691,10 +696,6 @@ int main(int argc, char *argv[])
         }
 
         // errors without tests
-        else if (arg == "-Wno-invalid-token" || arg == "-Winvalid-token")
-        {
-            invalid_token = arg.compare(2, 3, "no-") != 0;
-        }
         else if (arg == "-Wno-more-surf-than-specified" || arg == "-Wmore-surf-than-specified")
         {
             more_surf_than_specified = arg.compare(2, 3, "no-") != 0;
@@ -938,13 +939,13 @@ int main(int argc, char *argv[])
     ac3d.invalidNumvert(invalid_numvert);
     ac3d.invalidRefsCount(invalid_refs_count);
     ac3d.invalidSurfaceType(invalid_surface_type);
+    ac3d.invalidToken(invalid_token);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
     ac3d.invalidVertex(invalid_vertex);
     ac3d.invalidRefVertexIndex(invalid_ref_vertex_index);
     ac3d.missingVertex(missing_vertex);
 
     // errors without tests
-    ac3d.invalidToken(invalid_token);
     ac3d.moreSURFThanSpecified(more_surf_than_specified);
 
     ac3d.notAC3DFile(not_ac3d_file);
@@ -1057,13 +1058,13 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidNumvertCount(), "invalid numvert: ");
             showCount(ac3d.invalidRefsCountCount(), "invalid refs count: ");
             showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
+            showCount(ac3d.invalidTokenCount(), "invalid token: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidVertexCount(), "invalid vertex: ");
             showCount(ac3d.invalidRefVertexIndexCount(), "invalid ref vertex index: ");
             showCount(ac3d.missingVertexCount(), "missing vertex: ");
 
             // errors without tests
-            showCount(ac3d.invalidTokenCount(), "invalid token: ");
             showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
         }
     }

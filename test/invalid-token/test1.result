@@ -1,0 +1,16 @@
+test1.ac:2 error: invalid token: token1
+token1
+^
+test1.ac:4 error: invalid token: token2
+token2
+^
+test1.ac:6 error: invalid token: token3
+token3
+^
+test1.ac:8 error: invalid token: token4
+token4
+^
+test1.ac:10 error: invalid token: token5
+token5
+^
+5 errors

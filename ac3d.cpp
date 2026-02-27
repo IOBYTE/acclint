@@ -744,7 +744,11 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
     }
     else
     {
-        error() << "invalid surface" << std::endl;
+        if (m_invalid_token)
+        {
+            errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
+            showLine(iss, 0);
+        }
         return false;
     }
 
@@ -1552,7 +1556,10 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
         else
         {
             if (m_invalid_token)
+            {
                 errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
+                showLine(iss, 0);
+            }
             return false;
         }
 
@@ -2457,8 +2464,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         readObject(iss2, in, kid);
                         object.kids.push_back(kid);
                     }
-                    else if (m_invalid_token)
+                    else
                     {
+                        if (m_invalid_token)
+                        {
+                            errorWithCount(m_invalid_token_count) << "invalid token: " << token1 << std::endl;
+                            showLine(iss2, 0);
+                        }
                         ungetLine(in);
                         break;
                     }
@@ -2486,10 +2498,32 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             readObject(iss2, in, kid);
                             object.kids.push_back(kid);
                         }
-                        else if (m_invalid_token)
+                        else
                         {
-                            errorWithCount(m_invalid_token_count) << "invalid token: " << token1 << std::endl;
-                            showLine(iss2, 0);
+                            do
+                            {
+                                if (m_invalid_token)
+                                {
+                                    errorWithCount(m_invalid_token_count) << "invalid token: " << token1 << std::endl;
+                                    showLine(iss2, 0);
+                                }
+
+                                if (getLine(in))
+                                {
+                                    iss2.str(m_line);
+                                    iss2.clear();
+
+                                    iss2 >> token1;
+
+                                    if (token1 == OBJECT_token)
+                                    {
+                                        Object kid;
+                                        readObject(iss2, in, kid);
+                                        object.kids.push_back(kid);
+                                        break;
+                                    }
+                                }
+                            } while (true);
                         }
                     }
                     else
