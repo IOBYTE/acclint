@@ -1,0 +1,20 @@
+test3.ac:3 warning: invalid material rgb: 2 range: 0 to 1
+rgb 2 1 1
+    ^
+test3.ac:4 warning: invalid material amb: 2 range: 0 to 1
+amb 0.2 2 0.2
+        ^
+test3.ac:5 warning: invalid material emis: 2 range: 0 to 1
+emis 0 0 2
+         ^
+test3.ac:6 warning: invalid material spec: -1 range: 0 to 1
+spec 0.5 -1 0.5
+         ^
+test3.ac:7 warning: invalid material shi: 200 range: 0 to 128
+shi 200
+    ^
+test3.ac:8 warning: invalid material trans: 2 range: 0 to 1
+trans 2
+      ^
+6 warnings
+invalid material: 6

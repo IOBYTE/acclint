@@ -1533,23 +1533,26 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
         {
             checkTrailing(iss);
 
-            if (!has_rgb)
-                warning() << "missing rgb" << std::endl;
+            if (m_invalid_material)
+            {
+                if (!has_rgb)
+                    warningWithCount(m_invalid_material_count) << "invalid material: missing rgb" << std::endl;
 
-            if (!has_amb)
-                warning() << "missing amb" << std::endl;
+                if (!has_amb)
+                    warningWithCount(m_invalid_material_count) << "invalid material: missing amb" << std::endl;
 
-            if (!has_emis)
-                warning() << "missing emis" << std::endl;
+                if (!has_emis)
+                    warningWithCount(m_invalid_material_count) << "invalid material: missing emis" << std::endl;
 
-            if (!has_spec)
-                warning() << "missing spec" << std::endl;
+                if (!has_spec)
+                    warningWithCount(m_invalid_material_count) << "invalid material: missing spec" << std::endl;
 
-            if (!has_shi)
-                warning() << "missing shi" << std::endl;
+                if (!has_shi)
+                    warningWithCount(m_invalid_material_count) << "invalid material: missing shi" << std::endl;
 
-            if (!has_trans)
-                warning() << "missing trans" << std::endl;
+                if (!has_trans)
+                    warningWithCount(m_invalid_material_count) << "invalid material: missing trans" << std::endl;
+            }
 
             return true;
         }
@@ -1565,8 +1568,11 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
 
         if (iss)
             checkTrailing(iss);
-        else
-            warning() << "invalid " << token << std::endl;
+        else if (m_invalid_token)
+        {
+            errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
+            showLine(iss, 0);
+        }
     }
 
     return false;
@@ -4399,7 +4405,8 @@ void AC3D::checkSurfaceStripSize(std::istream &in, const Object &object, const S
 
     if (surface.getTriangleStrip().size() < 2)
     {
-        warningWithCount(m_surface_strip_size_count, surface.line_number) << "triangle strip with" << (surface.getTriangleStrip().empty() ? " no triangles" : " 1 triangle") << std::endl;
+        warningWithCount(m_surface_strip_size_count, surface.line_number)
+            << "triangle strip with" << (surface.getTriangleStrip().empty() ? " no triangles" : " 1 triangle") << std::endl;
         showLine(in, surface.line_pos);
     }
 }
@@ -4438,7 +4445,8 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &o
         {
             if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::None))
             {
-                warningWithCount(m_surface_strip_duplicate_triangles_count, surface.line_number) << "triangle strip with duplicate triangle" << std::endl;
+                warningWithCount(m_surface_strip_duplicate_triangles_count, surface.line_number)
+                    << "triangle strip with duplicate triangle" << std::endl;
                 showLine(in, surface.line_pos);
                 note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
                 showLine(in, surface.triangleStrip[i].refs[2].line_pos);
@@ -4448,7 +4456,8 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &o
 
             if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::Order))
             {
-                warning(surface.line_number) << "triangle strip with duplicate triangle with different vertex order" << std::endl;
+                warningWithCount(m_surface_strip_duplicate_triangles_count, surface.line_number)
+                    << "triangle strip with duplicate triangle with different vertex order" << std::endl;
                 showLine(in, surface.line_pos);
                 note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
                 showLine(in, surface.triangleStrip[i].refs[2].line_pos);
@@ -4458,7 +4467,8 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &o
 
             if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::Winding))
             {
-                warning(surface.line_number) << "triangle strip with duplicate triangle with different winding" << std::endl;
+                warningWithCount(m_surface_strip_duplicate_triangles_count, surface.line_number)
+                    << "triangle strip with duplicate triangle with different winding" << std::endl;
                 showLine(in, surface.line_pos);
                 note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
                 showLine(in, surface.triangleStrip[i].refs[2].line_pos);
@@ -4490,7 +4500,8 @@ void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Object &object, c
     if (count > 0)
     {
         const double size = static_cast<double>(surface.getTriangleStrip().size());
-        warningWithCount(m_surface_strip_degenerate_count, surface.line_number) << "triangle strip " << count << " out of " << size << " ("
+        warningWithCount(m_surface_strip_degenerate_count, surface.line_number)
+            << "triangle strip " << count << " out of " << size << " ("
             << ((count / size) * 100.0) << " percent) degenerate triangles" << std::endl;
         showLine(in, surface.line_pos);
     }

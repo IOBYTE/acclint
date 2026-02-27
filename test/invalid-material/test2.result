@@ -1,0 +1,7 @@
+test2.ac:3 warning: invalid material: missing rgb
+test2.ac:3 warning: invalid material: missing amb
+test2.ac:3 warning: invalid material: missing emis
+test2.ac:3 warning: invalid material: missing spec
+test2.ac:3 warning: invalid material: missing shi
+test2.ac:3 warning: invalid material: missing trans
+6 warnings
