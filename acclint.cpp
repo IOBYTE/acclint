@@ -111,9 +111,9 @@ void usage()
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
+    std::cerr << "  -Wno-more-surf-than-specified          Don't show more surf than specified errors." << std::endl;
 
     // errors without tests
-    std::cerr << "  -Wno-more-surf-than-specified          Don't show more surf than specified errors." << std::endl;
 
     std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
 
@@ -241,9 +241,9 @@ int main(int argc, char *argv[])
     bool invalid_texture_coordinate = true;
     bool invalid_vertex = true;
     bool missing_vertex = true;
+    bool more_surf_than_specified = true;
 
     // errors without tests
-    bool more_surf_than_specified = true;
 
     bool not_ac3d_file = true;
 
@@ -638,9 +638,9 @@ int main(int argc, char *argv[])
             invalid_texture_coordinate = value;
             invalid_vertex = value;
             missing_vertex = value;
+            more_surf_than_specified = value;
 
             // errors without tests
-            more_surf_than_specified = value;
 
             not_ac3d_file = value;
         }
@@ -694,12 +694,12 @@ int main(int argc, char *argv[])
         {
             missing_vertex = arg.compare(2, 3, "no-") != 0;
         }
-
-        // errors without tests
         else if (arg == "-Wno-more-surf-than-specified" || arg == "-Wmore-surf-than-specified")
         {
             more_surf_than_specified = arg.compare(2, 3, "no-") != 0;
         }
+
+        // errors without tests
 
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
@@ -944,9 +944,9 @@ int main(int argc, char *argv[])
     ac3d.invalidVertex(invalid_vertex);
     ac3d.invalidRefVertexIndex(invalid_ref_vertex_index);
     ac3d.missingVertex(missing_vertex);
+    ac3d.moreSURFThanSpecified(more_surf_than_specified);
 
     // errors without tests
-    ac3d.moreSURFThanSpecified(more_surf_than_specified);
 
     ac3d.notAC3DFile(not_ac3d_file);
     ac3d.texturePaths(texture_paths);

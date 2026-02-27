@@ -119,9 +119,9 @@ private:                                               \
     CHECK(invalidTextureCoordinate, m_invalid_texture_coordinate, true)
     CHECK(invalidVertex, m_invalid_vertex, true)
     CHECK(missingVertex, m_missing_vertex, true)
+    CHECK(moreSURFThanSpecified, m_more_surf_than_specified, true)
 
     //errors without tests
-    CHECK(moreSURFThanSpecified, m_more_surf_than_specified, true)
 #undef CHECK
 
     void showLine(std::istringstream &in) const;

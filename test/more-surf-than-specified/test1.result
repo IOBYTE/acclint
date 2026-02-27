@@ -1,0 +1,7 @@
+test1.ac:21 error: more SURF than specified
+SURF 0x20
+^
+test1.ac:14 note: number specified
+numsurf 1
+        ^
+1 error
