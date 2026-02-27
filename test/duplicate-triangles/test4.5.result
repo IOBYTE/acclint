@@ -1,0 +1,38 @@
+test4.acc:22 warning: duplicate triangle with different winding
+SURF 0x14
+^
+test4.acc:29 note: ref
+0 0 0
+^
+test4.acc:14 note: first instance
+SURF 0x14
+^
+test4.acc:19 note: ref
+2 0 0
+^
+test4.acc:22 warning: duplicate triangle with different winding
+SURF 0x14
+^
+test4.acc:28 note: ref
+1 0 0
+^
+test4.acc:14 note: first instance
+SURF 0x14
+^
+test4.acc:20 note: ref
+3 0 0
+^
+test4.acc:22 warning: duplicate triangle with different winding
+SURF 0x14
+^
+test4.acc:27 note: ref
+2 0 0
+^
+test4.acc:14 note: first instance
+SURF 0x14
+^
+test4.acc:21 note: ref
+4 0 0
+^
+3 warnings
+duplicate triangles: 3

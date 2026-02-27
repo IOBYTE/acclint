@@ -1,0 +1,25 @@
+test3.acc:20 warning: duplicate triangle with different vertex order
+SURF 0x14
+^
+test3.acc:26 note: ref
+0 0 0
+^
+test3.acc:13 note: first instance
+SURF 0x14
+^
+test3.acc:18 note: ref
+2 0 0
+^
+test3.acc:20 warning: duplicate triangle with different vertex order
+SURF 0x14
+^
+test3.acc:25 note: ref
+1 0 0
+^
+test3.acc:13 note: first instance
+SURF 0x14
+^
+test3.acc:19 note: ref
+3 0 0
+^
+2 warnings

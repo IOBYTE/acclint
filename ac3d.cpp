@@ -3536,7 +3536,7 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                             }
                             else if (triangle1.sameTriangle(triangle2, Difference::Order))
                             {
-                                warning(surface2.line_number) << "duplicate triangle with different vertex order" << std::endl;
+                                warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle with different vertex order" << std::endl;
                                 showLine(in, surface2.line_pos);
                                 note(triangle2.refs[2].line_number) << "ref" << std::endl;
                                 showLine(in, triangle2.refs[2].line_pos);
@@ -3547,7 +3547,7 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                             }
                             else if (triangle1.sameTriangle(triangle2, Difference::Winding))
                             {
-                                warning(surface2.line_number) << "duplicate triangle with different winding" << std::endl;
+                                warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle with different winding" << std::endl;
                                 showLine(in, surface2.line_pos);
                                 note(triangle2.refs[2].line_number) << "ref" << std::endl;
                                 showLine(in, triangle2.refs[2].line_pos);
@@ -3562,7 +3562,7 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                     {
                         if (triangle1.sameTriangle(object, surface2, Difference::None))
                         {
-                            warning(surface2.line_number) << "duplicate triangle" << std::endl;
+                            warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle" << std::endl;
                             showLine(in, surface2.line_pos);
                             note(surface1.refs[2].line_number) << "ref" << std::endl;
                             showLine(in, surface1.refs[2].line_pos);
@@ -3573,7 +3573,7 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                         }
                         else if (triangle1.sameTriangle(object, surface2, Difference::Order))
                         {
-                            warning(surface2.line_number) << "duplicate triangle with different vertex order" << std::endl;
+                            warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle with different vertex order" << std::endl;
                             showLine(in, surface2.line_pos);
                             note(surface1.refs[2].line_number) << "ref" << std::endl;
                             showLine(in, surface1.refs[2].line_pos);
@@ -3584,7 +3584,7 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                         }
                         else if (triangle1.sameTriangle(object, surface2, Difference::Winding))
                         {
-                            warning(surface2.line_number) << "duplicate triangle with different winding" << std::endl;
+                            warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle with different winding" << std::endl;
                             showLine(in, surface2.line_pos);
                             note(surface1.refs[2].line_number) << "ref" << std::endl;
                             showLine(in, surface1.refs[2].line_pos);
@@ -3604,7 +3604,7 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
 
                     if (triangle2.sameTriangle(object, surface1, Difference::None))
                     {
-                        warning(surface2.line_number) << "duplicate triangle" << std::endl;
+                        warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle" << std::endl;
                         showLine(in, surface2.line_pos);
                         note(triangle2.refs[2].line_number) << "ref" << std::endl;
                         showLine(in, triangle2.refs[2].line_pos);
@@ -3615,7 +3615,7 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                     }
                     else if (triangle2.sameTriangle(object, surface1, Difference::Order))
                     {
-                        warning(surface2.line_number) << "duplicate triangle with different vertex order" << std::endl;
+                        warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle with different vertex order" << std::endl;
                         showLine(in, surface2.line_pos);
                         note(triangle2.refs[2].line_number) << "ref" << std::endl;
                         showLine(in, triangle2.refs[2].line_pos);
@@ -3626,7 +3626,7 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                     }
                     else if (triangle2.sameTriangle(object, surface1, Difference::Winding))
                     {
-                        warning(surface2.line_number) << "duplicate triangle with different winding" << std::endl;
+                        warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle with different winding" << std::endl;
                         showLine(in, surface2.line_pos);
                         note(triangle2.refs[2].line_number) << "ref" << std::endl;
                         showLine(in, triangle2.refs[2].line_pos);
