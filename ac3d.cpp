@@ -3023,7 +3023,7 @@ void AC3D::checkDuplicateMaterials(std::istream &in)
             }
         }
 
-        duplicates.resize(duplicates.size(), false);
+        std::fill(duplicates.begin(), duplicates.end(), false);
 
         for (size_t i = 0; i < m_materials.size(); ++i)
         {
