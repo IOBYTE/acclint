@@ -115,3 +115,41 @@
 }
 
 ################################################################################
+
+@test "test4.1" {
+  run acclint test4.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test4.result)" ]
+}
+
+@test "test4.2" {
+  run acclint -Wno-warnings test4.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+}
+
+@test "test4.3" {
+  run acclint -Wno-warnings -Winvalid-material test4.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test4.result)" ]
+}
+
+@test "test4.4" {
+  run acclint --quiet test4.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test4.4.result)" ]
+}
+
+@test "test4.5" {
+  run acclint --summary test4.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test4.5.result)" ]
+}
+
+@test "test4.6" {
+  run acclint --quiet --summary test4.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat test4.6.result)" ]
+}
+
+################################################################################

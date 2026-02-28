@@ -1250,8 +1250,11 @@ bool AC3D::readColor(std::istringstream &in, Color &color, const std::string_vie
         {
             if (in.eof())
             {
-                error() << "invalid " << expected << std::endl;
-                showLine(in);
+                if (m_invalid_material)
+                {
+                    warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
+                    showLine(in, pos);
+                }
                 return false;
             }
 
@@ -1261,12 +1264,18 @@ bool AC3D::readColor(std::istringstream &in, Color &color, const std::string_vie
             in >> actual;
             if (in.eof())
             {
-                error() << "invalid " << expected << std::endl;
-                showLine(in);
+                if (m_invalid_material)
+                {
+                    warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
+                    showLine(in, pos);
+                }
                 return false;
             }
-            error() << "invalid " << expected << std::endl;
-            showLine(in, pos);
+            if (m_invalid_material)
+            {
+                warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
+                showLine(in, pos);
+            }
             if (actual == next)
             {
                 in.seekg(pos);
@@ -1363,15 +1372,21 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string_vi
         }
         else
         {
-            error() << "invalid " << expected << std::endl;
-            showLine(in, pos);
+            if (m_invalid_material)
+            {
+                warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
+                showLine(in, pos);
+            }
             return false;
         }
     }
     else
     {
-        error() << "invalid " << expected << std::endl;
-        showLine(in);
+        if (m_invalid_material)
+        {
+            warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
+            showLine(in);
+        }
         return false;
     }
 

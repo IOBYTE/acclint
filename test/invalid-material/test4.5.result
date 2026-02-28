@@ -1,0 +1,20 @@
+test4.ac:3 warning: invalid material: rgb
+rgb z 1 1
+    ^
+test4.ac:4 warning: invalid material: amb
+amb 0.2 z 0.2
+        ^
+test4.ac:5 warning: invalid material: emis
+emis 0 0 z
+          ^
+test4.ac:6 warning: invalid material: spec
+spec 0.5 z 0.5
+         ^
+test4.ac:7 warning: invalid material: shi
+shi z
+    ^
+test4.ac:8 warning: invalid material: trans
+trans z
+      ^
+6 warnings
+invalid material: 6
