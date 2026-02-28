@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
     // warnings without tests
     bool floating_point = true;
     bool multiple_polygon_surface = true;
-    bool surface_strip_duplicate_triangles = true;
+    bool surface_strip_duplicate_triangles = false;
     bool surface_strip_hole = false;
 
     // errors with tests

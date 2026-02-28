@@ -85,7 +85,7 @@ std::istream & operator >> (std::istream &in, AC3D::quoted_string &s)
     in >> std::ws;
 
     if (in.peek() != '\"')
-        in >> reinterpret_cast<std::string &>(s);
+        in >> static_cast<std::string &>(s);
     else
     {
         in.get(); // skip quote
