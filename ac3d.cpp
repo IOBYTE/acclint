@@ -1661,8 +1661,11 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             }
             else
             {
-                warning() << "unknown object type: " << object.type.type << std::endl;
-                showLine(iss, object.type.type_offset);
+                if (m_invalid_object_type)
+                {
+                    warningWithCount(m_invalid_object_type_count) << "invalid object type: " << object.type.type << std::endl;
+                    showLine(iss, object.type.type_offset);
+                }
             }
         }
 

@@ -6,7 +6,7 @@ amb 0.2 z 0.2
         ^
 test4.ac:5 warning: invalid material: emis
 emis 0 0 z
-          ^
+         ^
 test4.ac:6 warning: invalid material: spec
 spec 0.5 z 0.5
          ^

@@ -67,6 +67,7 @@ private:                                               \
     CHECK(groupWithGeometry, m_group_with_geometry, true)
     CHECK(invalidMaterial, m_invalid_material, true)
     CHECK(invalidNormalLength, m_invalid_normal_length, true)
+    CHECK(invalidObjectType, m_invalid_object_type, true)
     CHECK(invalidRefCount, m_invalid_ref_count, true)
     CHECK(missingKids, m_missing_kids, true)
     CHECK(missingNormal, m_missing_normal, true)

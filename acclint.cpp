@@ -56,6 +56,7 @@ void usage()
     std::cerr << "  -Wno-group-with-geometry               Don't show group with geometry warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material                  Don't show invalid material warnings." << std::endl;
     std::cerr << "  -Wno-invalid-normal-length             Don't show invalid normal length warnings." << std::endl;
+    std::cerr << "  -Wno-invalid-object-type               Don't show invalid object type warnings." << std::endl;
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids                      Don't show missing kids warnings." << std::endl;
     std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
@@ -189,6 +190,7 @@ int main(int argc, char *argv[])
     bool group_with_geometry = true;
     bool invalid_material = true;
     bool invalid_normal_length = true;
+    bool invalid_object_type = true;
     bool invalid_ref_count = true;
     bool missing_kids = true;
     bool missing_normal = true;
@@ -352,6 +354,7 @@ int main(int argc, char *argv[])
             group_with_geometry = value;
             invalid_material = value;
             invalid_normal_length = value;
+            invalid_object_type = value;
             invalid_ref_count = value;
             missing_kids = value;
             missing_normal = value;
@@ -472,6 +475,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-normal-length" || arg == "-Winvalid-normal-length")
         {
             invalid_normal_length = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-invalid-object-type" || arg == "-Winvalid-object-type")
+        {
+            invalid_object_type = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-invalid-ref-count" || arg == "-Winvalid-ref-count")
         {
@@ -892,6 +899,7 @@ int main(int argc, char *argv[])
     ac3d.groupWithGeometry(group_with_geometry);
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidNormalLength(invalid_normal_length);
+    ac3d.invalidObjectType(invalid_object_type);
     ac3d.invalidRefCount(invalid_ref_count);
     ac3d.missingKids(missing_kids);
     ac3d.missingNormal(missing_normal);
@@ -1000,6 +1008,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
             showCount(ac3d.invalidMaterialCount(), "invalid material: ");
             showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
+            showCount(ac3d.invalidObjectTypeCount(), "invalid object type: ");
             showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
             showCount(ac3d.missingKidsCount(), "missing kids: ");
             showCount(ac3d.missingNormalCount(), "missing normal: ");

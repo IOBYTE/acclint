@@ -1,0 +1,5 @@
+test1.ac:5 warning: invalid object type: geometry
+OBJECT geometry
+       ^
+1 warning
+invalid object type: 1
