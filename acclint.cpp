@@ -90,6 +90,7 @@ void usage()
     std::cerr << "  -Wno-trailing-text                     Don't show trailing text warnings." << std::endl;
     std::cerr << "  -Wno-unused-material                   Don't show unused material warnings." << std::endl;
     std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
+    std::cerr << "  -Wno-utf8-bom                          Don't show utf8 bom warnings." << std::endl;
 
     // warnings without tests
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
@@ -225,6 +226,7 @@ int main(int argc, char *argv[])
     bool trailing_text = true;
     bool unused_material = true;
     bool unused_vertex = true;
+    bool utf8_bom = true;
 
     // warnings without tests
     bool floating_point = true;
@@ -390,6 +392,7 @@ int main(int argc, char *argv[])
             trailing_text = value;
             unused_material = value;
             unused_vertex = value;
+            utf8_bom = value;
 
             // warnings with no tests
             floating_point = value;
@@ -614,6 +617,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-unused-vertex" || arg == "-Wunused-vertex")
         {
             unused_vertex = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-utf8-bom" || arg == "-Wutf8-bom")
+        {
+            utf8_bom = arg.compare(2, 3, "no-") != 0;
         }
 
         // warnings without tests
@@ -940,6 +947,7 @@ int main(int argc, char *argv[])
     ac3d.trailingText(trailing_text);
     ac3d.unusedMaterial(unused_material);
     ac3d.unusedVertex(unused_vertex);
+    ac3d.utf8Bom(utf8_bom);
 
     // warnings without tests
     ac3d.floatingPoint(floating_point);
@@ -1050,6 +1058,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.trailingTextCount(), "trailing text: ");
             showCount(ac3d.unusedMaterialCount(), "unused material: ");
             showCount(ac3d.unusedVertexCount(), "unused vertex: ");
+            showCount(ac3d.utf8BomCount(), "utf8 bom: ");
 
             // warnings without test
             showCount(ac3d.floatingPointCount(), "floating point: ");

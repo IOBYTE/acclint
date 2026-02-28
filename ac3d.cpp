@@ -1094,7 +1094,8 @@ bool AC3D::readHeader(std::istream &in)
     if (m_line.size() >= 3 && m_line[0] == '\xef' && m_line[1] == '\xbb' && m_line[2] == '\xbf')
     {
         m_is_utf_8 = true;
-        warning() << "found UTF-8 BOM" << std::endl;
+        if (m_utf8_bom)
+            warningWithCount(m_utf8_bom_count) << "found UTF-8 BOM" << std::endl;
         m_line.erase(0, 3);
     }
     else if (m_line.size() >= 4 && m_line[0] == '\xff' && m_line[1] == '\xfe')

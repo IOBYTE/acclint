@@ -101,6 +101,7 @@ private:                                               \
     CHECK(trailingText, m_trailing_text, true)
     CHECK(unusedMaterial, m_unused_material, true)
     CHECK(unusedVertex, m_unused_vertex, true)
+    CHECK(utf8Bom, m_utf8_bom, true)
 
     // warnings without tests
     CHECK(floatingPoint, m_floating_point, true)
