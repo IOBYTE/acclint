@@ -140,7 +140,8 @@ void usage()
     std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
     std::cerr << "  -l                                     Print the name of the input file." << std::endl;
     std::cerr << std::endl;
-    std::cerr << "By default all warnings (except blank-line and surface-strip-*) and errors are enabled." << std::endl;
+    std::cerr << "By default all warnings (except blank-line, diplicate-triangles, surface-2-sided-opaque and surface-strip-*) " << std::endl;
+    std::cerr << "and errors are enabled." << std::endl;
     std::cerr << "You can enable all warnings using -Wwarnings" << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
     std::cerr << "You can also disable all warnings or errors and then reenable specific ones" << std::endl;
@@ -185,7 +186,7 @@ int main(int argc, char *argv[])
     bool duplicate_surfaces_winding = true;
     bool duplicate_surface_vertices = true;
     bool duplicate_texture = true;
-    bool duplicate_triangles = true;
+    bool duplicate_triangles = false;
     bool duplicate_vertices = true;
     bool empty_object = true;
     bool extra_object = true;

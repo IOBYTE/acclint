@@ -460,6 +460,10 @@ private:
 
         int getVersion() const
         {
+            if (version.size() < 5 || version[0] != 'A' || version[1] != 'C' || version[2] != '3' || version[3] != 'D')
+            {
+                return 0; // not an AC3D file
+            }
             return version[4] == 'b' ? 11 : version[4] == 'c' ? 12 : 11;
         }
     };
@@ -796,7 +800,7 @@ private:
 
     struct Rotation : public LineInfo
     {
-        std::array<double,9> rotation = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        std::array<double,9> rotation = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
     };
 
     struct Crease : public LineInfo

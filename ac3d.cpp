@@ -122,7 +122,7 @@ template <size_t s>
 std::istream & operator >> (std::istream &in, std::array<double,s> &a)
 {
     for (size_t i = 0; i < s; ++i)
-        in >> std::setprecision(12) >> a[i];
+        in >> a[i];
 
     return in;
 }
@@ -975,7 +975,7 @@ void AC3D::convertObjectToAcc(Object &object)
                 if (surface.concave)
                 {
                     // TODO
-                    return;
+                    continue;
                 }
                 else // triangle fan
                 {
