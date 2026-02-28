@@ -58,6 +58,7 @@ void usage()
     std::cerr << "  -Wno-invalid-normal-length             Don't show invalid normal length warnings." << std::endl;
     std::cerr << "  -Wno-invalid-object-type               Don't show invalid object type warnings." << std::endl;
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count warnings." << std::endl;
+    std::cerr << "  -Wno-material-after-object             Don't show material after object warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids                      Don't show missing kids warnings." << std::endl;
     std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
     std::cerr << "  -Wno-missing-surfaces                  Don't show missing surfaces warnings." << std::endl;
@@ -192,6 +193,7 @@ int main(int argc, char *argv[])
     bool invalid_normal_length = true;
     bool invalid_object_type = true;
     bool invalid_ref_count = true;
+    bool material_after_object = true;
     bool missing_kids = true;
     bool missing_normal = true;
     bool missing_surfaces = true;
@@ -356,6 +358,7 @@ int main(int argc, char *argv[])
             invalid_normal_length = value;
             invalid_object_type = value;
             invalid_ref_count = value;
+            material_after_object = value;
             missing_kids = value;
             missing_normal = value;
             missing_surfaces = value;
@@ -483,6 +486,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-invalid-ref-count" || arg == "-Winvalid-ref-count")
         {
             invalid_ref_count = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-material-after-object" || arg == "-Wmaterial-after-object")
+        {
+            material_after_object = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-missing-kids" || arg == "-Wmissing-kids")
         {
@@ -901,6 +908,7 @@ int main(int argc, char *argv[])
     ac3d.invalidNormalLength(invalid_normal_length);
     ac3d.invalidObjectType(invalid_object_type);
     ac3d.invalidRefCount(invalid_ref_count);
+    ac3d.materialAfterObject(material_after_object);
     ac3d.missingKids(missing_kids);
     ac3d.missingNormal(missing_normal);
     ac3d.missingSurfaces(missing_surfaces);
@@ -1010,6 +1018,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
             showCount(ac3d.invalidObjectTypeCount(), "invalid object type: ");
             showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
+            showCount(ac3d.materialAfterObjectCount(), "material after object: ");
             showCount(ac3d.missingKidsCount(), "missing kids: ");
             showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");

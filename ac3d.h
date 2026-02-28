@@ -69,6 +69,7 @@ private:                                               \
     CHECK(invalidNormalLength, m_invalid_normal_length, true)
     CHECK(invalidObjectType, m_invalid_object_type, true)
     CHECK(invalidRefCount, m_invalid_ref_count, true)
+    CHECK(materialAfterObject, m_material_after_object, true)
     CHECK(missingKids, m_missing_kids, true)
     CHECK(missingNormal, m_missing_normal, true)
     CHECK(missingSurfaces, m_missing_surfaces, true)

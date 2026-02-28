@@ -2599,16 +2599,22 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == MATERIAL_token)
         {
-            warning() << "MATERIAL should come before OBJECT" << std::endl;
-            showLine(iss1, 0);
+            if (m_material_after_object)
+            {
+                warningWithCount(m_material_after_object_count) << "MATERIAL after OBJECT" << std::endl;
+                showLine(iss1, 0);
+            }
             Material material;
             readMaterial(iss1, material);
             m_materials.push_back(material);
         }
         else if (token == MAT_token && m_header.getVersion() == 12)
         {
-            warning() << "MAT should come before OBJECT" << std::endl;
-            showLine(iss1, 0);
+            if (m_material_after_object)
+            {
+                warningWithCount(m_material_after_object_count) << "MAT after OBJECT" << std::endl;
+                showLine(iss1, 0);
+            }
             Material material;
             readMaterial(iss1, in, material);
             m_materials.push_back(material);
@@ -2993,16 +2999,22 @@ bool AC3D::read(const std::string &file)
         }
         else if (token == MATERIAL_token)
         {
-            warning() << "MATERIAL should come before OBJECT" << std::endl;
-            showLine(iss, 0);
+            if (m_material_after_object)
+            {
+                warningWithCount(m_material_after_object_count) << "MATERIAL after OBJECT" << std::endl;
+                showLine(iss, 0);
+            }
             Material material;
             readMaterial(iss, material);
             m_materials.push_back(material);
         }
         else if (token == MAT_token && m_header.getVersion() == 12)
         {
-            warning() << "MAT should come before OBJECT" << std::endl;
-            showLine(iss, 0);
+            if (m_material_after_object)
+            {
+                warningWithCount(m_material_after_object_count) << "MAT after OBJECT" << std::endl;
+                showLine(iss, 0);
+            }
             Material material;
             readMaterial(iss, in, material);
             m_materials.push_back(material);
