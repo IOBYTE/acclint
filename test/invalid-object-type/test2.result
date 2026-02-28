@@ -1,0 +1,4 @@
+test2.ac:5 warning: invalid object type: POLY should be lowercase
+OBJECT POLY
+       ^
+1 warning

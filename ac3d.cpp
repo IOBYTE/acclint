@@ -1656,8 +1656,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             if (icasecmp(object.type.type, world_token) || icasecmp(object.type.type, group_token) ||
                 icasecmp(object.type.type, poly_token) || icasecmp(object.type.type, light_token))
             {
-                warning() << "type should be lowercase: " << object.type.type << std::endl;
-                showLine(iss, object.type.type_offset);
+                if (m_invalid_object_type)
+                {
+                    warningWithCount(m_invalid_object_type_count) << "invalid object type: " << object.type.type << " should be lowercase" << std::endl;
+                    showLine(iss, object.type.type_offset);
+                }
+                for (auto & c : object.type.type)
+                    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
             }
             else
             {
