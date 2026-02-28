@@ -88,6 +88,7 @@ void usage()
     std::cerr << "  -Wno-surface-strip-degenerate          Don't show surface triangle strip degenerate warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-trailing-text                     Don't show trailing text warnings." << std::endl;
+    std::cerr << "  -Wno-unsupported-version               Don't show unsupported version warnings." << std::endl;
     std::cerr << "  -Wno-unused-material                   Don't show unused material warnings." << std::endl;
     std::cerr << "  -Wno-unused-vertex                     Don't show unused vertex warnings." << std::endl;
     std::cerr << "  -Wno-utf8-bom                          Don't show utf8 bom warnings." << std::endl;
@@ -224,6 +225,7 @@ int main(int argc, char *argv[])
     bool surface_strip_degenerate = false;
     bool surface_strip_size = false;
     bool trailing_text = true;
+    bool unsupported_version = true;
     bool unused_material = true;
     bool unused_vertex = true;
     bool utf8_bom = true;
@@ -390,6 +392,7 @@ int main(int argc, char *argv[])
             surface_strip_degenerate = value;
             surface_strip_size = value;
             trailing_text = value;
+            unsupported_version = value;
             unused_material = value;
             unused_vertex = value;
             utf8_bom = value;
@@ -609,6 +612,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
             trailing_text = arg.compare(2, 3, "no-") != 0;
+        }
+        else if (arg == "-Wno-unsupported-version" || arg == "-Wunsupported-version")
+        {
+            unsupported_version = arg.compare(2, 3, "no-") != 0;
         }
         else if (arg == "-Wno-unused-material" || arg == "-Wunused-material")
         {
@@ -945,6 +952,7 @@ int main(int argc, char *argv[])
     ac3d.surfaceStripDegenerate(surface_strip_degenerate);
     ac3d.surfaceStripSize(surface_strip_size);
     ac3d.trailingText(trailing_text);
+    ac3d.unsupportedVersion(unsupported_version);
     ac3d.unusedMaterial(unused_material);
     ac3d.unusedVertex(unused_vertex);
     ac3d.utf8Bom(utf8_bom);
@@ -1056,6 +1064,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
             showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
             showCount(ac3d.trailingTextCount(), "trailing text: ");
+            showCount(ac3d.unsupportedVersionCount(), "unsupported version: ");
             showCount(ac3d.unusedMaterialCount(), "unused material: ");
             showCount(ac3d.unusedVertexCount(), "unused vertex: ");
             showCount(ac3d.utf8BomCount(), "utf8 bom: ");

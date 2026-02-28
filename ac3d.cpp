@@ -309,20 +309,6 @@ bool AC3D::ungetLine(std::istream &in)
     return true;
 }
 
-std::ostream &AC3D::warning(size_t line_number)
-{
-    m_warnings++;
-    if (!m_quiet)
-    {
-        if (line_number > 0)
-            std::cerr << m_file << ":" << line_number << " warning: ";
-        else
-            std::cerr << m_file << ":" << m_line_number << " warning: ";
-        return std::cerr;
-    }
-    return m_null_stream;
-}
-
 std::ostream &AC3D::warningWithCount(size_t &count, size_t line_number)
 {
     count++;
@@ -1138,8 +1124,11 @@ bool AC3D::readHeader(std::istream &in)
 
     if (m_line[4] != 'b' && m_line[4] != 'c')
     {
-        warning(1) << "unsupported version: " << m_line[4] << std::endl;
-        showLine(iss, 4);
+        if (m_unsupported_version)
+        {
+            warningWithCount(m_unsupported_version_count, 1) << "unsupported version: " << m_line[4] << std::endl;
+            showLine(iss, 4);
+        }
     }
 
     m_header.version = m_line.substr(0, 5);

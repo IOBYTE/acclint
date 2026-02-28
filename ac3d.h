@@ -99,6 +99,7 @@ private:                                               \
     CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
     CHECK(surfaceStripSize, m_surface_strip_size, false)
     CHECK(trailingText, m_trailing_text, true)
+    CHECK(unsupportedVersion, m_unsupported_version, true)
     CHECK(unusedMaterial, m_unused_material, true)
     CHECK(unusedVertex, m_unused_vertex, true)
     CHECK(utf8Bom, m_utf8_bom, true)
@@ -1046,7 +1047,6 @@ private:
     void writeObject(std::ostream &out, const Object &object) const;
     bool getLine(std::istream &in);
     bool ungetLine(std::istream &in);
-    std::ostream &warning(size_t line_number = 0); // TODO remove
     std::ostream &warningWithCount(size_t &count, size_t line_number = 0);
     std::ostream &error(size_t line_number = 0);
     std::ostream &errorWithCount(size_t &count, size_t line_number = 0);
