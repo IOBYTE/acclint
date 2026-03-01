@@ -4543,12 +4543,11 @@ void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const S
     if (!surface.isTriangleStrip() || surface.isDoubleSided())
         return;
 
-    const std::vector<Triangle> &triangleStrip = surface.getTriangleStrip();
+    const auto &triangles = surface.getTriangleStrip();
 
-    if (triangleStrip.size() < 2)
+    if (triangles.size() < 2)
         return;
 
-    const auto &triangles = surface.getTriangleStrip();
     bool hasOldNormal = false;
     Point3 oldNormal{ 0.0, 0.0, 0.0 };
     size_t oldTriangleIndex = 0;
