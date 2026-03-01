@@ -660,12 +660,12 @@ private:
 
         bool isAbovePlane(const Point3 &point) const
         {
-            return distanceToPoint(point) >= 0.0;
+            return distanceToPoint(point) > SMALL_NUM;
         }
 
         [[maybe_unused]] bool isBelowPlane(const Point3 &point) const
         {
-            return !isAbovePlane(point);
+            return distanceToPoint(point) < -SMALL_NUM;
         }
 
         bool equals(const Plane &other) const
