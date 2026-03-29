@@ -405,9 +405,9 @@ private:
         }
         void transformPoint(Point3 &point) const
         {
-            double t0 = point[0];
-            double t1 = point[1];
-            double t2 = point[2];
+            const double t0 = point[0];
+            const double t1 = point[1];
+            const double t2 = point[2];
 
             point = { t0 * (*this)[0][0] + t1 * (*this)[1][0] + t2 * (*this)[2][0] + (*this)[3][0],
                       t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1] + (*this)[3][1],
@@ -444,9 +444,9 @@ private:
         }
         void transformNormal(Point3 &normal) const
         {
-            double t0 = normal[0];
-            double t1 = normal[1];
-            double t2 = normal[2];
+            const double t0 = normal[0];
+            const double t1 = normal[1];
+            const double t2 = normal[2];
 
             normal = { t0 * (*this)[0][0] + t1 * (*this)[1][0] + t2 * (*this)[2][0],
                        t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1],

@@ -35,7 +35,7 @@ void usage()
     // warnings
     std::cerr << "  -Wno-warnings                          Don't show any warnings." << std::endl;
 
-    // warinings with tests
+    // warnings with tests
     std::cerr << "  -Wno-ambiguous-texture                 Don't show ambiguous texture warnings." << std::endl;
     std::cerr << "  -Wno-blank-line                        Don't show blank line warnings." << std::endl;
     std::cerr << "  -Wno-collinear-surface-vertices        Don't show collinear surface vertices warnings." << std::endl;
@@ -140,7 +140,7 @@ void usage()
     std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
     std::cerr << "  -l                                     Print the name of the input file." << std::endl;
     std::cerr << std::endl;
-    std::cerr << "By default all warnings (except blank-line, diplicate-triangles, surface-2-sided-opaque and surface-strip-*) " << std::endl;
+    std::cerr << "By default all warnings (except blank-line, duplicate-triangles, surface-2-sided-opaque and surface-strip-*) " << std::endl;
     std::cerr << "and errors are enabled." << std::endl;
     std::cerr << "You can enable all warnings using -Wwarnings" << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
     std::string in_file;
     std::string out_file;
 
-    //warnings with tests
+    // warnings with tests
     bool ambiguous_texture = true;
     bool blank_line = false;
     bool collinear_surface_vertices = true;
