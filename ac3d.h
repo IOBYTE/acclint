@@ -1,6 +1,6 @@
 /*
  * acclint - A tool that detects errors in AC3D files.
- * Copyright (C) 2020-2024 Robert Reif
+ * Copyright (C) 2020-2026 Robert Reif
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
