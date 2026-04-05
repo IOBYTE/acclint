@@ -3100,14 +3100,12 @@ void AC3D::addConstPoly(std::vector<ConstPoly> &polys, const Object &object, con
 {
     if (object.type.type == "poly")
     {
-        Matrix newMatrix = matrix;
-        newMatrix.multiply(object.matrix);
+        Matrix newMatrix = matrix.multiply(object.matrix);
         polys.emplace_back(&object, newMatrix);
     }
     else if (object.type.type == "group" || object.type.type == "world")
     {
-        Matrix newMatrix = matrix;
-        newMatrix.multiply(object.matrix);
+        Matrix newMatrix = matrix.multiply(object.matrix);
         for (const auto &kid : object.kids)
         {
             addConstPoly(polys, kid, newMatrix);

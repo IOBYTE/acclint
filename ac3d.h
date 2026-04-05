@@ -413,7 +413,7 @@ private:
                       t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1] + (*this)[3][1],
                       t0 * (*this)[0][2] + t1 * (*this)[1][2] + t2 * (*this)[2][2] + (*this)[3][2] };
         }
-        Matrix multiply(const Matrix &matrix)
+        Matrix multiply(const Matrix &matrix) const
         {
             Matrix result;
 
