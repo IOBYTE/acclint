@@ -991,7 +991,7 @@ int main(int argc, char *argv[])
     ac3d.threads(threads);
 
     if (listInput)
-       std::cerr << in_file << std::endl;
+        std::cerr << in_file << std::endl;
 
     if (in_file.empty())
     {

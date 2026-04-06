@@ -538,7 +538,7 @@ private:
     {
         size_t mat = 0;
 
-        explicit Mat(size_t index) : LineInfo(), mat(index) { };
+        explicit Mat(size_t index) : mat(index) { };
         Mat(size_t number, const std::streampos& pos, size_t index) : LineInfo(number, pos), mat(index) { }
     };
 
@@ -963,7 +963,7 @@ private:
             if (!names.empty())
                 return names[0].name;
 
-            static const std::string none("");
+            static const std::string none;
 
             return none;
         }
@@ -977,7 +977,7 @@ private:
             if (!textures.empty())
                 return textures[0].name;
 
-            static const std::string none("");
+            static const std::string none;
 
             return none;
         }
