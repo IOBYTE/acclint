@@ -991,6 +991,13 @@ int main(int argc, char *argv[])
     if (listInput)
        std::cerr << in_file << std::endl;
 
+    if (in_file.empty())
+    {
+        std::cerr << "No input file specified" << std::endl;
+        usage();
+        return EXIT_FAILURE;
+    }
+
     if (!ac3d.read(in_file))
     {
         if (ac3d.errors() > 0)
