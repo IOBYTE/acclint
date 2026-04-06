@@ -275,6 +275,8 @@ int main(int argc, char *argv[])
     unsigned int threads = 1;
     bool listInput = false;
 
+    auto isEnabled = [](const std::string& a) { return !a.starts_with("-Wno-"); };
+
     for (int i = 1; i < argc; ++i)
     {
         std::string arg(argv[i]);
@@ -408,245 +410,245 @@ int main(int argc, char *argv[])
         // warnings with tests
         else if (arg == "-Wno-ambiguous-texture" || arg == "-Wambiguous-texture")
         {
-            ambiguous_texture = arg.compare(2, 3, "no-") != 0;
+            ambiguous_texture = isEnabled(arg);
         }
         else if (arg == "-Wno-blank-line" || arg == "-Wblank-line")
         {
-            blank_line = arg.compare(2, 3, "no-") != 0;
+            blank_line = isEnabled(arg);
         }
         else if (arg == "-Wno-collinear-surface-vertices" || arg == "-Wcollinear-surface-vertices")
         {
-            collinear_surface_vertices = arg.compare(2, 3, "no-") != 0;
+            collinear_surface_vertices = isEnabled(arg);
         }
         else if (arg == "-Wno-different-mat" || arg == "-Wdifferent-mat")
         {
-            different_mat = arg.compare(2, 3, "no-") != 0;
+            different_mat = isEnabled(arg);
         }
         else if (arg == "-Wno-different-surf" || arg == "-Wdifferent-surf")
         {
-            different_surf = arg.compare(2, 3, "no-") != 0;
+            different_surf = isEnabled(arg);
         }
         else if (arg == "-Wno-different-uv" || arg == "-Wdifferent-uv")
         {
-            different_uv = arg.compare(2, 3, "no-") != 0;
+            different_uv = isEnabled(arg);
         }
         else if (arg == "-Wno-duplicate-materials" || arg == "-Wduplicate-materials")
         {
-            duplicate_materials = arg.compare(2, 3, "no-") != 0;
+            duplicate_materials = isEnabled(arg);
         }
         else if (arg == "-Wno-duplicate-surfaces" || arg == "-Wduplicate-surfaces")
         {
-            duplicate_surfaces = arg.compare(2, 3, "no-") != 0;
+            duplicate_surfaces = isEnabled(arg);
         }
         else if (arg == "-Wno-duplicate-surfaces-order" || arg == "-Wduplicate-surfaces-order")
         {
-            duplicate_surfaces_order = arg.compare(2, 3, "no-") != 0;
+            duplicate_surfaces_order = isEnabled(arg);
         }
         else if (arg == "-Wno-duplicate-surfaces-winding" || arg == "-Wduplicate-surfaces-winding")
         {
-            duplicate_surfaces_winding = arg.compare(2, 3, "no-") != 0;
+            duplicate_surfaces_winding = isEnabled(arg);
         }
         else if (arg == "-Wno-duplicate-texture" || arg == "-Wduplicate-texture")
         {
-            duplicate_texture = arg.compare(2, 3, "no-") != 0;
+            duplicate_texture = isEnabled(arg);
         }
         else if (arg == "-Wno-duplicate-surface-vertices" || arg == "-Wduplicate-surface-vertices")
         {
-            duplicate_surface_vertices = arg.compare(2, 3, "no-") != 0;
+            duplicate_surface_vertices = isEnabled(arg);
         }
         else if (arg == "-Wno-duplicate-triangles" || arg == "-Wduplicate-triangles")
         {
-            duplicate_triangles = arg.compare(2, 3, "no-") != 0;
+            duplicate_triangles = isEnabled(arg);
         }
         else if (arg == "-Wno-duplicate-vertices" || arg == "-Wduplicate-vertices")
         {
-            duplicate_vertices = arg.compare(2, 3, "no-") != 0;
+            duplicate_vertices = isEnabled(arg);
         }
         else if (arg == "-Wno-empty-object" || arg == "-Wempty-object")
         {
-            empty_object = arg.compare(2, 3, "no-") != 0;
+            empty_object = isEnabled(arg);
         }
         else if (arg == "-Wno-extra-object" || arg == "-Wextra-object")
         {
-            extra_object = arg.compare(2, 3, "no-") != 0;
+            extra_object = isEnabled(arg);
         }
         else if (arg == "-Wno-extra-uv-coordinates" || arg == "-Wextra-uv-coordinates")
         {
-            extra_uv_coordinates = arg.compare(2, 3, "no-") != 0;
+            extra_uv_coordinates = isEnabled(arg);
         }
         else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
         {
-            group_with_geometry = arg.compare(2, 3, "no-") != 0;
+            group_with_geometry = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
         {
-            invalid_material = arg.compare(2, 3, "no-") != 0;
+            invalid_material = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-normal-length" || arg == "-Winvalid-normal-length")
         {
-            invalid_normal_length = arg.compare(2, 3, "no-") != 0;
+            invalid_normal_length = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-object-type" || arg == "-Winvalid-object-type")
         {
-            invalid_object_type = arg.compare(2, 3, "no-") != 0;
+            invalid_object_type = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-ref-count" || arg == "-Winvalid-ref-count")
         {
-            invalid_ref_count = arg.compare(2, 3, "no-") != 0;
+            invalid_ref_count = isEnabled(arg);
         }
         else if (arg == "-Wno-material-after-object" || arg == "-Wmaterial-after-object")
         {
-            material_after_object = arg.compare(2, 3, "no-") != 0;
+            material_after_object = isEnabled(arg);
         }
         else if (arg == "-Wno-missing-kids" || arg == "-Wmissing-kids")
         {
-            missing_kids = arg.compare(2, 3, "no-") != 0;
+            missing_kids = isEnabled(arg);
         }
         else if (arg == "-Wno-missing-normal" || arg == "-Wmissing-normal")
         {
-            missing_normal = arg.compare(2, 3, "no-") != 0;
+            missing_normal = isEnabled(arg);
         }
         else if (arg == "-Wno-missing-surfaces" || arg == "-Wmissing-surfaces")
         {
-            missing_surfaces = arg.compare(2, 3, "no-") != 0;
+            missing_surfaces = isEnabled(arg);
         }
         else if (arg == "-Wno-missing-texture" || arg == "-Wmissing-texture")
         {
-            missing_texture = arg.compare(2, 3, "no-") != 0;
+            missing_texture = isEnabled(arg);
         }
         else if (arg == "-Wno-missing-uv-coordinates" || arg == "-Wmissing-uv-coordinates")
         {
-            missing_uv_coordinates = arg.compare(2, 3, "no-") != 0;
+            missing_uv_coordinates = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-crease" || arg == "-Wmultiple-crease")
         {
-            multiple_crease = arg.compare(2, 3, "no-") != 0;
+            multiple_crease = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-data" || arg == "-Wmultiple-data")
         {
-            multiple_data = arg.compare(2, 3, "no-") != 0;
+            multiple_data = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-folded" || arg == "-Wmultiple-folded")
         {
-            multiple_folded = arg.compare(2, 3, "no-") != 0;
+            multiple_folded = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-hidden" || arg == "-Wmultiple-hidden")
         {
-            multiple_hidden = arg.compare(2, 3, "no-") != 0;
+            multiple_hidden = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-loc" || arg == "-Wmultiple-loc")
         {
-            multiple_loc = arg.compare(2, 3, "no-") != 0;
+            multiple_loc = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-locked" || arg == "-Wmultiple-locked")
         {
-            multiple_locked = arg.compare(2, 3, "no-") != 0;
+            multiple_locked = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-name" || arg == "-Wmultiple-name")
         {
-            multiple_name = arg.compare(2, 3, "no-") != 0;
+            multiple_name = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-rot" || arg == "-Wmultiple-rot")
         {
-            multiple_rot = arg.compare(2, 3, "no-") != 0;
+            multiple_rot = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-shader" || arg == "-Wmultiple-shader")
         {
-            multiple_shader = arg.compare(2, 3, "no-") != 0;
+            multiple_shader = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-subdiv" || arg == "-Wmultiple-subdiv")
         {
-            multiple_subdiv = arg.compare(2, 3, "no-") != 0;
+            multiple_subdiv = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-texoff" || arg == "-Wmultiple-texoff")
         {
-            multiple_texoff = arg.compare(2, 3, "no-") != 0;
+            multiple_texoff = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-texrep" || arg == "-Wmultiple-texrep")
         {
-            multiple_texrep = arg.compare(2, 3, "no-") != 0;
+            multiple_texrep = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-texture" || arg == "-Wmultiple-texture")
         {
-            multiple_texture = arg.compare(2, 3, "no-") != 0;
+            multiple_texture = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-url" || arg == "-Wmultiple-url")
         {
-            multiple_url = arg.compare(2, 3, "no-") != 0;
+            multiple_url = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-world" || arg == "-Wmultiple-world")
         {
-            multiple_world = arg.compare(2, 3, "no-") != 0;
+            multiple_world = isEnabled(arg);
         }
         else if (arg == "-Wno-overlapping-2-sided-surface" || arg == "-Woverlapping-2-sided-surface")
         {
-            overlapping_2_sided_surface = arg.compare(2, 3, "no-") != 0;
+            overlapping_2_sided_surface = isEnabled(arg);
         }
         else if (arg == "-Wno-surface-2-sided-opaque" || arg == "-Wsurface-2-sided-opaque")
         {
-            surface_2_sided_opaque = arg.compare(2, 3, "no-") != 0;
+            surface_2_sided_opaque = isEnabled(arg);
         }
         else if (arg == "-Wno-surface-not-convex" || arg == "-Wsurface-not-convex")
         {
-            surface_not_convex = arg.compare(2, 3, "no-") != 0;
+            surface_not_convex = isEnabled(arg);
         }
         else if (arg == "-Wno-surface-not-coplanar" || arg == "-Wsurface-not-coplanar")
         {
-            surface_not_coplanar = arg.compare(2, 3, "no-") != 0;
+            surface_not_coplanar = isEnabled(arg);
         }
         else if (arg == "-Wno-surface-no-texture" || arg == "-Wsurface-no-texture")
         {
-            surface_no_texture = arg.compare(2, 3, "no-") != 0;
+            surface_no_texture = isEnabled(arg);
         }
         else if (arg == "-Wno-surface-self-intersecting" || arg == "-Wsurface-self-intersecting")
         {
-            surface_self_intersecting = arg.compare(2, 3, "no-") != 0;
+            surface_self_intersecting = isEnabled(arg);
         }
         else if (arg == "-Wno-surface-strip-degenerate" || arg == "-Wsurface-strip-degenerate")
         {
-            surface_strip_degenerate = arg.compare(2, 3, "no-") != 0;
+            surface_strip_degenerate = isEnabled(arg);
         }
         else if (arg == "-Wno-surface-strip-size" || arg == "-Wsurface-strip-size")
         {
-            surface_strip_size = arg.compare(2, 3, "no-") != 0;
+            surface_strip_size = isEnabled(arg);
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
-            trailing_text = arg.compare(2, 3, "no-") != 0;
+            trailing_text = isEnabled(arg);
         }
         else if (arg == "-Wno-unsupported-version" || arg == "-Wunsupported-version")
         {
-            unsupported_version = arg.compare(2, 3, "no-") != 0;
+            unsupported_version = isEnabled(arg);
         }
         else if (arg == "-Wno-unused-material" || arg == "-Wunused-material")
         {
-            unused_material = arg.compare(2, 3, "no-") != 0;
+            unused_material = isEnabled(arg);
         }
         else if (arg == "-Wno-unused-vertex" || arg == "-Wunused-vertex")
         {
-            unused_vertex = arg.compare(2, 3, "no-") != 0;
+            unused_vertex = isEnabled(arg);
         }
         else if (arg == "-Wno-utf8-bom" || arg == "-Wutf8-bom")
         {
-            utf8_bom = arg.compare(2, 3, "no-") != 0;
+            utf8_bom = isEnabled(arg);
         }
 
         // warnings without tests
         else if (arg == "-Wno-floating-point" || arg == "-Wfloating-point")
         {
-            floating_point = arg.compare(2, 3, "no-") != 0;
+            floating_point = isEnabled(arg);
         }
         else if (arg == "-Wno-multiple-polygon-surface" || arg == "-Wmultiple-polygon-surface")
         {
-            multiple_polygon_surface = arg.compare(2, 3, "no-") != 0;
+            multiple_polygon_surface = isEnabled(arg);
         }
         else if (arg == "-Wno-surface-strip-hole" || arg == "-Wsurface-strip-hole")
         {
-            surface_strip_hole = arg.compare(2, 3, "no-") != 0;
+            surface_strip_hole = isEnabled(arg);
         }
         else if (arg == "-Wno-surface-strip-duplicate-triangles" || arg == "-Wsurface-strip-duplicate-triangles")
         {
-            surface_strip_duplicate_triangles = arg.compare(2, 3, "no-") != 0;
+            surface_strip_duplicate_triangles = isEnabled(arg);
         }
 
         // errors
@@ -677,62 +679,62 @@ int main(int argc, char *argv[])
         // errors with tests
         else if (arg == "-Wno-invalid-kids-count" || arg == "-Winvalid-kids-count")
         {
-            invalid_kids_count = arg.compare(2, 3, "no-") != 0;
+            invalid_kids_count = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-material-index" || arg == "-Winvalid-material-index")
         {
-            invalid_material_index = arg.compare(2, 3, "no-") != 0;
+            invalid_material_index = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-normal" || arg == "-Winvalid-normal")
         {
-            invalid_normal = arg.compare(2, 3, "no-") != 0;
+            invalid_normal = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-numsurf" || arg == "-Winvalid-numsurf")
         {
-            invalid_numsurf = arg.compare(2, 3, "no-") != 0;
+            invalid_numsurf = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-numvert" || arg == "-Winvalid-numvert")
         {
-            invalid_numvert = arg.compare(2, 3, "no-") != 0;
+            invalid_numvert = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-vertex" || arg == "-Winvalid-vertex")
         {
-            invalid_vertex = arg.compare(2, 3, "no-") != 0;
+            invalid_vertex = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-refs-count" || arg == "-Winvalid-refs-count")
         {
-            invalid_refs_count = arg.compare(2, 3, "no-") != 0;
+            invalid_refs_count = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-ref-vertex-index" || arg == "-Winvalid-ref-vertex-index")
         {
-            invalid_ref_vertex_index = arg.compare(2, 3, "no-") != 0;
+            invalid_ref_vertex_index = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-surface-type" || arg == "-Winvalid-surface-type")
         {
-            invalid_surface_type = arg.compare(2, 3, "no-") != 0;
+            invalid_surface_type = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-token" || arg == "-Winvalid-token")
         {
-            invalid_token = arg.compare(2, 3, "no-") != 0;
+            invalid_token = isEnabled(arg);
         }
         else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
         {
-            invalid_texture_coordinate = arg.compare(2, 3, "no-") != 0;
+            invalid_texture_coordinate = isEnabled(arg);
         }
         else if (arg == "-Wno-missing-vertex" || arg == "-Wmissing-vertex")
         {
-            missing_vertex = arg.compare(2, 3, "no-") != 0;
+            missing_vertex = isEnabled(arg);
         }
         else if (arg == "-Wno-more-surf-than-specified" || arg == "-Wmore-surf-than-specified")
         {
-            more_surf_than_specified = arg.compare(2, 3, "no-") != 0;
+            more_surf_than_specified = isEnabled(arg);
         }
 
         // errors without tests
 
         else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
         {
-            not_ac3d_file = arg.compare(2, 3, "no-") != 0;
+            not_ac3d_file = isEnabled(arg);
         }
         else if (arg == "--splitSURF")
         {
