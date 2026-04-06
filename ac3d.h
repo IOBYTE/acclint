@@ -576,6 +576,9 @@ private:
         Point3 normal = { 0.0, 0.0, 0.0 };
         bool degenerate = false;
 
+        Triangle()
+        {
+        }
         Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Ref &r0, const Ref &r1, const Ref &r2)
         {
             vertices[0] = v0;
@@ -591,6 +594,15 @@ private:
         }
         bool sameTriangle(const Triangle &triangle, Difference difference) const;
         bool sameTriangle(const Object &object, const Surface &surface, Difference difference) const;
+        void transform(const Matrix& matrix)
+        {
+            for (auto &vertex : vertices)
+            {
+                matrix.transformPoint(vertex.vertex);
+                if (vertex.has_normal)
+                    matrix.transformNormal(vertex.normal);
+            }
+        }
     };
 
     enum class WindingType { CCW, CW };
@@ -704,6 +716,7 @@ private:
         Point3 normal = { 0.0, 0.0, 0.0 }; // only for Polygon
         bool concave = false; // only for Polygon
         std::vector<Triangle> triangleStrip; // only for triangle strips
+        mutable std::vector<Triangle> transformedTriangles;
 
         enum : unsigned int
         {
@@ -1114,8 +1127,11 @@ private:
     static bool degenerate(const Point3& p0, const Point3& p1, const Point3& p2);
     static bool degenerate(const std::array<Point3, 3> &vertices);
     static bool coplanar(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);
+    static bool coplanar(const Triangle &triangle1, const Triangle &triangle2);
     static bool trianglesOverlap(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);
+    static bool trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2);
     static size_t getSharedVertexCount(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);
+    static size_t getSharedVertexCount(const Triangle &triangle1, const Triangle &triangle2);
     static PlaneType getPlaneType(const Point3 &normal);
     static std::array<Point2, 3> convert2D(const std::array<Point3, 3> &vertices, PlaneType planeType);
 };

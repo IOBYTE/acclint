@@ -1660,7 +1660,7 @@ class TriangleIntersects
         // which must have been detected earlier
         assert(D0 <= 0 || D1 <= 0 || D2 <= 0);
         assert(D0 >= 0 || D1 >= 0 || D2 >= 0);
-        assert(D0 != 0 || D1 != 0 || D2 != 0);  // traingles cannot be coplanar
+        assert(D0 != 0 || D1 != 0 || D2 != 0);  // triangles cannot be coplanar
 
         assert(D0D1 == D0 * D1);
         assert(D0D2 == D0 * D2);

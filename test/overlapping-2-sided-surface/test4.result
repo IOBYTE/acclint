@@ -1,0 +1,49 @@
+test4.acc:28 warning: overlapping 2 sided surface (object: back1 texture:  sides: 2)
+SURF 0x20
+^
+test4.acc:31 note: ref
+0 0 0
+^
+test4.acc:32 note: ref
+1 0 0
+^
+test4.acc:33 note: ref
+2 0 0
+^
+test4.acc:13 note: first instance (object: front texture:  sides: 2)
+SURF 0x24
+^
+test4.acc:18 note: ref
+3 0 0
+^
+test4.acc:17 note: ref
+0 0 0
+^
+test4.acc:19 note: ref
+1 0 0
+^
+test4.acc:42 warning: overlapping 2 sided surface (object: back2 texture:  sides: 2)
+SURF 0x20
+^
+test4.acc:45 note: ref
+0 0 0
+^
+test4.acc:46 note: ref
+1 0 0
+^
+test4.acc:47 note: ref
+2 0 0
+^
+test4.acc:13 note: first instance (object: front texture:  sides: 2)
+SURF 0x24
+^
+test4.acc:16 note: ref
+3 0 0
+^
+test4.acc:17 note: ref
+0 0 0
+^
+test4.acc:18 note: ref
+2 0 0
+^
+2 warnings
