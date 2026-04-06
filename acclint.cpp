@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
             arg = argv[i];
             std::istringstream iss(arg);
             iss >> threads;
-            if (!iss || threads > 256)
+            if (!iss || threads < 1 || threads > 256)
             {
                 std::cerr << "Invalid number of threads: " << arg << std::endl;
                 usage();
