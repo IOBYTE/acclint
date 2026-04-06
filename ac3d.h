@@ -576,9 +576,7 @@ private:
         Point3 normal = { 0.0, 0.0, 0.0 };
         bool degenerate = false;
 
-        Triangle()
-        {
-        }
+        Triangle() = default;
         Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Ref &r0, const Ref &r1, const Ref &r2)
         {
             vertices[0] = v0;
