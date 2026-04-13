@@ -1207,7 +1207,11 @@ int main(int argc, char *argv[])
                       << " transparent textures" << std::endl;
         }
 
-        ac3d.write(out_file, version);
+        if (!ac3d.write(out_file, version))
+        {
+            std::cerr << "Couldn't write output file: " << out_file << std::endl;
+            return EXIT_FAILURE;
+        }
     }
 
     if (dump)
