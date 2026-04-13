@@ -3096,13 +3096,13 @@ void AC3D::checkUnusedMaterial(std::istream &in)
     }
 }
 
-void AC3D::addConstPoly(std::vector<ConstPoly> &polys, const Object &object, const Matrix &matrix)
+void AC3D::addConstPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix)
 {
     if (object.type.type == "poly")
     {
         Matrix newMatrix = matrix.multiply(object.matrix);
 
-        for (const auto &surface : object.surfaces)
+        for (auto &surface : object.surfaces)
         {
             if (surface.isPolygon() && surface.refs.size() >= 3)
             {
@@ -3159,14 +3159,14 @@ void AC3D::addConstPoly(std::vector<ConstPoly> &polys, const Object &object, con
     else if (object.type.type == "group" || object.type.type == "world")
     {
         Matrix newMatrix = matrix.multiply(object.matrix);
-        for (const auto &kid : object.kids)
+        for (auto &kid : object.kids)
         {
             addConstPoly(polys, kid, newMatrix);
         }
     }
 }
 
-void AC3D::checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &object1, const ConstPoly &object2)
+void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, const Poly &object2)
 {
     for (const auto &surface1 : object1.object->surfaces)
     {
@@ -3227,10 +3227,10 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
         start = std::chrono::system_clock::now();
     }
 
-    std::vector<ConstPoly> polys;
+    std::vector<Poly> polys;
     const Matrix matrix;
 
-    for (const auto &world : m_objects)
+    for (auto &world : m_objects)
         addConstPoly(polys, world, matrix);
 
     if (polys.empty())

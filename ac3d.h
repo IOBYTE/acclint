@@ -714,7 +714,7 @@ private:
         Point3 normal = { 0.0, 0.0, 0.0 }; // only for Polygon
         bool concave = false; // only for Polygon
         std::vector<Triangle> triangleStrip; // only for triangle strips
-        mutable std::vector<Triangle> transformedTriangles;
+        std::vector<Triangle> transformedTriangles;
 
         enum : unsigned int
         {
@@ -1029,12 +1029,6 @@ private:
     std::map<std::string, bool> m_transparent_textures;
     bool m_rename_combine_texture = false;
 
-    struct ConstPoly
-    {
-        const Object *object;
-        Matrix matrix;
-    };
-
     struct Poly
     {
         Object *object;
@@ -1069,7 +1063,7 @@ private:
     void checkTrailing(std::istringstream &iss);
     void checkUnusedMaterial(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in);
-    void checkOverlapping2SidedSurface(std::istream &in, const ConstPoly &object1, const ConstPoly &object2);
+    void checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, const Poly &object2);
     void checkDuplicateMaterials(std::istream &in);
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);
@@ -1108,7 +1102,7 @@ private:
     static bool splitMultipleMat(std::vector<Object> &kids);
     void transform(const Matrix &matrix);
     void combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects);
-    static void addConstPoly(std::vector<ConstPoly> &polys, const Object &object, const Matrix &matrix);
+    static void addConstPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix);
     static void addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix);
     static void fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface *> &surfaces);
     bool hasOpaqueTexture(const Object &object);
