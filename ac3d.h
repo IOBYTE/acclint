@@ -539,7 +539,7 @@ private:
         size_t mat = 0;
 
         explicit Mat(size_t index) : mat(index) { };
-        Mat(size_t number, const std::streampos& pos, size_t index) : LineInfo(number, pos), mat(index) { }
+        Mat(size_t number, const std::streampos &pos, size_t index) : LineInfo(number, pos), mat(index) { }
     };
 
     struct Vertex : public LineInfo
@@ -549,7 +549,7 @@ private:
         bool has_normal = false;
         bool used = false;
 
-        bool operator == (const Vertex& other) const
+        bool operator == (const Vertex &other) const
         {
             if (!vertex.equals(other.vertex))
                 return false;
@@ -577,7 +577,7 @@ private:
         bool degenerate = false;
 
         Triangle() = default;
-        Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Ref &r0, const Ref &r1, const Ref &r2)
+        Triangle(const Vertex &v0, const Vertex &v1, const Vertex &v2, const Ref &r0, const Ref &r1, const Ref &r2)
         {
             vertices[0] = v0;
             vertices[1] = v1;
@@ -592,7 +592,7 @@ private:
         }
         bool sameTriangle(const Triangle &triangle, Difference difference) const;
         bool sameTriangle(const Object &object, const Surface &surface, Difference difference) const;
-        void transform(const Matrix& matrix)
+        void transform(const Matrix &matrix)
         {
             for (auto &vertex : vertices)
             {
@@ -1075,16 +1075,16 @@ private:
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, const Surface &surface);
-    void checkSurfaceStripHole(std::istream& in, const Object& object, const Surface& surface);
+    void checkSurfaceStripHole(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceStripSize(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceStripDegenerate(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceNoTexture(std::istream &in, const Object &object, const Surface &surface);
     void checkSurface2SidedOpaque(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
-    void checkDifferentMat(std::istream& in, const Object& object);
-    void checkDifferentUV(std::istream& in, const Object& object);
-    void checkGroupWithGeometry(std::istream& in, const Object& object);
+    void checkDifferentMat(std::istream &in, const Object &object);
+    void checkDifferentUV(std::istream &in, const Object &object);
+    void checkGroupWithGeometry(std::istream &in, const Object &object);
     static bool cleanObjects(std::vector<Object> &objects);
     static bool cleanVertices(std::vector<Object> &objects);
     static bool cleanVertices(Object &object);
@@ -1102,7 +1102,6 @@ private:
     static bool splitMultipleMat(std::vector<Object> &kids);
     void transform(const Matrix &matrix);
     void combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects);
-    static void addConstPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix);
     static void addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix);
     static void fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface *> &surfaces);
     bool hasOpaqueTexture(const Object &object);
@@ -1114,15 +1113,12 @@ private:
     static bool collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3);
     static bool ccw(const AC3D::Point2 &p1, const AC3D::Point2 &p2, const AC3D::Point2 &p3);
     static double closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3);
-    static Point3 normalizedNormal(const Point3& p0, const Point3& p1, const Point3& p2);
+    static Point3 normalizedNormal(const Point3 &p0, const Point3 &p1, const Point3 &p2);
     static Point3 unnormalizedNormal(const Point3 &p0, const Point3 &p1, const Point3 &p2);
-    static bool degenerate(const Point3& p0, const Point3& p1, const Point3& p2);
+    static bool degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2);
     static bool degenerate(const std::array<Point3, 3> &vertices);
-    static bool coplanar(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);
     static bool coplanar(const Triangle &triangle1, const Triangle &triangle2);
-    static bool trianglesOverlap(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);
     static bool trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2);
-    static size_t getSharedVertexCount(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2);
     static size_t getSharedVertexCount(const Triangle &triangle1, const Triangle &triangle2);
     static PlaneType getPlaneType(const Point3 &normal);
     static std::array<Point2, 3> convert2D(const std::array<Point3, 3> &vertices, PlaneType planeType);

@@ -190,7 +190,7 @@ size_t offsetOfToken(const std::istringstream &in, size_t index)
     return current_offset;
 }
 
-bool icasecmp(const std::string& l, const std::string_view &r)
+bool icasecmp(const std::string &l, const std::string_view &r)
 {
     return l.size() == r.size() &&
         equal(l.cbegin(), l.cend(), r.cbegin(),
@@ -756,7 +756,7 @@ void  AC3D::writeSurfaces(std::ostream &out, const Object &object) const
     if (!object.surfaces.empty())
     {
         out << "numsurf " << object.surfaces.size() << newline(m_crlf);
-        for (const auto& surface : object.surfaces)
+        for (const auto &surface : object.surfaces)
             writeSurface(out, surface);
     }
 }
@@ -766,7 +766,7 @@ void AC3D::writeVertices(std::ostream &out, const Object &object) const
     if (!object.vertices.empty())
     {
         out << "numvert " << object.vertices.size() << newline(m_crlf);
-        for (const auto& vertex : object.vertices)
+        for (const auto &vertex : object.vertices)
         {
             out << vertex.vertex;
             if (vertex.has_normal)
@@ -1227,7 +1227,7 @@ void AC3D::writeData(std::ostream &out, const std::string &data) const
 bool AC3D::readColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next)
 {
     bool status = true;
-    for (auto & component : color)
+    for (auto  &component : color)
     {
         in >> std::ws;
 
@@ -1651,7 +1651,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     warningWithCount(m_invalid_object_type_count) << "invalid object type: " << object.type.type << " should be lowercase" << std::endl;
                     showLine(iss, object.type.type_offset);
                 }
-                for (auto & c : object.type.type)
+                for (auto  &c : object.type.type)
                     c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
             }
             else
@@ -1806,7 +1806,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         if (!absolute) // don't search if absolute path
                         {
                             // look in alternate paths if available
-                            for (const auto & path : m_texture_paths)
+                            for (const auto &path : m_texture_paths)
                             {
                                 const std::filesystem::path new_path = std::filesystem::path(path).append(texture_name);
                                 if (std::filesystem::exists(new_path))
@@ -1828,7 +1828,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     {
                         const std::size_t size = std::filesystem::file_size(texture_path);
 
-                        for (const auto & path : m_texture_paths)
+                        for (const auto &path : m_texture_paths)
                         {
                             const std::filesystem::path other = std::filesystem::path(path).append(texture_name);
                             if (std::filesystem::exists(other))
@@ -2774,7 +2774,7 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
         {
             std::cout << indent << (count + 1) << " " << type.type;
 
-            for (const auto& name : names)
+            for (const auto &name : names)
                 std::cout << " " << name.name;
 
             std::cout << " " << kids.size() << " kid" << (kids.size() == 1 ? "" : "s") << std::endl;
@@ -2783,14 +2783,14 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
         {
             std::cout << indent << (count + 1) << " " << type.type;
 
-            for (const auto& name : names)
+            for (const auto &name : names)
                 std::cout << " " << name.name;
 
             if (!textures.empty())
             {
                 std::cout << " texture";
 
-                for (const auto& texture : textures)
+                for (const auto &texture : textures)
                     std::cout << " " << texture.name;
             }
 
@@ -3096,7 +3096,7 @@ void AC3D::checkUnusedMaterial(std::istream &in)
     }
 }
 
-void AC3D::addConstPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix)
+void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix)
 {
     if (object.type.type == "poly")
     {
@@ -3161,7 +3161,7 @@ void AC3D::addConstPoly(std::vector<Poly> &polys, Object &object, const Matrix &
         Matrix newMatrix = matrix.multiply(object.matrix);
         for (auto &kid : object.kids)
         {
-            addConstPoly(polys, kid, newMatrix);
+            addPoly(polys, kid, newMatrix);
         }
     }
 }
@@ -3231,7 +3231,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
     const Matrix matrix;
 
     for (auto &world : m_objects)
-        addConstPoly(polys, world, matrix);
+        addPoly(polys, world, matrix);
 
     if (polys.empty())
         return;
@@ -3547,7 +3547,7 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
     }
 }
 
-void AC3D::checkDifferentSURF(std::istream& in, const Object& object)
+void AC3D::checkDifferentSURF(std::istream &in, const Object &object)
 {
     if (!m_different_surf)
         return;
@@ -3569,7 +3569,7 @@ void AC3D::checkDifferentSURF(std::istream& in, const Object& object)
     }
 }
 
-void AC3D::checkDifferentMat(std::istream& in, const Object& object)
+void AC3D::checkDifferentMat(std::istream &in, const Object &object)
 {
     if (!m_different_mat)
         return;
@@ -3675,7 +3675,7 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
     }
 }
 
-void AC3D::checkGroupWithGeometry(std::istream& in, const Object& object)
+void AC3D::checkGroupWithGeometry(std::istream &in, const Object &object)
 {
     if (!m_group_with_geometry)
         return;
@@ -3935,7 +3935,7 @@ void AC3D::checkSurfaceNoTexture(std::istream &in, const Object &object, const S
         return;
 
     bool hasCoordinates = false;
-    for (const auto & ref : surface.refs)
+    for (const auto &ref : surface.refs)
     {
         if (!ref.coordinates.empty() && (ref.coordinates[0].x() != 0 || ref.coordinates[0].y() != 0.0))
         {
@@ -4042,7 +4042,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
     }
 }
 
-AC3D::Point3 AC3D::normalizedNormal(const Point3& p0, const Point3& p1, const Point3& p2)
+AC3D::Point3 AC3D::normalizedNormal(const Point3 &p0, const Point3 &p1, const Point3 &p2)
 {
     Point3  normal((p1 - p0).cross(p2 - p1));
 
@@ -4074,14 +4074,6 @@ bool AC3D::coplanar(const Triangle &triangle1, const Triangle &triangle2)
     return p1.equals(p2);
 }
 
-bool AC3D::coplanar(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2)
-{
-    const Plane p1(vertices1);
-    const Plane p2(vertices2);
-
-    return p1.equals(p2);
-}
-
 bool AC3D::trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2)
 {
     if (getSharedVertexCount(triangle1, triangle2) == 3)
@@ -4097,24 +4089,6 @@ bool AC3D::trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2
     return threeyd::moeller::TriangleIntersects<Point3>::triangle(
         triangle1.vertices[0].vertex, triangle1.vertices[1].vertex, triangle1.vertices[2].vertex,
         triangle2.vertices[0].vertex, triangle2.vertices[1].vertex, triangle2.vertices[2].vertex,
-        p1, p2, b);
-}
-
-bool AC3D::trianglesOverlap(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2)
-{
-    if (getSharedVertexCount(vertices1, vertices2) == 3)
-        return true;
-
-    if (!coplanar(vertices1, vertices2))
-        return false;
-
-    Point3 p1{ 0, 0, 0 }; // not used
-    Point3 p2{ 0, 0, 0 }; // not used
-    bool b = false; // not used
-
-    return threeyd::moeller::TriangleIntersects<Point3>::triangle(
-        vertices1[0], vertices1[1], vertices1[2],
-        vertices2[0], vertices2[1], vertices2[2],
         p1, p2, b);
 }
 
@@ -4158,7 +4132,7 @@ std::array<AC3D::Point2, 3> AC3D::convert2D(const std::array<Point3, 3> &vertice
     return vertices2D;
 }
 
-size_t AC3D::getSharedVertexCount(const Triangle &triangle1, const Triangle& triangle2)
+size_t AC3D::getSharedVertexCount(const Triangle &triangle1, const Triangle &triangle2)
 {
     size_t count = 0;
 
@@ -4167,22 +4141,6 @@ size_t AC3D::getSharedVertexCount(const Triangle &triangle1, const Triangle& tri
         for (const auto &vertex2 : triangle2.vertices)
         {
             if (vertex1.vertex.equals(vertex2.vertex))
-                count++;
-        }
-    }
-
-    return count;
-}
-
-size_t AC3D::getSharedVertexCount(const std::array<Point3, 3> &vertices1, const std::array<Point3, 3> &vertices2)
-{
-    size_t count = 0;
-
-    for (const auto &vertex1 : vertices1)
-    {
-        for (const auto &vertex2 : vertices2)
-        {
-            if (vertex1.equals(vertex2))
                 count++;
         }
     }
@@ -4361,7 +4319,7 @@ void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Object &object, c
         return;
 
     size_t count = 0;
-    for (const auto & triangle : surface.getTriangleStrip())
+    for (const auto &triangle : surface.getTriangleStrip())
     {
         if (triangle.degenerate)
             count++;
@@ -4377,7 +4335,7 @@ void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Object &object, c
     }
 }
 
-void AC3D::checkSurfaceStripHole(std::istream& in, const Object& object, const Surface& surface)
+void AC3D::checkSurfaceStripHole(std::istream &in, const Object &object, const Surface &surface)
 {
     if (!m_surface_strip_hole)
         return;
@@ -4565,14 +4523,14 @@ bool AC3D::write(const std::string &file, int version)
     {
         m_header.version = "AC3Dc";
 
-        for (auto& material : m_materials)
+        for (auto &material : m_materials)
             material.version12 = true;
     }
     else if (version == 11)
     {
         m_header.version = "AC3Db";
 
-        for (auto& material : m_materials)
+        for (auto &material : m_materials)
             material.version12 = false;
     }
 
@@ -5366,7 +5324,7 @@ void AC3D::Object::transform(const Matrix &currentMatrix)
 
 void AC3D::transform(const Matrix &matrix)
 {
-    for (auto & object : m_objects)
+    for (auto &object : m_objects)
         object.transform(matrix);
 }
 
@@ -5597,23 +5555,6 @@ void AC3D::combineTexture()
     }
 }
 
-void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix)
-{
-    if (object.type.type == "poly")
-    {
-        Matrix newMatrix = matrix;
-        newMatrix.multiply(object.matrix);
-        polys.emplace_back(&object, newMatrix);
-    }
-    else if (object.type.type == "group" || object.type.type == "world")
-    {
-        Matrix newMatrix = matrix;
-        newMatrix.multiply(object.matrix);
-        for (auto &kid : object.kids)
-            addPoly(polys, kid, newMatrix);
-    }
-}
-
 void AC3D::fixOverlapping2SidedSurface()
 {
     std::vector<Poly> polys;
@@ -5655,7 +5596,7 @@ void AC3D::fixOverlapping2SidedSurface()
     }
 }
 
-void AC3D::fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface *> &surfaces)
+void AC3D::fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface*> &surfaces)
 {
     for (auto &surface1 : object1.object->surfaces)
     {
@@ -5663,193 +5604,17 @@ void AC3D::fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2,
         {
             if (surface1.isDoubleSided() || surface2.isDoubleSided())
             {
-                if ((surface1.isPolygon() || surface1.isTriangleStrip()) &&
-                    (surface2.isPolygon() || surface2.isTriangleStrip()))
+                if (!surface1.transformedTriangles.empty() &&
+                    !surface2.transformedTriangles.empty())
                 {
-                    if (surface1.isPolygon() && surface1.refs.size() >= 3 &&
-                        surface2.isPolygon() && surface2.refs.size() >= 3)
+                    for (const auto &triangle1 : surface1.transformedTriangles)
                     {
-                        for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
+                        for (const auto &triangle2 : surface2.transformedTriangles)
                         {
-                            std::array<Point3, 3> triangle1{ object1.object->vertices[surface1.refs[0].index].vertex,
-                                                             object1.object->vertices[surface1.refs[i].index].vertex,
-                                                             object1.object->vertices[surface1.refs[i + 1].index].vertex };
-
-                            if (degenerate(triangle1))
-                                continue;
-
-                            for (auto &triangle : triangle1)
-                                object1.matrix.transformPoint(triangle);
-
-                            for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
+                            if (trianglesOverlap(triangle1, triangle2))
                             {
-                                std::array<Point3, 3> triangle2{ object2.object->vertices[surface2.refs[0].index].vertex,
-                                                                 object2.object->vertices[surface2.refs[j].index].vertex,
-                                                                 object2.object->vertices[surface2.refs[j + 1].index].vertex };
-
-                                if (degenerate(triangle2))
-                                    continue;
-
-                                for (auto &triangle : triangle2)
-                                    object2.matrix.transformPoint(triangle);
-
-                                if (trianglesOverlap(triangle1, triangle2))
-                                {
-                                    surfaces.insert(&surface1);
-                                    surfaces.insert(&surface2);
-                                }
-                            }
-                        }
-                    }
-                    else if (surface1.isTriangleStrip() && surface2.isTriangleStrip())
-                    {
-                        for (size_t i = 2; i < surface1.refs.size(); i++)
-                        {
-                            std::array < Point3, 3> triangle1;
-
-                            if ((i & 1u) == 0)
-                            {
-                                triangle1 = { object1.object->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1.object->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1.object->vertices[surface1.refs[i].index].vertex };
-                            }
-                            else // reverse winding to match drawing order
-                            {
-                                triangle1 = { object1.object->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1.object->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1.object->vertices[surface1.refs[i].index].vertex };
-                            }
-
-                            for (auto &triangle : triangle1)
-                                object1.matrix.transformPoint(triangle);
-
-                            if (!degenerate(triangle1))
-                            {
-                                for (size_t j = 2; j < surface2.refs.size(); j++)
-                                {
-                                    std::array < Point3, 3> triangle2;
-
-                                    if ((i & 1u) == 0)
-                                    {
-                                        triangle2 = { object2.object->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2.object->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2.object->vertices[surface2.refs[j].index].vertex };
-                                    }
-                                    else // reverse winding to match drawing order
-                                    {
-                                        triangle2 = { object2.object->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2.object->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2.object->vertices[surface2.refs[j].index].vertex };
-                                    }
-
-                                    if (!degenerate(triangle2))
-                                    {
-                                        for (auto &triangle : triangle2)
-                                            object2.matrix.transformPoint(triangle);
-
-                                        if (trianglesOverlap(triangle1, triangle2))
-                                        {
-                                            surfaces.insert(&surface1);
-                                            surfaces.insert(&surface2);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (surface1.isPolygon() && surface2.isTriangleStrip())
-                    {
-                        if (surface1.refs.size() >= 3)
-                        {
-                            for (size_t i = 1; i < (surface1.refs.size() - 1); i++)
-                            {
-                                std::array<Point3, 3> triangle1{ object1.object->vertices[surface1.refs[0].index].vertex,
-                                                                 object1.object->vertices[surface1.refs[i].index].vertex,
-                                                                 object1.object->vertices[surface1.refs[i + 1].index].vertex };
-
-                                if (degenerate(triangle1))
-                                    continue;
-
-                                for (auto &triangle : triangle1)
-                                    object1.matrix.transformPoint(triangle);
-
-                                for (size_t j = 2; j < surface2.refs.size(); j++)
-                                {
-                                    std::array < Point3, 3> triangle2;
-
-                                    if ((j & 1u) == 0)
-                                    {
-                                        triangle2 = { object2.object->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2.object->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2.object->vertices[surface2.refs[j].index].vertex };
-                                    }
-                                    else // reverse winding to match drawing order
-                                    {
-                                        triangle2 = { object2.object->vertices[surface2.refs[j - 1].index].vertex,
-                                                      object2.object->vertices[surface2.refs[j - 2].index].vertex,
-                                                      object2.object->vertices[surface2.refs[j].index].vertex };
-                                    }
-
-                                    if (!degenerate(triangle2))
-                                    {
-                                        for (auto &triangle : triangle2)
-                                            object2.matrix.transformPoint(triangle);
-
-                                        if (trianglesOverlap(triangle1, triangle2))
-                                        {
-                                            surfaces.insert(&surface1);
-                                            surfaces.insert(&surface2);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (surface1.isTriangleStrip() && surface2.isPolygon())
-                    {
-                        for (size_t i = 2; i < surface1.refs.size(); i++)
-                        {
-                            std::array < Point3, 3> triangle1;
-
-                            if ((i & 1u) == 0)
-                            {
-                                triangle1 = { object1.object->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1.object->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1.object->vertices[surface1.refs[i].index].vertex };
-                            }
-                            else // reverse winding to match drawing order
-                            {
-                                triangle1 = { object1.object->vertices[surface1.refs[i - 1].index].vertex,
-                                              object1.object->vertices[surface1.refs[i - 2].index].vertex,
-                                              object1.object->vertices[surface1.refs[i].index].vertex };
-                            }
-
-                            if (!degenerate(triangle1))
-                            {
-                                for (auto &triangle : triangle1)
-                                    object1.matrix.transformPoint(triangle);
-
-                                if (surface2.refs.size() >= 3)
-                                {
-                                    for (size_t j = 1; j < (surface2.refs.size() - 1); j++)
-                                    {
-                                        std::array<Point3, 3> triangle2{ object2.object->vertices[surface2.refs[0].index].vertex,
-                                                                         object2.object->vertices[surface2.refs[j].index].vertex,
-                                                                         object2.object->vertices[surface2.refs[j + 1].index].vertex };
-
-                                        if (degenerate(triangle2))
-                                            continue;
-
-                                        for (auto &triangle : triangle2)
-                                            object2.matrix.transformPoint(triangle);
-
-                                        if (trianglesOverlap(triangle1, triangle2))
-                                        {
-                                            surfaces.insert(&surface1);
-                                            surfaces.insert(&surface2);
-                                        }
-                                    }
-                                }
+                                surfaces.insert(&surface1);
+                                surfaces.insert(&surface2);
                             }
                         }
                     }
