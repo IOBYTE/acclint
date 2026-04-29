@@ -1165,7 +1165,7 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
             std::getline(in, m_line);
             m_line_number++;
             data = m_line;
-            if (data.back() == '\r') // remove DOS CR
+            if (!data.empty() && data.back() == '\r') // remove DOS CR
                 data.pop_back();
 
             while (!data.empty() && data.size() < size)
@@ -1179,7 +1179,7 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
                 }
                 m_line_number++;
                 data += m_line;
-                if (data.back() == '\r') // remove DOS CR
+                if (!data.empty() && data.back() == '\r') // remove DOS CR
                     data.pop_back();
             }
 
