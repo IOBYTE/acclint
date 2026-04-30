@@ -5814,7 +5814,8 @@ bool AC3D::Object::hasTransparentTexture() const
 
     for (png_uint_32 i = 0; i < (width * height); i++)
     {
-        const png_byte alpha = (image_data[i] >> 24) & 0x000000ff;
+        const png_byte *pixel = reinterpret_cast<const png_byte*>(image_data) + i * 4;
+        const png_byte alpha = pixel[3]; // index 3 = A in RGBA, regardless of endianness
         if (alpha != 255)
         {
             has_alpha = true;
@@ -5845,7 +5846,12 @@ std::string AC3D::getTime(const std::chrono::time_point<std::chrono::system_cloc
 {
     const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()) % 1000;
     const auto local_time = std::chrono::system_clock::to_time_t(time);
-    const std::tm bt = *std::localtime(&local_time);
+    std::tm bt{};
+#ifdef _WIN32
+    localtime_s(&bt, &local_time);
+#else
+    localtime_r(&local_time, &bt);
+#endif
     std::ostringstream oss;
     oss << std::put_time(&bt, "%a %b %d %H:%M:%S") << "." << std::setfill('0') << std::setw(3) << ms.count() << " " << std::put_time(&bt, "%p");
     return oss.str();
