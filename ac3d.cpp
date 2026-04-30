@@ -1796,7 +1796,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         texture_path = file_path.parent_path().append(texture_name);
 
                         if (std::filesystem::exists(texture_path))
-                            texture.path = texture_path.string();
+                            texture.path = texture_path.generic_string();
                     }
 
                     if (!std::filesystem::exists(texture_path))
@@ -1812,7 +1812,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                 if (std::filesystem::exists(new_path))
                                 {
                                     found = true;
-                                    texture.path = new_path.string();
+                                    texture.path = new_path.generic_string();
                                     break;
                                 }
                             }
@@ -1820,7 +1820,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                         if (!found && m_missing_texture)
                         {
-                            warningWithCount(m_missing_texture_count) << "missing texture: " << texture_path.generic_string() << std::endl;
+                            warningWithCount(m_missing_texture_count) << "missing texture: " << std::quoted(texture_path.generic_string()) << std::endl;
                             showLine(iss1, 0);
                         }
                     }
@@ -1834,7 +1834,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             if (std::filesystem::exists(other))
                             {
                                 if (texture.path.empty())
-                                    texture.path = other.string();
+                                    texture.path = other.generic_string();
 
                                 if (size == std::filesystem::file_size(other))
                                 {
@@ -1848,8 +1848,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                         {
                                             if (m_duplicate_texture)
                                             {
-                                                warningWithCount(m_duplicate_texture_count) << "duplicate texture: " << texture_path
-                                                          << " and " << other << std::endl;
+                                                warningWithCount(m_duplicate_texture_count)
+                                                    << "duplicate texture: " << std::quoted(texture_path.generic_string())
+                                                    << " and " << std::quoted(other.generic_string()) << std::endl;
                                                 showLine(iss1, 0);
                                             }
                                         }
@@ -1857,8 +1858,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                         {
                                             if (m_ambiguous_texture)
                                             {
-                                                warningWithCount(m_ambiguous_texture_count) << "ambiguous texture: " << texture_path
-                                                          << " and " << other << std::endl;
+                                                warningWithCount(m_ambiguous_texture_count)
+                                                    << "ambiguous texture: " << std::quoted(texture_path.generic_string())
+                                                    << " and " << std::quoted(other.generic_string()) << std::endl;
                                                 showLine(iss1, 0);
                                             }
                                         }
@@ -1866,8 +1868,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                 }
                                 else if (m_ambiguous_texture)
                                 {
-                                    warningWithCount(m_ambiguous_texture_count) << "ambiguous texture: " << texture_path
-                                              << " and " << other << std::endl;
+                                    warningWithCount(m_ambiguous_texture_count)
+                                        << "ambiguous texture: " << std::quoted(texture_path.generic_string())
+                                        << " and " << std::quoted(other.generic_string()) << std::endl;
                                     showLine(iss1, 0);
                                 }
                             }
@@ -5807,7 +5810,8 @@ bool AC3D::Object::hasTransparentTexture() const
     fclose(fp);
 
 #if 0
-    std::cerr << textures[0].name << " color_type: " << color_type
+    std::cerr << textures[0].name
+              << " color_type: " << color_type
               << " width: " << width
               << " height: " << height
               << " bit depth: " << bit_depth
