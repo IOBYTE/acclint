@@ -3111,6 +3111,12 @@ void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matri
             {
                 for (size_t i = 1; i < (surface.refs.size() - 1); i++)
                 {
+                    // check for invalid vertex index and skip triangle if any index is invalid
+                    if (surface.refs[0].index >= object.vertices.size() ||
+                        surface.refs[i].index >= object.vertices.size() ||
+                        surface.refs[i + 1].index >= object.vertices.size())
+                        continue;
+
                     Triangle triangle(object.vertices[surface.refs[0].index],
                                       object.vertices[surface.refs[i].index],
                                       object.vertices[surface.refs[i + 1].index],
@@ -3133,6 +3139,12 @@ void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matri
                     Triangle triangle;
                     if ((i & 1u) == 0)
                     {
+                        // check for invalid vertex index and skip triangle if any index is invalid
+                        if (surface.refs[i - 2].index >= object.vertices.size() ||
+                            surface.refs[i - 1].index >= object.vertices.size() ||
+                            surface.refs[i].index >= object.vertices.size())
+                            continue;
+
                         triangle = Triangle(object.vertices[surface.refs[i - 2].index],
                                             object.vertices[surface.refs[i - 1].index],
                                             object.vertices[surface.refs[i].index],
@@ -3142,6 +3154,12 @@ void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matri
                     }
                     else // reverse winding to match drawing order
                     {
+                        // check for invalid vertex index and skip triangle if any index is invalid
+                        if (surface.refs[i - 1].index >= object.vertices.size() ||
+                            surface.refs[i - 2].index >= object.vertices.size() ||
+                            surface.refs[i].index >= object.vertices.size())
+                            continue;
+
                         triangle = Triangle(object.vertices[surface.refs[i - 1].index],
                                             object.vertices[surface.refs[i - 2].index],
                                             object.vertices[surface.refs[i].index],
