@@ -517,7 +517,6 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
     {
         if (m_invalid_texture_coordinate)
         {
-            std::streampos pos = in.tellg();
             std::string trailing = getTrailing(in);
             errorWithCount(m_invalid_texture_coordinate_count) << "invalid texture coordinate: \"" << trailing << "\"" << std::endl;
             showLine(in);
