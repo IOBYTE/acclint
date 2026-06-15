@@ -60,11 +60,13 @@ jobs:
           choco install -y cppcheck
           # Refresh environment so choco-installed tools are available in this session
           refreshenv | Out-Null
-          # Try to resolve cppcheck from PATH first
-          $cppPath = (Get-Command cppcheck -ErrorAction SilentlyContinue)?.Source
-          if (-not $cppPath) {
+          # Try to resolve cppcheck from PATH first (avoid null-conditional operator for PowerShell compatibility)
+          $cmd = Get-Command cppcheck -ErrorAction SilentlyContinue
+          if ($cmd) {
+            $cppPath = $cmd.Source
+          } else {
             # Fallback to common Chocolatey bin location
-            $cppPath = "$env:ProgramData\\chocolatey\\bin\\cppcheck.exe"
+            $cppPath = Join-Path $env:ProgramData 'chocolatey\bin\cppcheck.exe'
           }
           Write-Host "Using cppcheck: $cppPath"
           & $cppPath --version
