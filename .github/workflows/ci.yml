@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: ["master", "main"]
+  pull_request:
+    branches: ["master", "main"]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ cppcheck libpng-dev zlib1g-dev
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Build
+        run: cmake --build build --config Release -- -j$(nproc)
+
+      - name: Static analysis (cppcheck)
+        run: |
+          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -I . .
+
+      - name: Sanity
+        run: echo "Build completed on $RUNNER_OS"
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git vcpkg
+          .\vcpkg\bootstrap-vcpkg.bat
+
+      - name: Install dependencies (vcpkg)
+        run: |
+          .\vcpkg\vcpkg.exe install zlib:x64-windows libpng:x64-windows
+
+      - name: Configure (CMake)
+        run: cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=%CD%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake
+
+      - name: Build
+        run: cmake --build build --config Release -- /m
+
+      - name: Static analysis (cppcheck)
+        run: |
+          choco install -y cppcheck
+          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -I . .
+
+      - name: Sanity
+        run: echo "Build completed on $RUNNER_OS"
