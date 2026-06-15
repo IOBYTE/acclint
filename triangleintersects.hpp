@@ -22,7 +22,7 @@ namespace moeller
 {
 namespace detail
 {
-static constexpr float MATH_PI = 3.f;
+static constexpr double MATH_PI = M_PI;
 
 template <typename...>
 using void_t = void;

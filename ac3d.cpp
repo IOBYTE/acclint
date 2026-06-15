@@ -22,6 +22,8 @@
 #pragma warning( disable : 4996)
 #endif
 
+#define _USE_MATH_DEFINES
+
 #include "ac3d.h"
 #include "triangleintersects.hpp"
 

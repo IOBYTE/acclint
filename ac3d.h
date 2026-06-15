@@ -1031,7 +1031,7 @@ private:
 
     struct Poly
     {
-        Object *object;
+        Object *object = nullptr;
         Matrix matrix;
     };
 
