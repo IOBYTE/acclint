@@ -22,8 +22,6 @@ namespace moeller
 {
 namespace detail
 {
-static constexpr double MATH_PI = M_PI;
-
 template <typename...>
 using void_t = void;
 
@@ -170,7 +168,7 @@ class TriangleIntersects
                   "default_intersection_test_threshold_angle out of range");
 
     static constexpr double COPLANARITY_THRESHOLD_IN_DEGREES = DEFAULT_COPLANARITY_THRESHOLD_ANGLE;
-    static constexpr double COPLANARITY_THRESHOLD = detail::MATH_PI / 180.0 * COPLANARITY_THRESHOLD_IN_DEGREES;
+    static constexpr double COPLANARITY_THRESHOLD = std::numbers::pi / 180.0 * COPLANARITY_THRESHOLD_IN_DEGREES;
     static constexpr double COPLANARITY_THRESHOLD_SQUARED = COPLANARITY_THRESHOLD * COPLANARITY_THRESHOLD;
 
     static constexpr double sin_approximated(double x)
@@ -179,7 +177,7 @@ class TriangleIntersects
     }
 
     static constexpr double INTERSECTION_TEST_THRESHOLD =
-        sin_approximated(detail::MATH_PI / 180.0 * DEFAULT_INTERSECTION_TEST_THRESHOLD_ANGLE);
+        sin_approximated(std::numbers::pi / 180.0 * DEFAULT_INTERSECTION_TEST_THRESHOLD_ANGLE);
     static constexpr double INTERSECTION_TEST_THRESHOLD_SQUARED =
         INTERSECTION_TEST_THRESHOLD * INTERSECTION_TEST_THRESHOLD;
 
