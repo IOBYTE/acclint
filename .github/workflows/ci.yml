@@ -46,7 +46,7 @@ jobs:
 
       - name: Install dependencies (vcpkg)
         run: |
-          .\vcpkg\vcpkg.exe install zlib:x64-windows libpng:x64-windows
+          .\vcpkg\vcpkg.exe install zlib:x64-windows libpng:x64-windows cppcheck:x64-windows
 
       - name: Configure (CMake)
         run: cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
@@ -55,34 +55,9 @@ jobs:
         run: cmake --build build --config Release -- /m
 
       - name: Static analysis (cppcheck)
-        shell: powershell
         run: |
-          choco install -y cppcheck
-          # Refresh environment so choco-installed tools are available in this session
-          refreshenv | Out-Null
-          # Try to resolve cppcheck from PATH first (avoid null-conditional operator for PowerShell compatibility)
-          $cmd = Get-Command cppcheck -ErrorAction SilentlyContinue
-          if ($cmd) {
-            $cppPath = $cmd.Source
-          } else {
-            # Fallback to common Chocolatey bin location
-            $cppPath = Join-Path $env:ProgramData 'chocolatey\bin\cppcheck.exe'
-          }
-          Write-Host "Using cppcheck: $cppPath"
-          & $cppPath --version
-
-          # Locate cppcheck library configuration (std.cfg) so cppcheck can find its data files when called via shim
-          $stdCfg = Get-ChildItem -Path (Join-Path $env:ProgramData 'chocolatey\lib') -Recurse -Filter 'std.cfg' -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($stdCfg) {
-            $stdCfgPath = $stdCfg.FullName
-            Write-Host "Found std.cfg at: $stdCfgPath"
-            $args = @('--enable=warning,performance,portability','--std=c++20','--force','--suppress=missingIncludeSystem','--library',$stdCfgPath,'-I','.','.')
-          } else {
-            Write-Host "std.cfg not found under Chocolatey lib directory; running cppcheck without explicit library file"
-            $args = @('--enable=warning,performance,portability','--std=c++20','--force','--suppress=missingIncludeSystem','-I','.','.')
-          }
-
-          & $cppPath @args
+          .\vcpkg\installed\x64-windows\tools\cppcheck\cppcheck.exe --version
+          .\vcpkg\installed\x64-windows\tools\cppcheck\cppcheck.exe --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -I . .
 
       - name: Sanity
         run: echo "Build completed on $RUNNER_OS"
