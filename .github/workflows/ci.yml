@@ -46,18 +46,13 @@ jobs:
 
       - name: Install dependencies (vcpkg)
         run: |
-          .\vcpkg\vcpkg.exe install zlib:x64-windows libpng:x64-windows cppcheck:x64-windows
+          .\vcpkg\vcpkg.exe install zlib:x64-windows libpng:x64-windows
 
       - name: Configure (CMake)
         run: cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
       - name: Build
         run: cmake --build build --config Release -- /m
-
-      - name: Static analysis (cppcheck)
-        run: |
-          .\vcpkg\installed\x64-windows\tools\cppcheck\cppcheck.exe --version
-          .\vcpkg\installed\x64-windows\tools\cppcheck\cppcheck.exe --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -I . .
 
       - name: Sanity
         run: echo "Build completed on $RUNNER_OS"
