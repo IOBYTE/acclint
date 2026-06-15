@@ -65,5 +65,16 @@ jobs:
       - name: Build
         run: cmake --build build --config Release -- /m
 
+      - name: Install test dependencies (bats)
+        run: npm install -g bats
+
+      - name: Run tests
+        shell: bash
+        run: |
+          cd test
+          # Make acclint available in PATH for tests (Windows build output)
+          export PATH="${{ github.workspace }}/build/Release:$PATH"
+          bash testrunner.sh
+
       - name: Sanity
         run: echo "Build completed on $RUNNER_OS"
