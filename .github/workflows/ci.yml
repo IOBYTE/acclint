@@ -36,6 +36,8 @@ jobs:
       - name: Run tests
         run: |
           cd test
+          # Make acclint available in PATH for tests
+          export PATH="${{ github.workspace }}/build:$PATH"
           bash testrunner.sh
 
       - name: Sanity
