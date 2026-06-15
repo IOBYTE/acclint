@@ -49,7 +49,7 @@ jobs:
           .\vcpkg\vcpkg.exe install zlib:x64-windows libpng:x64-windows
 
       - name: Configure (CMake)
-        run: cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=%CD%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake
+        run: cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
 
       - name: Build
         run: cmake --build build --config Release -- /m
