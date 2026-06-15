@@ -70,8 +70,18 @@ jobs:
           }
           Write-Host "Using cppcheck: $cppPath"
           & $cppPath --version
-          # Run cppcheck explicitly via resolved path using argument array to avoid parsing issues
-          $args = @('--enable=warning,performance,portability','--std=c++20','--force','--suppress=missingIncludeSystem','-I','.','.')
+
+          # Locate cppcheck library configuration (std.cfg) so cppcheck can find its data files when called via shim
+          $stdCfg = Get-ChildItem -Path (Join-Path $env:ProgramData 'chocolatey\lib') -Recurse -Filter 'std.cfg' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($stdCfg) {
+            $stdCfgPath = $stdCfg.FullName
+            Write-Host "Found std.cfg at: $stdCfgPath"
+            $args = @('--enable=warning,performance,portability','--std=c++20','--force','--suppress=missingIncludeSystem','--library',$stdCfgPath,'-I','.','.')
+          } else {
+            Write-Host "std.cfg not found under Chocolatey lib directory; running cppcheck without explicit library file"
+            $args = @('--enable=warning,performance,portability','--std=c++20','--force','--suppress=missingIncludeSystem','-I','.','.')
+          }
+
           & $cppPath @args
 
       - name: Sanity
