@@ -65,6 +65,14 @@ jobs:
       - name: Build
         run: cmake --build build --config Release -- /m
 
+      - name: Install cppcheck
+        run: |
+          choco install -y cppcheck
+
+      - name: Static analysis (cppcheck)
+        run: |
+          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -I . .
+
       - name: Install test dependencies (bats)
         run: npm install -g bats
 
