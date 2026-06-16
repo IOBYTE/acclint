@@ -73,7 +73,7 @@ jobs:
 
       - name: Static analysis (cppcheck)
         run: |
-          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -i build -I . .
+          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -i build -i vcpkg -I . .
 
       - name: Install test dependencies (bats)
         run: npm install -g bats
