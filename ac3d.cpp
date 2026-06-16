@@ -2803,7 +2803,7 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
             {
                 for (size_t i = 0; i < surfaces.size(); i++)
                 {
-                    surfaces[i].dump(dump_type, i, level + 1);
+                    surfaces[i].dump(i, level + 1);
                 }
             }
         }
@@ -2815,7 +2815,7 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
     }
 }
 
-void AC3D::Surface::dump(DumpType dump_type, size_t count, size_t level) const
+void AC3D::Surface::dump(size_t count, size_t level) const
 {
     for (size_t i = 0; i < level; i++)
         std::cout << "    ";

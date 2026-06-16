@@ -801,7 +801,7 @@ private:
         {
             return refs.size() == 3;
         }
-        void dump(DumpType dump_type, size_t count, size_t level) const;
+        void dump(size_t count, size_t level) const;
     };
 
     struct Location : public LineInfo
