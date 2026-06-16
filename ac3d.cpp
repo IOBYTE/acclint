@@ -5783,7 +5783,7 @@ bool AC3D::Object::hasTransparentTexture() const
     }
 
     const size_t rowbytes = png_get_rowbytes(png_ptr, info_ptr);
-    png_uint_32 *image_data = (png_uint_32 *)malloc(rowbytes * height);
+    png_byte *image_data = (png_byte *)malloc(rowbytes * height);
 
     if (image_data == NULL)
     {
@@ -5802,7 +5802,7 @@ bool AC3D::Object::hasTransparentTexture() const
         return false;
     }
     for (png_uint_32 i = 0; i < height; ++i)
-        row_pointers[i] = (png_byte*)image_data + i * rowbytes;
+        row_pointers[i] = image_data + i * rowbytes;
 
     png_set_rows(png_ptr, info_ptr, row_pointers);
     png_read_image(png_ptr, row_pointers);
@@ -5813,7 +5813,7 @@ bool AC3D::Object::hasTransparentTexture() const
 
     for (png_uint_32 i = 0; i < (width * height); i++)
     {
-        const png_byte *pixel = reinterpret_cast<const png_byte*>(image_data) + i * 4;
+        const png_byte *pixel = const_cast<const png_byte*>(image_data) + i * 4;
         const png_byte alpha = pixel[3]; // index 3 = A in RGBA, regardless of endianness
         if (alpha != 255)
         {
