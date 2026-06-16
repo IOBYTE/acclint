@@ -67,7 +67,13 @@ jobs:
 
       - name: Install cppcheck
         run: |
-          winget install -e --id Cppcheck.Cppcheck -h --accept-source-agreements
+          $ProgressPreference = 'SilentlyContinue'
+          $url = "https://github.com/danmar/cppcheck/releases/download/2.14/cppcheck-2.14-x64-Setup.msi"
+          $msiPath = "${{ runner.temp }}\cppcheck-setup.msi"
+          Invoke-WebRequest -Uri $url -OutFile $msiPath
+          msiexec /i $msiPath /qn INSTALLDIR="C:\Program Files\Cppcheck"
+          $env:PATH = "C:\Program Files\Cppcheck;$env:PATH"
+          echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Static analysis (cppcheck)
         run: |
