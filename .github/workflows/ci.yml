@@ -67,7 +67,7 @@ jobs:
 
       - name: Install cppcheck
         run: |
-          winget install -e --id Cppcheck.Cppcheck -h
+          winget install -e --id Cppcheck.Cppcheck -h --accept-source-agreements
 
       - name: Static analysis (cppcheck)
         run: |
