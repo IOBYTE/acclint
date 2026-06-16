@@ -720,10 +720,10 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfaceCoplanar(in, object, surface);
         checkSurfacePolygonType(in, object, surface);
         checkSurfaceSelfIntersecting(in, object, surface);
-        checkSurfaceStripHole(in, object, surface);
-        checkSurfaceStripSize(in, object, surface);
-        checkSurfaceStripDegenerate(in, object, surface);
-        checkSurfaceStripDuplicateTriangles(in, object, surface);
+        checkSurfaceStripHole(in, surface);
+        checkSurfaceStripSize(in, surface);
+        checkSurfaceStripDegenerate(in, surface);
+        checkSurfaceStripDuplicateTriangles(in, surface);
         checkSurfaceNoTexture(in, object, surface);
         checkSurface2SidedOpaque(in, object, surface);
     }
@@ -4240,7 +4240,7 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
     return dP.length();   // return the closest distance
 }
 
-void AC3D::checkSurfaceStripSize(std::istream &in, const Object &object, const Surface &surface)
+void AC3D::checkSurfaceStripSize(std::istream &in, const Surface &surface)
 {
     if (!m_surface_strip_size)
         return;
@@ -4276,7 +4276,7 @@ bool AC3D::Triangle::sameTriangle(const Triangle &triangle, Difference differenc
     return false;
 }
 
-void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &object, const Surface &surface)
+void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &surface)
 {
     if (!m_surface_strip_duplicate_triangles)
         return;
@@ -4327,7 +4327,7 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &o
     }
 }
 
-void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Object &object, const Surface &surface)
+void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Surface &surface)
 {
     if (!m_surface_strip_degenerate)
         return;
@@ -4355,7 +4355,7 @@ void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Object &object, c
     }
 }
 
-void AC3D::checkSurfaceStripHole(std::istream &in, const Object &object, const Surface &surface)
+void AC3D::checkSurfaceStripHole(std::istream &in, const Surface &surface)
 {
     if (!m_surface_strip_hole)
         return;

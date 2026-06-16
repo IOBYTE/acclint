@@ -1078,10 +1078,10 @@ private:
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, const Surface &surface);
-    void checkSurfaceStripHole(std::istream &in, const Object &object, const Surface &surface);
-    void checkSurfaceStripSize(std::istream &in, const Object &object, const Surface &surface);
-    void checkSurfaceStripDegenerate(std::istream &in, const Object &object, const Surface &surface);
-    void checkSurfaceStripDuplicateTriangles(std::istream &in, const Object &object, const Surface &surface);
+    void checkSurfaceStripHole(std::istream &in, const Surface &surface);
+    void checkSurfaceStripSize(std::istream &in, const Surface &surface);
+    void checkSurfaceStripDegenerate(std::istream &in, const Surface &surface);
+    void checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &surface);
     void checkSurfaceNoTexture(std::istream &in, const Object &object, const Surface &surface);
     void checkSurface2SidedOpaque(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
