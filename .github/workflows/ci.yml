@@ -27,7 +27,7 @@ jobs:
 
       - name: Static analysis (cppcheck)
         run: |
-          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -I . .
+          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem --exclude-dir=build -I . .
 
       - name: Install test dependencies
         run: |
@@ -73,7 +73,7 @@ jobs:
 
       - name: Static analysis (cppcheck)
         run: |
-          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -I . .
+          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem --exclude-dir=build -I . .
 
       - name: Install test dependencies (bats)
         run: npm install -g bats
