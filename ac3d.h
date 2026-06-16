@@ -993,14 +993,17 @@ private:
         bool sameTextures(const Object &object) const;
     };
 
-    struct NullStream : public std::ostream
+    class NullBuffer : public std::streambuf
     {
-    public:
-        NullStream() : std::ostream(nullptr) {}
-        NullStream(const NullStream &) : std::ostream(nullptr) {}
+    protected:
+        int overflow(int c) override { return c; }  // discard, return success
+    };
 
-        template<typename T>
-        NullStream &operator<<(T const &) { return *this; }
+    class NullStream : public std::ostream
+    {
+        NullBuffer buf;
+    public:
+        NullStream() : std::ostream(&buf) {}
     };
 
     NullStream      m_null_stream;
