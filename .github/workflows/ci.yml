@@ -67,7 +67,7 @@ jobs:
 
       - name: Install cppcheck
         run: |
-          curl.exe -L -o cppcheck-setup.msi "https://github.com/danmar/cppcheck/releases/download/2.14/cppcheck-2.21-x64-Setup.msi"
+          curl.exe -L -o cppcheck-setup.msi "https://github.com/cppcheck-opensource/cppcheck/releases/download/2.21.0/cppcheck-2.21.0-x64-Setup.msi"
           msiexec /i cppcheck-setup.msi /qn INSTALLDIR="C:\cppcheck"
           echo "C:\cppcheck" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
