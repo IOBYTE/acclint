@@ -257,7 +257,7 @@ class TriangleIntersects
     {
         declfloat x;  // x-coordinate
         declfloat w;  // weight
-        int idx;      // identifier of the segment's end, 0 or 1
+        int idx = 0;  // identifier of the segment's end, 0 or 1
         bool operator<(const Triplet& rhs) const { return x < rhs.x; }
     };
 
