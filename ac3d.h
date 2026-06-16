@@ -1124,7 +1124,7 @@ private:
     static bool trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2);
     static size_t getSharedVertexCount(const Triangle &triangle1, const Triangle &triangle2);
     static PlaneType getPlaneType(const Point3 &normal);
-    static std::array<Point2, 3> convert2D(const std::array<Point3, 3> &vertices, PlaneType planeType);
+    [[maybe_unused]] static std::array<Point2, 3> convert2D(const std::array<Point3, 3> &vertices, PlaneType planeType);
 };
 
 #endif
