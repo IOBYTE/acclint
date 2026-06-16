@@ -67,11 +67,11 @@ jobs:
 
       - name: Install cppcheck
         run: |
-          choco install -y cppcheck
+          winget install -e --id Cppcheck.Cppcheck -h
 
       - name: Static analysis (cppcheck)
         run: |
-          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem --suppress=unmatchedSuppression -I . .
+          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem -I . .
 
       - name: Install test dependencies (bats)
         run: npm install -g bats
