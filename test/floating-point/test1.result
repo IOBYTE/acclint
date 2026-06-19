@@ -1,0 +1,4 @@
+test1.ac:2 warning: floating point shi: 100.5
+MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0.2 0  spec 0.5 0.5 0.2  shi 100.5  trans 1
+                                                                            ^
+1 warning

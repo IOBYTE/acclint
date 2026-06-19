@@ -191,6 +191,7 @@ int main(int argc, char *argv[])
     bool empty_object = true;
     bool extra_object = true;
     bool extra_uv_coordinates = true;
+    bool floating_point = true;
     bool group_with_geometry = true;
     bool invalid_material = true;
     bool invalid_normal_length = true;
@@ -232,7 +233,6 @@ int main(int argc, char *argv[])
     bool utf8_bom = true;
 
     // warnings without tests
-    bool floating_point = true;
     bool multiple_polygon_surface = true;
     bool surface_strip_duplicate_triangles = false;
     bool surface_strip_hole = false;
@@ -360,6 +360,7 @@ int main(int argc, char *argv[])
             empty_object = value;
             extra_object = value;
             extra_uv_coordinates = value;
+            floating_point = value;
             group_with_geometry = value;
             invalid_material = value;
             invalid_normal_length = value;
@@ -401,7 +402,6 @@ int main(int argc, char *argv[])
             utf8_bom = value;
 
             // warnings with no tests
-            floating_point = value;
             multiple_polygon_surface = value;
             surface_strip_duplicate_triangles = value;
             surface_strip_hole = value;
@@ -920,6 +920,7 @@ int main(int argc, char *argv[])
     ac3d.emptyObject(empty_object);
     ac3d.extraObject(extra_object);
     ac3d.extraUVCoordinates(extra_uv_coordinates);
+    ac3d.floatingPoint(floating_point);
     ac3d.groupWithGeometry(group_with_geometry);
     ac3d.invalidMaterial(invalid_material);
     ac3d.invalidNormalLength(invalid_normal_length);
@@ -961,7 +962,6 @@ int main(int argc, char *argv[])
     ac3d.utf8Bom(utf8_bom);
 
     // warnings without tests
-    ac3d.floatingPoint(floating_point);
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
     ac3d.surfaceStripHole(surface_strip_hole);
     ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
