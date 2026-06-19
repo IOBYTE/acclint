@@ -1,11 +1,10 @@
 #!/usr/bin/env bats
 
 setup() {
-    export RUN_TEST
     if [[ "$(uname)" == "Linux" ]]; then
-        RUN_TEST="run valgrind --leak-check=full --error-exitcode=1 --quiet"
+        export RUN_TEST="run valgrind --leak-check=full --error-exitcode=1 --quiet"
     else
-        RUN_TEST="run "
+        export RUN_TEST="run"
     fi
 }
 

@@ -1,9 +1,17 @@
 #!/usr/bin/env bats
 
+setup() {
+    if [[ "$(uname)" == "Linux" ]]; then
+        export RUN_TEST="run valgrind --leak-check=full --error-exitcode=1 --quiet"
+    else
+        export RUN_TEST="run"
+    fi
+}
+
 ################################################################################
 
 @test "test1" {
-  run acclint test1.acc -o test1.output.ac
+  $RUN_TEST acclint test1.acc -o test1.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   [ "$(cat test1.output.ac)" = "$(cat test1.result.ac)" ]
@@ -13,7 +21,7 @@
 ################################################################################
 
 @test "test2" {
-  run acclint test2.acc -o test2.output.ac
+  $RUN_TEST acclint test2.acc -o test2.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   [ "$(cat test2.output.ac)" = "$(cat test2.result.ac)" ]
@@ -23,7 +31,7 @@
 ################################################################################
 
 @test "test3" {
-  run acclint test3.acc -o test3.output.ac
+  $RUN_TEST acclint test3.acc -o test3.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   [ "$(cat test3.output.ac)" = "$(cat test3.result.ac)" ]
@@ -33,7 +41,7 @@
 ################################################################################
 
 @test "test4" {
-  run acclint -Wno-different-uv test4.acc -o test4.output.ac
+  $RUN_TEST acclint -Wno-different-uv test4.acc -o test4.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   [ "$(cat test4.output.ac)" = "$(cat test4.result.ac)" ]
@@ -43,7 +51,7 @@
 ################################################################################
 
 @test "test5" {
-  run acclint test5.acc -o test5.output.ac
+  $RUN_TEST acclint test5.acc -o test5.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   [ "$(cat test5.output.ac)" = "$(cat test5.result.ac)" ]
@@ -53,7 +61,7 @@
 ################################################################################
 
 @test "test6" {
-  run acclint test6.acc -o test6.output.ac
+  $RUN_TEST acclint test6.acc -o test6.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   [ "$(cat test6.output.ac)" = "$(cat test6.result.ac)" ]
@@ -63,7 +71,7 @@
 ################################################################################
 
 @test "test7" {
-  run acclint test7.acc -Wno-duplicate-vertices -o test7.output.ac
+  $RUN_TEST acclint test7.acc -Wno-duplicate-vertices -o test7.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   [ "$(cat test7.output.ac)" = "$(cat test7.result.ac)" ]

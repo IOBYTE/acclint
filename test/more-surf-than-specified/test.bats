@@ -1,39 +1,47 @@
 #!/usr/bin/env bats
 
+setup() {
+    if [[ "$(uname)" == "Linux" ]]; then
+        export RUN_TEST="run valgrind --leak-check=full --error-exitcode=1 --quiet"
+    else
+        export RUN_TEST="run"
+    fi
+}
+
 ################################################################################
 
 @test "test1.1" {
-  run acclint test1.ac
+  $RUN_TEST acclint test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }
 
 @test "test1.2" {
-  run acclint -Wno-errors test1.ac
+  $RUN_TEST acclint -Wno-errors test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
 }
 
 @test "test1.3" {
-  run acclint -Wno-errors -Wmore-surf-than-specified test1.ac
+  $RUN_TEST acclint -Wno-errors -Wmore-surf-than-specified test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }
 
 @test "test1.4" {
-  run acclint --quiet test1.ac
+  $RUN_TEST acclint --quiet test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.4.result)" ]
 }
 
 @test "test1.5" {
-  run acclint --summary test1.ac
+  $RUN_TEST acclint --summary test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.5.result)" ]
 }
 
 @test "test1.6" {
-  run acclint --quiet --summary test1.ac
+  $RUN_TEST acclint --quiet --summary test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.6.result)" ]
 }

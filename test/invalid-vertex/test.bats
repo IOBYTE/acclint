@@ -1,47 +1,55 @@
 #!/usr/bin/env bats
 
+setup() {
+    if [[ "$(uname)" == "Linux" ]]; then
+        export RUN_TEST="run valgrind --leak-check=full --error-exitcode=1 --quiet"
+    else
+        export RUN_TEST="run"
+    fi
+}
+
 ################################################################################
 
 # TODO invalid vertices breaks checks so ignore warnings for now
 
 @test "test1.1" {
-  run acclint -Wno-warnings test1.ac
+  $RUN_TEST acclint -Wno-warnings test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.result)" ]
 }
 
 @test "test1.2" {
-  run acclint -Wno-warnings -Wno-errors test1.ac
+  $RUN_TEST acclint -Wno-warnings -Wno-errors test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
 }
 
 @test "test1.3" {
-  run acclint -Wno-warnings -Wno-errors -Winvalid-vertex test1.ac
+  $RUN_TEST acclint -Wno-warnings -Wno-errors -Winvalid-vertex test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.3.result)" ]
 }
 
 @test "test1.4" {
-  run acclint -Wno-warnings --quiet test1.ac
+  $RUN_TEST acclint -Wno-warnings --quiet test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.4.result)" ]
 }
 
 @test "test1.5" {
-  run acclint -Wno-warnings --summary test1.ac
+  $RUN_TEST acclint -Wno-warnings --summary test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.5.result)" ]
 }
 
 @test "test1.6" {
-  run acclint -Wno-warnings --quiet --summary test1.ac
+  $RUN_TEST acclint -Wno-warnings --quiet --summary test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.6.result)" ]
 }
 
 @test "test1.7" {
-  run acclint -Wno-warnings -Wno-invalid-vertex test1.ac
+  $RUN_TEST acclint -Wno-warnings -Wno-invalid-vertex test1.ac
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test1.7.result)" ]
 }
@@ -49,7 +57,7 @@
 ################################################################################
 
 @test "test2" {
-  run acclint -Wno-warnings test2.acc
+  $RUN_TEST acclint -Wno-warnings test2.acc
   [ "$status" -eq 0 ]
   [ "$output" = "$(cat test2.result)" ]
 }
