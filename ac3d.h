@@ -64,6 +64,7 @@ private:                                               \
     CHECK(emptyObject, m_empty_object, true)
     CHECK(extraObject, m_extra_object, true)
     CHECK(extraUVCoordinates, m_extra_uv_coordinates, true)
+    CHECK(floatingPoint, m_floating_point, true)
     CHECK(groupWithGeometry, m_group_with_geometry, true)
     CHECK(invalidMaterial, m_invalid_material, true)
     CHECK(invalidNormalLength, m_invalid_normal_length, true)
@@ -105,7 +106,6 @@ private:                                               \
     CHECK(utf8Bom, m_utf8_bom, true)
 
     // warnings without tests
-    CHECK(floatingPoint, m_floating_point, true)
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
     CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
     CHECK(surfaceStripHole, m_surface_strip_hole, false)
