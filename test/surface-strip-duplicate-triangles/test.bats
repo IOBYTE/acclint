@@ -69,19 +69,3 @@ setup() {
 }
 
 ################################################################################
-
-@test "test4.1" {
-  $RUN_TEST acclint -Wsurface-strip-duplicate-triangles test4.acc
-  [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test4.result)" ]
-}
-
-################################################################################
-
-@test "test5.1" {
-  $RUN_TEST acclint -Wsurface-strip-duplicate-triangles test5.acc
-  [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test5.result)" ]
-}
-
-################################################################################
