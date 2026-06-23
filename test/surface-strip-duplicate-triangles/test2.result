@@ -1,0 +1,10 @@
+test2.acc:15 warning: triangle strip with duplicate triangle with different vertex order
+SURF 0x14
+^
+test2.acc:20 note: first triangle
+2 0 0
+^
+test2.acc:26 note: duplicate triangle
+1 0 0
+^
+1 warning

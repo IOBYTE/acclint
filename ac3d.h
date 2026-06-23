@@ -98,6 +98,7 @@ private:                                               \
     CHECK(surfaceNoTexture, m_surface_no_texture, true)
     CHECK(surfaceSelfIntersecting, m_surface_self_intersecting, true)
     CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
+    CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
     CHECK(surfaceStripSize, m_surface_strip_size, false)
     CHECK(trailingText, m_trailing_text, true)
     CHECK(unsupportedVersion, m_unsupported_version, true)
@@ -107,7 +108,6 @@ private:                                               \
 
     // warnings without tests
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
-    CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
     CHECK(surfaceStripHole, m_surface_strip_hole, false)
 
     // errors with tests

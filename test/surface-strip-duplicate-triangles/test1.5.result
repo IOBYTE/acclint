@@ -1,0 +1,11 @@
+test1.acc:15 warning: triangle strip with duplicate triangle
+SURF 0x14
+^
+test1.acc:20 note: first triangle
+2 0 0
+^
+test1.acc:26 note: duplicate triangle
+2 0 0
+^
+1 warning
+surface strip duplicate triangles: 1

@@ -394,6 +394,7 @@ int main(int argc, char *argv[])
             surface_no_texture = value;
             surface_self_intersecting = value;
             surface_strip_degenerate = value;
+            surface_strip_duplicate_triangles = value;
             surface_strip_size = value;
             trailing_text = value;
             unsupported_version = value;
@@ -403,7 +404,6 @@ int main(int argc, char *argv[])
 
             // warnings with no tests
             multiple_polygon_surface = value;
-            surface_strip_duplicate_triangles = value;
             surface_strip_hole = value;
         }
 
