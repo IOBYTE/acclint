@@ -1,0 +1,11 @@
+test5.acc:27 error: invalid ref vertex index: 999 of 5
+999 0 0
+^
+test5.acc:22 warning: different SURF (object: test)
+SURF 0x00
+^
+test5.acc:14 note: SURF
+SURF 0x04
+^
+1 warning
+1 error

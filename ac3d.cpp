@@ -3299,6 +3299,12 @@ bool AC3D::Triangle::sameTriangle(const Object &object, const Surface &surface, 
     if (!surface.isTriangle())
         return false;
 
+    // guard against invalid file data (out of range vertex index)
+    if (surface.refs[0].index >= object.vertices.size() ||
+        surface.refs[1].index >= object.vertices.size() ||
+        surface.refs[2].index >= object.vertices.size())
+        return false;
+
     if (difference == Difference::None)
     {
         return (vertices[0].vertex == object.vertices[surface.refs[0].index].vertex) &&
