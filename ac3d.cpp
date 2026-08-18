@@ -561,7 +561,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         {
             if (m_invalid_surface_type && !surface.isValidFlags(m_is_ac))
             {
-                errorWithCount(m_invalid_surface_type_count) << "invalid surface type: " << std::hex << surface.flags << std::endl;
+                errorWithCount(m_invalid_surface_type_count) << "invalid surface type: " << std::hex << surface.flags << std::dec << std::endl;
                 showLine(iss, pos);
             }
 
@@ -3232,20 +3232,20 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, 
                                     " sides: " << (surface2.isDoubleSided() ? "2)" : "1)") << std::endl;
                                 showLine(in, surface2.line_pos);
                                 note(triangle2.refs[0].line_number) << "ref" << std::endl;
-                                showLine(in, surface2.refs[0].line_pos);
+                                showLine(in, triangle2.refs[0].line_pos);
                                 note(triangle2.refs[1].line_number) << "ref" << std::endl;
-                                showLine(in, surface2.refs[1].line_pos);
+                                showLine(in, triangle2.refs[1].line_pos);
                                 note(triangle2.refs[2].line_number) << "ref" << std::endl;
-                                showLine(in, surface2.refs[2].line_pos);
+                                showLine(in, triangle2.refs[2].line_pos);
 
                                 note(surface1.line_number) << "first instance (object: " <<
                                     object1.object->getName() << " texture: " << object1.object->getTexture() <<
                                     " sides: " << (surface1.isDoubleSided() ? "2)" : "1)") << std::endl;
                                 showLine(in, surface1.line_pos);
                                 note(triangle1.refs[0].line_number) << "ref" << std::endl;
-                                showLine(in, surface1.refs[0].line_pos);
+                                showLine(in, triangle1.refs[0].line_pos);
                                 note(triangle1.refs[1].line_number) << "ref" << std::endl;
-                                showLine(in, surface1.refs[1].line_pos);
+                                showLine(in, triangle1.refs[1].line_pos);
                                 note(triangle1.refs[2].line_number) << "ref" << std::endl;
                                 showLine(in, triangle1.refs[2].line_pos);
                             }

@@ -14,7 +14,7 @@ test4.acc:13 note: first instance (object: front texture:  sides: 2)
 SURF 0x24
 ^
 test4.acc:18 note: ref
-3 0 0
+2 0 0
 ^
 test4.acc:17 note: ref
 0 0 0

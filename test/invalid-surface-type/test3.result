@@ -1,0 +1,7 @@
+test3.ac:12 error: invalid surface type: 80
+SURF 0x80
+     ^
+test3.ac:26 error: invalid surface type: 80
+SURF 0x80
+     ^
+2 errors

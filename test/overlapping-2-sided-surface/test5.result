@@ -1,0 +1,25 @@
+test5.acc:28 warning: overlapping 2 sided surface (object: stripB texture:  sides: 2)
+SURF 0x24
+^
+test5.acc:33 note: ref
+2 0 0
+^
+test5.acc:34 note: ref
+3 0 0
+^
+test5.acc:35 note: ref
+4 0 0
+^
+test5.acc:12 note: first instance (object: triA texture:  sides: 2)
+SURF 0x20
+^
+test5.acc:15 note: ref
+0 0 0
+^
+test5.acc:16 note: ref
+1 0 0
+^
+test5.acc:17 note: ref
+2 0 0
+^
+1 warning
