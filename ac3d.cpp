@@ -807,6 +807,9 @@ void AC3D::convertObjectToAc(Object &object)
                 return ref;
             };
 
+        if (object.surfaces[i].refs.size() < 3)
+            continue;
+
         for (size_t j = 0; j < object.surfaces[i].refs.size() - 2; ++j)
         {
             const Ref &r0 = object.surfaces[i].refs[j];
@@ -969,6 +972,12 @@ void AC3D::convertObjectToAcc(Object &object)
     {
         if (surface.isPolygon())
         {
+            // surfaces without an assigned material, or with out of range
+            // vertex indexes, can't be converted; skip them rather than
+            // reading out of bounds
+            if (surface.mats.empty())
+                continue;
+
             if (surface.refs.size() > 3)
             {
                 if (surface.concave)
@@ -978,8 +987,15 @@ void AC3D::convertObjectToAcc(Object &object)
                 }
                 else // triangle fan
                 {
+                    if (surface.refs[0].index >= object.vertices.size())
+                        continue;
+
                     for (size_t i = 2; i < static_cast<size_t>(surface.refs.size()); i++)
                     {
+                        if (surface.refs[i - 1].index >= object.vertices.size() ||
+                            surface.refs[i].index >= object.vertices.size())
+                            continue;
+
                         const Triangle triangle(surface.flags, surface.mats[0].mat,
                             object.vertices[surface.refs[0].index].vertex,
                             object.vertices[surface.refs[i - 1].index].vertex,
@@ -992,8 +1008,13 @@ void AC3D::convertObjectToAcc(Object &object)
                     }
                 }
             }
-            else
+            else if (surface.refs.size() == 3)
             {
+                if (surface.refs[0].index >= object.vertices.size() ||
+                    surface.refs[1].index >= object.vertices.size() ||
+                    surface.refs[2].index >= object.vertices.size())
+                    continue;
+
                 const Triangle triangle(surface.flags, surface.mats[0].mat,
                     object.vertices[surface.refs[0].index].vertex,
                     object.vertices[surface.refs[1].index].vertex,
@@ -1004,6 +1025,8 @@ void AC3D::convertObjectToAcc(Object &object)
                 if (triangle.good())
                     triangles.emplace_back(triangle);
             }
+            // surfaces with fewer than 3 refs are degenerate and are
+            // silently skipped
         }
     }
 
@@ -1167,7 +1190,7 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
             if (!data.empty() && data.back() == '\r') // remove DOS CR
                 data.pop_back();
 
-            while (!data.empty() && data.size() < size)
+            while (data.size() < size)
             {
                 data += '\n'; // add a newline removed by getline
 
