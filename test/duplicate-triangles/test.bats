@@ -176,3 +176,18 @@ setup() {
 }
 
 ################################################################################
+
+# Regression test: when surface1 (declared first) is a triangle strip and
+# surface2 (declared second) is a plain triangle, the "duplicate triangle"
+# diagnostic's second "ref" note incorrectly used surface1.refs[2] -- the
+# strip's own constant 3rd ref, unrelated to which triangle in the strip
+# matched and not even referring to surface2 (the actual duplicate). It
+# should reference surface2.refs[2], matching the mirror-order branch
+# (plain triangle first, strip second), which was already correct.
+@test "test6" {
+  $RUN_TEST acclint -Wno-duplicate-surfaces -Wno-different-surf -Wduplicate-triangles test6.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(tr -d '\r' < test6.result)" ]
+}
+
+################################################################################

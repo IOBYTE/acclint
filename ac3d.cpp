@@ -3447,8 +3447,8 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                         {
                             warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle" << std::endl;
                             showLine(in, surface2.line_pos);
-                            note(surface1.refs[2].line_number) << "ref" << std::endl;
-                            showLine(in, surface1.refs[2].line_pos);
+                            note(surface2.refs[2].line_number) << "ref" << std::endl;
+                            showLine(in, surface2.refs[2].line_pos);
                             note(surface1.line_number) << "first instance" << std::endl;
                             showLine(in, surface1.line_pos);
                             note(triangle1.refs[2].line_number) << "ref" << std::endl;
@@ -3458,8 +3458,8 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                         {
                             warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle with different vertex order" << std::endl;
                             showLine(in, surface2.line_pos);
-                            note(surface1.refs[2].line_number) << "ref" << std::endl;
-                            showLine(in, surface1.refs[2].line_pos);
+                            note(surface2.refs[2].line_number) << "ref" << std::endl;
+                            showLine(in, surface2.refs[2].line_pos);
                             note(surface1.line_number) << "first instance" << std::endl;
                             showLine(in, surface1.line_pos);
                             note(triangle1.refs[2].line_number) << "ref" << std::endl;
@@ -3469,8 +3469,8 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
                         {
                             warningWithCount(m_duplicate_triangles_count, surface2.line_number) << "duplicate triangle with different winding" << std::endl;
                             showLine(in, surface2.line_pos);
-                            note(surface1.refs[2].line_number) << "ref" << std::endl;
-                            showLine(in, surface1.refs[2].line_pos);
+                            note(surface2.refs[2].line_number) << "ref" << std::endl;
+                            showLine(in, surface2.refs[2].line_pos);
                             note(surface1.line_number) << "first instance" << std::endl;
                             showLine(in, surface1.line_pos);
                             note(triangle1.refs[2].line_number) << "ref" << std::endl;
