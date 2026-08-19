@@ -1,0 +1,7 @@
+test2.acc:17 warning: different uv
+0 0 0
+^
+test2.acc:23 note: instance
+0 1 1
+^
+1 warning

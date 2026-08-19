@@ -1087,6 +1087,7 @@ private:
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream &in, const Object &object);
     void checkDifferentUV(std::istream &in, const Object &object);
+    static Point3 surfaceRefNormal(const Surface &surface, size_t refIndex);
     void checkGroupWithGeometry(std::istream &in, const Object &object);
     static bool cleanObjects(std::vector<Object> &objects);
     static bool cleanVertices(std::vector<Object> &objects);

@@ -3653,6 +3653,31 @@ void AC3D::checkDifferentMat(std::istream &in, const Object &object)
     }
 }
 
+// Surface::normal is only ever computed by checkSurfaceCoplanar, which
+// immediately bails out for non-polygon surfaces -- so it stays {0,0,0}
+// for triangle strips. Comparing that zero normal against anything always
+// yields a 90 degree angle, so a smoothness check using surface.normal
+// directly can never fire for a triangle strip. For triangle strips, use
+// the normal of whichever constituent triangle actually contains the ref
+// at refIndex instead of the (unset) surface-wide normal.
+AC3D::Point3 AC3D::surfaceRefNormal(const Surface &surface, size_t refIndex)
+{
+    if (surface.isTriangleStrip())
+    {
+        const std::vector<Triangle> &triangles = surface.getTriangleStrip();
+
+        if (!triangles.empty())
+        {
+            size_t t = (refIndex >= 2) ? (refIndex - 2) : 0;
+            if (t >= triangles.size())
+                t = triangles.size() - 1;
+            return triangles[t].normal;
+        }
+    }
+
+    return surface.normal;
+}
+
 void AC3D::checkDifferentUV(std::istream &in, const Object &object)
 {
     if (!m_different_uv)
@@ -3691,7 +3716,9 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
                     if (surface1.refs[k].index == surface2.refs[l].index &&
                         surface1.refs[k].coordinates != surface2.refs[l].coordinates)
                     {
-                        const double angle = std::acos(surface1.normal.dot(surface2.normal)) * 180.0 / std::numbers::pi;
+                        const Point3 normal1 = surfaceRefNormal(surface1, k);
+                        const Point3 normal2 = surfaceRefNormal(surface2, l);
+                        const double angle = std::acos(normal1.dot(normal2)) * 180.0 / std::numbers::pi;
                         const double crease = object.creases.empty() ? 45.0 : object.creases[0].crease;
 
                         if (angle < crease)
