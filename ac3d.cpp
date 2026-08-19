@@ -2712,6 +2712,16 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
 
             for (size_t j = 0; j < size; j++)
             {
+                // skip the zero-rotation alignment (i aligned with the same
+                // index j): that's what Difference::None tests, using its
+                // own (stricter) per-vertex criteria. Without this, a pair
+                // that fails None only because of a looser sameVertex()
+                // comparison (e.g. same positions but different normals)
+                // would be misreported here as "different vertex order"
+                // even though the order is identical.
+                if (j == i)
+                    continue;
+
                 const size_t vertex2 = surface2.refs[j].index;
 
                 if (sameVertex(vertex1, vertex2))
