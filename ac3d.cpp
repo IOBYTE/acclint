@@ -3852,11 +3852,12 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 
     for (size_t i = 0; i < object.vertices.size(); i++)
     {
-        if (duplicates[i])
-            continue;
-
         for (size_t j = i + 1; j < object.vertices.size(); j++)
         {
+            // already reported as a duplicate of an earlier vertex
+            if (duplicates[j])
+                continue;
+
             if (object.vertices[i] == object.vertices[j])
             {
                 duplicates[j] = true;
