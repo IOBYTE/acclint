@@ -87,6 +87,7 @@ void usage()
     std::cerr << "  -Wno-surface-self-intersecting         Don't show surface self intersecting warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-degenerate          Don't show surface triangle strip degenerate warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
+    std::cerr << "  -Wno-surface-zero-area-uv              Don't show surface triangle zero area uv mapping warnings." << std::endl;
     std::cerr << "  -Wno-trailing-text                     Don't show trailing text warnings." << std::endl;
     std::cerr << "  -Wno-unsupported-version               Don't show unsupported version warnings." << std::endl;
     std::cerr << "  -Wno-unused-material                   Don't show unused material warnings." << std::endl;
@@ -226,6 +227,7 @@ int main(int argc, char *argv[])
     bool surface_self_intersecting = true;
     bool surface_strip_degenerate = false;
     bool surface_strip_size = false;
+    bool surface_zero_area_uv = false;
     bool trailing_text = true;
     bool unsupported_version = true;
     bool unused_material = true;
@@ -396,6 +398,7 @@ int main(int argc, char *argv[])
             surface_strip_degenerate = value;
             surface_strip_duplicate_triangles = value;
             surface_strip_size = value;
+            surface_zero_area_uv = value;
             trailing_text = value;
             unsupported_version = value;
             unused_material = value;
@@ -611,6 +614,10 @@ int main(int argc, char *argv[])
         else if (arg == "-Wno-surface-strip-size" || arg == "-Wsurface-strip-size")
         {
             surface_strip_size = isEnabled(arg);
+        }
+        else if (arg == "-Wno-surface-zero-area-uv" || arg == "-Wsurface-zero-area-uv")
+        {
+            surface_zero_area_uv = isEnabled(arg);
         }
         else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
         {
@@ -955,6 +962,7 @@ int main(int argc, char *argv[])
     ac3d.surfaceSelfIntersecting(surface_self_intersecting);
     ac3d.surfaceStripDegenerate(surface_strip_degenerate);
     ac3d.surfaceStripSize(surface_strip_size);
+    ac3d.surfaceZeroAreaUV(surface_zero_area_uv);
     ac3d.trailingText(trailing_text);
     ac3d.unsupportedVersion(unsupported_version);
     ac3d.unusedMaterial(unused_material);
@@ -1073,6 +1081,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
             showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
             showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
+            showCount(ac3d.surfaceZeroAreaUVCount(), "surface zero area uv: ");
             showCount(ac3d.trailingTextCount(), "trailing text: ");
             showCount(ac3d.unsupportedVersionCount(), "unsupported version: ");
             showCount(ac3d.unusedMaterialCount(), "unused material: ");

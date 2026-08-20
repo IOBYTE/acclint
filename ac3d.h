@@ -100,6 +100,7 @@ private:                                               \
     CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
     CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
     CHECK(surfaceStripSize, m_surface_strip_size, false)
+    CHECK(surfaceZeroAreaUV, m_surface_zero_area_uv, false)
     CHECK(trailingText, m_trailing_text, true)
     CHECK(unsupportedVersion, m_unsupported_version, true)
     CHECK(unusedMaterial, m_unused_material, true)
@@ -1137,6 +1138,7 @@ private:
     void checkSurfaceStripDegenerate(std::istream &in, const Surface &surface);
     void checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &surface);
     void checkSurfaceNoTexture(std::istream &in, const Object &object, const Surface &surface);
+    void checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const Surface &surface);
     void checkSurface2SidedOpaque(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream &in, const Object &object);

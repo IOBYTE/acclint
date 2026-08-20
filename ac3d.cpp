@@ -725,6 +725,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfaceStripDegenerate(in, surface);
         checkSurfaceStripDuplicateTriangles(in, surface);
         checkSurfaceNoTexture(in, object, surface);
+        checkSurfaceZeroAreaUV(in, object, surface);
         checkSurface2SidedOpaque(in, object, surface);
     }
     else
@@ -4074,6 +4075,91 @@ void AC3D::checkSurfaceNoTexture(std::istream &in, const Object &object, const S
     {
         warningWithCount(m_surface_no_texture_count, surface.line_number) << "surface with texture coordinates but no texture" << std::endl;
         showLine(in, surface.line_pos);
+    }
+}
+
+void AC3D::checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const Surface &surface)
+{
+    if (!m_surface_zero_area_uv)
+        return;
+
+    // only meaningful when the surface actually has a texture to map
+    if (object.textures.empty() || object.textures[0].name == "empty_texture_no_mapping")
+        return;
+
+    // a triangle whose vertex positions land exactly on top of each other
+    // in UV space maps a real (non-degenerate) 3D triangle onto a single
+    // point/line in the texture -- the texture gets stretched to nothing
+    // across that triangle, or (with mipmapping/anisotropic filtering)
+    // sampled essentially at random. This is the same kind of area check
+    // used elsewhere in this file (e.g. collinear()), just applied to the
+    // 2D uv coordinates instead of the 3D vertex positions.
+    auto checkTriangle = [&](const Ref &r0, const Ref &r1, const Ref &r2,
+                             const Point3 &p0, const Point3 &p1, const Point3 &p2)
+    {
+        if (r0.coordinates.empty() || r1.coordinates.empty() || r2.coordinates.empty())
+            return;
+
+        constexpr double k = 4.0;
+        const double float_epsilon = static_cast<double>(std::numeric_limits<float>::epsilon());
+
+        // a triangle with no real area in 3D isn't a new/interesting "zero
+        // area uv" problem -- it's already covered by the degenerate
+        // triangle checks -- so skip it here to avoid redundant noise.
+        const Point3 e1 = p1 - p0;
+        const Point3 e2 = p2 - p0;
+        const double area3D = e1.cross(e2).length();
+        const double epsilon3D = k * float_epsilon * std::max(e1.length() * e2.length(), 1.0);
+
+        if (area3D < epsilon3D)
+            return;
+
+        const Point2 &uv0 = r0.coordinates[0];
+        const Point2 &uv1 = r1.coordinates[0];
+        const Point2 &uv2 = r2.coordinates[0];
+        const Point2 uve1 = uv1 - uv0;
+        const Point2 uve2 = uv2 - uv0;
+        const double areaUV = std::fabs(uve1.cross(uve2));
+        const double uve1Length = std::sqrt(uve1.dot(uve1));
+        const double uve2Length = std::sqrt(uve2.dot(uve2));
+        const double epsilonUV = k * float_epsilon * std::max(uve1Length * uve2Length, 1.0);
+
+        if (areaUV < epsilonUV)
+        {
+            warningWithCount(m_surface_zero_area_uv_count, surface.line_number) << "zero area uv mapping" << std::endl;
+            showLine(in, surface.line_pos);
+            note(r0.line_number) << "first vertex" << std::endl;
+            showLine(in, r0.line_pos);
+            note(r1.line_number) << "second vertex" << std::endl;
+            showLine(in, r1.line_pos);
+            note(r2.line_number) << "third vertex" << std::endl;
+            showLine(in, r2.line_pos);
+        }
+    };
+
+    if (!m_is_ac && surface.isTriangleStrip())
+    {
+        for (const auto &triangle : surface.getTriangleStrip())
+        {
+            if (triangle.degenerate)
+                continue;
+
+            checkTriangle(triangle.refs[0], triangle.refs[1], triangle.refs[2],
+                          triangle.vertices[0].vertex, triangle.vertices[1].vertex, triangle.vertices[2].vertex);
+        }
+    }
+    else if (surface.isPolygon() && surface.refs.size() == 3)
+    {
+        Point3 p0;
+        Point3 p1;
+        Point3 p2;
+
+        if (object.getSurfaceVertex(surface, 0, p0) &&
+            object.getSurfaceVertex(surface, 1, p1) &&
+            object.getSurfaceVertex(surface, 2, p2))
+        {
+            checkTriangle(surface.refs[0], surface.refs[1], surface.refs[2], p0, p1, p2);
+        }
     }
 }
 

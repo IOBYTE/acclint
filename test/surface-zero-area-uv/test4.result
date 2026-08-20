@@ -1,0 +1,13 @@
+test4.ac:13 warning: zero area uv mapping
+SURF 0x10
+^
+test4.ac:16 note: first vertex
+0 0.1 0.1
+^
+test4.ac:17 note: second vertex
+1 0.5 0.5
+^
+test4.ac:18 note: third vertex
+2 0.9 0.9
+^
+1 warning
