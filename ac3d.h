@@ -364,9 +364,27 @@ private:
         }
         bool equals(const Point3 &other) const
         {
-            return std::abs(x() - other.x()) < SMALL_NUM &&
-                   std::abs(y() - other.y()) < SMALL_NUM &&
-                   std::abs(z() - other.z()) < SMALL_NUM;
+            // Use a scale-relative epsilon rather than a fixed absolute
+            // one: SMALL_NUM (float epsilon) is the gap between 1.0f and
+            // the next representable float, i.e. an inherently relative
+            // quantity. Used as a flat absolute per-component threshold
+            // it is far too tight for coordinates with large magnitude
+            // (where float precision loss is much bigger than SMALL_NUM)
+            // and arbitrarily loose for coordinates near zero. Scaling
+            // by the larger of the two magnitudes (floored at 1.0 so the
+            // tolerance doesn't collapse to nothing near the origin)
+            // ties the tolerance to actual float round-trip precision.
+            // The k factor is a small safety margin absorbing rounding
+            // compounded across this program's double-precision
+            // arithmetic (subtract, cross, dot, etc.) upstream of this
+            // comparison.
+            constexpr double k = 4.0;
+            const double epsX = k * SMALL_NUM * std::max({std::abs(x()), std::abs(other.x()), 1.0});
+            const double epsY = k * SMALL_NUM * std::max({std::abs(y()), std::abs(other.y()), 1.0});
+            const double epsZ = k * SMALL_NUM * std::max({std::abs(z()), std::abs(other.z()), 1.0});
+            return std::abs(x() - other.x()) < epsX &&
+                   std::abs(y() - other.y()) < epsY &&
+                   std::abs(z() - other.z()) < epsZ;
         }
     };
 
@@ -658,9 +676,27 @@ private:
             }
         }
 
+        // normal is always unit length (normalize() is called in every
+        // constructor), so distanceToPoint() below is a true perpendicular
+        // distance in the model's raw coordinate units, not a normalized
+        // [-1,1] quantity. That means the "on/above/below the plane"
+        // tolerance needs to scale with the raw coordinate magnitude the
+        // same way Point3::equals() does, rather than use a fixed
+        // absolute SMALL_NUM: a flat float-epsilon threshold is far too
+        // tight for a plane defined by large-magnitude points and
+        // arbitrarily loose near the origin. point.length() (or the
+        // plane's own distance from the origin) stands in for "how big
+        // are the coordinates involved", floored at 1.0.
+        static constexpr double RELATIVE_EPSILON_K = 4.0;
+
+        double planeEpsilon(const Point3 &point) const
+        {
+            return RELATIVE_EPSILON_K * SMALL_NUM * std::max({point.length(), std::abs(distance), 1.0});
+        }
+
         [[maybe_unused]] bool isOnPlane(Point3 point) const
         {
-            return std::abs(normal.dot(point) - distance) < SMALL_NUM;
+            return std::abs(normal.dot(point) - distance) < planeEpsilon(point);
         }
 
         double distanceToPoint(const Point3 &point) const
@@ -670,17 +706,18 @@ private:
 
         bool isAbovePlane(const Point3 &point) const
         {
-            return distanceToPoint(point) > SMALL_NUM;
+            return distanceToPoint(point) > planeEpsilon(point);
         }
 
         [[maybe_unused]] bool isBelowPlane(const Point3 &point) const
         {
-            return distanceToPoint(point) < -SMALL_NUM;
+            return distanceToPoint(point) < -planeEpsilon(point);
         }
 
         bool equals(const Plane &other) const
         {
-            return valid && other.valid && std::abs(distance - other.distance) < SMALL_NUM && normal.equals(other.normal);
+            const double epsilon = RELATIVE_EPSILON_K * SMALL_NUM * std::max({std::abs(distance), std::abs(other.distance), 1.0});
+            return valid && other.valid && std::abs(distance - other.distance) < epsilon && normal.equals(other.normal);
         }
     };
 

@@ -3873,8 +3873,21 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 
 bool AC3D::collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3)
 {
-    constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon());
-    const Point3 v = Point3{p2 - p1}.cross(p3 - p1);
+    const Point3 e1 = p2 - p1;
+    const Point3 e2 = p3 - p1;
+    const Point3 v = e1.cross(e2);
+
+    // The cross product's magnitude scales with the product of the two
+    // edge lengths (it is exactly zero for perfectly collinear points),
+    // so a fixed absolute epsilon is either far too loose for long
+    // edges or far too tight for short ones. Scale the threshold by the
+    // edge lengths instead, floored at 1.0 so it doesn't collapse to
+    // (near) zero for very short edges. k is a small safety margin for
+    // rounding compounded across this program's double-precision
+    // arithmetic.
+    constexpr double k = 4.0;
+    const double epsilon = k * static_cast<double>(std::numeric_limits<float>::epsilon()) *
+                            std::max(e1.length() * e2.length(), 1.0);
     return std::fabs(v.x()) < epsilon &&
            std::fabs(v.y()) < epsilon &&
            std::fabs(v.z()) < epsilon;
@@ -3970,7 +3983,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
                 return;
         }
 
-        const Point3 v = Point3{p1 - p0}.cross(p2 - p0);
+        Point3 v = Point3{p1 - p0}.cross(p2 - p0);
         surface.normal = v;
 
         surface.normal.normalize();
@@ -3978,6 +3991,12 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
         // must have 4 or more vertices
         if (surface.refs.size() < 4)
             return;
+
+        // Normalize v (the local copy, not surface.normal) so that `e`
+        // below is a true perpendicular distance from the plane in the
+        // model's raw coordinate units, instead of being scaled by the
+        // arbitrary magnitude of the un-normalized cross product above.
+        v.normalize();
 
         const double d = -v.x() * p1.x() - v.y() * p1.y() - v.z() * p1.z();
 
@@ -3988,7 +4007,15 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
                 return;
 
             const double e = v.x() * p.x() + v.y() * p.y() + v.z() * p.z() + d;
-            constexpr double epsilon = static_cast<double>(std::numeric_limits<float>::epsilon()) * 1000;
+
+            // `e` is now a true raw-coordinate-scale distance from the
+            // plane, so the coplanarity tolerance needs to scale with
+            // the magnitude of the points defining/tested against the
+            // plane, the same way Point3::equals() does, rather than
+            // use a fixed absolute threshold.
+            constexpr double k = 4.0;
+            const double epsilon = k * static_cast<double>(std::numeric_limits<float>::epsilon()) *
+                                    std::max({p0.length(), p1.length(), p2.length(), p.length(), 1.0});
             if (std::fabs(e) > epsilon)
             {
                 surface.coplanar = false;
@@ -4566,7 +4593,23 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
                 {
                     const double distance = closest(p0, p1, p2, p3);
 
-                    if (distance < static_cast<double>(std::numeric_limits<double>::epsilon()))
+                    // `distance` is a raw-coordinate-scale quantity (the
+                    // closest distance between the two line segments),
+                    // so, like the other geometric tolerance checks in
+                    // this file, the "is this an intersection" threshold
+                    // needs to scale with the magnitude of the segments
+                    // involved rather than use a fixed absolute value.
+                    // This also fixes an inconsistency where this site
+                    // used double::epsilon() (~2.22e-16) while every
+                    // other geometric tolerance check in the file is
+                    // based on float::epsilon() -- an unrealistically
+                    // tight threshold given the rounding compounded by
+                    // closest()'s chain of double-precision arithmetic.
+                    constexpr double k = 4.0;
+                    const double epsilon = k * static_cast<double>(std::numeric_limits<float>::epsilon()) *
+                                            std::max({p0.length(), p1.length(), p2.length(), p3.length(), 1.0});
+
+                    if (distance < epsilon)
                     {
                         if (m_surface_self_intersecting)
                         {
