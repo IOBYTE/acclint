@@ -2875,6 +2875,12 @@ void AC3D::Surface::setTriangleStrip(const Object &object)
         {
             if ((i & 1u) == 0)
             {
+                // check for invalid vertex index and skip triangle if any index is invalid
+                if (refs[i - 2].index >= object.vertices.size() ||
+                    refs[i - 1].index >= object.vertices.size() ||
+                    refs[i].index >= object.vertices.size())
+                    continue;
+
                 triangleStrip.emplace_back(object.vertices[refs[i - 2].index],
                                            object.vertices[refs[i - 1].index],
                                            object.vertices[refs[i].index],
@@ -2882,6 +2888,12 @@ void AC3D::Surface::setTriangleStrip(const Object &object)
             }
             else // reverse winding to match drawing order
             {
+                // check for invalid vertex index and skip triangle if any index is invalid
+                if (refs[i - 1].index >= object.vertices.size() ||
+                    refs[i - 2].index >= object.vertices.size() ||
+                    refs[i].index >= object.vertices.size())
+                    continue;
+
                 triangleStrip.emplace_back(object.vertices[refs[i - 1].index],
                                            object.vertices[refs[i - 2].index],
                                            object.vertices[refs[i].index],
@@ -4436,8 +4448,21 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &
 
     for (size_t i = 0; i < surface.triangleStrip.size(); i++)
     {
+        // a degenerate triangle (a repeated vertex) trivially satisfies
+        // sameTriangle() for None, Order and Winding simultaneously
+        // against another degenerate/matching triangle, since some of
+        // its vertex slots are interchangeable copies of each other;
+        // that's not a meaningful "different order"/"different winding"
+        // distinction, just noise, so skip it here the same way
+        // addPoly() already skips degenerate triangles.
+        if (surface.triangleStrip[i].degenerate)
+            continue;
+
         for (size_t j = i + 1; j < surface.triangleStrip.size(); j++)
         {
+            if (surface.triangleStrip[j].degenerate)
+                continue;
+
             if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::None))
             {
                 warningWithCount(m_surface_strip_duplicate_triangles_count, surface.line_number)

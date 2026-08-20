@@ -1,0 +1,4 @@
+test4.acc:16 error: invalid ref vertex index: 999 of 2
+999 0 0
+^
+1 error

@@ -116,3 +116,43 @@ setup_file() {
 }
 
 ################################################################################
+
+# Regression test: Surface::setTriangleStrip() used to index
+# object.vertices[refs[i].index] without a bounds check, causing a segfault
+# (confirmed via gdb: SIGSEGV inside Triangle::Triangle, called from
+# setTriangleStrip at ac3d.cpp:2878) whenever a triangle-strip surface had
+# an out-of-range ref vertex index. The surface here has 2 vertices but a
+# ref index of 999; acclint must report the invalid ref vertex index error
+# and exit cleanly instead of crashing.
+@test "test4" {
+  $RUN_TEST acclint test4.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# Regression test: sameTriangle() checked against Difference::None, Order
+# and Winding are not mutually exclusive for a degenerate triangle (one
+# with a repeated vertex) -- all three can be simultaneously true, since
+# some of its vertex slots are interchangeable copies of each other. Before
+# the fix, this surface's two fully-degenerate triangles (every ref points
+# at the same vertex) produced three redundant warnings for a single pair.
+# Degenerate triangles are already covered by
+# -Wsurface-strip-degenerate, so checkSurfaceStripDuplicateTriangles must
+# skip them and produce no output here.
+@test "test5" {
+  $RUN_TEST acclint -Wno-warnings -Wsurface-strip-duplicate-triangles test5.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################
