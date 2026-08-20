@@ -1,0 +1,6 @@
+test4.ac:5 error: invalid token: garbage
+garbage
+^
+test4.ac:4 warning: missing kids: only 0 out of 1 kids found
+1 warning
+1 error

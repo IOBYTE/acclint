@@ -1,0 +1,4 @@
+test4.ac:5 error: invalid token: garbage
+garbage
+^
+1 error

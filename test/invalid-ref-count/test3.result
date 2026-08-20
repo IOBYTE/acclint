@@ -1,0 +1,20 @@
+test3.ac:16 error: invalid ref vertex index
+kids 0
+^
+test3.ac:16 warning: duplicate surface vertices
+
+^
+test3.ac:15 note: first instance
+
+^
+test3.ac:14 warning: invalid ref count
+
+^
+test3.ac:9 warning: unused vertex
+
+^
+test3.ac:10 warning: unused vertex
+
+^
+4 warnings
+1 error

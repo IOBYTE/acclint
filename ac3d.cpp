@@ -664,53 +664,59 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
         for (int j = 0; j < surface.refs.declared_size; ++j)
         {
-            if (getLine(in))
+            // declared_size comes straight from the file and is otherwise
+            // unbounded (e.g. a crafted "refs 2000000000" with no ref
+            // lines after it): without this break, running out of input
+            // partway through just spun the loop for the rest of
+            // declared_size doing nothing every time getLine() failed,
+            // instead of stopping once there is nothing left to read.
+            if (!getLine(in))
+                break;
+
+            Ref ref;
+
+            std::istringstream iss1(m_line);
+
+            if (readRef(iss1, ref))
             {
-                Ref ref;
-
-                std::istringstream iss1(m_line);
-
-                if (readRef(iss1, ref))
+                if (ref.index >= object.vertices.size())
                 {
-                    if (ref.index >= object.vertices.size())
+                    if (m_invalid_ref_vertex_index)
                     {
-                        if (m_invalid_ref_vertex_index)
-                        {
-                            errorWithCount(m_invalid_ref_vertex_index_count) << "invalid ref vertex index: " << ref.index << " of "
-                                    << object.vertices.size() << std::endl;
-                            showLine(iss1, 0);
-                        }
-                    }
-                    else
-                        object.vertices[ref.index].used = true;
-                }
-                if (!ref.invalid_coordinates) // skip when invalid
-                {
-                    const size_t valid_textures = object.getTexturesSize();
-                    if (ref.coordinates.size() < valid_textures)
-                    {
-                        if (!m_is_ac && m_missing_uv_coordinates)
-                        {
-                            warningWithCount(m_missing_uv_coordinates_count) << "missing uv coordinates: "
-                                << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
-                                << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
-                            showLine(iss1, iss1.str().size() + 1);
-                        }
-                    }
-                    if (ref.coordinates.size() > 1 && ref.coordinates.size() > valid_textures)
-                    {
-                        if (m_extra_uv_coordinates)
-                        {
-                            warningWithCount(m_extra_uv_coordinates_count) << "extra uv coordinates: "
-                                << ref.coordinates.size() << " coordinates "
-                                << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
-                            showLine(iss1, offsetOfToken(iss1, valid_textures * 2 + 1));
-                        }
+                        errorWithCount(m_invalid_ref_vertex_index_count) << "invalid ref vertex index: " << ref.index << " of "
+                                << object.vertices.size() << std::endl;
+                        showLine(iss1, 0);
                     }
                 }
-
-                surface.refs.push_back(ref);
+                else
+                    object.vertices[ref.index].used = true;
             }
+            if (!ref.invalid_coordinates) // skip when invalid
+            {
+                const size_t valid_textures = object.getTexturesSize();
+                if (ref.coordinates.size() < valid_textures)
+                {
+                    if (!m_is_ac && m_missing_uv_coordinates)
+                    {
+                        warningWithCount(m_missing_uv_coordinates_count) << "missing uv coordinates: "
+                            << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
+                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                        showLine(iss1, iss1.str().size() + 1);
+                    }
+                }
+                if (ref.coordinates.size() > 1 && ref.coordinates.size() > valid_textures)
+                {
+                    if (m_extra_uv_coordinates)
+                    {
+                        warningWithCount(m_extra_uv_coordinates_count) << "extra uv coordinates: "
+                            << ref.coordinates.size() << " coordinates "
+                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                        showLine(iss1, offsetOfToken(iss1, valid_textures * 2 + 1));
+                    }
+                }
+            }
+
+            surface.refs.push_back(ref);
         }
 
         surface.setTriangleStrip(object);
@@ -2545,6 +2551,17 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         }
                         else
                         {
+                            // Recover by skipping non-OBJECT lines until an
+                            // OBJECT token is found. If getLine() fails
+                            // (EOF reached before this kid's OBJECT line
+                            // ever appeared), this used to fall through the
+                            // `if` with nothing to break the loop, so it
+                            // looped back to `while (true)` and called
+                            // getLine() again forever -- an unconditional
+                            // hang on any file where a `kids` block ends
+                            // with a non-OBJECT line and no further input.
+                            // Report it the same way the sibling
+                            // "ran out of kids" case just below does.
                             do
                             {
                                 if (m_invalid_token)
@@ -2567,6 +2584,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                         object.kids.push_back(kid);
                                         break;
                                     }
+                                }
+                                else
+                                {
+                                    if (m_missing_kids)
+                                        warningWithCount(m_missing_kids_count, kids_line) << "missing kids: only " << i << " out of " << kids << " kids found" << std::endl;
+                                    return false;
                                 }
                             } while (true);
                         }

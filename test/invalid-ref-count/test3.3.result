@@ -1,0 +1,8 @@
+test3.ac:16 error: invalid ref vertex index
+kids 0
+^
+test3.ac:14 warning: invalid ref count
+
+^
+1 warning
+1 error

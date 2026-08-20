@@ -1,0 +1,9 @@
+test4.ac:5 error: invalid token: garbage
+garbage
+^
+test4.ac:4 warning: missing kids: only 0 out of 1 kids found
+test4.ac:2 warning: unused material
+MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+2 warnings
+1 error
