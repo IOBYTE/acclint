@@ -1,0 +1,16 @@
+test4.ac:22 warning: multiple polygon surface
+2 0 0
+^
+test4.ac:19 note: first instance
+2 0 0
+^
+test4.ac:14 warning: surface not convex
+SURF 0x10
+^
+test4.ac:22 note: concave vertex
+2 0 0
+^
+test4.ac:14 warning: surface self intersecting
+SURF 0x10
+^
+3 warnings

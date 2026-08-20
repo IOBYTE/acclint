@@ -3795,7 +3795,7 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
                 // triangle strips and lines can have duplicates
                 if (surface.isPolygon() || surface.isClosedLine())
                 {
-                    if (j == i + 1 || j == surface.refs.size() - 1)
+                    if (j == i + 1 || (i == 0 && j == surface.refs.size() - 1))
                     {
                         surface.refs[j].duplicate = true;
 

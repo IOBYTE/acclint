@@ -1,0 +1,7 @@
+test4.ac:22 warning: multiple polygon surface
+2 0 0
+^
+test4.ac:19 note: first instance
+2 0 0
+^
+1 warning
