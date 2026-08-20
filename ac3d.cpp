@@ -6153,8 +6153,29 @@ bool AC3D::Object::hasTransparentTexture() const
         fclose(fp);
         return false;
     }
+
+    // Declared (and NULL-initialized) before the setjmp so the error
+    // handler below can free them: png_read_image()/png_read_end() can
+    // still longjmp here on truncated/corrupted image data, which is
+    // after these are allocated. Previously the error handler only
+    // destroyed the png structs and closed the file, leaking both
+    // buffers on every corrupted texture.
+    //
+    // volatile: both are assigned (via malloc) after this setjmp and
+    // before the longjmp() a later libpng error can trigger. Values of
+    // non-volatile locals modified between setjmp and a subsequent
+    // longjmp are unspecified once control returns to the setjmp site --
+    // the compiler is free to keep them in registers that longjmp doesn't
+    // restore, so the error handler below could see stale (pre-malloc)
+    // NULLs even though the allocations actually happened, silently
+    // defeating the free() calls meant to catch them.
+    png_byte * volatile image_data = NULL;
+    png_bytepp volatile row_pointers = NULL;
+
     if (setjmp(png_jmpbuf(png_ptr)))
     {
+        free(row_pointers);
+        free(image_data);
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         fclose(fp);
         return false;
@@ -6178,7 +6199,7 @@ bool AC3D::Object::hasTransparentTexture() const
     }
 
     const size_t rowbytes = png_get_rowbytes(png_ptr, info_ptr);
-    png_byte *image_data = (png_byte *)malloc(rowbytes * height);
+    image_data = (png_byte *)malloc(rowbytes * height);
 
     if (image_data == NULL)
     {
@@ -6187,7 +6208,7 @@ bool AC3D::Object::hasTransparentTexture() const
         return false;
     }
 
-    png_bytepp row_pointers = (png_bytepp)malloc(sizeof(png_bytep) * height);
+    row_pointers = (png_bytepp)malloc(sizeof(png_bytep) * height);
 
     if (row_pointers == NULL)
     {
