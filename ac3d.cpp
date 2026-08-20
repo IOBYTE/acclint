@@ -4188,6 +4188,40 @@ bool AC3D::coplanar(const Triangle &triangle1, const Triangle &triangle2)
     return p1.equals(p2);
 }
 
+// Tests whether `point` (which must already lie in the same plane as
+// `triangle`) is strictly inside `triangle` -- a point sitting exactly
+// on an edge or at a vertex does not count, since this is used to
+// detect genuine area overlap, not mere adjacency/touching.
+bool AC3D::pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle)
+{
+    const Point3 &a = triangle.vertices[0].vertex;
+    const Point3 &b = triangle.vertices[1].vertex;
+    const Point3 &c = triangle.vertices[2].vertex;
+
+    const Point3 ab = b - a;
+    const Point3 bc = c - b;
+    const Point3 ca = a - c;
+
+    // (twice) the signed area of the sub-triangle formed by each edge
+    // and the test point; all three agree in sign iff the point is on
+    // the interior side of every edge
+    const double d1 = ab.cross(point - a).dot(triangle.normal);
+    const double d2 = bc.cross(point - b).dot(triangle.normal);
+    const double d3 = ca.cross(point - c).dot(triangle.normal);
+
+    // d1, d2 and d3 scale with the square of the triangle's coordinate
+    // magnitude (they are twice a sub-triangle's area), so, like the
+    // cross-product-based collinearity test, the "on the edge"
+    // threshold needs to scale the same way rather than use a fixed
+    // absolute value.
+    constexpr double k = 4.0;
+    const double epsilon = k * static_cast<double>(std::numeric_limits<float>::epsilon()) *
+                            std::max({ab.length() * ab.length(), bc.length() * bc.length(), ca.length() * ca.length(), 1.0});
+
+    return (d1 > epsilon && d2 > epsilon && d3 > epsilon) ||
+           (d1 < -epsilon && d2 < -epsilon && d3 < -epsilon);
+}
+
 bool AC3D::trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2)
 {
     if (getSharedVertexCount(triangle1, triangle2) == 3)
@@ -4200,10 +4234,29 @@ bool AC3D::trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2
     Point3 p2{ 0, 0, 0 }; // not used
     bool b = false; // not used
 
-    return threeyd::moeller::TriangleIntersects<Point3>::triangle(
+    if (threeyd::moeller::TriangleIntersects<Point3>::triangle(
         triangle1.vertices[0].vertex, triangle1.vertices[1].vertex, triangle1.vertices[2].vertex,
         triangle2.vertices[0].vertex, triangle2.vertices[1].vertex, triangle2.vertices[2].vertex,
-        p1, p2, b);
+        p1, p2, b))
+        return true;
+
+    // The Moeller coplanar-triangle test (threeyd::moeller, vendored in
+    // triangleintersects.hpp) only checks a single vertex of each
+    // triangle (vertex 0) for point-in-triangle containment, and
+    // deliberately ignores edges that exactly share 1 or 2 vertices so
+    // a shared vertex/edge isn't mistaken for an edge crossing. That
+    // combination misses a genuine overlap where two triangles share
+    // an edge and the *other* (non-shared) vertex of one triangle
+    // lands inside the other: there is no edge crossing to detect, and
+    // the vertex that matters isn't vertex 0. Now that we already know
+    // the two triangles are coplanar, cover that gap by testing every
+    // vertex of each triangle for containment in the other.
+    return pointInCoplanarTriangle(triangle1.vertices[0].vertex, triangle2) ||
+           pointInCoplanarTriangle(triangle1.vertices[1].vertex, triangle2) ||
+           pointInCoplanarTriangle(triangle1.vertices[2].vertex, triangle2) ||
+           pointInCoplanarTriangle(triangle2.vertices[0].vertex, triangle1) ||
+           pointInCoplanarTriangle(triangle2.vertices[1].vertex, triangle1) ||
+           pointInCoplanarTriangle(triangle2.vertices[2].vertex, triangle1);
 }
 
 AC3D::PlaneType AC3D::getPlaneType(const Point3 &normal)

@@ -716,8 +716,25 @@ private:
 
         bool equals(const Plane &other) const
         {
+            if (!valid || !other.valid)
+                return false;
+
             const double epsilon = RELATIVE_EPSILON_K * SMALL_NUM * std::max({std::abs(distance), std::abs(other.distance), 1.0});
-            return valid && other.valid && std::abs(distance - other.distance) < epsilon && normal.equals(other.normal);
+
+            // The same 3 points listed in the opposite winding order
+            // produce an anti-parallel normal and a negated distance,
+            // but describe the identical plane. Accept both the
+            // parallel case (matching normal, matching distance) and
+            // the anti-parallel case (opposite normal, negated
+            // distance) so plane equality doesn't depend on which way
+            // the two triangles happen to be wound.
+            if (normal.equals(other.normal))
+                return std::abs(distance - other.distance) < epsilon;
+
+            if (normal.equals(-other.normal))
+                return std::abs(distance + other.distance) < epsilon;
+
+            return false;
         }
     };
 
@@ -1161,6 +1178,7 @@ private:
     static bool coplanar(const Triangle &triangle1, const Triangle &triangle2);
     static bool trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2);
     static size_t getSharedVertexCount(const Triangle &triangle1, const Triangle &triangle2);
+    static bool pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle);
     static PlaneType getPlaneType(const Point3 &normal);
     [[maybe_unused]] static std::array<Point2, 3> convert2D(const std::array<Point3, 3> &vertices, PlaneType planeType);
 };

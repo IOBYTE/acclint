@@ -1,0 +1,25 @@
+test7.ac:26 warning: overlapping 2 sided surface (object: back texture:  sides: 2)
+SURF 0x20
+^
+test7.ac:29 note: ref
+0 0 0
+^
+test7.ac:30 note: ref
+1 0 0
+^
+test7.ac:31 note: ref
+2 0 0
+^
+test7.ac:12 note: first instance (object: front texture:  sides: 2)
+SURF 0x20
+^
+test7.ac:15 note: ref
+0 0 0
+^
+test7.ac:16 note: ref
+1 0 0
+^
+test7.ac:17 note: ref
+2 0 0
+^
+1 warning

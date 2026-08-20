@@ -138,3 +138,64 @@ setup_file() {
 }
 
 ################################################################################
+
+# Regression test: trianglesOverlap() -> AC3D::coplanar() -> Plane::equals()
+# used to require the two planes' normals to point in the same direction.
+# Two triangles that are genuinely coplanar but listed with opposite vertex
+# winding (extremely common between independently-authored objects, and not
+# an indicator of anything wrong) produce anti-parallel normals, so
+# coplanar() incorrectly reported "not coplanar" and trianglesOverlap()
+# bailed out before ever testing for an actual overlap. "back" here is a
+# small triangle entirely inside "front", wound in the opposite direction
+# and sharing no vertices with it, so this only exercises the coplanarity
+# check (not the shared-vertex handling covered by test7/test8).
+@test "test6" {
+  $RUN_TEST acclint test6.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# Regression test: the vendored Moeller coplanar-triangle overlap test only
+# checks a single vertex of each triangle (vertex 0) for point-in-triangle
+# containment, and deliberately ignores edges that exactly share 1 or 2
+# vertices so a shared vertex/edge isn't mistaken for an edge crossing. That
+# combination missed a genuine overlap where two triangles share an edge and
+# the *other* (non-shared) vertex of one triangle lands inside the other --
+# there's no edge crossing to detect, and the vertex that matters isn't
+# vertex 0. "back" here shares an edge with "front", and its third vertex
+# lies squarely inside "front".
+@test "test7" {
+  $RUN_TEST acclint test7.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test7.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# Regression guard: "back" shares an edge with "front" (like test7), but its
+# third vertex lies on the opposite side of that edge -- the two triangles
+# are simply adjacent (as two triangles splitting a quad would be), not
+# overlapping. This must NOT warn; it guards against a fix for test6/test7
+# overcorrecting into false positives for ordinary shared-edge adjacency.
+@test "test8" {
+  $RUN_TEST acclint test8.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################
