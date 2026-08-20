@@ -4311,17 +4311,78 @@ bool AC3D::pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle
     // magnitude (they are twice a sub-triangle's area), so, like the
     // cross-product-based collinearity test, the "on the edge"
     // threshold needs to scale the same way rather than use a fixed
-    // absolute value.
+    // absolute value. Using dot(v, v) instead of length() * length()
+    // gets the same squared-length value without paying for (and then
+    // immediately undoing) a sqrt() -- this runs once per triangle pair
+    // that reaches this fallback, and this fallback runs six times per
+    // pair in trianglesOverlap(), so the sqrt was pure waste.
     constexpr double k = 4.0;
     const double epsilon = k * static_cast<double>(std::numeric_limits<float>::epsilon()) *
-                            std::max({ab.length() * ab.length(), bc.length() * bc.length(), ca.length() * ca.length(), 1.0});
+                            std::max({ab.dot(ab), bc.dot(bc), ca.dot(ca), 1.0});
 
     return (d1 > epsilon && d2 > epsilon && d3 > epsilon) ||
            (d1 < -epsilon && d2 < -epsilon && d3 < -epsilon);
 }
 
+// Cheap, conservative reject test for trianglesOverlap(): if the two
+// triangles' axis-aligned bounding boxes don't overlap on any axis, the
+// triangles themselves cannot overlap either, so the much more expensive
+// coplanar/Moeller/point-in-triangle tests below can be skipped
+// entirely. This is a pure performance optimization -- it can only ever
+// short-circuit pairs that trianglesOverlap() would have returned false
+// for anyway -- added because checkOverlapping2SidedSurface() calls
+// trianglesOverlap() on every pair of triangles across every pair of
+// double-sided surfaces in the model, which is expensive enough on a
+// large multi-object file that skipping the detailed checks for pairs
+// that are nowhere near each other matters a lot. The boxes are padded
+// by the same scale-relative epsilon used elsewhere in this file so this
+// can't reject a pair the tolerant checks further down would still have
+// accepted right at the boundary.
+bool AC3D::boundingBoxesOverlap(const Triangle &triangle1, const Triangle &triangle2)
+{
+    Point3 min1 = triangle1.vertices[0].vertex;
+    Point3 max1 = min1;
+    Point3 min2 = triangle2.vertices[0].vertex;
+    Point3 max2 = min2;
+
+    for (size_t i = 1; i < 3; i++)
+    {
+        const Point3 &v1 = triangle1.vertices[i].vertex;
+        min1.x(std::min(min1.x(), v1.x()));
+        min1.y(std::min(min1.y(), v1.y()));
+        min1.z(std::min(min1.z(), v1.z()));
+        max1.x(std::max(max1.x(), v1.x()));
+        max1.y(std::max(max1.y(), v1.y()));
+        max1.z(std::max(max1.z(), v1.z()));
+
+        const Point3 &v2 = triangle2.vertices[i].vertex;
+        min2.x(std::min(min2.x(), v2.x()));
+        min2.y(std::min(min2.y(), v2.y()));
+        min2.z(std::min(min2.z(), v2.z()));
+        max2.x(std::max(max2.x(), v2.x()));
+        max2.y(std::max(max2.y(), v2.y()));
+        max2.z(std::max(max2.z(), v2.z()));
+    }
+
+    constexpr double k = 4.0;
+    const double float_epsilon = static_cast<double>(std::numeric_limits<float>::epsilon());
+    const double scale = std::max({max1.x() - min1.x(), max1.y() - min1.y(), max1.z() - min1.z(),
+                                    max2.x() - min2.x(), max2.y() - min2.y(), max2.z() - min2.z(),
+                                    std::fabs(min1.x()), std::fabs(min1.y()), std::fabs(min1.z()),
+                                    std::fabs(min2.x()), std::fabs(min2.y()), std::fabs(min2.z()),
+                                    1.0});
+    const double epsilon = k * float_epsilon * scale;
+
+    return (min1.x() - epsilon <= max2.x() + epsilon) && (min2.x() - epsilon <= max1.x() + epsilon) &&
+           (min1.y() - epsilon <= max2.y() + epsilon) && (min2.y() - epsilon <= max1.y() + epsilon) &&
+           (min1.z() - epsilon <= max2.z() + epsilon) && (min2.z() - epsilon <= max1.z() + epsilon);
+}
+
 bool AC3D::trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2)
 {
+    if (!boundingBoxesOverlap(triangle1, triangle2))
+        return false;
+
     if (getSharedVertexCount(triangle1, triangle2) == 3)
         return true;
 

@@ -1178,6 +1178,7 @@ private:
     static bool degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2);
     static bool degenerate(const std::array<Point3, 3> &vertices);
     static bool coplanar(const Triangle &triangle1, const Triangle &triangle2);
+    static bool boundingBoxesOverlap(const Triangle &triangle1, const Triangle &triangle2);
     static bool trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2);
     static size_t getSharedVertexCount(const Triangle &triangle1, const Triangle &triangle2);
     static bool pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle);
