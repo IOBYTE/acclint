@@ -1,0 +1,34 @@
+test7.ac:13 warning: duplicate vertices
+0.0 0.0 0.0
+^
+test7.ac:8 note: first instance
+0.0 0.0 0.0
+^
+test7.ac:19 warning: duplicate surface vertices
+5 0 0
+^
+test7.ac:13 note: vertex
+0.0 0.0 0.0
+^
+test7.ac:18 note: first instance
+0 0 0
+^
+test7.ac:8 note: vertex
+0.0 0.0 0.0
+^
+test7.ac:23 warning: collinear vertices
+3 0 0
+^
+test7.ac:9 note: first vertex
+1.0 0.0 0.0
+^
+test7.ac:12 note: second vertex
+0.5636836268624157 0.43631637313758437 0.0
+^
+test7.ac:11 note: third vertex
+0.0 1.0 0.0
+^
+test7.ac:15 warning: surface self intersecting
+SURF 0x10
+^
+4 warnings

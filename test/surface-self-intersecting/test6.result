@@ -1,0 +1,28 @@
+test6.ac:21 warning: collinear vertices
+1 0 0
+^
+test6.ac:10 note: first vertex
+1.0 1.0 0.0
+^
+test6.ac:13 note: second vertex
+1.0 0.3781660187282404 0.0
+^
+test6.ac:9 note: third vertex
+1.0 0.0 0.0
+^
+test6.ac:23 warning: collinear vertices
+3 0 0
+^
+test6.ac:9 note: first vertex
+1.0 0.0 0.0
+^
+test6.ac:12 note: second vertex
+0.5376678799102481 0.46233212008975194 0.0
+^
+test6.ac:11 note: third vertex
+0.0 1.0 0.0
+^
+test6.ac:15 warning: surface self intersecting
+SURF 0x10
+^
+3 warnings

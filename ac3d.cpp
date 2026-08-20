@@ -4622,24 +4622,31 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
             Point3 p4;
 
             // get first vertex of first line segment
-            if (!object.getSurfaceVertex(surface, next++, p0))
+            if (!object.getSurfaceVertex(surface, next++ % size, p0))
                 return;
 
             // find the second vertex of the first line segment
-            if (!object.getSurfaceVertex(surface, next++, p1))
+            if (!object.getSurfaceVertex(surface, next++ % size, p1))
                 return;
 
             // find the vertex after the first line segment
-            if (!object.getSurfaceVertex(surface, next, p2))
+            if (!object.getSurfaceVertex(surface, next % size, p2))
                 return;
 
             // skip duplicate and collinear vertices
-            while (p0 == p1 || p1 == p2 || surface.refs[next - 1].collinear)
+            //
+            // next isn't wrapped mod size on its own (only at each fetch
+            // site, like the equivalent second-line-segment loop below),
+            // so a run of duplicate/collinear vertices that reaches the
+            // physical end of refs is followed around to the start
+            // instead of returning early and abandoning every remaining
+            // j iteration.
+            while (p0 == p1 || p1 == p2 || surface.refs[(next - 1) % size].collinear)
             {
                 end--;
                 next++;
                 p1 = p2;
-                if (!object.getSurfaceVertex(surface, next, p2))
+                if (!object.getSurfaceVertex(surface, next % size, p2))
                     return;
             }
 
@@ -4658,12 +4665,24 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
                     return;
 
                 // skip duplicate and collinear vertices
+                //
+                // p4 must stay one ref ahead of p3, matching the initial
+                // fetch above (p3 at `next`, p4 at `next + 1`). Fetching
+                // p4 at `next % size` here (the same index p3 was just
+                // reassigned to) made p3 and p4 collide on the very first
+                // skip, spuriously satisfying p3 == p4 and forcing an
+                // extra, unwarranted iteration -- and therefore an extra
+                // `end--` -- every time this loop ran at all. Enough of
+                // those phantom decrements push `end` below `next` right
+                // as the loop reaches a genuinely-crossing segment,
+                // silently skipping the very check this function exists
+                // to make.
                 while (p2 == p3 || p3 == p4 || surface.refs[next % size].collinear)
                 {
                     end--;
                     next++;
                     p3 = p4;
-                    if (!object.getSurfaceVertex(surface, next % size, p4))
+                    if (!object.getSurfaceVertex(surface, (next + 1) % size, p4))
                         return;
                 }
 
