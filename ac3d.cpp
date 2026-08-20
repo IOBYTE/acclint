@@ -4640,9 +4640,18 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
             // so a run of duplicate/collinear vertices that reaches the
             // physical end of refs is followed around to the start
             // instead of returning early and abandoning every remaining
-            // j iteration.
+            // j iteration. But wrapping means getSurfaceVertex() can no
+            // longer fail its way out of this loop: if every vertex in
+            // the surface is duplicate/collinear (e.g. a "polygon" whose
+            // points are all collinear), none of them ever resolve the
+            // while condition, and next would climb forever. Once next
+            // has traveled a full lap (size vertices) without finding a
+            // non-degenerate triple, every possible one has already been
+            // tried, so there is nothing left to test.
             while (p0 == p1 || p1 == p2 || surface.refs[(next - 1) % size].collinear)
             {
+                if (next - j >= size)
+                    return;
                 end--;
                 next++;
                 p1 = p2;
@@ -4679,6 +4688,15 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
                 // to make.
                 while (p2 == p3 || p3 == p4 || surface.refs[next % size].collinear)
                 {
+                    // Same runaway risk as the first-segment skip loop
+                    // above: these fetches already wrapped mod size
+                    // before today's fix, so a fully degenerate run
+                    // (nothing left but duplicate/collinear vertices for
+                    // the rest of this lap) could already spin forever
+                    // here, independent of the other two fixes in this
+                    // function.
+                    if (next - j >= size)
+                        return;
                     end--;
                     next++;
                     p3 = p4;

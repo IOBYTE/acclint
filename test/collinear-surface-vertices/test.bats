@@ -62,6 +62,17 @@ setup_file() {
 
 ################################################################################
 
+# test2 also doubles as a regression test for checkSurfaceSelfIntersecting:
+# this polygon's 4 vertices are all exactly collinear, so every triple is
+# flagged, and checkSurfaceSelfIntersecting's degenerate-vertex skip loops
+# used to walk their ref index forward looking for a non-degenerate triple
+# that could never exist. Before that walk wrapped mod the ref count, it
+# eventually ran off the physical end of refs and returned; once it started
+# wrapping (to correctly reach a valid vertex on the far side of a shorter
+# duplicate/collinear run in other cases), a fully degenerate polygon like
+# this one gave it nothing to ever find, and it spun forever instead of
+# returning. If this hangs instead of completing, that loop-bound fix
+# regressed.
 @test "test2.1" {
   $RUN_TEST acclint test2.ac
   [ "$status" -eq 0 ]
@@ -296,3 +307,21 @@ setup_file() {
 }
 
 ################################################################################
+
+# Regression test: same underlying issue as test2.1 (checkSurfaceSelfIntersecting's
+# degenerate-vertex skip loops looking forever for a non-collinear triple that
+# can't exist), but with 8 vertices instead of 4 to exercise later j iterations
+# of the outer loop too, not just j=0/j=1.
+@test "test13" {
+  $RUN_TEST acclint test13.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test13.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test13.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
