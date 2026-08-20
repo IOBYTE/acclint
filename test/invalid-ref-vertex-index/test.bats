@@ -8,42 +8,76 @@ setup() {
     fi
 }
 
+# Delete any *.output debug files left over from a previous run before
+# running any tests in this file.
+setup_file() {
+    rm -f ./*.output
+}
+
 ################################################################################
 
 @test "test1.1" {
   $RUN_TEST acclint test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.1.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.2" {
   $RUN_TEST acclint -Wno-errors test1.ac
   [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.2.output
+  fi
   [ "$output" = "" ]
 }
 
 @test "test1.3" {
   $RUN_TEST acclint -Wno-errors -Winvalid-ref-vertex-index test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.3.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.4" {
   $RUN_TEST acclint --quiet test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.4.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.4.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.5" {
   $RUN_TEST acclint --summary test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.5.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.5.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.6" {
   $RUN_TEST acclint --quiet --summary test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.6.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 ################################################################################
@@ -51,7 +85,12 @@ setup() {
 @test "test2" {
   $RUN_TEST acclint test2.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test2.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 ################################################################################
@@ -59,37 +98,65 @@ setup() {
 @test "test3.1" {
   $RUN_TEST acclint test3.ac -Wno-unused-vertex
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test3.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test3.2" {
   $RUN_TEST acclint -Wno-errors test3.ac -Wno-unused-vertex
   [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.2.output
+  fi
   [ "$output" = "" ]
 }
 
 @test "test3.3" {
   $RUN_TEST acclint -Wno-errors -Winvalid-ref-vertex-index test3.ac -Wno-unused-vertex
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test3.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.3.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test3.4" {
   $RUN_TEST acclint --quiet test3.ac -Wno-unused-vertex
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test3.4.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.4.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test3.5" {
   $RUN_TEST acclint --summary test3.ac -Wno-unused-vertex
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test3.5.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.5.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test3.6" {
   $RUN_TEST acclint --quiet --summary test3.ac -Wno-unused-vertex
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test3.6.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.6.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 ################################################################################

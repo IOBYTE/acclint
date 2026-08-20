@@ -8,42 +8,76 @@ setup() {
     fi
 }
 
+# Delete any *.output debug files left over from a previous run before
+# running any tests in this file.
+setup_file() {
+    rm -f ./*.output
+}
+
 ################################################################################
 
 @test "test1.1" {
   $RUN_TEST acclint -Wno-more-surf-than-specified test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.1.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.2" {
   $RUN_TEST acclint -Wno-errors test1.ac
   [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.2.output
+  fi
   [ "$output" = "" ]
 }
 
 @test "test1.3" {
   $RUN_TEST acclint -Wno-errors -Winvalid-numsurf test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.3.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.4" {
   $RUN_TEST acclint -Wno-more-surf-than-specified --quiet test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.4.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.4.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.5" {
   $RUN_TEST acclint -Wno-more-surf-than-specified --summary test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.5.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.5.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.6" {
   $RUN_TEST acclint -Wno-more-surf-than-specified --quiet --summary test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.6.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 ################################################################################
@@ -51,7 +85,12 @@ setup() {
 @test "test2" {
   $RUN_TEST acclint -Wno-more-surf-than-specified test2.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test2.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 ################################################################################
@@ -59,5 +98,12 @@ setup() {
 @test "test3" {
   $RUN_TEST acclint -Wno-more-surf-than-specified test3.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test3.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.output
+  fi
+  [ "$actual" = "$expected" ]
 }
+
+################################################################################

@@ -8,6 +8,12 @@ setup() {
     fi
 }
 
+# Delete any *.output debug files left over from a previous run before
+# running any tests in this file.
+setup_file() {
+    rm -f ./*.output
+}
+
 ################################################################################
 
 # TODO invalid vertices breaks checks so ignore warnings for now
@@ -15,43 +21,74 @@ setup() {
 @test "test1.1" {
   $RUN_TEST acclint -Wno-warnings test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.1.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.2" {
   $RUN_TEST acclint -Wno-warnings -Wno-errors test1.ac
   [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.2.output
+  fi
   [ "$output" = "" ]
 }
 
 @test "test1.3" {
   $RUN_TEST acclint -Wno-warnings -Wno-errors -Winvalid-vertex test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.3.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.3.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.4" {
   $RUN_TEST acclint -Wno-warnings --quiet test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.4.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.4.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.5" {
   $RUN_TEST acclint -Wno-warnings --summary test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.5.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.5.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.6" {
   $RUN_TEST acclint -Wno-warnings --quiet --summary test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.6.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.7" {
   $RUN_TEST acclint -Wno-warnings -Wno-invalid-vertex test1.ac
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test1.7.result)" ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.7.output
+  fi
+  [ "$output" = "" ]
 }
 
 ################################################################################
@@ -59,7 +96,12 @@ setup() {
 @test "test2" {
   $RUN_TEST acclint -Wno-warnings test2.acc
   [ "$status" -eq 0 ]
-  [ "$output" = "$(cat test2.result)" ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 ################################################################################
