@@ -4214,52 +4214,88 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
     // must have 3 or more vertices
     if (surface.refs.size() > 2)
     {
-        size_t next = 0;
-        Point2 p0;
-        Point2 p1;
-        Point2 p2;
-
         // project 3d coordinates onto 2d plane
         const PlaneType planeType = getPlaneType(surface.normal);
-
-        if (!object.getSurfaceVertex(surface, next++, p0, planeType))
-            return;
-
-        if (!object.getSurfaceVertex(surface, next++, p1, planeType))
-            return;
-
-        // find the next unique non-collnear vertex
-        while (p0 == p1 || surface.refs[next - 1].collinear)
-        {
-            if (!object.getSurfaceVertex(surface, next++, p1, planeType))
-                return;
-        }
-
-        if (!object.getSurfaceVertex(surface, next++, p2, planeType))
-            return;
-
-        // find the next unique non-collnear vertex
-        while (p1 == p2 || surface.refs[next - 1].collinear)
-        {
-            if (!object.getSurfaceVertex(surface, next++, p2, planeType))
-                return;
-        }
-
-        // FIXME: this will be wrong when starting on a convex vertex
-        const bool counterclockwise = ccw(p0, p1, p2);
         const size_t size = surface.refs.size();
-        while (next < (size + 2))
+
+        // Build the cyclic list of the surface's actual corners: skip any
+        // ref that's flagged collinear (a redundant point along a
+        // straight edge, per checkCollinearSurfaceVertices) or that
+        // duplicates the point immediately before it. This is exactly
+        // the set of points the old scan below used to visit as it slid
+        // its 3-point window forward one ref at a time -- collecting it
+        // up front makes the corners available in any order instead of
+        // only as a byproduct of a scan that always started at ref 0.
+        struct Corner
         {
-            p0 = p1;
-            p1 = p2;
-            if (!object.getSurfaceVertex(surface, next++ % size, p2, planeType))
+            Point2 point;
+            size_t ref;
+        };
+        std::vector<Corner> corners;
+        corners.reserve(size);
+
+        for (size_t i = 0; i < size; ++i)
+        {
+            Point2 p;
+            if (!object.getSurfaceVertex(surface, i, p, planeType))
                 return;
 
-            while (p1 == p2 || surface.refs[(next - 1) % size].collinear)
-            {
-                if (!object.getSurfaceVertex(surface, next++ % size, p2, planeType))
-                    return;
-            }
+            // A collinear-flagged ref is redundant regardless of its
+            // position -- including ref 0. Gating this on !corners.empty()
+            // would let ref 0 through unconditionally (nothing kept yet
+            // to compare it to), silently readmitting exactly the kind
+            // of redundant straight-edge point this filter exists to
+            // remove whenever it happens to be the first ref.
+            if (surface.refs[i].collinear)
+                continue;
+
+            if (!corners.empty() && p == corners.back().point)
+                continue;
+
+            corners.push_back({p, i});
+        }
+
+        // The scan above only collapses a duplicate against the point
+        // immediately before it, so a duplicate straddling the array
+        // boundary (last corner found equals the first) survives as two
+        // separate corners. Drop the repeat so the cyclic list below
+        // doesn't measure a zero-length edge at the wrap point.
+        if (corners.size() > 1 && corners.front().point == corners.back().point)
+            corners.pop_back();
+
+        // fewer than 3 real corners: nothing to classify
+        if (corners.size() < 3)
+            return;
+
+        // The reference orientation every other corner gets compared
+        // against has to be measured at a vertex that's genuinely
+        // convex, or the comparison comes out backwards. The previous
+        // version always measured it at whichever vertex happened to be
+        // second in the refs list -- wrong whenever that particular
+        // vertex is the polygon's one concave/reflex point (the FIXME
+        // this replaces acknowledged the bug but never fixed it). The
+        // extreme point of any simple polygon along any axis (here:
+        // lowest y, ties broken by lowest x) is always a convex hull
+        // vertex, so anchor the reference orientation there instead.
+        const size_t count = corners.size();
+        size_t minIndex = 0;
+        for (size_t i = 1; i < count; ++i)
+        {
+            const Point2 &p = corners[i].point;
+            const Point2 &m = corners[minIndex].point;
+            if (p.y() < m.y() || (p.y() == m.y() && p.x() < m.x()))
+                minIndex = i;
+        }
+
+        const bool counterclockwise = ccw(corners[(minIndex + count - 1) % count].point,
+                                          corners[minIndex].point,
+                                          corners[(minIndex + 1) % count].point);
+
+        for (size_t i = 0; i < count; ++i)
+        {
+            const Point2 &p0 = corners[(i + count - 1) % count].point;
+            const Point2 &p1 = corners[i].point;
+            const Point2 &p2 = corners[(i + 1) % count].point;
 
             if (ccw(p0, p1, p2) != counterclockwise && !surface.concave)
             {
@@ -4269,8 +4305,8 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
                 {
                     warningWithCount(m_surface_not_convex_count, surface.line_number) << "surface not convex" << std::endl;
                     showLine(in, surface.line_pos);
-                    note(surface.refs[(next - 2) % size].line_number) << "concave vertex"  << std::endl;
-                    showLine(in, surface.refs[(next - 2) % size].line_pos);
+                    note(surface.refs[corners[i].ref].line_number) << "concave vertex"  << std::endl;
+                    showLine(in, surface.refs[corners[i].ref].line_pos);
                 }
             }
         }
