@@ -1343,6 +1343,16 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
 
     if (!in)
     {
+        if (in.eof())
+        {
+            if (m_invalid_material)
+            {
+                warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
+                showLine(in);
+            }
+            return false;
+        }
+
         error() << "reading " << expected << std::endl;
         showLine(in);
         return false;
@@ -1380,6 +1390,16 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
             in >> actual;
 
             if (!in) {
+                if (in.eof())
+                {
+                    if (m_invalid_material)
+                    {
+                        warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
+                        showLine(in);
+                    }
+                    return false;
+                }
+
                 error() << "reading " << expected << std::endl;
                 showLine(in);
                 return false;
