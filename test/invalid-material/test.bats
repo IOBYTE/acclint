@@ -218,7 +218,7 @@ setup_file() {
   $RUN_TEST acclint test4.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
-  expected="$(tr -d '\r' < test4.result)"
+  expected="$(tr -d '\r' < test4.1.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test4.1.output
   fi
@@ -238,7 +238,7 @@ setup_file() {
   $RUN_TEST acclint -Wno-warnings -Winvalid-material test4.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
-  expected="$(tr -d '\r' < test4.result)"
+  expected="$(tr -d '\r' < test4.3.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test4.3.output
   fi
@@ -284,7 +284,7 @@ setup_file() {
   $RUN_TEST acclint test5.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
-  expected="$(tr -d '\r' < test1.result)"
+  expected="$(tr -d '\r' < test5.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test5.output
   fi
@@ -297,7 +297,7 @@ setup_file() {
   $RUN_TEST acclint test6.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
-  expected="$(tr -d '\r' < test1.result)"
+  expected="$(tr -d '\r' < test6.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test6.output
   fi
