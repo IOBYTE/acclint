@@ -1367,7 +1367,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
         do {
             try {
                 std::size_t idx;
-                double number = std::stod(actual, &idx);
+                const double number = std::stod(actual, &idx);
                 is_number = true;
                 if (idx != actual.size()) {
                     error() << "reading " << expected << std::endl;
@@ -1511,7 +1511,7 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
         do {
             try {
                 std::size_t idx;
-                std::stod(actual, &idx);
+                const double number = std::stod(actual, &idx);
                 is_number = true;
                 if (idx != actual.size()) {
                     error() << "reading " << expected << std::endl;
