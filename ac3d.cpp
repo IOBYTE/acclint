@@ -1571,7 +1571,15 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
 
     first >> material.name;
 
-    checkTrailing(first);
+    if (!first)
+    {
+        error() << "reading name" << std::endl;
+        showLine(first);
+    }
+    else
+    {
+        checkTrailing(first);
+    }
 
     while (getLine(in))
     {
