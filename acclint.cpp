@@ -19,7 +19,9 @@
 //---------------------------------------------------------------------------
 
 #ifdef _WIN32
-#pragma warning( disable : 4996)
+#include "ya_getopt.h"
+#else
+#include <getopt.h>
 #endif
 
 #include "ac3d.h"
@@ -279,621 +281,653 @@ int main(int argc, char *argv[])
 
     auto isEnabled = [](const std::string& a) { return !a.starts_with("-Wno-"); };
 
-    for (int i = 1; i < argc; ++i)
+    // Long options without a short-option equivalent are dispatched via
+    // getopt_long()'s returned val, using identifiers starting past the
+    // range of any char so they can never collide with a short option.
+    enum
     {
-        std::string arg(argv[i]);
-        if (arg == "-o")
+        OPT_VERSION = 256,
+        OPT_HELP,
+        OPT_SPLIT_SURF,
+        OPT_SPLIT_MAT,
+        OPT_FLATTEN,
+        OPT_SPLIT_POLYGON,
+        OPT_COMBINE_TEXTURE,
+        OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
+        OPT_FIX_SURFACE_2_SIDED_OPAQUE,
+        OPT_MERGE,
+        OPT_REMOVE_OBJECTS,
+        OPT_DUMP,
+        OPT_SHOW_TIMES,
+        OPT_QUIET,
+        OPT_SUMMARY,
+    };
+
+    static const struct option long_options[] = {
+        { "version",                     no_argument,       nullptr, OPT_VERSION },
+        { "help",                        no_argument,       nullptr, OPT_HELP },
+        { "splitSURF",                   no_argument,       nullptr, OPT_SPLIT_SURF },
+        { "splitMat",                    no_argument,       nullptr, OPT_SPLIT_MAT },
+        { "flatten",                     no_argument,       nullptr, OPT_FLATTEN },
+        { "splitPolygon",                no_argument,       nullptr, OPT_SPLIT_POLYGON },
+        { "combineTexture",              no_argument,       nullptr, OPT_COMBINE_TEXTURE },
+        { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
+        { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
+        { "merge",                       required_argument, nullptr, OPT_MERGE },
+        { "removeObjects",               required_argument, nullptr, OPT_REMOVE_OBJECTS },
+        { "dump",                        required_argument, nullptr, OPT_DUMP },
+        { "showTimes",                   no_argument,       nullptr, OPT_SHOW_TIMES },
+        { "quiet",                       no_argument,       nullptr, OPT_QUIET },
+        { "summary",                     no_argument,       nullptr, OPT_SUMMARY },
+        { nullptr, 0, nullptr, 0 }
+    };
+
+    // "-Wxxx"/"-Wno-xxx" are handled as the short option 'W' with its value
+    // attached directly (e.g. "-Wno-blank-line" -> option 'W', optarg
+    // "no-blank-line"), the same way GCC's own -W flags work. A leading ':'
+    // makes getopt_long() return ':' (not '?') for a missing required
+    // argument, so the two cases can be told apart and reported the same
+    // way the previous hand-rolled parser did.
+    opterr = 0;
+
+    int c;
+    while ((c = getopt_long(argc, argv, ":o:T:j:v:lW:", long_options, nullptr)) != -1)
+    {
+        switch (c)
         {
-            if (i < (argc - 1))
-            {
-                out_file = argv[i + 1];
-                i++;
-            }
-            else
-            {
-                usage();
-                return EXIT_FAILURE;
-            }
-        }
-        else if (arg == "-T")
+        case 'o':
+            out_file = optarg;
+            break;
+        case 'T':
+            texture_paths.emplace_back(optarg);
+            break;
+        case 'j':
         {
-            if (i < argc - 1)
-            {
-                texture_paths.emplace_back(argv[i + 1]);
-                i++;
-            }
-            else
-            {
-                std::cerr << "Missing texture path" << std::endl;
-                usage();
-                return EXIT_FAILURE;
-            }
-        }
-        else if (arg == "-j")
-        {
-            i++;
-            if (i == argc)
-            {
-                std::cerr << "Missing number of threads" << std::endl;
-                usage();
-                return EXIT_FAILURE;
-            }
-            arg = argv[i];
-            std::istringstream iss(arg);
+            std::istringstream iss(optarg);
             iss >> threads;
             if (!iss || threads < 1 || threads > 256)
             {
-                std::cerr << "Invalid number of threads: " << arg << std::endl;
+                std::cerr << "Invalid number of threads: " << optarg << std::endl;
                 usage();
                 return EXIT_FAILURE;
             }
-        }
-        else if (arg == "--version")
-        {
-            std::cout << "acclint " << acclint_VERSION_MAJOR << "." << acclint_VERSION_MINOR << std::endl;
-            return EXIT_SUCCESS;
-        }
-        else if (arg == "--help")
-        {
-            usage();
-            return EXIT_SUCCESS;
-        }
-
-        // warnings
-        else if (arg == "-Wno-warnings" || arg == "-Wwarnings")
-        {
-            const bool value = arg.starts_with("-Wno-") ? false : true;
-
-            // warnings with tests
-            ambiguous_texture = value;
-            blank_line = value;
-            collinear_surface_vertices = value;
-            different_mat = value;
-            different_surf = value;
-            different_uv = value;
-            duplicate_materials = value;
-            duplicate_surfaces = value;
-            duplicate_surfaces_order = value;
-            duplicate_surfaces_winding = value;
-            duplicate_surface_vertices = value;
-            duplicate_texture = value;
-            duplicate_triangles = value;
-            duplicate_vertices = value;
-            empty_object = value;
-            extra_object = value;
-            extra_uv_coordinates = value;
-            floating_point = value;
-            group_with_geometry = value;
-            invalid_material = value;
-            invalid_normal_length = value;
-            invalid_object_type = value;
-            invalid_ref_count = value;
-            material_after_object = value;
-            missing_kids = value;
-            missing_normal = value;
-            missing_surfaces = value;
-            missing_texture = value;
-            missing_uv_coordinates = value;
-            multiple_crease = value;
-            multiple_data = value;
-            multiple_folded = value;
-            multiple_hidden = value;
-            multiple_loc = value;
-            multiple_locked = value;
-            multiple_name = value;
-            multiple_rot = value;
-            multiple_shader = value;
-            multiple_subdiv = value;
-            multiple_texoff = value;
-            multiple_texrep = value;
-            multiple_texture = value;
-            multiple_url = value;
-            multiple_world = value;
-            overlapping_2_sided_surface = value;
-            surface_2_sided_opaque = value;
-            surface_not_convex = value;
-            surface_not_coplanar = value;
-            surface_no_texture = value;
-            surface_self_intersecting = value;
-            surface_strip_degenerate = value;
-            surface_strip_duplicate_triangles = value;
-            surface_strip_size = value;
-            surface_zero_area_uv = value;
-            trailing_text = value;
-            unsupported_version = value;
-            unused_material = value;
-            unused_vertex = value;
-            utf8_bom = value;
-
-            // warnings with no tests
-            multiple_polygon_surface = value;
-            surface_strip_hole = value;
-        }
-
-        // warnings with tests
-        else if (arg == "-Wno-ambiguous-texture" || arg == "-Wambiguous-texture")
-        {
-            ambiguous_texture = isEnabled(arg);
-        }
-        else if (arg == "-Wno-blank-line" || arg == "-Wblank-line")
-        {
-            blank_line = isEnabled(arg);
-        }
-        else if (arg == "-Wno-collinear-surface-vertices" || arg == "-Wcollinear-surface-vertices")
-        {
-            collinear_surface_vertices = isEnabled(arg);
-        }
-        else if (arg == "-Wno-different-mat" || arg == "-Wdifferent-mat")
-        {
-            different_mat = isEnabled(arg);
-        }
-        else if (arg == "-Wno-different-surf" || arg == "-Wdifferent-surf")
-        {
-            different_surf = isEnabled(arg);
-        }
-        else if (arg == "-Wno-different-uv" || arg == "-Wdifferent-uv")
-        {
-            different_uv = isEnabled(arg);
-        }
-        else if (arg == "-Wno-duplicate-materials" || arg == "-Wduplicate-materials")
-        {
-            duplicate_materials = isEnabled(arg);
-        }
-        else if (arg == "-Wno-duplicate-surfaces" || arg == "-Wduplicate-surfaces")
-        {
-            duplicate_surfaces = isEnabled(arg);
-        }
-        else if (arg == "-Wno-duplicate-surfaces-order" || arg == "-Wduplicate-surfaces-order")
-        {
-            duplicate_surfaces_order = isEnabled(arg);
-        }
-        else if (arg == "-Wno-duplicate-surfaces-winding" || arg == "-Wduplicate-surfaces-winding")
-        {
-            duplicate_surfaces_winding = isEnabled(arg);
-        }
-        else if (arg == "-Wno-duplicate-texture" || arg == "-Wduplicate-texture")
-        {
-            duplicate_texture = isEnabled(arg);
-        }
-        else if (arg == "-Wno-duplicate-surface-vertices" || arg == "-Wduplicate-surface-vertices")
-        {
-            duplicate_surface_vertices = isEnabled(arg);
-        }
-        else if (arg == "-Wno-duplicate-triangles" || arg == "-Wduplicate-triangles")
-        {
-            duplicate_triangles = isEnabled(arg);
-        }
-        else if (arg == "-Wno-duplicate-vertices" || arg == "-Wduplicate-vertices")
-        {
-            duplicate_vertices = isEnabled(arg);
-        }
-        else if (arg == "-Wno-empty-object" || arg == "-Wempty-object")
-        {
-            empty_object = isEnabled(arg);
-        }
-        else if (arg == "-Wno-extra-object" || arg == "-Wextra-object")
-        {
-            extra_object = isEnabled(arg);
-        }
-        else if (arg == "-Wno-extra-uv-coordinates" || arg == "-Wextra-uv-coordinates")
-        {
-            extra_uv_coordinates = isEnabled(arg);
-        }
-        else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
-        {
-            group_with_geometry = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
-        {
-            invalid_material = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-normal-length" || arg == "-Winvalid-normal-length")
-        {
-            invalid_normal_length = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-object-type" || arg == "-Winvalid-object-type")
-        {
-            invalid_object_type = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-ref-count" || arg == "-Winvalid-ref-count")
-        {
-            invalid_ref_count = isEnabled(arg);
-        }
-        else if (arg == "-Wno-material-after-object" || arg == "-Wmaterial-after-object")
-        {
-            material_after_object = isEnabled(arg);
-        }
-        else if (arg == "-Wno-missing-kids" || arg == "-Wmissing-kids")
-        {
-            missing_kids = isEnabled(arg);
-        }
-        else if (arg == "-Wno-missing-normal" || arg == "-Wmissing-normal")
-        {
-            missing_normal = isEnabled(arg);
-        }
-        else if (arg == "-Wno-missing-surfaces" || arg == "-Wmissing-surfaces")
-        {
-            missing_surfaces = isEnabled(arg);
-        }
-        else if (arg == "-Wno-missing-texture" || arg == "-Wmissing-texture")
-        {
-            missing_texture = isEnabled(arg);
-        }
-        else if (arg == "-Wno-missing-uv-coordinates" || arg == "-Wmissing-uv-coordinates")
-        {
-            missing_uv_coordinates = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-crease" || arg == "-Wmultiple-crease")
-        {
-            multiple_crease = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-data" || arg == "-Wmultiple-data")
-        {
-            multiple_data = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-folded" || arg == "-Wmultiple-folded")
-        {
-            multiple_folded = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-hidden" || arg == "-Wmultiple-hidden")
-        {
-            multiple_hidden = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-loc" || arg == "-Wmultiple-loc")
-        {
-            multiple_loc = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-locked" || arg == "-Wmultiple-locked")
-        {
-            multiple_locked = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-name" || arg == "-Wmultiple-name")
-        {
-            multiple_name = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-rot" || arg == "-Wmultiple-rot")
-        {
-            multiple_rot = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-shader" || arg == "-Wmultiple-shader")
-        {
-            multiple_shader = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-subdiv" || arg == "-Wmultiple-subdiv")
-        {
-            multiple_subdiv = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-texoff" || arg == "-Wmultiple-texoff")
-        {
-            multiple_texoff = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-texrep" || arg == "-Wmultiple-texrep")
-        {
-            multiple_texrep = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-texture" || arg == "-Wmultiple-texture")
-        {
-            multiple_texture = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-url" || arg == "-Wmultiple-url")
-        {
-            multiple_url = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-world" || arg == "-Wmultiple-world")
-        {
-            multiple_world = isEnabled(arg);
-        }
-        else if (arg == "-Wno-overlapping-2-sided-surface" || arg == "-Woverlapping-2-sided-surface")
-        {
-            overlapping_2_sided_surface = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-2-sided-opaque" || arg == "-Wsurface-2-sided-opaque")
-        {
-            surface_2_sided_opaque = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-not-convex" || arg == "-Wsurface-not-convex")
-        {
-            surface_not_convex = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-not-coplanar" || arg == "-Wsurface-not-coplanar")
-        {
-            surface_not_coplanar = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-no-texture" || arg == "-Wsurface-no-texture")
-        {
-            surface_no_texture = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-self-intersecting" || arg == "-Wsurface-self-intersecting")
-        {
-            surface_self_intersecting = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-strip-degenerate" || arg == "-Wsurface-strip-degenerate")
-        {
-            surface_strip_degenerate = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-strip-size" || arg == "-Wsurface-strip-size")
-        {
-            surface_strip_size = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-zero-area-uv" || arg == "-Wsurface-zero-area-uv")
-        {
-            surface_zero_area_uv = isEnabled(arg);
-        }
-        else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
-        {
-            trailing_text = isEnabled(arg);
-        }
-        else if (arg == "-Wno-unsupported-version" || arg == "-Wunsupported-version")
-        {
-            unsupported_version = isEnabled(arg);
-        }
-        else if (arg == "-Wno-unused-material" || arg == "-Wunused-material")
-        {
-            unused_material = isEnabled(arg);
-        }
-        else if (arg == "-Wno-unused-vertex" || arg == "-Wunused-vertex")
-        {
-            unused_vertex = isEnabled(arg);
-        }
-        else if (arg == "-Wno-utf8-bom" || arg == "-Wutf8-bom")
-        {
-            utf8_bom = isEnabled(arg);
-        }
-
-        // warnings without tests
-        else if (arg == "-Wno-floating-point" || arg == "-Wfloating-point")
-        {
-            floating_point = isEnabled(arg);
-        }
-        else if (arg == "-Wno-multiple-polygon-surface" || arg == "-Wmultiple-polygon-surface")
-        {
-            multiple_polygon_surface = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-strip-hole" || arg == "-Wsurface-strip-hole")
-        {
-            surface_strip_hole = isEnabled(arg);
-        }
-        else if (arg == "-Wno-surface-strip-duplicate-triangles" || arg == "-Wsurface-strip-duplicate-triangles")
-        {
-            surface_strip_duplicate_triangles = isEnabled(arg);
-        }
-
-        // errors
-        else if (arg == "-Wno-errors" || arg == "-Werrors")
-        {
-            const bool value = arg.starts_with("-Wno-") ? false : true;
-
-            // errors with tests
-            invalid_kids_count = value;
-            invalid_material_index = value;
-            invalid_normal = value;
-            invalid_numsurf = value;
-            invalid_numvert = value;
-            invalid_refs_count = value;
-            invalid_ref_vertex_index = value;
-            invalid_surface_type = value;
-            invalid_token = value;
-            invalid_texture_coordinate = value;
-            invalid_vertex = value;
-            missing_vertex = value;
-            more_surf_than_specified = value;
-
-            // errors without tests
-
-            not_ac3d_file = value;
-        }
-
-        // errors with tests
-        else if (arg == "-Wno-invalid-kids-count" || arg == "-Winvalid-kids-count")
-        {
-            invalid_kids_count = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-material-index" || arg == "-Winvalid-material-index")
-        {
-            invalid_material_index = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-normal" || arg == "-Winvalid-normal")
-        {
-            invalid_normal = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-numsurf" || arg == "-Winvalid-numsurf")
-        {
-            invalid_numsurf = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-numvert" || arg == "-Winvalid-numvert")
-        {
-            invalid_numvert = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-vertex" || arg == "-Winvalid-vertex")
-        {
-            invalid_vertex = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-refs-count" || arg == "-Winvalid-refs-count")
-        {
-            invalid_refs_count = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-ref-vertex-index" || arg == "-Winvalid-ref-vertex-index")
-        {
-            invalid_ref_vertex_index = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-surface-type" || arg == "-Winvalid-surface-type")
-        {
-            invalid_surface_type = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-token" || arg == "-Winvalid-token")
-        {
-            invalid_token = isEnabled(arg);
-        }
-        else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
-        {
-            invalid_texture_coordinate = isEnabled(arg);
-        }
-        else if (arg == "-Wno-missing-vertex" || arg == "-Wmissing-vertex")
-        {
-            missing_vertex = isEnabled(arg);
-        }
-        else if (arg == "-Wno-more-surf-than-specified" || arg == "-Wmore-surf-than-specified")
-        {
-            more_surf_than_specified = isEnabled(arg);
-        }
-
-        // errors without tests
-
-        else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
-        {
-            not_ac3d_file = isEnabled(arg);
-        }
-        else if (arg == "--splitSURF")
-        {
-            splitSURF = true;
-        }
-        else if (arg == "--splitMat")
-        {
-            splitMat = true;
-        }
-        else if (arg == "--flatten")
-        {
-            flatten = true;
-        }
-        else if (arg == "--splitPolygon")
-        {
-            splitPolygon = true;
-        }
-        else if (arg == "--combineTexture")
-        {
-            combineTexture = true;
-        }
-        else if (arg == "--fixOverlapping2SidedSurface")
-        {
-            fix_overlapping_2_sided_surface = true;
-        }
-        else if (arg == "--fixSurface2SidedOpaque")
-        {
-            fix_surface_2_sided_opaque = true;
-        }
-        else if (arg == "--merge")
-        {
-            if (i < argc - 1)
-            {
-                merge_files.push_back(argv[i + 1]);
-                i++;
-            }
+            break;
+        }
+        case 'v':
+        {
+            const std::string ver = optarg;
+            if (ver == "11")
+                version = 11;
+            else if (ver == "12")
+                version = 12;
             else
             {
-                std::cerr << "Missing merge file" << std::endl;
+                std::cerr << "Invalid output version: " << ver << std::endl;
                 usage();
                 return EXIT_FAILURE;
             }
+            break;
         }
-        else if (arg == "--removeObjects")
+        case 'l':
+            listInput = true;
+            break;
+        case OPT_VERSION:
+            std::cout << "acclint " << acclint_VERSION_MAJOR << "." << acclint_VERSION_MINOR << std::endl;
+            return EXIT_SUCCESS;
+        case OPT_HELP:
+            usage();
+            return EXIT_SUCCESS;
+        case OPT_SPLIT_SURF:
+            splitSURF = true;
+            break;
+        case OPT_SPLIT_MAT:
+            splitMat = true;
+            break;
+        case OPT_FLATTEN:
+            flatten = true;
+            break;
+        case OPT_SPLIT_POLYGON:
+            splitPolygon = true;
+            break;
+        case OPT_COMBINE_TEXTURE:
+            combineTexture = true;
+            break;
+        case OPT_FIX_OVERLAPPING_2_SIDED_SURFACE:
+            fix_overlapping_2_sided_surface = true;
+            break;
+        case OPT_FIX_SURFACE_2_SIDED_OPAQUE:
+            fix_surface_2_sided_opaque = true;
+            break;
+        case OPT_MERGE:
+            merge_files.push_back(optarg);
+            break;
+        case OPT_REMOVE_OBJECTS:
         {
-            if ((i + 2) < argc)
+            const std::string type = optarg;
+
+            if (optind >= argc)
             {
-                const std::string type = argv[i + 1];
-                const std::string expression = argv[i + 2];
-                if (type == "group" || type == "poly" || type == "light")
+                std::cerr << "Missing removeObjects parameters" << std::endl;
+                usage();
+                return EXIT_FAILURE;
+            }
+
+            const std::string expression = argv[optind];
+            optind++;
+
+            if (type == "group" || type == "poly" || type == "light")
+            {
+                try
                 {
-                    try
-                    {
-                        removes.emplace_back(type, expression);
-                        i += 2;
-                    }
-                    catch (std::regex_error &ex)
-                    {
-                        std::cerr << "Invalid removeObjects expression:  " << expression << " " << ex.what() << std::endl;
-                        usage();
-                        return EXIT_FAILURE;
-                    }
+                    removes.emplace_back(type, expression);
                 }
-                else
+                catch (std::regex_error &ex)
                 {
-                    std::cerr << "Invalid removeObjects type: " << type << std::endl;
+                    std::cerr << "Invalid removeObjects expression:  " << expression << " " << ex.what() << std::endl;
                     usage();
                     return EXIT_FAILURE;
                 }
             }
             else
             {
-                std::cerr << "Missing removeObjects parameters" << std::endl;
+                std::cerr << "Invalid removeObjects type: " << type << std::endl;
                 usage();
                 return EXIT_FAILURE;
             }
+            break;
         }
-        else if (arg == "--dump")
+        case OPT_DUMP:
         {
-            i++;
-            if (i == argc)
-            {
-                std::cerr << "Missing dump type" << std::endl;
-                usage();
-                return EXIT_FAILURE;
-            }
-            arg = argv[i];
-            if (arg == "group")
+            const std::string type = optarg;
+            if (type == "group")
                 dump_type = AC3D::DumpType::group;
-            else if (arg == "poly")
+            else if (type == "poly")
                 dump_type = AC3D::DumpType::poly;
-            else if(arg == "surf")
+            else if (type == "surf")
                 dump_type = AC3D::DumpType::surf;
             else
             {
-                std::cerr << "Invalid dump type: " << arg << std::endl;
+                std::cerr << "Invalid dump type: " << type << std::endl;
                 usage();
                 return EXIT_FAILURE;
             }
             dump = true;
+            break;
         }
-        else if (arg == "-v")
-        {
-            i++;
-            if (i == argc)
-            {
-                std::cerr << "Missing output version" << std::endl;
-                usage();
-                return EXIT_FAILURE;
-            }
-            arg = argv[i];
-            if (arg == "11")
-                version = 11;
-            else if (arg == "12")
-                version = 12;
-            else
-            {
-                std::cerr << "Invalid output version: " << arg << std::endl;
-                usage();
-                return EXIT_FAILURE;
-            }
-        }
-        else if (arg == "--showTimes")
-        {
+        case OPT_SHOW_TIMES:
             show_times = true;
-        }
-        else if (arg == "--quiet")
-        {
+            break;
+        case OPT_QUIET:
             quiet = true;
-        }
-        else if (arg == "--summary")
-        {
+            break;
+        case OPT_SUMMARY:
             summary = true;
-        }
-        else if (arg == "-l")
+            break;
+
+        case 'W':
         {
-            listInput = true;
-        }
-        else if (arg[0] != '-')
-        {
-            if (in_file.empty())
-                in_file = arg;
+            const std::string arg = std::string("-W") + optarg;
+
+            // warnings
+            if (arg == "-Wno-warnings" || arg == "-Wwarnings")
+            {
+                const bool value = arg.starts_with("-Wno-") ? false : true;
+
+                // warnings with tests
+                ambiguous_texture = value;
+                blank_line = value;
+                collinear_surface_vertices = value;
+                different_mat = value;
+                different_surf = value;
+                different_uv = value;
+                duplicate_materials = value;
+                duplicate_surfaces = value;
+                duplicate_surfaces_order = value;
+                duplicate_surfaces_winding = value;
+                duplicate_surface_vertices = value;
+                duplicate_texture = value;
+                duplicate_triangles = value;
+                duplicate_vertices = value;
+                empty_object = value;
+                extra_object = value;
+                extra_uv_coordinates = value;
+                floating_point = value;
+                group_with_geometry = value;
+                invalid_material = value;
+                invalid_normal_length = value;
+                invalid_object_type = value;
+                invalid_ref_count = value;
+                material_after_object = value;
+                missing_kids = value;
+                missing_normal = value;
+                missing_surfaces = value;
+                missing_texture = value;
+                missing_uv_coordinates = value;
+                multiple_crease = value;
+                multiple_data = value;
+                multiple_folded = value;
+                multiple_hidden = value;
+                multiple_loc = value;
+                multiple_locked = value;
+                multiple_name = value;
+                multiple_rot = value;
+                multiple_shader = value;
+                multiple_subdiv = value;
+                multiple_texoff = value;
+                multiple_texrep = value;
+                multiple_texture = value;
+                multiple_url = value;
+                multiple_world = value;
+                overlapping_2_sided_surface = value;
+                surface_2_sided_opaque = value;
+                surface_not_convex = value;
+                surface_not_coplanar = value;
+                surface_no_texture = value;
+                surface_self_intersecting = value;
+                surface_strip_degenerate = value;
+                surface_strip_duplicate_triangles = value;
+                surface_strip_size = value;
+                surface_zero_area_uv = value;
+                trailing_text = value;
+                unsupported_version = value;
+                unused_material = value;
+                unused_vertex = value;
+                utf8_bom = value;
+
+                // warnings with no tests
+                multiple_polygon_surface = value;
+                surface_strip_hole = value;
+            }
+
+            // warnings with tests
+            else if (arg == "-Wno-ambiguous-texture" || arg == "-Wambiguous-texture")
+            {
+                ambiguous_texture = isEnabled(arg);
+            }
+            else if (arg == "-Wno-blank-line" || arg == "-Wblank-line")
+            {
+                blank_line = isEnabled(arg);
+            }
+            else if (arg == "-Wno-collinear-surface-vertices" || arg == "-Wcollinear-surface-vertices")
+            {
+                collinear_surface_vertices = isEnabled(arg);
+            }
+            else if (arg == "-Wno-different-mat" || arg == "-Wdifferent-mat")
+            {
+                different_mat = isEnabled(arg);
+            }
+            else if (arg == "-Wno-different-surf" || arg == "-Wdifferent-surf")
+            {
+                different_surf = isEnabled(arg);
+            }
+            else if (arg == "-Wno-different-uv" || arg == "-Wdifferent-uv")
+            {
+                different_uv = isEnabled(arg);
+            }
+            else if (arg == "-Wno-duplicate-materials" || arg == "-Wduplicate-materials")
+            {
+                duplicate_materials = isEnabled(arg);
+            }
+            else if (arg == "-Wno-duplicate-surfaces" || arg == "-Wduplicate-surfaces")
+            {
+                duplicate_surfaces = isEnabled(arg);
+            }
+            else if (arg == "-Wno-duplicate-surfaces-order" || arg == "-Wduplicate-surfaces-order")
+            {
+                duplicate_surfaces_order = isEnabled(arg);
+            }
+            else if (arg == "-Wno-duplicate-surfaces-winding" || arg == "-Wduplicate-surfaces-winding")
+            {
+                duplicate_surfaces_winding = isEnabled(arg);
+            }
+            else if (arg == "-Wno-duplicate-texture" || arg == "-Wduplicate-texture")
+            {
+                duplicate_texture = isEnabled(arg);
+            }
+            else if (arg == "-Wno-duplicate-surface-vertices" || arg == "-Wduplicate-surface-vertices")
+            {
+                duplicate_surface_vertices = isEnabled(arg);
+            }
+            else if (arg == "-Wno-duplicate-triangles" || arg == "-Wduplicate-triangles")
+            {
+                duplicate_triangles = isEnabled(arg);
+            }
+            else if (arg == "-Wno-duplicate-vertices" || arg == "-Wduplicate-vertices")
+            {
+                duplicate_vertices = isEnabled(arg);
+            }
+            else if (arg == "-Wno-empty-object" || arg == "-Wempty-object")
+            {
+                empty_object = isEnabled(arg);
+            }
+            else if (arg == "-Wno-extra-object" || arg == "-Wextra-object")
+            {
+                extra_object = isEnabled(arg);
+            }
+            else if (arg == "-Wno-extra-uv-coordinates" || arg == "-Wextra-uv-coordinates")
+            {
+                extra_uv_coordinates = isEnabled(arg);
+            }
+            else if (arg == "-Wno-group-with-geometry" || arg == "-Wgroup-with-geometry")
+            {
+                group_with_geometry = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-material" || arg == "-Winvalid-material")
+            {
+                invalid_material = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-normal-length" || arg == "-Winvalid-normal-length")
+            {
+                invalid_normal_length = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-object-type" || arg == "-Winvalid-object-type")
+            {
+                invalid_object_type = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-ref-count" || arg == "-Winvalid-ref-count")
+            {
+                invalid_ref_count = isEnabled(arg);
+            }
+            else if (arg == "-Wno-material-after-object" || arg == "-Wmaterial-after-object")
+            {
+                material_after_object = isEnabled(arg);
+            }
+            else if (arg == "-Wno-missing-kids" || arg == "-Wmissing-kids")
+            {
+                missing_kids = isEnabled(arg);
+            }
+            else if (arg == "-Wno-missing-normal" || arg == "-Wmissing-normal")
+            {
+                missing_normal = isEnabled(arg);
+            }
+            else if (arg == "-Wno-missing-surfaces" || arg == "-Wmissing-surfaces")
+            {
+                missing_surfaces = isEnabled(arg);
+            }
+            else if (arg == "-Wno-missing-texture" || arg == "-Wmissing-texture")
+            {
+                missing_texture = isEnabled(arg);
+            }
+            else if (arg == "-Wno-missing-uv-coordinates" || arg == "-Wmissing-uv-coordinates")
+            {
+                missing_uv_coordinates = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-crease" || arg == "-Wmultiple-crease")
+            {
+                multiple_crease = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-data" || arg == "-Wmultiple-data")
+            {
+                multiple_data = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-folded" || arg == "-Wmultiple-folded")
+            {
+                multiple_folded = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-hidden" || arg == "-Wmultiple-hidden")
+            {
+                multiple_hidden = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-loc" || arg == "-Wmultiple-loc")
+            {
+                multiple_loc = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-locked" || arg == "-Wmultiple-locked")
+            {
+                multiple_locked = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-name" || arg == "-Wmultiple-name")
+            {
+                multiple_name = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-rot" || arg == "-Wmultiple-rot")
+            {
+                multiple_rot = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-shader" || arg == "-Wmultiple-shader")
+            {
+                multiple_shader = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-subdiv" || arg == "-Wmultiple-subdiv")
+            {
+                multiple_subdiv = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-texoff" || arg == "-Wmultiple-texoff")
+            {
+                multiple_texoff = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-texrep" || arg == "-Wmultiple-texrep")
+            {
+                multiple_texrep = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-texture" || arg == "-Wmultiple-texture")
+            {
+                multiple_texture = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-url" || arg == "-Wmultiple-url")
+            {
+                multiple_url = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-world" || arg == "-Wmultiple-world")
+            {
+                multiple_world = isEnabled(arg);
+            }
+            else if (arg == "-Wno-overlapping-2-sided-surface" || arg == "-Woverlapping-2-sided-surface")
+            {
+                overlapping_2_sided_surface = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-2-sided-opaque" || arg == "-Wsurface-2-sided-opaque")
+            {
+                surface_2_sided_opaque = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-not-convex" || arg == "-Wsurface-not-convex")
+            {
+                surface_not_convex = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-not-coplanar" || arg == "-Wsurface-not-coplanar")
+            {
+                surface_not_coplanar = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-no-texture" || arg == "-Wsurface-no-texture")
+            {
+                surface_no_texture = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-self-intersecting" || arg == "-Wsurface-self-intersecting")
+            {
+                surface_self_intersecting = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-strip-degenerate" || arg == "-Wsurface-strip-degenerate")
+            {
+                surface_strip_degenerate = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-strip-size" || arg == "-Wsurface-strip-size")
+            {
+                surface_strip_size = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-zero-area-uv" || arg == "-Wsurface-zero-area-uv")
+            {
+                surface_zero_area_uv = isEnabled(arg);
+            }
+            else if (arg == "-Wno-trailing-text" || arg == "-Wtrailing-text")
+            {
+                trailing_text = isEnabled(arg);
+            }
+            else if (arg == "-Wno-unsupported-version" || arg == "-Wunsupported-version")
+            {
+                unsupported_version = isEnabled(arg);
+            }
+            else if (arg == "-Wno-unused-material" || arg == "-Wunused-material")
+            {
+                unused_material = isEnabled(arg);
+            }
+            else if (arg == "-Wno-unused-vertex" || arg == "-Wunused-vertex")
+            {
+                unused_vertex = isEnabled(arg);
+            }
+            else if (arg == "-Wno-utf8-bom" || arg == "-Wutf8-bom")
+            {
+                utf8_bom = isEnabled(arg);
+            }
+
+            // warnings without tests
+            else if (arg == "-Wno-floating-point" || arg == "-Wfloating-point")
+            {
+                floating_point = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-polygon-surface" || arg == "-Wmultiple-polygon-surface")
+            {
+                multiple_polygon_surface = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-strip-hole" || arg == "-Wsurface-strip-hole")
+            {
+                surface_strip_hole = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-strip-duplicate-triangles" || arg == "-Wsurface-strip-duplicate-triangles")
+            {
+                surface_strip_duplicate_triangles = isEnabled(arg);
+            }
+
+            // errors
+            else if (arg == "-Wno-errors" || arg == "-Werrors")
+            {
+                const bool value = arg.starts_with("-Wno-") ? false : true;
+
+                // errors with tests
+                invalid_kids_count = value;
+                invalid_material_index = value;
+                invalid_normal = value;
+                invalid_numsurf = value;
+                invalid_numvert = value;
+                invalid_refs_count = value;
+                invalid_ref_vertex_index = value;
+                invalid_surface_type = value;
+                invalid_token = value;
+                invalid_texture_coordinate = value;
+                invalid_vertex = value;
+                missing_vertex = value;
+                more_surf_than_specified = value;
+
+                // errors without tests
+
+                not_ac3d_file = value;
+            }
+
+            // errors with tests
+            else if (arg == "-Wno-invalid-kids-count" || arg == "-Winvalid-kids-count")
+            {
+                invalid_kids_count = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-material-index" || arg == "-Winvalid-material-index")
+            {
+                invalid_material_index = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-normal" || arg == "-Winvalid-normal")
+            {
+                invalid_normal = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-numsurf" || arg == "-Winvalid-numsurf")
+            {
+                invalid_numsurf = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-numvert" || arg == "-Winvalid-numvert")
+            {
+                invalid_numvert = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-vertex" || arg == "-Winvalid-vertex")
+            {
+                invalid_vertex = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-refs-count" || arg == "-Winvalid-refs-count")
+            {
+                invalid_refs_count = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-ref-vertex-index" || arg == "-Winvalid-ref-vertex-index")
+            {
+                invalid_ref_vertex_index = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-surface-type" || arg == "-Winvalid-surface-type")
+            {
+                invalid_surface_type = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-token" || arg == "-Winvalid-token")
+            {
+                invalid_token = isEnabled(arg);
+            }
+            else if (arg == "-Wno-invalid-texture-coordinate" || arg == "-Winvalid-texture-coordinate")
+            {
+                invalid_texture_coordinate = isEnabled(arg);
+            }
+            else if (arg == "-Wno-missing-vertex" || arg == "-Wmissing-vertex")
+            {
+                missing_vertex = isEnabled(arg);
+            }
+            else if (arg == "-Wno-more-surf-than-specified" || arg == "-Wmore-surf-than-specified")
+            {
+                more_surf_than_specified = isEnabled(arg);
+            }
+
+            // errors without tests
+
+            else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
+            {
+                not_ac3d_file = isEnabled(arg);
+            }
             else
             {
-                std::cerr << "Multiple input files not supported: " << arg << std::endl;
+                std::cerr << "Unknown option: " << arg << std::endl;
                 usage();
                 return EXIT_FAILURE;
             }
+            break;
         }
+
+        case ':':
+        {
+            // getopt_long() has already advanced optind past the option
+            // token itself, so argv[optind - 1] is the exact token typed
+            // (e.g. "-T" or "--merge") for options that require a value
+            // but didn't get one.
+            const std::string opt = argv[optind - 1];
+
+            if (opt == "-T")
+                std::cerr << "Missing texture path" << std::endl;
+            else if (opt == "-j")
+                std::cerr << "Missing number of threads" << std::endl;
+            else if (opt == "-v")
+                std::cerr << "Missing output version" << std::endl;
+            else if (opt == "--merge")
+                std::cerr << "Missing merge file" << std::endl;
+            else if (opt == "--dump")
+                std::cerr << "Missing dump type" << std::endl;
+            else if (opt == "--removeObjects")
+                std::cerr << "Missing removeObjects parameters" << std::endl;
+            else if (opt != "-o")
+                std::cerr << "Unknown option: " << opt << std::endl;
+
+            usage();
+            return EXIT_FAILURE;
+        }
+
+        case '?':
+        default:
+        {
+            const std::string opt = argv[optind - 1];
+            std::cerr << "Unknown option: " << opt << std::endl;
+            usage();
+            return EXIT_FAILURE;
+        }
+        }
+    }
+
+    for (int idx = optind; idx < argc; ++idx)
+    {
+        const std::string arg = argv[idx];
+
+        if (in_file.empty())
+            in_file = arg;
         else
         {
-            std::cerr << "Unknown option: " << arg << std::endl;
+            std::cerr << "Multiple input files not supported: " << arg << std::endl;
             usage();
             return EXIT_FAILURE;
         }

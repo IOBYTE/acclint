@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-project(acclint VERSION 0.1 LANGUAGES CXX)
+project(acclint VERSION 0.1 LANGUAGES CXX C)
 
 configure_file(config.h.in config.h)
 
@@ -16,7 +16,12 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 find_package(Sanitizers)
 
-add_executable(acclint acclint.cpp ac3d.cpp ac3d.h triangleintersects.hpp)
+if(WIN32)
+    add_executable(acclint acclint.cpp ac3d.cpp ac3d.h triangleintersects.hpp ya_getopt.c ya_getopt.h)
+    set_source_files_properties(acclint.cpp ya_getopt.c PROPERTIES COMPILE_DEFINITIONS "_CRT_SECURE_NO_WARNINGS")
+else()
+    add_executable(acclint acclint.cpp ac3d.cpp ac3d.h triangleintersects.hpp)
+endif()
 add_sanitizers(acclint)
 
 target_compile_features(acclint PUBLIC cxx_std_20)
