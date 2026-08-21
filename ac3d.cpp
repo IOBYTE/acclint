@@ -1352,6 +1352,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
                 warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
                 showLine(in);
             }
+            in.clear(in.rdstate() & ~std::ios_base::failbit);
             return false;
         }
 
@@ -1375,8 +1376,11 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
                     if (actual.substr(idx) == expected)
                         return readTypeAndColor(in, color, expected, next, last);
                 }
-                warningWithCount(m_invalid_material_count) << "invalid material " << last << ": extra number" << std::endl;
-                showLine(in, pos);
+                if (m_invalid_material)
+                {
+                    warningWithCount(m_invalid_material_count) << "invalid material " << last << ": extra number" << std::endl;
+                    showLine(in, pos);
+                }
             }
             catch (const std::exception &)
             {
@@ -1399,6 +1403,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
                         warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
                         showLine(in);
                     }
+                    in.clear(in.rdstate() & ~std::ios_base::failbit);
                     return false;
                 }
 
