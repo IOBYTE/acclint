@@ -1481,7 +1481,8 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string_vi
 bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, const std::string_view &next, double min, double max, bool is_float)
 {
     in >> std::ws;
-    const std::streampos pos = in.tellg();
+
+    std::streampos pos = in.tellg();
     std::string actual;
 
     in >> actual;
@@ -1495,6 +1496,7 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
                 warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
                 showLine(in);
             }
+            in.clear(in.rdstate() & ~std::ios_base::failbit);
             return false;
         }
 
@@ -1503,23 +1505,60 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
         return false;
     }
 
-    if (actual != expected)
+    if (expected != actual)
     {
-        std::istringstream iss(actual);
-        double number = 0.0;
-        iss >> number;
-        if (iss)
-        {
-            error() << "reading " << expected << std::endl;
-            showLine(in, pos);
-            return readTypeAndValue(in, value, expected, next, min, max, is_float);
-        }
+        bool is_number = true;
+        do {
+            try {
+                std::size_t idx;
+                std::stod(actual, &idx);
+                is_number = true;
+                if (idx != actual.size()) {
+                    error() << "reading " << expected << std::endl;
+                    showLine(in, pos);
+                    is_number = false;
+                    if (actual.substr(idx) == expected)
+                        return readTypeAndValue(in, value, expected, next, min, max, is_float);
+                }
+                if (m_invalid_material)
+                {
+                    warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": extra number" << std::endl;
+                    showLine(in, pos);
+                }
+            }
+            catch (const std::exception &)
+            {
+                if (m_invalid_material) {
+                    warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << actual << std::endl;
+                    showLine(in, pos);
+                    return readValue(in, value, expected, min, max, is_float);
+                }
+                is_number = false;
+            }
+            in >> std::ws;
+            pos = in.tellg();
+            in >> actual;
 
-        if (m_invalid_material)
-        {
-            warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << actual << std::endl;
-            showLine(in, pos);
-        }
+            if (!in) {
+                if (in.eof())
+                {
+                    if (m_invalid_material)
+                    {
+                        warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
+                        showLine(in);
+                    }
+                    in.clear(in.rdstate() & ~std::ios_base::failbit);
+                    return false;
+                }
+
+                error() << "reading " << expected << std::endl;
+                showLine(in);
+                return false;
+            }
+
+            if (actual == expected)
+                break;
+        } while (is_number);
     }
 
     return readValue(in, value, expected, min, max, is_float);
