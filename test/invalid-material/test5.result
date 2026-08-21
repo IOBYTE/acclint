@@ -1,0 +1,34 @@
+test5.ac:2 warning: invalid material rgb: png
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+            ^
+test5.ac:2 warning: invalid material: rgb missing number
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                ^
+test5.ac:2 warning: invalid material amb: 2 range: 0 to 1
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                           ^
+test5.ac:2 warning: invalid material: amb missing number
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                             ^
+test5.ac:2 warning: invalid material emis: 2 range: 0 to 1
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                                           ^
+test5.ac:2 warning: invalid material: emis missing number
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                                             ^
+test5.ac:2 warning: invalid material: spec missing number
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                                                     ^
+test5.ac:2 warning: invalid material: spec missing number
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                                                       ^
+test5.ac:2 warning: invalid material: spec missing number
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                                                         ^
+test5.ac:2 warning: invalid material shi: 300 range: 0 to 128
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                                                                ^
+test5.ac:2 warning: invalid material trans: 2 range: 0 to 1
+MATERIAL "" png z 1 1  amb 2 z 0.2  emis 0 2 z  spec z z z  shi 300  trans 2
+                                                                           ^
+11 warnings

@@ -1,0 +1,10 @@
+test6.ac:2 warning: invalid material amb: xyz
+MATERIAL "" rgb 1 1 1  xyz 1 1 1  emis 0 0 0  spec 1 1 1  shi 300  trans 2
+                       ^
+test6.ac:2 warning: invalid material shi: 300 range: 0 to 128
+MATERIAL "" rgb 1 1 1  xyz 1 1 1  emis 0 0 0  spec 1 1 1  shi 300  trans 2
+                                                              ^
+test6.ac:2 warning: invalid material trans: 2 range: 0 to 1
+MATERIAL "" rgb 1 1 1  xyz 1 1 1  emis 0 0 0  spec 1 1 1  shi 300  trans 2
+                                                                         ^
+3 warnings

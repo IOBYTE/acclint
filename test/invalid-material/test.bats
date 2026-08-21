@@ -279,3 +279,29 @@ setup_file() {
 }
 
 ################################################################################
+
+@test "test5" {
+  $RUN_TEST acclint test5.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+@test "test6" {
+  $RUN_TEST acclint test6.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
