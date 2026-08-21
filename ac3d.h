@@ -1095,7 +1095,7 @@ private:
 
     bool readHeader(std::istream &in);
     void writeHeader(std::ostream &out, const Header &header) const;
-    bool readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next);
+    bool readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next, const std::string_view & last);
     bool readColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next);
     bool readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, const std::string_view &next, double min, double max, bool is_float);
     bool readValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float);

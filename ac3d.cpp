@@ -1292,7 +1292,7 @@ bool AC3D::readColor(std::istringstream &in, Color &color, const std::string_vie
             }
             if (m_invalid_material)
             {
-                warningWithCount(m_invalid_material_count) << "invalid material: " << expected << std::endl;
+                warningWithCount(m_invalid_material_count) << "invalid material: " << expected << " missing number" << std::endl;
                 showLine(in, pos);
             }
             if (actual == next)
@@ -1312,16 +1312,31 @@ bool AC3D::readColor(std::istringstream &in, Color &color, const std::string_vie
         }
 
         component = value;
+
+        int next_char = in.peek();
+
+        if (next_char == std::istringstream::traits_type::eof())
+        {
+            in.clear(in.rdstate() & ~std::ios_base::failbit);
+        }
+        else if (!std::isspace(next_char))
+        {
+            if (m_invalid_material) {
+                std::streampos bad_pos = in.tellg();
+                warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": missing separator" << std::endl;
+                showLine(in, bad_pos);
+            }
+        }
     }
 
     return status;
 }
 
-bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next)
+bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next, const std::string_view &last)
 {
     in >> std::ws;
 
-    const std::streampos pos = in.tellg();
+    std::streampos pos = in.tellg();
     std::string actual;
 
     in >> actual;
@@ -1335,21 +1350,44 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
 
     if (expected != actual)
     {
-        std::istringstream iss(actual);
-        double number = 0.0;
-        iss >> number;
-        if (iss)
-        {
-            error() << "reading " << expected << std::endl;
-            showLine(in, pos);
-            return readTypeAndColor(in, color, expected, next);
-        }
+        bool is_number = true;
+        do {
+            try {
+                std::size_t idx;
+                double number = std::stod(actual, &idx);
+                is_number = true;
+                if (idx != actual.size()) {
+                    error() << "reading " << expected << std::endl;
+                    showLine(in, pos);
+                    is_number = false;
+                    if (actual.substr(idx) == expected)
+                        return readTypeAndColor(in, color, expected, next, last);
+                }
+                warningWithCount(m_invalid_material_count) << "invalid material " << last << ": extra number" << std::endl;
+                showLine(in, pos);
+            }
+            catch (const std::exception &)
+            {
+                if (m_invalid_material) {
+                    warningWithCount(m_invalid_material_count) << "invalid material " << last << ": " << actual << std::endl;
+                    showLine(in, pos);
+                    return readColor(in, color, expected, next);
+                }
+                is_number = false;
+            }
+            in >> std::ws;
+            pos = in.tellg();
+            in >> actual;
 
-        if (m_invalid_material)
-        {
-            warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << actual << std::endl;
-            showLine(in, pos);
-        }
+            if (!in) {
+                error() << "reading " << expected << std::endl;
+                showLine(in);
+                return false;
+            }
+
+            if (actual == expected)
+                break;
+        } while (is_number);
     }
 
     return readColor(in, color, expected, next);
@@ -1463,16 +1501,16 @@ bool AC3D::readMaterial(std::istringstream &in, Material &material)
         return false;
     }
 
-    bool failed = readTypeAndColor(in, material.rgb, rgb_token, amb_token);
+    bool failed = readTypeAndColor(in, material.rgb, rgb_token, amb_token, rgb_token);
 
     if (!in.eof())
-        failed |= readTypeAndColor(in, material.amb, amb_token, emis_token);
+        failed |= readTypeAndColor(in, material.amb, amb_token, emis_token, amb_token);
 
     if (!in.eof())
-        failed |= readTypeAndColor(in, material.emis, emis_token, spec_token);
+        failed |= readTypeAndColor(in, material.emis, emis_token, spec_token, emis_token);
 
     if (!in.eof())
-        failed |= readTypeAndColor(in, material.spec, spec_token, shi_token);
+        failed |= readTypeAndColor(in, material.spec, spec_token, shi_token, spec_token);
 
     if (!in.eof())
         failed |= readTypeAndValue(in, material.shi, shi_token, trans_token, 0, 128, false);
