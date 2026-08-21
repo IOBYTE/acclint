@@ -8,21 +8,37 @@ setup() {
     fi
 }
 
+# Delete any *.output debug files left over from a previous run before
+# running any tests in this file.
+setup_file() {
+    rm -f ./*.output
+}
+
 ################################################################################
 
 @test "test1.1" {
   $RUN_TEST acclint test1.ac -o test1.output.ac -v 11
   [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.1.output
+  fi
   [ "$output" = "" ]
-  [ "$(cat test1.output.ac)" = "$(cat test1.1.result.ac)" ]
+  actual="$(tr -d '\r' < test1.output.ac)"
+  expected="$(tr -d '\r' < test1.1.result.ac)"
+  [ "$actual" = "$expected" ]
   rm test1.output.ac
 }
 
 @test "test1.2" {
   $RUN_TEST acclint test1.ac -o test1.output.ac -v 12
   [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.2.output
+  fi
   [ "$output" = "" ]
-  [ "$(cat test1.output.ac)" = "$(cat test1.2.result.ac)" ]
+  actual="$(tr -d '\r' < test1.output.ac)"
+  expected="$(tr -d '\r' < test1.2.result.ac)"
+  [ "$actual" = "$expected" ]
   rm test1.output.ac
 }
 
@@ -31,16 +47,26 @@ setup() {
 @test "test2.1" {
   $RUN_TEST acclint test2.ac -o test2.output.ac -v 11
   [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test2.1.output
+  fi
   [ "$output" = "" ]
-  [ "$(cat test2.output.ac)" = "$(cat test2.1.result.ac)" ]
+  actual="$(tr -d '\r' < test2.output.ac)"
+  expected="$(tr -d '\r' < test2.1.result.ac)"
+  [ "$actual" = "$expected" ]
   rm test2.output.ac
 }
 
 @test "test2.2" {
   $RUN_TEST acclint test2.ac -o test2.output.ac -v 12
   [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test2.2.output
+  fi
   [ "$output" = "" ]
-  [ "$(cat test2.output.ac)" = "$(cat test2.2.result.ac)" ]
+  actual="$(tr -d '\r' < test2.output.ac)"
+  expected="$(tr -d '\r' < test2.2.result.ac)"
+  [ "$actual" = "$expected" ]
   rm test2.output.ac
 }
 
