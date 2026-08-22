@@ -1,0 +1,4 @@
+test12.ac:2 warning: unused material
+MATERIAL "" rgb 1 1 1  amb 1 1 1  emis 0 0 0  spec 1 1 1  5 shi 10  trans 0
+^
+1 warning

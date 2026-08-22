@@ -1,0 +1,7 @@
+test10.ac:7 warning: invalid material: shi
+shi
+   ^
+test10.ac:2 warning: unused material
+MAT "test"
+^
+2 warnings

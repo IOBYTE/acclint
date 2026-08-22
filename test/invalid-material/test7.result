@@ -1,0 +1,7 @@
+test7.ac:2 warning: invalid material: amb
+MATERIAL "" rgb 1 1 1  
+                       ^
+test7.ac:2 warning: unused material
+MATERIAL "" rgb 1 1 1  
+^
+2 warnings

@@ -1374,7 +1374,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
                     showLine(in, pos);
                     is_number = false;
                     if (actual.substr(idx) == expected)
-                        return readTypeAndColor(in, color, expected, next, last);
+                        return readColor(in, color, expected, next);
                 }
                 if (m_invalid_material)
                 {
@@ -1518,7 +1518,7 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
                     showLine(in, pos);
                     is_number = false;
                     if (actual.substr(idx) == expected)
-                        return readTypeAndValue(in, value, expected, next, min, max, is_float);
+                        return readValue(in, value, expected, min, max, is_float);
                 }
                 if (m_invalid_material)
                 {

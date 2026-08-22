@@ -1,0 +1,8 @@
+test11.ac:2 error: reading name
+MAT
+   ^
+test11.ac:2 warning: unused material
+MAT
+^
+1 warning
+1 error

@@ -1,0 +1,7 @@
+test8.ac:2 warning: invalid material: trans
+MATERIAL "" rgb 1 1 1  amb 1 1 1  emis 0 0 0  spec 1 1 1  shi 10  
+                                                                  ^
+test8.ac:2 warning: unused material
+MATERIAL "" rgb 1 1 1  amb 1 1 1  emis 0 0 0  spec 1 1 1  shi 10  
+^
+2 warnings

@@ -305,3 +305,120 @@ setup_file() {
 }
 
 ################################################################################
+
+# test7: MATERIAL line ends (trailing whitespace then EOF) right after rgb,
+# with amb/emis/spec/shi/trans entirely absent. Exercises readTypeAndColor's
+# EOF handling: this must produce the soft "invalid material: amb" warning,
+# not a hard "error: reading amb". NOTE: test7.ac's second line has two
+# trailing spaces after "1 1 1" -- they are required to reproduce this and
+# must not be stripped by an editor/formatter.
+@test "test7" {
+  $RUN_TEST acclint test7.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test7.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test8: same as test7 but for the scalar fields -- MATERIAL line ends
+# (trailing whitespace then EOF) right after shi, with trans entirely
+# absent. Exercises readTypeAndValue's EOF handling. NOTE: test8.ac's second
+# line has two trailing spaces after "shi 10" -- required, do not strip.
+@test "test8" {
+  $RUN_TEST acclint test8.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test8.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test8.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test9: MAT/ENDMAT format with a bare "rgb" line (token present, no value).
+# Must produce only the "invalid material: rgb" warning -- no spurious
+# "invalid token: rgb" error. Exercises readColor's EOF-return failbit fix.
+@test "test9" {
+  $RUN_TEST acclint test9.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test9.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test9.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test10: MAT/ENDMAT format with a bare "shi" line (token present, no
+# value). Must produce only the "invalid material: shi" warning -- no
+# spurious "invalid token: shi" error. Exercises readValue's EOF-return
+# failbit fix.
+@test "test10" {
+  $RUN_TEST acclint test10.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test10.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test10.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test11: MAT/ENDMAT format with no name at all on the MAT line. Must
+# produce "error: reading name" and still parse the rest of the block
+# (rgb/amb/emis/spec/shi/trans/ENDMAT) cleanly, with no cascading errors.
+# Exercises the missing-name check added to the multi-line readMaterial
+# overload.
+@test "test11" {
+  $RUN_TEST acclint test11.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test11.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test11.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test12: single-line MATERIAL with a stray full number ("5") appearing
+# where "shi" is expected. Must produce a soft "invalid material shi: extra
+# number" warning (not a hard error), and that warning must be suppressed
+# by -Wno-invalid-material. Exercises readTypeAndValue's stod-based
+# extra-number handling and its m_invalid_material gating.
+
+@test "test12.1" {
+  $RUN_TEST acclint test12.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test12.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test12.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test12.2" {
+  $RUN_TEST acclint -Wno-invalid-material test12.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test12.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test12.2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
