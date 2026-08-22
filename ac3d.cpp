@@ -4543,58 +4543,28 @@ bool AC3D::pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle
            (d1 < -epsilon && d2 < -epsilon && d3 < -epsilon);
 }
 
-// Cheap, conservative reject test for trianglesOverlap(): if the two
-// triangles' axis-aligned bounding boxes don't overlap on any axis, the
-// triangles themselves cannot overlap either, so the much more expensive
-// coplanar/Moeller/point-in-triangle tests below can be skipped
-// entirely. This is a pure performance optimization -- it can only ever
-// short-circuit pairs that trianglesOverlap() would have returned false
-// for anyway -- added because checkOverlapping2SidedSurface() calls
-// trianglesOverlap() on every pair of triangles across every pair of
-// double-sided surfaces in the model, which is expensive enough on a
-// large multi-object file that skipping the detailed checks for pairs
-// that are nowhere near each other matters a lot. The boxes are padded
-// by the same scale-relative epsilon used elsewhere in this file so this
-// can't reject a pair the tolerant checks further down would still have
-// accepted right at the boundary.
 bool AC3D::boundingBoxesOverlap(const Triangle &triangle1, const Triangle &triangle2)
 {
-    Point3 min1 = triangle1.vertices[0].vertex;
-    Point3 max1 = min1;
-    Point3 min2 = triangle2.vertices[0].vertex;
-    Point3 max2 = min2;
-
-    for (size_t i = 1; i < 3; i++)
-    {
-        const Point3 &v1 = triangle1.vertices[i].vertex;
-        min1.x(std::min(min1.x(), v1.x()));
-        min1.y(std::min(min1.y(), v1.y()));
-        min1.z(std::min(min1.z(), v1.z()));
-        max1.x(std::max(max1.x(), v1.x()));
-        max1.y(std::max(max1.y(), v1.y()));
-        max1.z(std::max(max1.z(), v1.z()));
-
-        const Point3 &v2 = triangle2.vertices[i].vertex;
-        min2.x(std::min(min2.x(), v2.x()));
-        min2.y(std::min(min2.y(), v2.y()));
-        min2.z(std::min(min2.z(), v2.z()));
-        max2.x(std::max(max2.x(), v2.x()));
-        max2.y(std::max(max2.y(), v2.y()));
-        max2.z(std::max(max2.z(), v2.z()));
-    }
-
     constexpr double k = 4.0;
     const double float_epsilon = static_cast<double>(std::numeric_limits<float>::epsilon());
-    const double scale = std::max({max1.x() - min1.x(), max1.y() - min1.y(), max1.z() - min1.z(),
-                                    max2.x() - min2.x(), max2.y() - min2.y(), max2.z() - min2.z(),
-                                    std::fabs(min1.x()), std::fabs(min1.y()), std::fabs(min1.z()),
-                                    std::fabs(min2.x()), std::fabs(min2.y()), std::fabs(min2.z()),
-                                    1.0});
+
+    // Leverage O(1) properties straight from your cached structures
+    const double scale = std::max({
+        triangle1.boxMax.x() - triangle1.boxMin.x(), triangle1.boxMax.y() - triangle1.boxMin.y(), triangle1.boxMax.z() - triangle1.boxMin.z(),
+        triangle2.boxMax.x() - triangle2.boxMin.x(), triangle2.boxMax.y() - triangle2.boxMin.y(), triangle2.boxMax.z() - triangle2.boxMin.z(),
+        std::fabs(triangle1.boxMin.x()), std::fabs(triangle1.boxMin.y()), std::fabs(triangle1.boxMin.z()),
+        std::fabs(triangle2.boxMin.x()), std::fabs(triangle2.boxMin.y()), std::fabs(triangle2.boxMin.z()),
+        1.0
+        });
     const double epsilon = k * float_epsilon * scale;
 
-    return (min1.x() - epsilon <= max2.x() + epsilon) && (min2.x() - epsilon <= max1.x() + epsilon) &&
-           (min1.y() - epsilon <= max2.y() + epsilon) && (min2.y() - epsilon <= max1.y() + epsilon) &&
-           (min1.z() - epsilon <= max2.z() + epsilon) && (min2.z() - epsilon <= max1.z() + epsilon);
+    // Flat scalar comparison pass with zero vertex traversal loops
+    return (triangle1.boxMin.x() - epsilon <= triangle2.boxMax.x() + epsilon) &&
+        (triangle2.boxMin.x() - epsilon <= triangle1.boxMax.x() + epsilon) &&
+        (triangle1.boxMin.y() - epsilon <= triangle2.boxMax.y() + epsilon) &&
+        (triangle2.boxMin.y() - epsilon <= triangle1.boxMax.y() + epsilon) &&
+        (triangle1.boxMin.z() - epsilon <= triangle2.boxMax.z() + epsilon) &&
+        (triangle2.boxMin.z() - epsilon <= triangle1.boxMax.z() + epsilon);
 }
 
 bool AC3D::trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2)
@@ -6306,149 +6276,109 @@ bool AC3D::Object::hasTransparentTexture() const
     if (textures.empty() || textures[0].name.empty())
         return false;
 
-    // try to read the texture file first
-    FILE *fp = fopen(textures[0].path.c_str(), "rb");
-    if (!fp)
-    {
+    // RAII handle file descriptor to prevent leakages
+    std::unique_ptr<FILE, decltype(&fclose)> fp(fopen(textures[0].path.c_str(), "rb"), &fclose);
+    if (!fp) {
         std::cout << "guessing texture type: " << textures[0].path.c_str() << std::endl;
 
-        // guess based on texture name
+        // Fallback name parsing guessing heuristics
         return (textures[0].name.find("_n.") != std::string::npos ||
-                textures[0].name.find("tree") != std::string::npos ||
-                textures[0].name.find("trans-") != std::string::npos ||
-                textures[0].name.find("arbor") != std::string::npos);
+            textures[0].name.find("tree") != std::string::npos ||
+            textures[0].name.find("trans-") != std::string::npos ||
+            textures[0].name.find("arbor") != std::string::npos);
     }
 
     const size_t number = 8;
     unsigned char header[number];
 
-    if (fread(header, 1, number, fp) != number)
-    {
-        fclose(fp);
+    if (fread(header, 1, number, fp.get()) != number) {
         std::cerr << "error reading png header: " << textures[0].path.c_str() << std::endl;
         return false;
     }
 
     const bool is_png = !png_sig_cmp(header, 0, number);
-    if (!is_png)
-    {
-        fclose(fp);
+    if (!is_png) {
         std::cerr << "invalid png header " << textures[0].path.c_str() << std::endl;
         return false;
     }
-    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!png_ptr)
-    {
-        fclose(fp);
-        return false;
-    }
-    png_infop info_ptr = png_create_info_struct(png_ptr);
-    if (!info_ptr)
-    {
-        png_destroy_read_struct(&png_ptr, NULL, NULL);
-        fclose(fp);
+
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png_ptr) {
         return false;
     }
 
-    // Declared (and NULL-initialized) before the setjmp so the error
-    // handler below can free them: png_read_image()/png_read_end() can
-    // still longjmp here on truncated/corrupted image data, which is
-    // after these are allocated. Previously the error handler only
-    // destroyed the png structs and closed the file, leaking both
-    // buffers on every corrupted texture.
-    //
-    // volatile: both are assigned (via malloc) after this setjmp and
-    // before the longjmp() a later libpng error can trigger. Values of
-    // non-volatile locals modified between setjmp and a subsequent
-    // longjmp are unspecified once control returns to the setjmp site --
-    // the compiler is free to keep them in registers that longjmp doesn't
-    // restore, so the error handler below could see stale (pre-malloc)
-    // NULLs even though the allocations actually happened, silently
-    // defeating the free() calls meant to catch them.
-    png_byte * volatile image_data = NULL;
-    png_bytepp volatile row_pointers = NULL;
-
-    if (setjmp(png_jmpbuf(png_ptr)))
+    // Consolidated unified structural manager for context management
+    struct PngBridgeRAII
     {
-        free(row_pointers);
-        free(image_data);
-        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-        fclose(fp);
+        png_structp ptr;
+        png_infop info;
+        ~PngBridgeRAII() {
+            if (ptr) {
+                png_infop *info_ptr_ref = info ? &info : nullptr;
+                png_destroy_read_struct(&ptr, info_ptr_ref, nullptr);
+            }
+        }
+    } png_bridge{ png_ptr, nullptr };
+
+    png_bridge.info = png_create_info_struct(png_ptr);
+    if (!png_bridge.info) {
+        // Safe: Leaving context allows png_bridge destructor to clean structures safely
         return false;
     }
-    png_init_io(png_ptr, fp);
+
+    // Modern memory guards utilizing custom unique_ptr wrappers
+    std::unique_ptr<png_byte, decltype(&free)> image_data(nullptr, &free);
+    std::unique_ptr<png_bytep[], decltype(&free)> row_pointers(nullptr, &free);
+
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        return false;
+    }
+
+    png_init_io(png_ptr, fp.get());
     png_set_sig_bytes(png_ptr, number);
-    png_read_info(png_ptr, info_ptr);
+    png_read_info(png_ptr, png_bridge.info);
 
     png_uint_32 width, height;
     int bit_depth, color_type, interlace_type, compression_type, filter_method;
-    png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, &compression_type, &filter_method);
-    const int channels = png_get_channels(png_ptr, info_ptr);
+    png_get_IHDR(png_ptr, png_bridge.info, &width, &height, &bit_depth, &color_type, &interlace_type, &compression_type, &filter_method);
+    const int channels = png_get_channels(png_ptr, png_bridge.info);
 
-    // look for RGBA with 4 8 bit channels
-    // TODO support more formats?
-    if (color_type != PNG_COLOR_TYPE_RGB_ALPHA || bit_depth != 8 || channels != 4)
-    {
-        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-        fclose(fp);
+    // Filter processing down strictly to standard 32-bit RGBA maps
+    if (color_type != PNG_COLOR_TYPE_RGB_ALPHA || bit_depth != 8 || channels != 4) {
         return false;
     }
 
-    const size_t rowbytes = png_get_rowbytes(png_ptr, info_ptr);
-    image_data = (png_byte *)malloc(rowbytes * height);
+    const size_t rowbytes = png_get_rowbytes(png_ptr, png_bridge.info);
 
-    if (image_data == NULL)
-    {
-        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-        fclose(fp);
+    image_data.reset(static_cast<png_byte *>(malloc(rowbytes * height)));
+    if (!image_data) {
         return false;
     }
 
-    row_pointers = (png_bytepp)malloc(sizeof(png_bytep) * height);
-
-    if (row_pointers == NULL)
-    {
-        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-        free(image_data);
-        fclose(fp);
+    row_pointers.reset(static_cast<png_bytep *>(malloc(sizeof(png_bytep) * height)));
+    if (!row_pointers) {
         return false;
     }
+
     for (png_uint_32 i = 0; i < height; ++i)
-        row_pointers[i] = image_data + i * rowbytes;
+        row_pointers[i] = image_data.get() + i * rowbytes;
 
-    png_set_rows(png_ptr, info_ptr, row_pointers);
-    png_read_image(png_ptr, row_pointers);
-    png_read_end(png_ptr, NULL);
+    png_set_rows(png_ptr, png_bridge.info, row_pointers.get());
+    png_read_image(png_ptr, row_pointers.get());
+    png_read_end(png_ptr, nullptr);
 
-    // check if alpha channel is opaque
     bool has_alpha = false;
+    const png_byte *raw_buffer = image_data.get();
 
-    for (png_uint_32 i = 0; i < (width * height); i++)
-    {
-        const png_byte *pixel = const_cast<const png_byte*>(image_data) + i * 4;
-        const png_byte alpha = pixel[3]; // index 3 = A in RGBA, regardless of endianness
-        if (alpha != 255)
-        {
+    // Scan memory explicitly pointing to the 4th element (alpha) block
+    for (png_uint_32 i = 0; i < (width * height); i++) {
+        const png_byte *pixel = raw_buffer + (i * 4);
+        const png_byte alpha = pixel[3]; // Correct channel selection offset via array index
+        if (alpha != 255) {
             has_alpha = true;
-            break;
+            break; // Immediately exit parsing tracking once matching a transparent fragment
         }
     }
-
-    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-    free(image_data);
-    free(row_pointers);
-    fclose(fp);
-
-#if 0
-    std::cerr << textures[0].name
-              << " color_type: " << color_type
-              << " width: " << width
-              << " height: " << height
-              << " bit depth: " << bit_depth
-              << " channels: " << channels
-              << " has_alpha: " << has_alpha
-              << std::endl;
-#endif
 
     return has_alpha;
 }

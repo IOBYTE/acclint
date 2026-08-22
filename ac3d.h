@@ -594,6 +594,8 @@ private:
         std::array<Vertex,3> vertices;
         std::array<Ref,3> refs;
         Point3 normal = { 0.0, 0.0, 0.0 };
+        Point3 boxMin = { 0.0, 0.0, 0.0 };
+        Point3 boxMax = { 0.0, 0.0, 0.0 };
         bool degenerate = false;
 
         Triangle() = default;
@@ -609,9 +611,26 @@ private:
 
             if (!degenerate)
                 normal = AC3D::normalizedNormal(v0.vertex, v1.vertex, v2.vertex);
+
+            recalculateBounds();
         }
         bool sameTriangle(const Triangle &triangle, Difference difference) const;
         bool sameTriangle(const Object &object, const Surface &surface, Difference difference) const;
+        void recalculateBounds()
+        {
+            boxMin = vertices[0].vertex;
+            boxMax = boxMin;
+            for (size_t i = 1; i < 3; ++i) {
+                const Point3 &v = vertices[i].vertex;
+                boxMin.x(std::min(boxMin.x(), v.x()));
+                boxMin.y(std::min(boxMin.y(), v.y()));
+                boxMin.z(std::min(boxMin.z(), v.z()));
+
+                boxMax.x(std::max(boxMax.x(), v.x()));
+                boxMax.y(std::max(boxMax.y(), v.y()));
+                boxMax.z(std::max(boxMax.z(), v.z()));
+            }
+        }
         void transform(const Matrix &matrix)
         {
             for (auto &vertex : vertices)
@@ -620,6 +639,7 @@ private:
                 if (vertex.has_normal)
                     matrix.transformNormal(vertex.normal);
             }
+            recalculateBounds();
         }
     };
 
