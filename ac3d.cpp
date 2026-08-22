@@ -646,6 +646,11 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         iss.str(m_line);
         iss >> token;
     }
+    else if (surface.isPolygon() || surface.isTriangleStrip())
+    {
+        // no explicit "mat" line -- a shaded surface implicitly uses material index 0
+        setMaterialUsed(0);
+    }
 
     if (token == refs_token)
     {
