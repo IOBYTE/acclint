@@ -72,6 +72,7 @@ private:                                               \
     CHECK(invalidRefCount, m_invalid_ref_count, true)
     CHECK(materialAfterObject, m_material_after_object, true)
     CHECK(missingKids, m_missing_kids, true)
+    CHECK(missingMat, m_missing_mat, true)
     CHECK(missingNormal, m_missing_normal, true)
     CHECK(missingSurfaces, m_missing_surfaces, true)
     CHECK(missingTexture, m_missing_texture, true)
@@ -1120,6 +1121,7 @@ private:
     std::ostream &note(size_t line_number = 0);
     void checkTrailing(std::istringstream &iss);
     void checkUnusedMaterial(std::istream &in);
+    void checkMissingMat(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, const Poly &object2);
     void checkDuplicateMaterials(std::istream &in);

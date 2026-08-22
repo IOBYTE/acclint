@@ -3218,6 +3218,7 @@ bool AC3D::read(const std::string &file)
 
     checkDuplicateMaterials(in);
     checkUnusedMaterial(in);
+    checkMissingMat(in);
 
     checkOverlapping2SidedSurface(in);
 
@@ -3289,6 +3290,32 @@ void AC3D::checkUnusedMaterial(std::istream &in)
             {
                 warningWithCount(m_unused_material_count, material.line_number) << "unused material" << std::endl;
                 showLine(in, material.line_pos);
+            }
+        }
+    }
+}
+
+void AC3D::checkMissingMat(std::istream &in)
+{
+    if (!m_missing_mat)
+        return;
+
+    std::vector<Object *> polys;
+
+    for (auto &object : m_objects)
+        getObjects(polys, &object);
+
+    for (auto *object : polys)
+    {
+        for (auto &surface : object->surfaces)
+        {
+            if (!(surface.isPolygon() || surface.isTriangleStrip()))
+                continue;
+
+            if (surface.mats.empty())
+            {
+                warningWithCount(m_missing_mat_count, surface.line_number) << "missing mat" << std::endl;
+                showLine(in, surface.line_pos);
             }
         }
     }

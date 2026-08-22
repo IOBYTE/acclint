@@ -1,0 +1,5 @@
+test1.ac:19 warning: missing mat
+SURF 0x00
+^
+1 warning
+missing mat: 1

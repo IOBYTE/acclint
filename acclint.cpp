@@ -65,6 +65,7 @@ void usage()
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count warnings." << std::endl;
     std::cerr << "  -Wno-material-after-object             Don't show material after object warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids                      Don't show missing kids warnings." << std::endl;
+    std::cerr << "  -Wno-missing-mat                       Don't show missing mat warnings." << std::endl;
     std::cerr << "  -Wno-missing-normal                    Don't show missing normal warnings." << std::endl;
     std::cerr << "  -Wno-missing-surfaces                  Don't show missing surfaces warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
@@ -217,6 +218,7 @@ int main(int argc, char *argv[])
     bool invalid_ref_count = true;
     bool material_after_object = true;
     bool missing_kids = true;
+    bool missing_mat = true;
     bool missing_normal = true;
     bool missing_surfaces = true;
     bool missing_texture = true;
@@ -514,6 +516,7 @@ int main(int argc, char *argv[])
                 invalid_ref_count = value;
                 material_after_object = value;
                 missing_kids = value;
+                missing_mat = value;
                 missing_normal = value;
                 missing_surfaces = value;
                 missing_texture = value;
@@ -650,6 +653,10 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-missing-kids" || arg == "-Wmissing-kids")
             {
                 missing_kids = isEnabled(arg);
+            }
+            else if (arg == "-Wno-missing-mat" || arg == "-Wmissing-mat")
+            {
+                missing_mat = isEnabled(arg);
             }
             else if (arg == "-Wno-missing-normal" || arg == "-Wmissing-normal")
             {
@@ -1007,6 +1014,7 @@ int main(int argc, char *argv[])
     ac3d.invalidRefCount(invalid_ref_count);
     ac3d.materialAfterObject(material_after_object);
     ac3d.missingKids(missing_kids);
+    ac3d.missingMat(missing_mat);
     ac3d.missingNormal(missing_normal);
     ac3d.missingSurfaces(missing_surfaces);
     ac3d.missingTexture(missing_texture);
@@ -1126,6 +1134,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
             showCount(ac3d.materialAfterObjectCount(), "material after object: ");
             showCount(ac3d.missingKidsCount(), "missing kids: ");
+            showCount(ac3d.missingMatCount(), "missing mat: ");
             showCount(ac3d.missingNormalCount(), "missing normal: ");
             showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
             showCount(ac3d.missingTextureCount(), "missing texture: ");
