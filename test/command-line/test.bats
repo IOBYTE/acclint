@@ -25,49 +25,49 @@ setup_file() {
 @test "missing -o argument" {
   $RUN_TEST acclint -o
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing output file" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing output file" ]
 }
 
 @test "missing -T argument" {
   $RUN_TEST acclint test1.ac -T
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing texture path" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing texture path" ]
 }
 
 @test "missing -j argument" {
   $RUN_TEST acclint test1.ac -j
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing number of threads" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing number of threads" ]
 }
 
 @test "missing -v argument" {
   $RUN_TEST acclint test1.ac -v
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing output version" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing output version" ]
 }
 
 @test "missing -W argument" {
   $RUN_TEST acclint test1.ac -W
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing warning flag" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing warning flag" ]
 }
 
 @test "missing --merge argument" {
   $RUN_TEST acclint test1.ac --merge
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing merge file" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing merge file" ]
 }
 
 @test "missing --dump argument" {
   $RUN_TEST acclint test1.ac --dump
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing dump type" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing dump type" ]
 }
 
 @test "missing --removeObjects argument" {
   $RUN_TEST acclint test1.ac --removeObjects
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing removeObjects parameters" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing removeObjects parameters" ]
 }
 
 ################################################################################
@@ -79,13 +79,13 @@ setup_file() {
 @test "missing argument on bundled -lT" {
   $RUN_TEST acclint -lT
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing texture path" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing texture path" ]
 }
 
 @test "missing argument on bundled -lW" {
   $RUN_TEST acclint -lW
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Missing warning flag" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing warning flag" ]
 }
 
 ################################################################################
@@ -98,19 +98,19 @@ setup_file() {
 @test "unknown short option" {
   $RUN_TEST acclint -x test1.ac
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Unknown option: -x" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Unknown option: -x" ]
 }
 
 @test "unknown short option bundled with a valid one" {
   $RUN_TEST acclint -lx test1.ac
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Unknown option: -x" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Unknown option: -x" ]
 }
 
 @test "unknown long option" {
   $RUN_TEST acclint --bogus test1.ac
   [ "$status" -ne 0 ]
-  [ "${lines[0]}" = "Unknown option: --bogus" ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Unknown option: --bogus" ]
 }
 
 ################################################################################
