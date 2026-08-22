@@ -86,7 +86,8 @@ setup_file() {
   [ "$actual" = "$expected" ]
 }
 
-@test "test1.7 -Wno-missing-mat suppresses the warning" {
+# test1.7: -Wno-missing-mat suppresses the warning.
+@test "test1.7" {
   $RUN_TEST acclint -Wno-missing-mat test1.ac
   [ "$status" -eq 0 ]
   if [ "$output" != "" ]; then
@@ -97,7 +98,7 @@ setup_file() {
 
 # test2: a Line-type SURF (0x02) with no "mat" line -- must NOT warn, since
 # line/point geometry is exempt from the missing-mat check.
-@test "test2 line surface missing mat is exempt" {
+@test "test2" {
   $RUN_TEST acclint test2.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
@@ -110,7 +111,7 @@ setup_file() {
 
 # test3: a TriangleStrip SURF (0x04, .acc only) with no "mat" line -- must
 # warn, same as a Polygon.
-@test "test3 triangle strip missing mat warns" {
+@test "test3" {
   $RUN_TEST acclint test3.acc
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
