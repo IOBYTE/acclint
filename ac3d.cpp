@@ -3261,7 +3261,8 @@ void AC3D::checkDuplicateMaterials(std::istream &in)
             {
                 for (size_t j = i + 1; j < m_materials.size(); ++j)
                 {
-                    if (m_materials[i].name != m_materials[j].name &&
+                    if (!duplicates[j] &&
+                        m_materials[i].name != m_materials[j].name &&
                         sameMaterialParameters(m_materials[i], m_materials[j]))
                     {
                         duplicates[j] = true;

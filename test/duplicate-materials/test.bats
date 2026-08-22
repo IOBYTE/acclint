@@ -147,3 +147,76 @@ setup_file() {
 }
 
 ################################################################################
+
+# test3: two materials sharing a name (an exact duplicate pair) plus a third,
+# differently-named material sharing their parameters. The differently-named
+# material must be reported exactly once as a duplicate (against the first
+# same-name/same-params material), not once per member of the same-name
+# duplicate pair. Regression test for checkDuplicateMaterials's second pass
+# not guarding its inner loop against an already-flagged "j".
+
+@test "test3.1" {
+  $RUN_TEST acclint test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test3.2" {
+  $RUN_TEST acclint -Wno-warnings test3.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.2.output
+  fi
+  [ "$output" = "" ]
+}
+
+@test "test3.3" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-materials test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test3.4" {
+  $RUN_TEST acclint --quiet test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test3.5" {
+  $RUN_TEST acclint --summary test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test3.6" {
+  $RUN_TEST acclint --quiet --summary test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
