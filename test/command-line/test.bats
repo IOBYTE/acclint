@@ -22,49 +22,57 @@ setup_file() {
 # of falling through to a generic/wrong message.
 ################################################################################
 
-@test "missing -o argument" {
+# test1: missing -o argument
+@test "test1" {
   $RUN_TEST acclint -o
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing output file" ]
 }
 
-@test "missing -T argument" {
+# test2: missing -T argument
+@test "test2" {
   $RUN_TEST acclint test1.ac -T
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing texture path" ]
 }
 
-@test "missing -j argument" {
+# test3: missing -j argument
+@test "test3" {
   $RUN_TEST acclint test1.ac -j
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing number of threads" ]
 }
 
-@test "missing -v argument" {
+# test4: missing -v argument
+@test "test4" {
   $RUN_TEST acclint test1.ac -v
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing output version" ]
 }
 
-@test "missing -W argument" {
+# test5: missing -W argument
+@test "test5" {
   $RUN_TEST acclint test1.ac -W
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing warning flag" ]
 }
 
-@test "missing --merge argument" {
+# test6: missing --merge argument
+@test "test6" {
   $RUN_TEST acclint test1.ac --merge
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing merge file" ]
 }
 
-@test "missing --dump argument" {
+# test7: missing --dump argument
+@test "test7" {
   $RUN_TEST acclint test1.ac --dump
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing dump type" ]
 }
 
-@test "missing --removeObjects argument" {
+# test8: missing --removeObjects argument
+@test "test8" {
   $RUN_TEST acclint test1.ac --removeObjects
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing removeObjects parameters" ]
@@ -76,13 +84,15 @@ setup_file() {
 # misreported as an unrecognized option.
 ################################################################################
 
-@test "missing argument on bundled -lT" {
+# test9: missing argument on bundled -lT
+@test "test9" {
   $RUN_TEST acclint -lT
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing texture path" ]
 }
 
-@test "missing argument on bundled -lW" {
+# test10: missing argument on bundled -lW
+@test "test10" {
   $RUN_TEST acclint -lW
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing warning flag" ]
@@ -95,19 +105,22 @@ setup_file() {
 # the raw token since they don't set optopt.
 ################################################################################
 
-@test "unknown short option" {
+# test11: unknown short option
+@test "test11" {
   $RUN_TEST acclint -x test1.ac
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Unknown option: -x" ]
 }
 
-@test "unknown short option bundled with a valid one" {
+# test12: unknown short option bundled with a valid one
+@test "test12" {
   $RUN_TEST acclint -lx test1.ac
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Unknown option: -x" ]
 }
 
-@test "unknown long option" {
+# test13: unknown long option
+@test "test13" {
   $RUN_TEST acclint --bogus test1.ac
   [ "$status" -ne 0 ]
   [ "$(echo "${lines[0]}" | tr -d '\r')" = "Unknown option: --bogus" ]
@@ -122,7 +135,8 @@ setup_file() {
 # environment.
 ################################################################################
 
-@test "options after the input file work regardless of POSIXLY_CORRECT" {
+# test14: options after the input file work regardless of POSIXLY_CORRECT
+@test "test14" {
   POSIXLY_CORRECT=1 $RUN_TEST acclint test1.ac -Wno-warnings
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
@@ -132,7 +146,8 @@ setup_file() {
 # Sanity: -o with a value still works normally after the case ':' rewrite.
 ################################################################################
 
-@test "-o with a value still works" {
+# test15: -o with a value still works
+@test "test15" {
   $RUN_TEST acclint test1.ac -Wno-warnings -o test_o.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
