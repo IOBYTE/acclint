@@ -1367,7 +1367,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
         do {
             try {
                 std::size_t idx;
-                const double number = std::stod(actual, &idx);
+                std::ignore = std::stod(actual, &idx);
                 is_number = true;
                 if (idx != actual.size()) {
                     error() << "reading " << expected << std::endl;
@@ -1511,7 +1511,7 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
         do {
             try {
                 std::size_t idx;
-                const double number = std::stod(actual, &idx);
+                std::ignore = std::stod(actual, &idx);
                 is_number = true;
                 if (idx != actual.size()) {
                     error() << "reading " << expected << std::endl;
@@ -1731,6 +1731,10 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
             showLine(iss, 0);
         }
     }
+
+    error(material.line_number) << "missing ENDMAT" << std::endl;
+    in.clear();
+    showLine(in, material.line_pos);
 
     return false;
 }

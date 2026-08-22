@@ -422,3 +422,20 @@ setup_file() {
 }
 
 ################################################################################
+
+# test13: MAT/ENDMAT block truncated by EOF -- the file ends before ENDMAT
+# is found. Must produce an "error: missing ENDMAT" pointing at the MAT
+# line (with a correct, non-blank caret line). Exercises the multi-line
+# readMaterial overload's EOF-before-ENDMAT handling.
+@test "test13" {
+  $RUN_TEST acclint test13.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test13.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test13.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

@@ -18,7 +18,10 @@
 
 //---------------------------------------------------------------------------
 
+#include <cstdlib>
+
 #ifdef _WIN32
+#pragma warning( disable : 4996)
 #include "ya_getopt.h"
 #else
 #include <getopt.h>
@@ -167,6 +170,18 @@ void showCount(size_t count, const char *text)
 
 int main(int argc, char *argv[])
 {
+    // getopt_long()/ya_getopt_long() both honor the POSIXLY_CORRECT
+    // environment variable by disabling argv permutation, which would
+    // silently break the documented usage of placing options after the
+    // input file (e.g. "acclint file.ac --combineTexture -o new.ac").
+    // Clear it so option/positional ordering behaves consistently
+    // regardless of the caller's environment.
+#ifdef _WIN32
+    _putenv("POSIXLY_CORRECT=");
+#else
+    unsetenv("POSIXLY_CORRECT");
+#endif
+
     if (argc < 2)
     {
         usage();
@@ -883,26 +898,41 @@ int main(int argc, char *argv[])
 
         case ':':
         {
-            // getopt_long() has already advanced optind past the option
-            // token itself, so argv[optind - 1] is the exact token typed
-            // (e.g. "-T" or "--merge") for options that require a value
-            // but didn't get one.
-            const std::string opt = argv[optind - 1];
-
-            if (opt == "-T")
+            // getopt_long()/ya_getopt_long() set optopt to the short
+            // option character, or to the long option's val, that was
+            // missing its required argument. This correctly identifies
+            // the option even when it was bundled with other short
+            // options (e.g. "-lT"), unlike inspecting argv directly.
+            switch (optopt)
+            {
+            case 'o':
+                std::cerr << "Missing output file" << std::endl;
+                break;
+            case 'T':
                 std::cerr << "Missing texture path" << std::endl;
-            else if (opt == "-j")
+                break;
+            case 'j':
                 std::cerr << "Missing number of threads" << std::endl;
-            else if (opt == "-v")
+                break;
+            case 'v':
                 std::cerr << "Missing output version" << std::endl;
-            else if (opt == "--merge")
+                break;
+            case 'W':
+                std::cerr << "Missing warning flag" << std::endl;
+                break;
+            case OPT_MERGE:
                 std::cerr << "Missing merge file" << std::endl;
-            else if (opt == "--dump")
+                break;
+            case OPT_DUMP:
                 std::cerr << "Missing dump type" << std::endl;
-            else if (opt == "--removeObjects")
+                break;
+            case OPT_REMOVE_OBJECTS:
                 std::cerr << "Missing removeObjects parameters" << std::endl;
-            else if (opt != "-o")
-                std::cerr << "Unknown option: " << opt << std::endl;
+                break;
+            default:
+                std::cerr << "Unknown option: " << argv[optind - 1] << std::endl;
+                break;
+            }
 
             usage();
             return EXIT_FAILURE;
@@ -911,8 +941,16 @@ int main(int argc, char *argv[])
         case '?':
         default:
         {
-            const std::string opt = argv[optind - 1];
-            std::cerr << "Unknown option: " << opt << std::endl;
+            // optopt identifies the offending character for an
+            // unrecognized (or bundled) short option, e.g. "-lx" sets
+            // optopt to 'x'. It's only meaningful in the short-option
+            // range here -- long-option enum values start at 256, and
+            // an unrecognized long option name doesn't set optopt at
+            // all -- so fall back to the raw token in both those cases.
+            if (optopt > 0 && optopt < 256)
+                std::cerr << "Unknown option: -" << static_cast<char>(optopt) << std::endl;
+            else
+                std::cerr << "Unknown option: " << argv[optind - 1] << std::endl;
             usage();
             return EXIT_FAILURE;
         }
