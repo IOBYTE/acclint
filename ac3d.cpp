@@ -6792,6 +6792,7 @@ bool AC3D::Object::hasTransparentTexture() const
     std::unique_ptr<FILE, FileCloser> fp(std::fopen(textures[0].path.c_str(), "rb"));
     if (!fp)
     {
+        // FIXME get quiet?
         std::cout << "guessing texture type: " << textures[0].path.c_str() << std::endl;
 
         // Fallback name parsing guessing heuristics

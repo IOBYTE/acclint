@@ -1,0 +1,41 @@
+AC3Db
+MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+OBJECT world
+kids 2
+OBJECT poly
+name "wide"
+numvert 6
+0 0 0
+1 0 0
+0 1 0
+1000 0 0
+1001 0 0
+1000 1 0
+numsurf 2
+SURF 0x20
+mat 0
+refs 3
+0 0 0
+1 0 0
+2 0 0
+SURF 0x20
+mat 0
+refs 3
+3 0 0
+4 0 0
+5 0 0
+kids 0
+OBJECT poly
+name "near"
+numvert 3
+0.2 0.2 0
+0.2 0.4 0
+0.4 0.2 0
+numsurf 1
+SURF 0x20
+mat 0
+refs 3
+0 0 0
+1 0 0
+2 0 0
+kids 0
