@@ -438,7 +438,7 @@ int main(int argc, char *argv[])
                 {
                     removes.emplace_back(type, expression);
                 }
-                catch (std::regex_error &ex)
+                catch (const std::exception &ex)
                 {
                     std::cerr << "Invalid removeObjects expression:  " << expression << " " << ex.what() << std::endl;
                     usage();

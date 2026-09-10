@@ -28,9 +28,9 @@
 #include <iostream>
 #include <limits>
 #include <map>
+#include <memory>
 #include <numbers>
 #include <set>
-#include <regex>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -137,14 +137,25 @@ private:                                               \
 public:
     enum class DumpType { group, poly, surf};
 
+    // The compiled regular expression is held behind a pointer to an
+    // incomplete type so that <regex> stays out of this header, and so out
+    // of every translation unit that includes it. <regex> is one of the
+    // most expensive standard headers to parse, and instantiating its
+    // compiler trips a -Wmaybe-uninitialized false positive inside
+    // libstdc++'s NFA builder on some GCC releases. std::shared_ptr type
+    // erases its deleter at construction, so copy, move and destroy all
+    // work here without Regex being a complete type.
     struct RemoveInfo
     {
-        RemoveInfo(const std::string &type, const std::string &expression)
-        : object_type(type), regular_expression(expression)
-        {
-        }
+        RemoveInfo(const std::string &type, const std::string &expression);
+
+        bool matches(const std::string &name) const;
+
         std::string object_type;
-        std::regex regular_expression;
+
+    private:
+        struct Regex;
+        std::shared_ptr<const Regex> regular_expression;
     };
 
     bool read(const std::string &file);

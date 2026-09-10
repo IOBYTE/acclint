@@ -35,6 +35,21 @@
 #include <omp.h>
 #include <png.h>
 
+// <regex> is deliberately confined to this one translation unit: it is
+// expensive to parse, and instantiating its compiler trips a
+// -Wmaybe-uninitialized false positive inside libstdc++'s NFA builder on
+// some GCC releases. Keeping it here means only this file pays either
+// cost, and the suppression does not have to sit in a public header.
+// MSVC would warn C4068 on an unknown pragma, so guard it.
+#if defined(__GNUC__) && !defined(__clang__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#  include <regex>
+#  pragma GCC diagnostic pop
+#else
+#  include <regex>
+#endif
+
 constexpr std::string_view MATERIAL_token("MATERIAL");
 constexpr std::string_view rgb_token("rgb");
 constexpr std::string_view amb_token("amb");
@@ -2937,7 +2952,7 @@ void AC3D::Object::removeKids(const RemoveInfo &remove_info)
     auto kid = kids.begin();
     while (kid != kids.end())
     {
-        if (!kid->names.empty() && kid->type.type == remove_info.object_type && regex_match(kid->names[0].name, remove_info.regular_expression))
+        if (!kid->names.empty() && kid->type.type == remove_info.object_type && remove_info.matches(kid->names[0].name))
             kid = kids.erase(kid);
         else
         {
@@ -6009,6 +6024,23 @@ bool AC3D::splitPolygons()
         changed |= object.splitPolygons();
 
     return changed;
+}
+
+struct AC3D::RemoveInfo::Regex
+{
+    explicit Regex(const std::string &expression) : regex(expression) { }
+
+    std::regex regex;
+};
+
+AC3D::RemoveInfo::RemoveInfo(const std::string &type, const std::string &expression)
+    : object_type(type), regular_expression(std::make_shared<const Regex>(expression))
+{
+}
+
+bool AC3D::RemoveInfo::matches(const std::string &name) const
+{
+    return regular_expression && std::regex_match(name, regular_expression->regex);
 }
 
 void AC3D::removeObjects(const RemoveInfo &remove_info)
