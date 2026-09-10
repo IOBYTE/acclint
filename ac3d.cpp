@@ -88,12 +88,25 @@ constexpr std::string_view light_token("light");
 
 // readObject recurses once per level of OBJECT nesting and the depth comes
 // straight from the file, so a small file of deeply nested groups could
-// exhaust the stack and kill the process with SIGSEGV before any diagnostic
-// was produced. Measured cost is roughly 2.3KB of stack per level: an 8MB
-// stack fails around 3500 levels, and Windows' 1MB default around 450. This
-// cap leaves a wide margin under the smaller of those while staying far
-// above any plausible model -- real group hierarchies are a few levels deep.
-constexpr size_t MAX_OBJECT_LEVEL = 128;
+// exhaust the stack and kill the process before any diagnostic was produced.
+//
+// The cap has to sit below the shallowest stack this runs on, and the cost
+// per level is not portable. readObject declares eight istringstream locals
+// and seven Object/Surface/Material ones across its branches, and the frame
+// reserves room for all of them whichever branch actually runs. GCC overlaps
+// those slots and costs about 2.3KB a level; MSVC largely does not and costs
+// about 9.4KB, so a Windows build on the default 1MB stack dies at 111
+// levels -- measured, not extrapolated -- where an 8MB POSIX stack reaches
+// roughly 3500. A debug build is fatter again.
+//
+// 32 keeps a 3.5x margin under the measured Windows figure, more still under
+// a debug build, and stays far above any plausible model: real group
+// hierarchies are a few levels deep.
+//
+// This is a stack safety limit rather than a format limit. Such a file is
+// legal AC3D; it is just deep enough to crash a reader that recurses, which
+// is worth reporting for its own sake.
+constexpr size_t MAX_OBJECT_LEVEL = 32;
 
 std::ostream & operator << (std::ostream &out, const AC3D::quoted_string &s)
 {

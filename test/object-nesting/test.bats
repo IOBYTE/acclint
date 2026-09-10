@@ -15,20 +15,25 @@ setup_file() {
 }
 
 ################################################################################
-# kids nests objects, and reading a child is a recursive call. The file says
-# how deep the nesting goes, so the file also says how much stack to use.
-# Nothing bounded it, so a deep enough file ran out of stack and died by
-# signal before any diagnostic could be printed -- the one failure mode a
-# linter cannot report on.
+# kids nests objects, and reading a child is a recursive call, so the file
+# decides how much stack to use. Nothing bounded it, and a deep enough file
+# ran out of stack and died by signal before any diagnostic could be printed
+# -- the one failure mode a linter cannot report on.
 #
-# Reading is now capped at 128 levels. The cap is a plain output difference,
-# which is what makes this suite work without any ulimit trickery: remove the
-# cap and the refusals below turn into silence, so the comparison fails on a
-# machine where the file happens to fit in the stack, and the crash speaks for
-# itself on one where it does not.
+# Reading is now capped at MAX_OBJECT_LEVEL. The two fixtures sit either side
+# of it and differ by exactly one group, so an off by one in the cap fails one
+# of them whichever way it slips.
 #
-# The fixtures are generated, so the shapes are exact: 126 groups between the
-# world and the leaf is 128 objects, the deepest that is allowed.
+# No ulimit trickery is needed to make this a regression test: remove the cap
+# and test1.2 parses silently instead of erroring, which is a plain output
+# mismatch on any machine.
+#
+# Neither fixture is deep enough to threaten anything that opens it. An
+# earlier version used 5000 levels here to make an unguarded build crash
+# rather than merely misreport, which was belt and braces -- the output
+# comparison already catches it -- and a file that deep crashes any reader
+# that recurses, including modelling tools that might index this directory.
+# Keep these shallow.
 ################################################################################
 
 # test1.1: the deepest legitimate file. It must lint clean -- an off by one in
@@ -50,8 +55,10 @@ setup_file() {
   rm test1.1.output.ac
 }
 
-# test1.2: one group deeper than test1.1, and nothing else different. This is
-# the other half of the off by one: the first file that must be refused.
+# test1.2: one group deeper than test1.1 and nothing else different, so this
+# is the first file that must be refused -- and refused exactly once. The
+# descent is restarted after a refusal, so an error reported per attempt
+# rather than per file shows up here as a flood.
 #
 # -Wno-unused-material keeps the comparison on the nesting error. Refusing the
 # file leaves its material unreferenced, which is true but is a consequence of
@@ -63,22 +70,6 @@ setup_file() {
   expected="$(tr -d '\r' < test1.2.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test1.2.output
-  fi
-  [ "$actual" = "$expected" ]
-}
-
-# test1.3: 5000 groups, deep enough to exhaust the stack rather than merely
-# exceed the cap -- it segfaults an unguarded build on Linux at the stock 8MB
-# and on Windows at 1MB. It must produce the same single error as test1.2, and
-# exactly one of them: the descent is restarted after the refusal, so an error
-# reported per attempt rather than per file shows up here as a flood.
-@test "test1.3" {
-  $RUN_TEST acclint test1.3.ac -Wno-unused-material
-  [ "$status" -eq 0 ]
-  actual="$(echo "$output" | tr -d '\r')"
-  expected="$(tr -d '\r' < test1.3.result)"
-  if [ "$actual" != "$expected" ]; then
-    echo "$output" > test1.3.output
   fi
   [ "$actual" = "$expected" ]
 }

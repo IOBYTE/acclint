@@ -1,2 +1,2 @@
-test1.2.ac:259 error: objects nested more than 128 deep
+test1.2.ac:67 error: objects nested more than 32 deep
 1 error
