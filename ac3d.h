@@ -362,13 +362,7 @@ private:
         }
         double angleDegrees(const Point3 &other) const
         {
-            const double length1 = length();
-            const double length2 = other.length();
-
-            if (length1 <= SMALL_NUM || length2 <= SMALL_NUM)
-                return 0.0;
-
-            return acos(std::clamp(dot(other) / (length1 * length2), -1.0, 1.0));
+            return angleRadians(other) * 180.0 / std::numbers::pi;
         }
         bool equals(const Point3 &other) const
         {
