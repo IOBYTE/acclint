@@ -5519,13 +5519,27 @@ bool AC3D::cleanMaterials(std::vector<Object> &objects, const std::vector<size_t
     {
         for (auto &surface : object.surfaces)
         {
-            if (!surface.mats.empty() &&
-                surface.mats.back().mat != indexes[surface.mats.back().mat])
+            if (surface.mats.empty())
+                continue;
+
+            const size_t mat = surface.mats.back().mat;
+
+            // The index comes straight from the file and is reported rather
+            // than corrected, so it can name a material that was never
+            // defined -- and -Wno-invalid-material-index suppresses that
+            // error, which leaves errors() at zero and lets such a file
+            // reach the write path. There is nothing to remap it to, so
+            // leave it as it is instead of reading past the end of the
+            // remap table.
+            if (mat >= indexes.size())
+                continue;
+
+            if (mat != indexes[mat])
             {
                 changed = true;
 
                 // update surface with new index
-                surface.mats.back().mat = indexes[surface.mats.back().mat];
+                surface.mats.back().mat = indexes[mat];
             }
         }
 
