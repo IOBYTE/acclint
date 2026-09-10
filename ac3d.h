@@ -1100,6 +1100,7 @@ private:
     size_t          m_line_number = 0;
     std::streampos  m_line_pos;
     size_t          m_level = 0;
+    bool            m_too_deep = false;
     size_t          m_errors = 0;
     size_t          m_warnings = 0;
     bool            m_is_utf_8 = false;

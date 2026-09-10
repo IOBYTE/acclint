@@ -86,6 +86,15 @@ constexpr std::string_view poly_token("poly");
 constexpr std::string_view group_token("group");
 constexpr std::string_view light_token("light");
 
+// readObject recurses once per level of OBJECT nesting and the depth comes
+// straight from the file, so a small file of deeply nested groups could
+// exhaust the stack and kill the process with SIGSEGV before any diagnostic
+// was produced. Measured cost is roughly 2.3KB of stack per level: an 8MB
+// stack fails around 3500 levels, and Windows' 1MB default around 450. This
+// cap leaves a wide margin under the smaller of those while staying far
+// above any plausible model -- real group hierarchies are a few levels deep.
+constexpr size_t MAX_OBJECT_LEVEL = 128;
+
 std::ostream & operator << (std::ostream &out, const AC3D::quoted_string &s)
 {
     if (s == "empty_texture_no_mapping")
@@ -234,6 +243,20 @@ bool isRegularFile(const std::filesystem::path &path)
     return std::filesystem::is_regular_file(path, ec);
 }
 
+// Scoped depth counter for readObject's recursion. readObject returns from
+// several places, so the decrement has to happen automatically.
+class LevelGuard
+{
+public:
+    explicit LevelGuard(size_t &count) : m_count(count) { ++m_count; }
+    ~LevelGuard() { --m_count; }
+    LevelGuard(const LevelGuard &) = delete;
+    LevelGuard &operator = (const LevelGuard &) = delete;
+
+private:
+    size_t &m_count;
+};
+
 } // namespace
 
 void AC3D::showLine(std::istringstream &in) const
@@ -305,6 +328,10 @@ public:
 
 bool AC3D::getLine(std::istream &in)
 {
+    // set once the nesting cap is hit; ends every read loop at once
+    if (m_too_deep)
+        return false;
+
     m_line_pos = in.tellg();
 
     bool empty = false;
@@ -1808,6 +1835,22 @@ void AC3D::writeMaterial(std::ostream &out, const Material &material) const
 
 bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 {
+    // Counted here rather than around the kids loop so that the
+    // invalid-kids-count recovery path, which also recurses, is included.
+    const LevelGuard level_guard(m_level);
+
+    if (m_level > MAX_OBJECT_LEVEL)
+    {
+        // Stop reading rather than just refusing this branch. Unwinding
+        // leaves the rest of the nesting unconsumed, and read() would hand
+        // each remaining OBJECT line straight back for another descent --
+        // 100000 nested groups produced 1550 copies of this same error.
+        // getLine() fails while this is set, which ends every read loop.
+        error() << "objects nested more than " << MAX_OBJECT_LEVEL << " deep" << std::endl;
+        m_too_deep = true;
+        return false;
+    }
+
     object.line_number = m_line_number;
     object.line_pos = m_line_pos;
 
@@ -2733,7 +2776,6 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (kids > 0)
             {
-                m_level++;
                 const size_t kids_line = m_line_number;
 
                 for (int i = 0; i < kids; ++i)
@@ -2803,7 +2845,6 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         return false;
                     }
                 }
-                m_level--;
             }
             break;
         }
@@ -3178,6 +3219,7 @@ bool AC3D::read(const std::string &file)
     m_file = file;
     m_line_number = 0;
     m_level = 0;
+    m_too_deep = false;
     m_errors = 0;
     m_warnings = 0;
     m_crlf = false;
