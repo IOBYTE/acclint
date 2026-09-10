@@ -11,7 +11,7 @@ setup() {
 # Delete any *.output debug files left over from a previous run before
 # running any tests in this file.
 setup_file() {
-    rm -f ./*.output
+    rm -f ./*.output ./*.output.ac
 }
 
 ################################################################################
@@ -73,6 +73,60 @@ setup_file() {
   fi
   [ "$actual" = "$expected" ]
   rm test2.output.ac
+}
+
+# The two below reach the same remap through the error paths rather than the
+# happy one. Both used to index straight off a surface's material without
+# asking whether the index was answerable, which is not caught by reading a
+# file -- only by writing one, since the remap only runs on the way out.
+
+# test3: a surface names a material the file never defined. That is reported
+# as an error, but -Wno-invalid-material-index suppresses it, which leaves the
+# error count at zero and lets the file reach the write path with the bad
+# index intact. There is nothing to remap it to, so it has to be left alone.
+#
+#   0 A  used    -> survives at 0, and the remap table has 2 entries
+#   1 B  unused  -> erased
+#   surface 2 names mat 7
+#
+# Reading indexes[7] off the end of that table wrote a fabricated material
+# number: the plain build turned "mat 7" into "mat 33", and valgrind reports
+# the invalid read.
+@test "test3.1" {
+  $RUN_TEST acclint -Wno-warnings -Wno-invalid-material-index test3.ac -o test3.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test3.output.ac)"
+  expected="$(tr -d '\r' < test3.1.result.ac)"
+  if [ "$actual" != "$expected" ]; then
+    cp test3.output.ac test3.1.actual.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test3.output.ac
+}
+
+# test4: a surface with no mat line at all. That is only a warning, so the
+# file reaches the write path by the ordinary route with an empty mat list,
+# and taking back() of it read a wild address -- a deterministic segfault on
+# the plain build, so this one fails everywhere rather than only under
+# valgrind. The surface must come out still carrying no mat.
+@test "test4.1" {
+  $RUN_TEST acclint -Wno-warnings test4.ac -o test4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test4.output.ac)"
+  expected="$(tr -d '\r' < test4.1.result.ac)"
+  if [ "$actual" != "$expected" ]; then
+    cp test4.output.ac test4.1.actual.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test4.output.ac
 }
 
 ################################################################################
