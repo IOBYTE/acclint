@@ -296,8 +296,9 @@ private:
 
     class Point3 : public std::array<double,3>
     {
-        static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<float>::epsilon());
     public:
+        static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<float>::epsilon());
+
         double x() const { return (*this)[0]; }
         double y() const { return (*this)[1]; }
         double z() const { return (*this)[2]; }
@@ -359,10 +360,15 @@ private:
         {
             return acos(std::clamp(dot(other) / (length() * other.length()), -1.0, 1.0));
         }
-
         double angleDegrees(const Point3 &other) const
         {
-            return angleRadians(other) * 180.0 / std::numbers::pi;
+            const double length1 = length();
+            const double length2 = other.length();
+
+            if (length1 <= SMALL_NUM || length2 <= SMALL_NUM)
+                return 0.0;
+
+            return acos(std::clamp(dot(other) / (length1 * length2), -1.0, 1.0));
         }
         bool equals(const Point3 &other) const
         {
@@ -1118,7 +1124,7 @@ private:
     void writeHeader(std::ostream &out, const Header &header) const;
     bool readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next, const std::string_view & last);
     bool readColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next);
-    bool readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, const std::string_view &next, double min, double max, bool is_float);
+    bool readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float);
     bool readValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float);
     bool readData(std::istringstream &iss, std::istream &in, std::string &data);
     void writeData(std::ostream &out, const std::string &data) const;

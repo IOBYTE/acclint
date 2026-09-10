@@ -1483,7 +1483,7 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string_vi
     return true;
 }
 
-bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, const std::string_view &next, double min, double max, bool is_float)
+bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float)
 {
     in >> std::ws;
 
@@ -1595,10 +1595,10 @@ bool AC3D::readMaterial(std::istringstream &in, Material &material)
         failed |= readTypeAndColor(in, material.spec, spec_token, shi_token, spec_token);
 
     if (!in.eof())
-        failed |= readTypeAndValue(in, material.shi, shi_token, trans_token, 0, 128, false);
+        failed |= readTypeAndValue(in, material.shi, shi_token, 0, 128, false);
 
     if (!in.eof())
-        failed |= readTypeAndValue(in, material.trans, trans_token, empty_token, 0, 1, true);
+        failed |= readTypeAndValue(in, material.trans, trans_token, 0, 1, true);
 
     checkTrailing(in);
 
@@ -3914,7 +3914,13 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
                     {
                         const Point3 normal1 = surfaceRefNormal(surface1, k);
                         const Point3 normal2 = surfaceRefNormal(surface2, l);
-                        const double angle = std::acos(normal1.dot(normal2)) * 180.0 / std::numbers::pi;
+                        const double length1 = normal1.length();
+                        const double length2 = normal2.length();
+                        if (length1 <= Point3::SMALL_NUM || length2 <= Point3::SMALL_NUM)
+                            continue;
+
+                        const double dot = std::clamp(normal1.dot(normal2) / (length1 * length2), -1.0, 1.0);
+                        const double angle = std::acos(dot) * 180.0 / std::numbers::pi;
                         const double crease = object.creases.empty() ? 45.0 : object.creases[0].crease;
 
                         if (angle < crease)
@@ -4389,7 +4395,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
         struct Corner
         {
             Point2 point;
-            size_t ref;
+            size_t ref = 0;
         };
         std::vector<Corner> corners;
         corners.reserve(size);
@@ -6276,44 +6282,58 @@ bool AC3D::Object::hasTransparentTexture() const
     if (textures.empty() || textures[0].name.empty())
         return false;
 
-    // RAII handle file descriptor to prevent leakages
-    std::unique_ptr<FILE, decltype(&fclose)> fp(fopen(textures[0].path.c_str(), "rb"), &fclose);
-    if (!fp) {
+    // RAII handle file descriptor to prevent leakages.
+    // A stateless function object, not decltype(&fclose): glibc declares
+    // fclose with __nonnull((1)), and a function pointer type carrying an
+    // attribute triggers -Wignored-attributes when used as a template
+    // argument. An empty deleter also costs no storage, so the unique_ptr
+    // is pointer sized instead of carrying the callback alongside it.
+    struct FileCloser
+    {
+        void operator()(FILE *file) const noexcept { std::fclose(file); }
+    };
+
+    std::unique_ptr<FILE, FileCloser> fp(std::fopen(textures[0].path.c_str(), "rb"));
+    if (!fp)
+    {
         std::cout << "guessing texture type: " << textures[0].path.c_str() << std::endl;
 
         // Fallback name parsing guessing heuristics
         return (textures[0].name.find("_n.") != std::string::npos ||
-            textures[0].name.find("tree") != std::string::npos ||
-            textures[0].name.find("trans-") != std::string::npos ||
-            textures[0].name.find("arbor") != std::string::npos);
+                textures[0].name.find("tree") != std::string::npos ||
+                textures[0].name.find("trans-") != std::string::npos ||
+                textures[0].name.find("arbor") != std::string::npos);
     }
 
     const size_t number = 8;
     unsigned char header[number];
 
-    if (fread(header, 1, number, fp.get()) != number) {
+    if (fread(header, 1, number, fp.get()) != number)
+    {
         std::cerr << "error reading png header: " << textures[0].path.c_str() << std::endl;
         return false;
     }
 
     const bool is_png = !png_sig_cmp(header, 0, number);
-    if (!is_png) {
+    if (!is_png)
+    {
         std::cerr << "invalid png header " << textures[0].path.c_str() << std::endl;
         return false;
     }
 
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (!png_ptr) {
+    if (!png_ptr)
         return false;
-    }
 
     // Consolidated unified structural manager for context management
     struct PngBridgeRAII
     {
         png_structp ptr;
         png_infop info;
-        ~PngBridgeRAII() {
-            if (ptr) {
+        ~PngBridgeRAII()
+        {
+            if (ptr)
+            {
                 png_infop *info_ptr_ref = info ? &info : nullptr;
                 png_destroy_read_struct(&ptr, info_ptr_ref, nullptr);
             }
@@ -6321,14 +6341,15 @@ bool AC3D::Object::hasTransparentTexture() const
     } png_bridge{ png_ptr, nullptr };
 
     png_bridge.info = png_create_info_struct(png_ptr);
-    if (!png_bridge.info) {
+    if (!png_bridge.info)
+    {
         // Safe: Leaving context allows png_bridge destructor to clean structures safely
         return false;
     }
 
-    // Modern memory guards utilizing custom unique_ptr wrappers
-    std::unique_ptr<png_byte, decltype(&free)> image_data(nullptr, &free);
-    std::unique_ptr<png_bytep[], decltype(&free)> row_pointers(nullptr, &free);
+    // Owning buffers for the decoded image and its per row pointers.
+    std::vector<png_byte> image_data;
+    std::vector<png_bytep> row_pointers;
 
     if (setjmp(png_jmpbuf(png_ptr))) {
         return false;
@@ -6344,37 +6365,31 @@ bool AC3D::Object::hasTransparentTexture() const
     const int channels = png_get_channels(png_ptr, png_bridge.info);
 
     // Filter processing down strictly to standard 32-bit RGBA maps
-    if (color_type != PNG_COLOR_TYPE_RGB_ALPHA || bit_depth != 8 || channels != 4) {
+    if (color_type != PNG_COLOR_TYPE_RGB_ALPHA || bit_depth != 8 || channels != 4)
         return false;
-    }
 
     const size_t rowbytes = png_get_rowbytes(png_ptr, png_bridge.info);
 
-    image_data.reset(static_cast<png_byte *>(malloc(rowbytes * height)));
-    if (!image_data) {
-        return false;
-    }
-
-    row_pointers.reset(static_cast<png_bytep *>(malloc(sizeof(png_bytep) * height)));
-    if (!row_pointers) {
-        return false;
-    }
+    image_data.resize(rowbytes * height);
+    row_pointers.resize(height);
 
     for (png_uint_32 i = 0; i < height; ++i)
-        row_pointers[i] = image_data.get() + i * rowbytes;
+        row_pointers[i] = image_data.data() + (i * rowbytes);
 
-    png_set_rows(png_ptr, png_bridge.info, row_pointers.get());
-    png_read_image(png_ptr, row_pointers.get());
+    png_set_rows(png_ptr, png_bridge.info, row_pointers.data());
+    png_read_image(png_ptr, row_pointers.data());
     png_read_end(png_ptr, nullptr);
 
     bool has_alpha = false;
-    const png_byte *raw_buffer = image_data.get();
+    const png_byte *raw_buffer = image_data.data();
 
     // Scan memory explicitly pointing to the 4th element (alpha) block
-    for (png_uint_32 i = 0; i < (width * height); i++) {
+    for (png_uint_32 i = 0; i < (width * height); i++)
+    {
         const png_byte *pixel = raw_buffer + (i * 4);
         const png_byte alpha = pixel[3]; // Correct channel selection offset via array index
-        if (alpha != 255) {
+        if (alpha != 255)
+        {
             has_alpha = true;
             break; // Immediately exit parsing tracking once matching a transparent fragment
         }

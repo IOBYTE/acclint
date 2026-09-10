@@ -25,16 +25,16 @@ env:
   # findings vary between cppcheck versions, and the two jobs run different
   # versions, so gating on them would make CI flaky rather than useful.
   #
-  # arithOperationsOnVoidPointer is a false positive: cppcheck cannot resolve
-  # std::unique_ptr<png_byte, decltype(&free)>::get() and assumes it returns
-  # void*, when it returns png_byte*.
+  # No project specific suppressions: missingIncludeSystem is cppcheck noise
+  # about system headers it was never given. If a finding needs suppressing,
+  # prefer a // cppcheck-suppress comment at the site (--inline-suppr above)
+  # so the reason lives next to the code rather than in this file.
   CPPCHECK_ARGS: >-
     --enable=warning,performance,portability
     --std=c++20
     --force
     --inline-suppr
     --suppress=missingIncludeSystem
-    --suppress=arithOperationsOnVoidPointer:ac3d.cpp
     --error-exitcode=1
 
 jobs:
