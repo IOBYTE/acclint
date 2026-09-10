@@ -6,8 +6,40 @@ on:
   pull_request:
     branches: ["master", "main"]
 
+permissions:
+  contents: read
+
+# A new push to the same branch supersedes the run already in flight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # --error-exitcode=1 is the point of running cppcheck at all: without it
+  # cppcheck prints its findings and exits 0, so the step can never fail.
+  #
+  # --inline-suppr matches acclint.windows.cppcheck, so a // cppcheck-suppress
+  # comment works the same in CI as it does in the cppcheck GUI.
+  #
+  # --inconclusive is deliberately NOT used for the gating run: inconclusive
+  # findings vary between cppcheck versions, and the two jobs run different
+  # versions, so gating on them would make CI flaky rather than useful.
+  #
+  # arithOperationsOnVoidPointer is a false positive: cppcheck cannot resolve
+  # std::unique_ptr<png_byte, decltype(&free)>::get() and assumes it returns
+  # void*, when it returns png_byte*.
+  CPPCHECK_ARGS: >-
+    --enable=warning,performance,portability
+    --std=c++20
+    --force
+    --inline-suppr
+    --suppress=missingIncludeSystem
+    --suppress=arithOperationsOnVoidPointer:ac3d.cpp
+    --error-exitcode=1
+
 jobs:
   build-linux:
+    name: Linux (gcc, valgrind)
     runs-on: ubuntu-latest
 
     steps:
@@ -17,7 +49,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ cppcheck libpng-dev zlib1g-dev valgrind
+          sudo apt-get install -y cmake g++ cppcheck libpng-dev zlib1g-dev valgrind bats
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
@@ -26,12 +58,7 @@ jobs:
         run: cmake --build build --config Release -- -j$(nproc)
 
       - name: Static analysis (cppcheck)
-        run: |
-          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem --inconclusive -i build -I . .
-
-      - name: Install test dependencies
-        run: |
-          sudo apt-get install -y bats
+        run: cppcheck $CPPCHECK_ARGS -i build -I . .
 
       - name: Run tests
         run: |
@@ -40,10 +67,93 @@ jobs:
           export PATH="${{ github.workspace }}/build:$PATH"
           bash testrunner.sh
 
-      - name: Sanity
-        run: echo "Build completed on $RUNNER_OS"
+      # test/*/test.bats writes <testname>.output next to the fixtures when
+      # actual and expected differ. Those files are the only record of what
+      # went wrong, so collect them when something fails.
+      - name: Upload failing test output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output-linux
+          path: test/**/*.output
+          if-no-files-found: ignore
+          retention-days: 14
+
+  sanitizers:
+    name: Linux (ASan + UBSan corpus sweep)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libpng-dev zlib1g-dev
+
+      # cmake/FindSanitizers.cmake is already wired into CMakeLists.txt via
+      # add_sanitizers(acclint); these are the options it exposes.
+      - name: Configure with sanitizers
+        run: >-
+          cmake -S . -B build-asan
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DSANITIZE_ADDRESS=On
+          -DSANITIZE_UNDEFINED=On
+          -DCMAKE_CXX_FLAGS=-D_GLIBCXX_ASSERTIONS
+
+      - name: Build
+        run: cmake --build build-asan -- -j$(nproc)
+
+      # The bats suites wrap every call in valgrind, which cannot run a
+      # sanitizer-instrumented binary, so this job drives the same corpus
+      # directly instead. Every .ac/.acc file under test/ is fed through the
+      # read path and through each transform, since the transforms are where
+      # unchecked indexes live.
+      - name: Sweep the test corpus
+        run: |
+          export ASAN_OPTIONS=abort_on_error=0:exitcode=42:detect_leaks=1
+          export UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:exitcode=42
+
+          acclint="$PWD/build-asan/acclint"
+          tmp=$(mktemp -d)
+          crashes=0
+          runs=0
+
+          while IFS= read -r -d '' f; do
+              for args in "" \
+                          "-o $tmp/o.ac" \
+                          "-o $tmp/o.acc" \
+                          "-v 11 -o $tmp/o.ac" \
+                          "-v 12 -o $tmp/o.ac" \
+                          "--splitMat -o $tmp/o.ac" \
+                          "--splitSURF -o $tmp/o.ac" \
+                          "--splitPolygon -o $tmp/o.ac" \
+                          "--flatten -o $tmp/o.ac" \
+                          "--combineTexture -o $tmp/o.ac" \
+                          "--fixSurface2SidedOpaque -o $tmp/o.ac" \
+                          "--fixOverlapping2SidedSurface -o $tmp/o.ac" \
+                          "--dump surf"; do
+                  runs=$((runs + 1))
+                  # shellcheck disable=SC2086
+                  "$acclint" $args "$f" > /dev/null 2> "$tmp/err"
+                  rc=$?
+
+                  # acclint exits 1 for input that legitimately has errors, so
+                  # only the sanitizer exit code and death by signal count.
+                  if [ "$rc" -eq 42 ] || [ "$rc" -ge 128 ]; then
+                      crashes=$((crashes + 1))
+                      echo "::error::rc=$rc: acclint $args $f"
+                      sed -e "s#$tmp#TMP#g" "$tmp/err" | head -30
+                  fi
+              done
+          done < <(find test \( -name '*.ac' -o -name '*.acc' \) -print0)
+
+          echo "$runs invocations, $crashes crashing"
+          [ "$crashes" -eq 0 ]
 
   build-windows:
+    name: Windows (MSVC)
     runs-on: windows-latest
 
     steps:
@@ -60,7 +170,7 @@ jobs:
           .\vcpkg\vcpkg.exe install zlib:x64-windows libpng:x64-windows
 
       - name: Configure (CMake)
-        run: cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        run: cmake -S . -B build -A x64 -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
       - name: Build
         run: cmake --build build --config Release -- /m
@@ -71,9 +181,11 @@ jobs:
           msiexec /i cppcheck-setup.msi /qn INSTALLDIR="C:\cppcheck"
           echo "C:\cppcheck" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+      # bash, not PowerShell: PowerShell passes $env:CPPCHECK_ARGS as one
+      # argument instead of splitting it into flags.
       - name: Static analysis (cppcheck)
-        run: |
-          cppcheck --enable=warning,performance,portability --std=c++20 --force --suppress=missingIncludeSystem --inconclusive -i build -i vcpkg -I . .
+        shell: bash
+        run: cppcheck $CPPCHECK_ARGS -i build -i vcpkg -I . .
 
       - name: Install test dependencies (bats)
         run: npm install -g bats
@@ -86,5 +198,11 @@ jobs:
           export PATH="${{ github.workspace }}/build/Release:$PATH"
           bash testrunner.sh
 
-      - name: Sanity
-        run: echo "Build completed on $RUNNER_OS"
+      - name: Upload failing test output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output-windows
+          path: test/**/*.output
+          if-no-files-found: ignore
+          retention-days: 14
