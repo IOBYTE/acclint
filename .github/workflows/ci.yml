@@ -112,13 +112,26 @@ jobs:
       # unchecked indexes live.
       - name: Sweep the test corpus
         run: |
-          export ASAN_OPTIONS=abort_on_error=0:exitcode=42:detect_leaks=1
-          export UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:exitcode=42
-
           acclint="$PWD/build-asan/acclint"
           tmp=$(mktemp -d)
           crashes=0
           runs=0
+
+          # log_path keeps sanitizer reports in their own file instead of
+          # mixing them into acclint's stderr, which on a warning-heavy model
+          # can run to well over a thousand lines.
+          export ASAN_OPTIONS=abort_on_error=0:exitcode=42:detect_leaks=1:log_path=$tmp/san
+          export UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:exitcode=42:log_path=$tmp/san
+
+          crash_reason() {
+              case "$1" in
+                  42)  echo "sanitizer report" ;;
+                  134) echo "SIGABRT - assertion or uncaught exception" ;;
+                  139) echo "SIGSEGV" ;;
+                  136) echo "SIGFPE" ;;
+                  *)   echo "signal $(( $1 - 128 ))" ;;
+              esac
+          }
 
           while IFS= read -r -d '' f; do
               for args in "" \
@@ -137,16 +150,42 @@ jobs:
                           "-T $(dirname "$f")/textures" \
                           "-T $(dirname "$f")/textures -o $tmp/o.ac"; do
                   runs=$((runs + 1))
-                  # shellcheck disable=SC2086
-                  "$acclint" $args "$f" > /dev/null 2> "$tmp/err"
-                  rc=$?
+                  # Run through a nested shell so bash's own "Aborted" /
+                  # "Segmentation fault" job-control line stays out of the
+                  # log; it names this script rather than the bug. The nested
+                  # shell still reports the child's death as 128+signal, so
+                  # the check below is unaffected. $1 is deliberately
+                  # unquoted so the argument string splits into flags.
+                  #
+                  # "|| rc=$?" is load bearing: GitHub runs this step with
+                  # `bash -e`, and acclint exits 1 for any input that has
+                  # errors. As a bare command that status would end the whole
+                  # step at the first such file, before a single finding could
+                  # be printed. Inside a || list the failure is handled, so -e
+                  # does not fire.
+                  rc=0
+                  bash -c '"$0" $1 "$2" > /dev/null 2> "$3"' \
+                       "$acclint" "$args" "$f" "$tmp/err" 2>/dev/null || rc=$?
 
                   # acclint exits 1 for input that legitimately has errors, so
                   # only the sanitizer exit code and death by signal count.
                   if [ "$rc" -eq 42 ] || [ "$rc" -ge 128 ]; then
                       crashes=$((crashes + 1))
-                      echo "::error::rc=$rc: acclint $args $f"
-                      sed -e "s#$tmp#TMP#g" "$tmp/err" | head -30
+                      echo "::error::acclint $args $f  ->  rc=$rc ($(crash_reason $rc))"
+
+                      for log in "$tmp"/san.*; do
+                          [ -f "$log" ] || continue
+                          echo "--- sanitizer report ---"
+                          sed -e "s#$tmp#TMP#g" "$log" | head -40
+                          rm -f "$log"
+                      done
+
+                      # The crash evidence sits at the END of acclint's stderr,
+                      # after however many warnings the file produced, so take
+                      # the tail. Taking the head just prints the first few
+                      # warnings and says nothing about the crash.
+                      echo "--- last lines of acclint stderr ---"
+                      tail -15 "$tmp/err" | sed -e "s#$tmp#TMP#g"
                   fi
               done
           done < <(find test \( -name '*.ac' -o -name '*.acc' \) -print0)
