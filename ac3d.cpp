@@ -5315,8 +5315,11 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
                     auto it = newKids.back().surfaces.begin();
                     while (it != newKids.back().surfaces.end())
                     {
-                        // remove surfaces that don't match
-                        if (it->mats[0].mat != kid->surfaces[i].mats[0].mat)
+                        // remove surfaces that don't match; a surface with
+                        // no "mat" line names no material to split on, so it
+                        // stays with the original object rather than being
+                        // copied into every split off object
+                        if (it->mats.empty() || it->mats[0].mat != kid->surfaces[i].mats[0].mat)
                             it = newKids.back().surfaces.erase(it);
                         else
                             ++it;
@@ -5328,8 +5331,13 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
         auto it = kid->surfaces.begin();
         while (it != kid->surfaces.end())
         {
-            // remove surfaces that don't match
-            if (it->mats[0].mat != mat)
+            // remove surfaces that don't match; keep the ones with no "mat"
+            // line here, matching the loop above. Only surfaces[0] was known
+            // to have a material, so indexing mats[0] unconditionally read
+            // past the end of an empty vector for any later surface without
+            // one -- which checkMissingMat already warns about, so such
+            // files reach here routinely.
+            if (!it->mats.empty() && it->mats[0].mat != mat)
                 it = kid->surfaces.erase(it);
             else
                 ++it;
