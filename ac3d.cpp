@@ -214,17 +214,24 @@ bool icasecmp(const std::string &l, const std::string_view &r)
                      std::toupper(static_cast<unsigned char>(r1)); });
 }
 
-// std::filesystem::exists throws for any failure other than "does not
-// exist" -- a permission denied component on the path, for instance --
-// and nothing on the texture lookup path catches filesystem_error, so
-// such a failure would end the program through std::terminate. The
-// error_code overload reports the same condition by returning false,
-// which is the answer this code wants either way: a file that cannot be
-// seen cannot be used.
-bool fileExists(const std::filesystem::path &path)
+// A texture has to be a regular file to be usable, which is a stricter
+// question than exists(): a directory named like the texture satisfies
+// exists(), and what file_size() then makes of it is platform specific --
+// POSIX reports an error, Windows reports a size -- so the same model
+// linted differently on Linux and Windows. Asking is_regular_file() is
+// what this code actually means, and it keeps file_size() away from
+// anything that is not a file in the first place.
+//
+// The error_code overload matters too: the throwing form raises
+// filesystem_error for any failure other than "does not exist" -- a
+// permission denied component on the path, say -- and nothing on the
+// texture lookup path catches it, so such a failure ended the program
+// through std::terminate. Returning false is the right answer either
+// way: a file that cannot be seen cannot be used.
+bool isRegularFile(const std::filesystem::path &path)
 {
     std::error_code ec;
-    return std::filesystem::exists(path, ec);
+    return std::filesystem::is_regular_file(path, ec);
 }
 
 } // namespace
@@ -1984,11 +1991,11 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     {
                         texture_path = file_path.parent_path().append(texture_name);
 
-                        if (fileExists(texture_path))
+                        if (isRegularFile(texture_path))
                             texture.path = texture_path.generic_string();
                     }
 
-                    if (!fileExists(texture_path))
+                    if (!isRegularFile(texture_path))
                     {
                         bool found = false;
 
@@ -1998,7 +2005,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             for (const auto &path : m_texture_paths)
                             {
                                 const std::filesystem::path new_path = std::filesystem::path(path).append(texture_name);
-                                if (fileExists(new_path))
+                                if (isRegularFile(new_path))
                                 {
                                     found = true;
                                     texture.path = new_path.generic_string();
@@ -2029,7 +2036,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         for (const auto &path : m_texture_paths)
                         {
                             const std::filesystem::path other = std::filesystem::path(path).append(texture_name);
-                            if (fileExists(other))
+                            if (isRegularFile(other))
                             {
                                 if (texture.path.empty())
                                     texture.path = other.generic_string();
