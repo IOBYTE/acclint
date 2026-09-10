@@ -138,7 +138,7 @@ void usage()
     std::cerr << "  --merge filename                       Merge filename with inputfile." << std::endl;
     std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
     std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
-    std::cerr << "  --grid <size>                          Partition objects into square cells of <size> for culling." << std::endl;
+    std::cerr << "  --grid size                            Partition objects into square cells of size in meters for culling." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --fixAll                               Fix everything." << std::endl;
