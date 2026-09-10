@@ -1,0 +1,2 @@
+# Keeps the directory named "tex.png" in git.
+# Its being a directory, not a file, is the whole point of this fixture.

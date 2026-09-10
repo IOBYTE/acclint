@@ -133,7 +133,9 @@ jobs:
                           "--combineTexture -o $tmp/o.ac" \
                           "--fixSurface2SidedOpaque -o $tmp/o.ac" \
                           "--fixOverlapping2SidedSurface -o $tmp/o.ac" \
-                          "--dump surf"; do
+                          "--dump surf" \
+                          "-T $(dirname "$f")/textures" \
+                          "-T $(dirname "$f")/textures -o $tmp/o.ac"; do
                   runs=$((runs + 1))
                   # shellcheck disable=SC2086
                   "$acclint" $args "$f" > /dev/null 2> "$tmp/err"
