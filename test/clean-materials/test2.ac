@@ -1,0 +1,29 @@
+AC3Db
+MATERIAL "B" rgb 0 0 1  amb 1 1 1  emis 0 0 0  spec 0 0 0  shi 0  trans 0
+MATERIAL "A" rgb 0 1 0  amb 1 1 1  emis 0 0 0  spec 0 0 0  shi 0  trans 0
+MATERIAL "A2" rgb 0 1 0  amb 1 1 1  emis 0 0 0  spec 0 0 0  shi 0  trans 0
+OBJECT world
+kids 1
+OBJECT poly
+name "p"
+numvert 6
+0 0 0
+1 0 0
+0 1 0
+5 0 0
+6 0 0
+5 1 0
+numsurf 2
+SURF 0x10
+mat 1
+refs 3
+0 0 0
+1 0 0
+2 0 0
+SURF 0x10
+mat 2
+refs 3
+3 0 0
+4 0 0
+5 0 0
+kids 0

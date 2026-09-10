@@ -5452,18 +5452,27 @@ bool AC3D::cleanMaterials()
         }
     }
 
+    // Where each surviving material lands once the unused entries are
+    // erased below: survivorIndex[i] is the number of survivors before i.
+    std::vector<size_t> survivorIndex(m_materials.size(), 0);
+    size_t survivors = 0;
+
     for (size_t i = 0; i < m_materials.size(); ++i)
     {
-        if (!m_materials[i].used)
-        {
-            // update index
-            for (size_t j = i + 1; j < m_materials.size(); ++j)
-            {
-                if (newIndex[j] > 0)
-                    newIndex[j]--;
-            }
-        }
+        survivorIndex[i] = survivors;
+        if (m_materials[i].used)
+            survivors++;
     }
+
+    // A surface referencing material i must end up pointing at whichever
+    // slot its representative lands in -- i itself, or the first instance
+    // it was collapsed onto above. The shift has to be driven by that
+    // representative index, newIndex[i], not by i: a duplicate whose first
+    // instance sits before a removed material must not be shifted down for
+    // that removal. Counting by position and clamping at 0, as the previous
+    // version did, silently remapped such a surface to the wrong material.
+    for (size_t i = 0; i < m_materials.size(); ++i)
+        newIndex[i] = survivorIndex[newIndex[i]];
 
     for (size_t i = duplicates.size(); i > 0; --i)
     {
