@@ -1139,11 +1139,33 @@ private:
     std::map<std::string, bool> m_transparent_textures;
     bool m_rename_combine_texture = false;
 
+    // Everything a full file overlap test needs to reject a pair without
+    // looking at a single triangle: the extent of the geometry, whether
+    // there is any geometry at all, and whether anything in it is two sided
+    // (such a test only reports a pair when at least one side of it is).
+    struct Bounds
+    {
+        Point3 min = { 0.0, 0.0, 0.0 };
+        Point3 max = { 0.0, 0.0, 0.0 };
+        bool triangles = false;
+        bool double_sided = false;
+
+        void add(const Point3 &other_min, const Point3 &other_max);
+        void add(const Bounds &other);
+    };
+
     struct Poly
     {
         Object *object = nullptr;
         Matrix matrix;
+
+        // Filled by addPoly in the same pass that builds the transformed
+        // triangles, so every full file overlap test gets them without a
+        // second walk and without having to remember to ask for them.
+        Bounds bounds;                  // the whole object
+        std::vector<Bounds> surfaces;   // one per surface, in surface order
     };
+
 
     bool readHeader(std::istream &in);
     void writeHeader(std::ostream &out, const Header &header) const;
@@ -1217,7 +1239,8 @@ private:
     void transform(const Matrix &matrix);
     void combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects);
     static void addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix);
-    static void fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface *> &surfaces);
+    static void fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2,
+                                            std::set<Surface *> &surfaces);
     bool hasOpaqueTexture(const Object &object);
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
@@ -1233,6 +1256,8 @@ private:
     static bool degenerate(const std::array<Point3, 3> &vertices);
     static bool coplanar(const Triangle &triangle1, const Triangle &triangle2);
     static bool boundingBoxesOverlap(const Triangle &triangle1, const Triangle &triangle2);
+    static bool boundingBoxesOverlap(const Point3 &min1, const Point3 &max1,
+                                     const Point3 &min2, const Point3 &max2);
     static bool trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2);
     static size_t getSharedVertexCount(const Triangle &triangle1, const Triangle &triangle2);
     static bool pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle);

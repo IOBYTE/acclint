@@ -3497,8 +3497,19 @@ void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matri
     {
         Matrix newMatrix = matrix.multiply(object.matrix);
 
+        Poly poly;
+
+        poly.surfaces.reserve(object.surfaces.size());
+
         for (auto &surface : object.surfaces)
         {
+            // Rebuilt from scratch every time. This used to append, so a run
+            // that both checked and fixed built the triangles twice and left
+            // every surface holding two copies of each one: 281678 became
+            // 562900 on a track model, and the second pass then compared
+            // every triangle against a duplicate of itself.
+            surface.transformedTriangles.clear();
+
             if (surface.isPolygon() && surface.refs.size() >= 3)
             {
                 for (size_t i = 1; i < (surface.refs.size() - 1); i++)
@@ -3565,9 +3576,22 @@ void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matri
                     surface.transformedTriangles.emplace_back(triangle);
                 }
             }
+
+            Bounds bounds;
+
+            bounds.double_sided = surface.isDoubleSided();
+
+            for (const auto &triangle : surface.transformedTriangles)
+                bounds.add(triangle.boxMin, triangle.boxMax);
+
+            poly.bounds.add(bounds);
+            poly.surfaces.push_back(bounds);
         }
 
-        polys.emplace_back(&object, newMatrix);
+        poly.object = &object;
+        poly.matrix = newMatrix;
+
+        polys.push_back(std::move(poly));
     }
     else if (object.type.type == "group" || object.type.type == "world")
     {
@@ -3579,16 +3603,61 @@ void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matri
     }
 }
 
+void AC3D::Bounds::add(const Point3 &other_min, const Point3 &other_max)
+{
+    if (!triangles)
+    {
+        min = other_min;
+        max = other_max;
+        triangles = true;
+        return;
+    }
+
+    min.x(std::min(min.x(), other_min.x()));
+    min.y(std::min(min.y(), other_min.y()));
+    min.z(std::min(min.z(), other_min.z()));
+    max.x(std::max(max.x(), other_max.x()));
+    max.y(std::max(max.y(), other_max.y()));
+    max.z(std::max(max.z(), other_max.z()));
+}
+
+void AC3D::Bounds::add(const Bounds &other)
+{
+    if (other.triangles)
+        add(other.min, other.max);
+
+    double_sided |= other.double_sided;
+}
+
 void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, const Poly &object2)
 {
-    for (const auto &surface1 : object1.object->surfaces)
+    for (size_t i = 0; i < object1.object->surfaces.size(); ++i)
     {
-        for (const auto &surface2 : object2.object->surfaces)
+        const Surface &surface1 = object1.object->surfaces[i];
+        const Bounds &box1 = object1.surfaces[i];
+
+        if (!box1.triangles)
+            continue;
+
+        for (size_t j = 0; j < object2.object->surfaces.size(); ++j)
         {
-            if (surface1.isDoubleSided() || surface2.isDoubleSided())
+            const Surface &surface2 = object2.object->surfaces[j];
+            const Bounds &box2 = object2.surfaces[j];
+
+            if (!box2.triangles)
+                continue;
+
+            // Nothing is reported unless one side of the pair is two sided,
+            // and two surfaces that do not share any space cannot overlap.
+            // Both were previously discovered only after entering the
+            // triangle loops.
+            if (!box1.double_sided && !box2.double_sided)
+                continue;
+
+            if (!boundingBoxesOverlap(box1.min, box1.max, box2.min, box2.max))
+                continue;
+
             {
-                if (!surface1.transformedTriangles.empty() &&
-                    !surface2.transformedTriangles.empty())
                 {
                     for (const auto &triangle1 : surface1.transformedTriangles)
                     {
@@ -3646,15 +3715,30 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
     for (auto &world : m_objects)
         addPoly(polys, world, matrix);
 
-    if (polys.empty())
-        return;
-
-    const int size1 = static_cast<int>(polys.size() - 1);
-    const int size2 = static_cast<int>(polys.size());
-    for (int i = 0; i < size1; ++i)
+    // addPoly summarised each object on the way in, so a pair is rejected
+    // here by a handful of comparisons instead of by walking two surface
+    // lists. On a track model that is what makes the pair loop affordable:
+    // the objects are scattered over the landscape, so almost every pair is
+    // separated in space and most contain nothing two sided.
+    for (size_t i = 0; i + 1 < polys.size(); ++i)
     {
-        for (int j = i + 1; j < size2; ++j)
+        if (!polys[i].bounds.triangles)
+            continue;
+
+        for (size_t j = i + 1; j < polys.size(); ++j)
+        {
+            if (!polys[j].bounds.triangles)
+                continue;
+
+            if (!polys[i].bounds.double_sided && !polys[j].bounds.double_sided)
+                continue;
+
+            if (!boundingBoxesOverlap(polys[i].bounds.min, polys[i].bounds.max,
+                                      polys[j].bounds.min, polys[j].bounds.max))
+                continue;
+
             checkOverlapping2SidedSurface(in, polys[i], polys[j]);
+        }
     }
 
     if (m_show_times)
@@ -4728,26 +4812,41 @@ bool AC3D::pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle
 
 bool AC3D::boundingBoxesOverlap(const Triangle &triangle1, const Triangle &triangle2)
 {
+    return boundingBoxesOverlap(triangle1.boxMin, triangle1.boxMax,
+                                triangle2.boxMin, triangle2.boxMax);
+}
+
+// Separated from the triangle version so the same test can reject a whole
+// surface or a whole object, not just a triangle pair.
+//
+// Enlarging a box never turns an overlap into a miss here, which is what
+// makes it safe to cull with: the tolerance scales with the extents and the
+// coordinate magnitudes, so a box that contains another gets a tolerance at
+// least as large. Two triangles that would be reported still have their
+// enclosing surface and object boxes overlap.
+bool AC3D::boundingBoxesOverlap(const Point3 &min1, const Point3 &max1,
+                                const Point3 &min2, const Point3 &max2)
+{
     constexpr double k = 4.0;
     const double float_epsilon = static_cast<double>(std::numeric_limits<float>::epsilon());
 
     // Leverage O(1) properties straight from your cached structures
     const double scale = std::max({
-        triangle1.boxMax.x() - triangle1.boxMin.x(), triangle1.boxMax.y() - triangle1.boxMin.y(), triangle1.boxMax.z() - triangle1.boxMin.z(),
-        triangle2.boxMax.x() - triangle2.boxMin.x(), triangle2.boxMax.y() - triangle2.boxMin.y(), triangle2.boxMax.z() - triangle2.boxMin.z(),
-        std::fabs(triangle1.boxMin.x()), std::fabs(triangle1.boxMin.y()), std::fabs(triangle1.boxMin.z()),
-        std::fabs(triangle2.boxMin.x()), std::fabs(triangle2.boxMin.y()), std::fabs(triangle2.boxMin.z()),
+        max1.x() - min1.x(), max1.y() - min1.y(), max1.z() - min1.z(),
+        max2.x() - min2.x(), max2.y() - min2.y(), max2.z() - min2.z(),
+        std::fabs(min1.x()), std::fabs(min1.y()), std::fabs(min1.z()),
+        std::fabs(min2.x()), std::fabs(min2.y()), std::fabs(min2.z()),
         1.0
         });
     const double epsilon = k * float_epsilon * scale;
 
     // Flat scalar comparison pass with zero vertex traversal loops
-    return (triangle1.boxMin.x() - epsilon <= triangle2.boxMax.x() + epsilon) &&
-        (triangle2.boxMin.x() - epsilon <= triangle1.boxMax.x() + epsilon) &&
-        (triangle1.boxMin.y() - epsilon <= triangle2.boxMax.y() + epsilon) &&
-        (triangle2.boxMin.y() - epsilon <= triangle1.boxMax.y() + epsilon) &&
-        (triangle1.boxMin.z() - epsilon <= triangle2.boxMax.z() + epsilon) &&
-        (triangle2.boxMin.z() - epsilon <= triangle1.boxMax.z() + epsilon);
+    return (min1.x() - epsilon <= max2.x() + epsilon) &&
+        (min2.x() - epsilon <= max1.x() + epsilon) &&
+        (min1.y() - epsilon <= max2.y() + epsilon) &&
+        (min2.y() - epsilon <= max1.y() + epsilon) &&
+        (min1.z() - epsilon <= max2.z() + epsilon) &&
+        (min2.z() - epsilon <= max1.z() + epsilon);
 }
 
 bool AC3D::trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2)
@@ -6504,15 +6603,29 @@ void AC3D::fixOverlapping2SidedSurface()
     for (auto &world : m_objects)
         addPoly(polys, world, matrix);
 
-    if (polys.empty())
-        return;
-
+    // Same rejections as the check this mirrors -- see
+    // checkOverlapping2SidedSurface.
     std::set<Surface *> surfaces;
 
-    for (size_t i = 0; i < (polys.size() - 1); ++i)
+    for (size_t i = 0; i + 1 < polys.size(); ++i)
     {
+        if (!polys[i].bounds.triangles)
+            continue;
+
         for (size_t j = i + 1; j < polys.size(); ++j)
+        {
+            if (!polys[j].bounds.triangles)
+                continue;
+
+            if (!polys[i].bounds.double_sided && !polys[j].bounds.double_sided)
+                continue;
+
+            if (!boundingBoxesOverlap(polys[i].bounds.min, polys[i].bounds.max,
+                                      polys[j].bounds.min, polys[j].bounds.max))
+                continue;
+
             fixOverlapping2SidedSurface(polys[i], polys[j], surfaces);
+        }
     }
 
     for (auto *surface : surfaces)
@@ -6537,29 +6650,58 @@ void AC3D::fixOverlapping2SidedSurface()
     }
 }
 
-void AC3D::fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2, std::set<Surface*> &surfaces)
+void AC3D::fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2,
+                                       std::set<Surface*> &surfaces)
 {
-    for (auto &surface1 : object1.object->surfaces)
+    for (size_t i = 0; i < object1.object->surfaces.size(); ++i)
     {
-        for (auto &surface2 : object2.object->surfaces)
+        Surface &surface1 = object1.object->surfaces[i];
+        const Bounds &box1 = object1.surfaces[i];
+
+        if (!box1.triangles)
+            continue;
+
+        for (size_t j = 0; j < object2.object->surfaces.size(); ++j)
         {
-            if (surface1.isDoubleSided() || surface2.isDoubleSided())
+            Surface &surface2 = object2.object->surfaces[j];
+            const Bounds &box2 = object2.surfaces[j];
+
+            if (!box2.triangles)
+                continue;
+
+            if (!box1.double_sided && !box2.double_sided)
+                continue;
+
+            if (!boundingBoxesOverlap(box1.min, box1.max, box2.min, box2.max))
+                continue;
+
+            // Unlike the check, which reports every overlapping triangle
+            // pair, this only needs to know whether the two surfaces touch
+            // at all: the pair is recorded in a set, so the second and every
+            // later hit adds nothing. Stopping at the first one leaves the
+            // set identical and skips the rest of the triangle pairs, which
+            // for two surfaces that genuinely overlap is most of them.
+            bool overlaps = false;
+
+            for (const auto &triangle1 : surface1.transformedTriangles)
             {
-                if (!surface1.transformedTriangles.empty() &&
-                    !surface2.transformedTriangles.empty())
+                for (const auto &triangle2 : surface2.transformedTriangles)
                 {
-                    for (const auto &triangle1 : surface1.transformedTriangles)
+                    if (trianglesOverlap(triangle1, triangle2))
                     {
-                        for (const auto &triangle2 : surface2.transformedTriangles)
-                        {
-                            if (trianglesOverlap(triangle1, triangle2))
-                            {
-                                surfaces.insert(&surface1);
-                                surfaces.insert(&surface2);
-                            }
-                        }
+                        overlaps = true;
+                        break;
                     }
                 }
+
+                if (overlaps)
+                    break;
+            }
+
+            if (overlaps)
+            {
+                surfaces.insert(&surface1);
+                surfaces.insert(&surface2);
             }
         }
     }
