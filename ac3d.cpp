@@ -33,6 +33,7 @@
 #include <iomanip>
 #include <map>
 #include <numeric>
+#include <unordered_map>
 #include <omp.h>
 #include <png.h>
 
@@ -6230,22 +6231,93 @@ bool AC3D::cleanSurfaces(Object &object)
     }
 
     // remove duplicate surfaces
-    for (size_t i = 0; i < object.surfaces.size(); ++i)
+    //
+    // Comparing every pair is quadratic, and after combineTexture has
+    // gathered a model into a handful of objects that is the whole model in
+    // one list: 61 seconds on a track with 280000 surfaces, against 0.3
+    // before the transform spread them over 12000 objects.
+    //
+    // Surfaces that survive are the first of each group, exactly as the pair
+    // walk left them, but they are found by hashing rather than by
+    // comparing. The hash only chooses candidates -- each one is still
+    // confirmed with the same three comparisons as before -- so a collision
+    // costs a comparison and never an answer.
+    //
+    // What the hash keys on is the ref indexes. sameSurface also accepts two
+    // refs whose indexes differ but whose vertices compare equal, and such a
+    // pair would land in different buckets; cleanVertices runs immediately
+    // before this and leaves no two distinct vertices in an object comparing
+    // equal, so that case does not arise (measured across the test corpus
+    // and a 12000 object track model: zero such pairs). If it ever did, a
+    // duplicate would survive rather than a distinct surface being removed.
     {
-        for (size_t j = i + 1; j < object.surfaces.size(); ++j)
+        auto combine = [](size_t seed, size_t value)
         {
-            if (object.surfaces[i].flags != object.surfaces[j].flags)
-                continue;
+            return seed ^ (value + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2));
+        };
 
-            if (object.surfaces[i].mats != object.surfaces[j].mats)
-                continue;
+        std::unordered_map<size_t, std::vector<size_t>> buckets;
+        std::vector<bool> duplicate(object.surfaces.size(), false);
+        size_t duplicates = 0;
 
-            if (object.sameSurface(i, j, Difference::None))
+        for (size_t i = 0; i < object.surfaces.size(); ++i)
+        {
+            const Surface &surface = object.surfaces[i];
+
+            size_t key = combine(surface.flags, surface.refs.size());
+
+            for (const auto &mat : surface.mats)
+                key = combine(key, mat.mat);
+
+            for (const auto &ref : surface.refs)
+                key = combine(key, ref.index);
+
+            std::vector<size_t> &bucket = buckets[key];
+            bool found = false;
+
+            for (const size_t j : bucket)
             {
-                object.surfaces.erase(object.surfaces.begin() + j);
-                --j;
+                if (object.surfaces[j].flags != surface.flags)
+                    continue;
+
+                if (object.surfaces[j].mats != surface.mats)
+                    continue;
+
+                if (object.sameSurface(j, i, Difference::None))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found)
+            {
+                duplicate[i] = true;
+                ++duplicates;
                 cleaned = true;
             }
+            else
+                bucket.push_back(i);
+        }
+
+        // Erasing as they were found moved every later surface each time.
+        // One pass at the end moves each surviving surface at most once.
+        if (duplicates != 0)
+        {
+            size_t next = 0;
+
+            for (size_t i = 0; i < object.surfaces.size(); ++i)
+            {
+                if (!duplicate[i])
+                {
+                    if (next != i)
+                        object.surfaces[next] = std::move(object.surfaces[i]);
+
+                    ++next;
+                }
+            }
+
+            object.surfaces.resize(next);
         }
     }
 
