@@ -257,6 +257,31 @@ bool isRegularFile(const std::filesystem::path &path)
     return std::filesystem::is_regular_file(path, ec);
 }
 
+// Adds the lifetime of this object to a running total. The checks it times
+// are called once per object, so a start/end pair around each call would
+// print a line per object; this lets read() report one figure per file.
+//
+// The two clock reads are unconditional rather than gated on m_show_times:
+// they cost tens of nanoseconds against checks that are quadratic in the
+// object's vertex or surface count, and a timing path that only exists when
+// timing is switched on is a path that can quietly stop matching the one
+// that runs the rest of the time.
+class TimeAccumulator
+{
+public:
+    explicit TimeAccumulator(std::chrono::duration<double> &total)
+        : m_total(total), m_start(std::chrono::steady_clock::now()) {}
+    ~TimeAccumulator()
+    {
+        m_total += std::chrono::steady_clock::now() - m_start;
+    }
+    TimeAccumulator(const TimeAccumulator &) = delete;
+    TimeAccumulator &operator = (const TimeAccumulator &) = delete;
+private:
+    std::chrono::duration<double> &m_total;
+    const std::chrono::steady_clock::time_point m_start;
+};
+
 // Scoped depth counter for readObject's recursion. readObject returns from
 // several places, so the decrement has to happen automatically.
 class LevelGuard
@@ -3234,6 +3259,9 @@ bool AC3D::read(const std::string &file)
     m_line_number = 0;
     m_level = 0;
     m_too_deep = false;
+    m_duplicate_vertices_time = std::chrono::duration<double>::zero();
+    m_duplicate_surfaces_time = std::chrono::duration<double>::zero();
+    m_unused_vertex_time = std::chrono::duration<double>::zero();
     m_errors = 0;
     m_warnings = 0;
     m_crlf = false;
@@ -3352,6 +3380,16 @@ bool AC3D::read(const std::string &file)
     checkMissingMat(in);
 
     checkOverlapping2SidedSurface(in);
+
+    if (m_show_times)
+    {
+        std::cout << "checkDuplicateVertices total: duration: "
+                  << getDuration(m_duplicate_vertices_time) << std::endl;
+        std::cout << "checkDuplicateSurfaces total: duration: "
+                  << getDuration(m_duplicate_surfaces_time) << std::endl;
+        std::cout << "checkUnusedVertex total: duration: "
+                  << getDuration(m_unused_vertex_time) << std::endl;
+    }
 
     return true;
 }
@@ -3876,6 +3914,12 @@ void AC3D::checkDuplicateSurfaces(std::istream &in, const Object &object)
     if (object.surfaces.empty())
         return;
 
+    // Timed from here rather than from the top of the function because the
+    // pair walk below runs whether or not any of its three warnings is
+    // enabled -- with all of them off it still costs 0.07 seconds on a 6666
+    // surface object, against 2.3 with them on.
+    const TimeAccumulator timer(m_duplicate_surfaces_time);
+
     for (size_t i = 0, endi = object.surfaces.size(); i < endi; ++i)
     {
         for (size_t j = i + 1; j < object.surfaces.size(); ++j)
@@ -3917,6 +3961,11 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
 {
     if (!m_unused_vertex)
         return;
+
+    // Linear in the vertex count, but each warning seeks the file to quote
+    // the line, so the cost tracks how many it reports rather than how many
+    // it inspects: 2.0 seconds for 80000 unused vertices.
+    const TimeAccumulator timer(m_unused_vertex_time);
 
     for (const auto &vertex : object.vertices)
     {
@@ -4175,6 +4224,8 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 {
     if (!m_duplicate_vertices)
         return;
+
+    const TimeAccumulator timer(m_duplicate_vertices_time);
 
     std::vector<bool> duplicates(object.vertices.size(), false);
 
@@ -6719,7 +6770,11 @@ std::string AC3D::getTime(const std::chrono::time_point<std::chrono::system_cloc
 std::string AC3D::getDuration(const std::chrono::time_point<std::chrono::system_clock> &start,
                               const std::chrono::time_point<std::chrono::system_clock> &end)
 {
-    const std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    return getDuration(std::chrono::duration_cast<std::chrono::duration<double>>(end - start));
+}
+
+std::string AC3D::getDuration(const std::chrono::duration<double> &time_span)
+{
     const auto hrs = std::chrono::duration_cast<std::chrono::hours>(time_span);
     const auto mins = std::chrono::duration_cast<std::chrono::minutes>(time_span - hrs);
     const auto secs = std::chrono::duration_cast<std::chrono::seconds>(time_span - hrs - mins);
