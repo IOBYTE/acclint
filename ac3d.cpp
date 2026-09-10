@@ -6217,6 +6217,14 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, st
 
 void AC3D::combineTexture()
 {
+    // A file parses cleanly with no OBJECT at all -- materials only, or an
+    // empty file after the header -- and then there is no world to
+    // reorganise and nothing to combine. Indexing m_objects[0] below read
+    // past the end of an empty vector, and since such a file reports no
+    // errors it reached here through -o with nothing to stop it.
+    if (m_objects.empty())
+        return;
+
     std::chrono::system_clock::time_point start;
 
     if (m_show_times)
