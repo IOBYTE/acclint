@@ -32,6 +32,7 @@
 #include <iostream>
 #include <iomanip>
 #include <map>
+#include <numeric>
 #include <omp.h>
 #include <png.h>
 
@@ -5717,6 +5718,112 @@ bool AC3D::cleanVertices()
     return result;
 }
 
+// Partition vertices into groups of equivalent ones and return, for each
+// vertex, the index of the vertex its group is represented by. A vertex that
+// represents its own group maps to itself, so representative[i] == i marks a
+// survivor and anything else marks a duplicate of that survivor.
+//
+// Vertex equality is a tolerance test and tolerance equality is NOT
+// transitive: three vertices at 0, 3e-07 and 6e-07 compared with a threshold
+// of 4.77e-07 give a == b and b == c but a != c. Deciding duplicates by
+// walking pairs therefore takes the transitive closure of a relation that is
+// not one -- all three collapse onto a single vertex that was never claimed
+// to be a duplicate of the other two, and which of them survives depends on
+// the order they happen to appear in the file.
+//
+// Leader clustering makes the relation an equivalence by construction. A
+// vertex joins a group only if it matches that group's representative, never
+// merely a neighbour of it, so nothing chains: every merged vertex is within
+// tolerance of the vertex it is merged onto. The representatives are pairwise
+// unequal for the same reason, which is what makes the cleaned output lint
+// clean -- there is no surviving pair left for checkDuplicateVertices to
+// report.
+//
+// The sweep runs in a canonical order derived from the coordinates rather
+// than in file order, so writing the same geometry out in a different order
+// produces the same grouping and the same survivors.
+std::vector<size_t> AC3D::clusterVertices(const std::vector<Vertex> &vertices)
+{
+    std::vector<size_t> order(vertices.size());
+    std::iota(order.begin(), order.end(), static_cast<size_t>(0));
+
+    // Sorting on the vertex data, with the original index only as a
+    // tie break between vertices that are bit for bit identical, is what
+    // makes the order canonical. Exact comparisons are correct here: this
+    // orders the sweep, it does not decide equality.
+    std::sort(order.begin(), order.end(),
+        [&vertices](size_t a, size_t b)
+        {
+            const Vertex &va = vertices[a];
+            const Vertex &vb = vertices[b];
+
+            if (va.vertex.x() != vb.vertex.x())
+                return va.vertex.x() < vb.vertex.x();
+            if (va.vertex.y() != vb.vertex.y())
+                return va.vertex.y() < vb.vertex.y();
+            if (va.vertex.z() != vb.vertex.z())
+                return va.vertex.z() < vb.vertex.z();
+            if (va.has_normal != vb.has_normal)
+                return static_cast<int>(va.has_normal) < static_cast<int>(vb.has_normal);
+            if (va.has_normal)
+            {
+                if (va.normal.x() != vb.normal.x())
+                    return va.normal.x() < vb.normal.x();
+                if (va.normal.y() != vb.normal.y())
+                    return va.normal.y() < vb.normal.y();
+                if (va.normal.z() != vb.normal.z())
+                    return va.normal.z() < vb.normal.z();
+            }
+            return a < b;
+        });
+
+    std::vector<size_t> representative(vertices.size());
+    std::vector<size_t> leaders;   // group representatives, in ascending x
+    size_t first = 0;              // first leader still within reach in x
+
+    for (const size_t i : order)
+    {
+        const Vertex &vertex = vertices[i];
+
+        // Two vertices further apart in x than the x tolerance cannot be
+        // equal, and the sweep only ever moves right, so a leader that has
+        // fallen out of reach stays out of reach: the gap to it grows by one
+        // unit per unit of x while the tolerance grows by a few float
+        // epsilons. Retiring it here keeps the comparison window small
+        // instead of testing every leader seen so far.
+        while (first < leaders.size())
+        {
+            const double x = vertices[leaders[first]].vertex.x();
+
+            if (vertex.vertex.x() - x < Point3::tolerance(x, vertex.vertex.x()))
+                break;
+
+            ++first;
+        }
+
+        size_t found = vertices.size();
+
+        for (size_t j = first; j < leaders.size(); ++j)
+        {
+            if (vertices[leaders[j]] == vertex)
+            {
+                found = leaders[j];
+                break;
+            }
+        }
+
+        if (found == vertices.size())
+        {
+            representative[i] = i;
+            leaders.push_back(i);
+        }
+        else
+            representative[i] = found;
+    }
+
+    return representative;
+}
+
 bool AC3D::cleanVertices(std::vector<Object> &objects)
 {
     bool cleaned = false;
@@ -5747,34 +5854,25 @@ bool AC3D::cleanVertices(Object &object)
     std::vector<Info> info(object.vertices.size());
 
     // check for duplicate vertices
+    //
+    // clusterVertices does the deciding. Because it returns a partition,
+    // every duplicate names a vertex that is itself a survivor, so the
+    // single level remap below cannot land on a vertex that is about to be
+    // removed, and no vertex is merged onto one it was never equal to.
+    //
+    // The normals are part of the comparison: Vertex::operator== requires
+    // both vertices to carry a normal or neither, and requires the normals
+    // to match when they do.
+    const std::vector<size_t> representative = clusterVertices(object.vertices);
+
     for (size_t i = 0; i < object.vertices.size(); i++)
     {
-        if (!info[i].duplicate)
-            info[i].new_index = i;
+        info[i].new_index = representative[i];
 
-        for (size_t j = i + 1; j < object.vertices.size(); j++)
+        if (representative[i] != i)
         {
-            if (!info[j].duplicate && object.vertices[i].vertex == object.vertices[j].vertex)
-            {
-                // Both must carry a normal, or neither. Testing only
-                // vertices[i] made this asymmetric: merging a vertex that
-                // has a normal onto one that does not discarded the normal,
-                // while the reverse pairing compared against a default
-                // constructed {0,0,0} and usually declined to merge at all.
-                // Whether two vertices collapsed therefore depended on which
-                // one came first in the file.
-                if (object.vertices[i].has_normal != object.vertices[j].has_normal)
-                    continue;
-
-                // and when both have one, it has to be the same normal
-                if (object.vertices[i].has_normal &&
-                    object.vertices[i].normal != object.vertices[j].normal)
-                    continue;
-
-                info[j].duplicate = true;
-                info[j].new_index = i;
-                can_clean = true;
-            }
+            info[i].duplicate = true;
+            can_clean = true;
         }
     }
 

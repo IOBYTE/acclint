@@ -310,6 +310,18 @@ private:
     public:
         static constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<float>::epsilon());
 
+        // How far apart two coordinates may be and still count as the same
+        // one. See equals() below for why it scales with the magnitudes.
+        // Callers that need to know the tolerance without performing the
+        // comparison -- clusterVertices sizes its sweep window with it --
+        // must use this rather than restate the formula, or the two drift
+        // apart the moment k is tuned.
+        static double tolerance(double a, double b)
+        {
+            constexpr double k = 4.0;
+            return k * SMALL_NUM * std::max({std::abs(a), std::abs(b), 1.0});
+        }
+
         double x() const { return (*this)[0]; }
         double y() const { return (*this)[1]; }
         double z() const { return (*this)[2]; }
@@ -391,13 +403,9 @@ private:
             // compounded across this program's double-precision
             // arithmetic (subtract, cross, dot, etc.) upstream of this
             // comparison.
-            constexpr double k = 4.0;
-            const double epsX = k * SMALL_NUM * std::max({std::abs(x()), std::abs(other.x()), 1.0});
-            const double epsY = k * SMALL_NUM * std::max({std::abs(y()), std::abs(other.y()), 1.0});
-            const double epsZ = k * SMALL_NUM * std::max({std::abs(z()), std::abs(other.z()), 1.0});
-            return std::abs(x() - other.x()) < epsX &&
-                   std::abs(y() - other.y()) < epsY &&
-                   std::abs(z() - other.z()) < epsZ;
+            return std::abs(x() - other.x()) < tolerance(x(), other.x()) &&
+                   std::abs(y() - other.y()) < tolerance(y(), other.y()) &&
+                   std::abs(z() - other.z()) < tolerance(z(), other.z());
         }
     };
 
@@ -1180,6 +1188,7 @@ private:
     static Point3 surfaceRefNormal(const Surface &surface, size_t refIndex);
     void checkGroupWithGeometry(std::istream &in, const Object &object);
     static bool cleanObjects(std::vector<Object> &objects);
+    static std::vector<size_t> clusterVertices(const std::vector<Vertex> &vertices);
     static bool cleanVertices(std::vector<Object> &objects);
     static bool cleanVertices(Object &object);
     static bool cleanSurfaces(std::vector<Object> &objects);
