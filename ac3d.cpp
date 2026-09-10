@@ -5904,19 +5904,33 @@ bool AC3D::cleanVertices(Object &object)
     }
 
     // check for unused vertices and update new_index for deleted vertex
+    //
+    // Where each surviving vertex lands once the unused ones are erased
+    // below is just the number of survivors before it, so one counting pass
+    // gives every answer. Decrementing every later index once per unused
+    // vertex, as this did, is the same arithmetic done a vertex at a time:
+    // quadratic, and on a model that is mostly unused vertices it dominated
+    // everything else here -- 120000 vertices with two thirds unused took
+    // 2.2 seconds, against 0.03 for the same count with none unused.
+    //
+    // A duplicate's new_index names its representative rather than itself,
+    // and mapping that through the same table is what keeps it pointing at
+    // the representative's new home.
+    std::vector<size_t> survivorIndex(info.size(), 0);
+    size_t survivors = 0;
+
     for (size_t i = 0; i < info.size(); ++i)
     {
-        if (!info[i].used)
-        {
-            can_clean = true;
+        survivorIndex[i] = survivors;
 
-            for (size_t j = i + 1; j < info.size(); ++j)
-            {
-                if (info[j].used && info[j].new_index > 0)
-                    info[j].new_index--;
-            }
-        }
+        if (info[i].used)
+            survivors++;
+        else
+            can_clean = true;
     }
+
+    for (size_t i = 0; i < info.size(); ++i)
+        info[i].new_index = survivorIndex[info[i].new_index];
 
     // done if nothing to clean
     if (!can_clean)
