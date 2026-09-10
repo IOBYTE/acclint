@@ -140,6 +140,7 @@ void usage()
     std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
+    std::cerr << "  --fixAll                               Fix everything." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
     std::cerr << "  --quiet                                Don't show warning messages." << std::endl;
     std::cerr << "  --summary                              Show summary of warnings." << std::endl;
@@ -312,6 +313,7 @@ int main(int argc, char *argv[])
         OPT_COMBINE_TEXTURE,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
+        OPT_FIX_ALL,
         OPT_MERGE,
         OPT_REMOVE_OBJECTS,
         OPT_DUMP,
@@ -330,6 +332,7 @@ int main(int argc, char *argv[])
         { "combineTexture",              no_argument,       nullptr, OPT_COMBINE_TEXTURE },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
         { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
+        { "fixAll",                      no_argument,       nullptr, OPT_FIX_ALL },
         { "merge",                       required_argument, nullptr, OPT_MERGE },
         { "removeObjects",               required_argument, nullptr, OPT_REMOVE_OBJECTS },
         { "dump",                        required_argument, nullptr, OPT_DUMP },
@@ -414,6 +417,15 @@ int main(int argc, char *argv[])
             break;
         case OPT_FIX_SURFACE_2_SIDED_OPAQUE:
             fix_surface_2_sided_opaque = true;
+            break;
+        case OPT_FIX_ALL:
+            flatten = true;
+            splitPolygon = true;
+            splitSURF = true;
+            splitMat = true;
+            fix_surface_2_sided_opaque = true;
+            fix_overlapping_2_sided_surface = true;
+            combineTexture = true;
             break;
         case OPT_MERGE:
             merge_files.push_back(optarg);
