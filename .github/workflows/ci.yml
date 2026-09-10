@@ -126,6 +126,7 @@ jobs:
           crash_reason() {
               case "$1" in
                   42)  echo "sanitizer report" ;;
+                  124) echo "timed out - hang or runaway loop" ;;
                   134) echo "SIGABRT - assertion or uncaught exception" ;;
                   139) echo "SIGSEGV" ;;
                   136) echo "SIGFPE" ;;
@@ -163,13 +164,21 @@ jobs:
                   # step at the first such file, before a single finding could
                   # be printed. Inside a || list the failure is handled, so -e
                   # does not fire.
+                  #
+                  # timeout(1) makes a hang a finding rather than a stalled
+                  # job: the sweep otherwise has no way to notice a runaway
+                  # loop, only a crash. The slowest legitimate invocation in
+                  # the corpus measures 56ms, so 30s is ~500x headroom.
                   rc=0
-                  bash -c '"$0" $1 "$2" > /dev/null 2> "$3"' \
-                       "$acclint" "$args" "$f" "$tmp/err" 2>/dev/null || rc=$?
+                  timeout 30 \
+                      bash -c '"$0" $1 "$2" > /dev/null 2> "$3"' \
+                      "$acclint" "$args" "$f" "$tmp/err" 2>/dev/null || rc=$?
 
-                  # acclint exits 1 for input that legitimately has errors, so
-                  # only the sanitizer exit code and death by signal count.
-                  if [ "$rc" -eq 42 ] || [ "$rc" -ge 128 ]; then
+                  # acclint exits 1 for input that legitimately has errors,
+                  # so only the sanitizer exit code, a timeout and death by
+                  # signal count. 124 is timeout(1)'s own exit code and is
+                  # below 128, so it needs testing separately.
+                  if [ "$rc" -eq 42 ] || [ "$rc" -eq 124 ] || [ "$rc" -ge 128 ]; then
                       crashes=$((crashes + 1))
                       echo "::error::acclint $args $f  ->  rc=$rc ($(crash_reason $rc))"
 

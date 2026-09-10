@@ -2618,6 +2618,24 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                     object.vertices.push_back(vertex);
                 }
+                else
+                {
+                    // numvert is taken straight from the file and is
+                    // otherwise unbounded, so running out of input part way
+                    // through left this loop spinning for the whole remaining
+                    // count doing nothing: a truncated file declaring
+                    // "numvert 2000000000" cost about 28 seconds of no-op
+                    // iterations. Stop once there is nothing left to read,
+                    // the way the refs loop already does, and report the
+                    // shortfall the way the numsurf/kids case above does.
+                    if (m_missing_vertex)
+                    {
+                        errorWithCount(m_missing_vertex_count) << "missing vertex: "
+                            << i << " out of " << object.numvert.number << " found" << std::endl;
+                    }
+
+                    break;
+                }
             }
 
             checkDuplicateVertices(in, object);

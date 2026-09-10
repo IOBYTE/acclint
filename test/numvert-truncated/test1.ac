@@ -1,0 +1,7 @@
+AC3Db
+OBJECT world
+kids 1
+OBJECT poly
+name "p"
+numvert 2000000000
+0 0 0

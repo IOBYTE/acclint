@@ -1,0 +1,9 @@
+test1.ac:7 error: missing vertex: 1 out of 2000000000 found
+test1.ac:7 warning: unused vertex
+
+^
+test1.ac:4 warning: missing surfaces
+
+^
+2 warnings
+1 error
