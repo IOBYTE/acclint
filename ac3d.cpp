@@ -6368,10 +6368,11 @@ void AC3D::accumulateBounds(const Object &object, Point3 &min, Point3 &max, bool
 // used from either side of a boundary end up in both cells, which is the one
 // real cost: about 19% more vertices at 125m on that track.
 void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2,
-                         double origin1, double origin2)
+                         double origin1, double origin2,
+                         size_t &cells, size_t &surfaces, size_t &oversized, double &largest)
 {
     for (auto &kid : parent.kids)
-        gridPartition(kid, size, axis1, axis2, origin1, origin2);
+        gridPartition(kid, size, axis1, axis2, origin1, origin2, cells, surfaces, oversized, largest);
 
     if (parent.kids.empty())
         return;
@@ -6399,7 +6400,7 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
                               static_cast<long long>(std::floor((b - origin2) / size)));
     };
 
-    std::map<std::pair<long long, long long>, Object> cells;
+    std::map<std::pair<long long, long long>, Object> cell_objects;
     std::vector<Object> unpartitioned;
 
     for (auto &kid : parent.kids)
@@ -6419,15 +6420,55 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
             double a = 0.0;
             double b = 0.0;
             size_t count = 0;
+            double min1 = 0.0;
+            double max1 = 0.0;
+            double min2 = 0.0;
+            double max2 = 0.0;
 
             for (const auto &ref : kid.surfaces[i].refs)
             {
                 if (ref.index >= kid.vertices.size())
                     continue;
 
-                a += kid.vertices[ref.index].vertex[axis1];
-                b += kid.vertices[ref.index].vertex[axis2];
+                const double v1 = kid.vertices[ref.index].vertex[axis1];
+                const double v2 = kid.vertices[ref.index].vertex[axis2];
+
+                if (count == 0)
+                {
+                    min1 = max1 = v1;
+                    min2 = max2 = v2;
+                }
+                else
+                {
+                    min1 = std::min(min1, v1);
+                    max1 = std::max(max1, v1);
+                    min2 = std::min(min2, v2);
+                    max2 = std::max(max2, v2);
+                }
+
+                a += v1;
+                b += v2;
                 ++count;
+            }
+
+            ++surfaces;
+
+            // A surface goes to the cell holding its centre and is never
+            // divided, so one wider than a cell drags that cell's bounds out
+            // with it and the cell stops being able to reject anything. The
+            // usual cause is a triangle strip or a large ground quad, and the
+            // usual answers are --splitPolygon first or a larger cell, so it
+            // is worth saying how many there are rather than partitioning as
+            // if the grid had been honoured.
+            if (count != 0)
+            {
+                const double extent = std::max(max1 - min1, max2 - min2);
+
+                if (extent > size)
+                {
+                    ++oversized;
+                    largest = std::max(largest, extent);
+                }
             }
 
             // A surface naming no usable vertex has nowhere to be placed, so
@@ -6469,10 +6510,11 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
                 piece.surfaces.push_back(std::move(surface));
             }
 
-            Object &cell = cells[bucket.first];
+            Object &cell = cell_objects[bucket.first];
 
             if (cell.type.type.empty())
             {
+                ++cells;
                 cell.type.type = "group";
 
                 Name name;
@@ -6491,7 +6533,7 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
     for (auto &kid : unpartitioned)
         parent.kids.push_back(std::move(kid));
 
-    for (auto &cell : cells)
+    for (auto &cell : cell_objects)
         parent.kids.push_back(std::move(cell.second));
 }
 
@@ -6534,8 +6576,25 @@ void AC3D::gridPartition(double size)
         const size_t axis1 = std::min((thin + 1) % 3, (thin + 2) % 3);
         const size_t axis2 = std::max((thin + 1) % 3, (thin + 2) % 3);
 
+        size_t cells = 0;
+        size_t surfaces = 0;
+        size_t oversized = 0;
+        double largest = 0.0;
+
         for (auto &object : m_objects)
-            gridPartition(object, size, axis1, axis2, min[axis1], min[axis2]);
+            gridPartition(object, size, axis1, axis2, min[axis1], min[axis2],
+                          cells, surfaces, oversized, largest);
+
+        std::cout << "gridPartition: " << cells << " cells";
+
+        if (oversized != 0)
+        {
+            std::cout << ", " << oversized << " of " << surfaces
+                      << " surfaces wider than the cell (largest " << largest
+                      << "): those cells cannot cull to the grid";
+        }
+
+        std::cout << std::endl;
     }
 
     if (m_show_times)

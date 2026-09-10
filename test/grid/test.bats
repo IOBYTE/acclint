@@ -86,3 +86,33 @@ setup_file() {
   [ "$status" -eq 1 ]
   [ "${lines[0]}" = "Invalid grid size: -5" ]
 }
+
+# test4.1: a surface wider than the cell cannot be placed by its centre
+# without dragging its cell's bounds out with it, so the count is reported
+# rather than partitioning as if the grid had been honoured. The usual causes
+# are a triangle strip or a large ground quad.
+@test "test4.1" {
+  $RUN_TEST acclint -Wno-warnings test4.ac --grid 10 -o test4.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test4.output.ac
+}
+
+# test1.3: and a model with nothing oversized says only how many cells it
+# made -- the warning half must not appear when there is nothing to warn of.
+@test "test1.3" {
+  $RUN_TEST acclint -Wno-warnings test1.ac --grid 10 -o test5.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.3.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test5.output.ac
+}
