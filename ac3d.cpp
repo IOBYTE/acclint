@@ -5701,14 +5701,24 @@ bool AC3D::cleanVertices(Object &object)
         {
             if (!info[j].duplicate && object.vertices[i].vertex == object.vertices[j].vertex)
             {
-                // normals must match when present
-                if (!object.vertices[i].has_normal ||
-                    object.vertices[i].normal == object.vertices[j].normal)
-                {
-                    info[j].duplicate = true;
-                    info[j].new_index = i;
-                    can_clean = true;
-                }
+                // Both must carry a normal, or neither. Testing only
+                // vertices[i] made this asymmetric: merging a vertex that
+                // has a normal onto one that does not discarded the normal,
+                // while the reverse pairing compared against a default
+                // constructed {0,0,0} and usually declined to merge at all.
+                // Whether two vertices collapsed therefore depended on which
+                // one came first in the file.
+                if (object.vertices[i].has_normal != object.vertices[j].has_normal)
+                    continue;
+
+                // and when both have one, it has to be the same normal
+                if (object.vertices[i].has_normal &&
+                    object.vertices[i].normal != object.vertices[j].normal)
+                    continue;
+
+                info[j].duplicate = true;
+                info[j].new_index = i;
+                can_clean = true;
             }
         }
     }
