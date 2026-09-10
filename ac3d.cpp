@@ -6324,6 +6324,227 @@ bool AC3D::cleanSurfaces(Object &object)
     return cleaned;
 }
 
+
+void AC3D::accumulateBounds(const Object &object, Point3 &min, Point3 &max, bool &any)
+{
+    for (const auto &vertex : object.vertices)
+    {
+        if (!any)
+        {
+            min = vertex.vertex;
+            max = vertex.vertex;
+            any = true;
+            continue;
+        }
+
+        for (size_t i = 0; i < 3; ++i)
+        {
+            min[i] = std::min(min[i], vertex.vertex[i]);
+            max[i] = std::max(max[i], vertex.vertex[i]);
+        }
+    }
+
+    for (const auto &kid : object.kids)
+        accumulateBounds(kid, min, max, any);
+}
+
+// Regroup a level of the hierarchy by where its geometry sits rather than by
+// what it is made of.
+//
+// combineTexture leaves objects grouped by texture, which is what the drawing
+// wants and the opposite of what culling wants: on a track model the merged
+// opaque objects each span the whole circuit, so every one of them is inside
+// the view whatever the camera is doing and none can be rejected. Measured on
+// a 5.5km track, 72% of the model was submitted for drawing from any camera
+// position, and that figure did not move when the draw distance was cut.
+//
+// Splitting by cell restores the rejection without giving up the grouping:
+// each cell holds one object per texture, so a whole cell is rejected by one
+// box test and what survives is still batched by texture inside it.
+//
+// A surface goes to the cell its centre lies in and is never divided, so no
+// geometry is added; a cell's contents can reach a little past its nominal
+// bounds, which costs nothing because culling uses the real bounds. Vertices
+// used from either side of a boundary end up in both cells, which is the one
+// real cost: about 19% more vertices at 125m on that track.
+void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2,
+                         double origin1, double origin2)
+{
+    for (auto &kid : parent.kids)
+        gridPartition(kid, size, axis1, axis2, origin1, origin2);
+
+    if (parent.kids.empty())
+        return;
+
+    // Only a level that actually holds geometry is worth regrouping. A level
+    // of groups was already dealt with by the recursion above, and wrapping
+    // it again would add a layer that rejects nothing.
+    bool geometry = false;
+
+    for (const auto &kid : parent.kids)
+    {
+        if (!kid.surfaces.empty() && kid.kids.empty())
+        {
+            geometry = true;
+            break;
+        }
+    }
+
+    if (!geometry)
+        return;
+
+    const auto cellOf = [size, origin1, origin2](double a, double b)
+    {
+        return std::make_pair(static_cast<long long>(std::floor((a - origin1) / size)),
+                              static_cast<long long>(std::floor((b - origin2) / size)));
+    };
+
+    std::map<std::pair<long long, long long>, Object> cells;
+    std::vector<Object> unpartitioned;
+
+    for (auto &kid : parent.kids)
+    {
+        // Anything with children of its own, or with no geometry to place,
+        // stays where it is.
+        if (kid.surfaces.empty() || !kid.kids.empty())
+        {
+            unpartitioned.push_back(std::move(kid));
+            continue;
+        }
+
+        std::map<std::pair<long long, long long>, std::vector<size_t>> buckets;
+
+        for (size_t i = 0; i < kid.surfaces.size(); ++i)
+        {
+            double a = 0.0;
+            double b = 0.0;
+            size_t count = 0;
+
+            for (const auto &ref : kid.surfaces[i].refs)
+            {
+                if (ref.index >= kid.vertices.size())
+                    continue;
+
+                a += kid.vertices[ref.index].vertex[axis1];
+                b += kid.vertices[ref.index].vertex[axis2];
+                ++count;
+            }
+
+            // A surface naming no usable vertex has nowhere to be placed, so
+            // it is left with the first cell rather than dropped: this is a
+            // regrouping, not a repair.
+            buckets[count == 0 ? std::make_pair(0LL, 0LL) : cellOf(a / count, b / count)].push_back(i);
+        }
+
+        Object piece_template = kid;
+
+        piece_template.vertices.clear();
+        piece_template.surfaces.clear();
+
+        for (const auto &bucket : buckets)
+        {
+            Object piece = piece_template;
+            std::unordered_map<size_t, size_t> remap;
+
+            for (const size_t index : bucket.second)
+            {
+                Surface surface = kid.surfaces[index];
+
+                for (auto &ref : surface.refs)
+                {
+                    if (ref.index >= kid.vertices.size())
+                        continue;
+
+                    auto found = remap.find(ref.index);
+
+                    if (found == remap.end())
+                    {
+                        found = remap.emplace(ref.index, piece.vertices.size()).first;
+                        piece.vertices.push_back(kid.vertices[ref.index]);
+                    }
+
+                    ref.index = found->second;
+                }
+
+                piece.surfaces.push_back(std::move(surface));
+            }
+
+            Object &cell = cells[bucket.first];
+
+            if (cell.type.type.empty())
+            {
+                cell.type.type = "group";
+
+                Name name;
+
+                name.name.assign("cell_" + std::to_string(bucket.first.first) + "_" +
+                                 std::to_string(bucket.first.second));
+                cell.names.push_back(name);
+            }
+
+            cell.kids.push_back(std::move(piece));
+        }
+    }
+
+    parent.kids.clear();
+
+    for (auto &kid : unpartitioned)
+        parent.kids.push_back(std::move(kid));
+
+    for (auto &cell : cells)
+        parent.kids.push_back(std::move(cell.second));
+}
+
+void AC3D::gridPartition(double size)
+{
+    if (size <= 0.0)
+        return;
+
+    std::chrono::system_clock::time_point start;
+
+    if (m_show_times)
+    {
+        std::cout << "gridPartition starting" << std::endl;
+        start = std::chrono::system_clock::now();
+    }
+
+    Point3 min{ 0.0, 0.0, 0.0 };
+    Point3 max{ 0.0, 0.0, 0.0 };
+    bool any = false;
+
+    for (const auto &object : m_objects)
+        accumulateBounds(object, min, max, any);
+
+    if (any)
+    {
+        // The ground plane is the two widest axes. A track is kilometres
+        // across and tens of metres tall, and a camera standing on it takes
+        // in the whole height at once, so cutting the third axis would add
+        // objects without rejecting anything.
+        size_t thin = 0;
+
+        for (size_t i = 1; i < 3; ++i)
+        {
+            if ((max[i] - min[i]) < (max[thin] - min[thin]))
+                thin = i;
+        }
+
+        // Kept in axis order so the cell names read the way the model does:
+        // x then z for the usual y-up model, rather than z then x.
+        const size_t axis1 = std::min((thin + 1) % 3, (thin + 2) % 3);
+        const size_t axis2 = std::max((thin + 1) % 3, (thin + 2) % 3);
+
+        for (auto &object : m_objects)
+            gridPartition(object, size, axis1, axis2, min[axis1], min[axis2]);
+    }
+
+    if (m_show_times)
+    {
+        const std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+        std::cout << "gridPartition done: duration: " << getDuration(start, end) << std::endl;
+    }
+}
+
 void AC3D::dump(DumpType dump_type) const
 {
     for (size_t i = 0; i < m_objects.size(); i++)

@@ -246,6 +246,7 @@ public:
     bool splitPolygons();
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
+    void gridPartition(double size);
     void fixOverlapping2SidedSurface();
     void fixSurface2SidedOpaque();
     static std::string getDuration(const std::chrono::duration<double> &time_span);
@@ -1197,6 +1198,9 @@ private:
     void checkMissingMat(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, const Poly &object2);
+    static void accumulateBounds(const Object &object, Point3 &min, Point3 &max, bool &any);
+    static void gridPartition(Object &parent, double size, size_t axis1, size_t axis2,
+                              double origin1, double origin2);
     void checkDuplicateMaterials(std::istream &in);
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);

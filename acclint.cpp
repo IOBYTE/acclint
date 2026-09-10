@@ -138,6 +138,7 @@ void usage()
     std::cerr << "  --merge filename                       Merge filename with inputfile." << std::endl;
     std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
     std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
+    std::cerr << "  --grid <size>                          Partition objects into square cells of <size> for culling." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --fixAll                               Fix everything." << std::endl;
@@ -286,6 +287,7 @@ int main(int argc, char *argv[])
     bool flatten = false;
     bool splitPolygon = false;
     bool combineTexture = false;
+    double grid_size = 0.0;
     bool fix_overlapping_2_sided_surface = false;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
@@ -314,6 +316,7 @@ int main(int argc, char *argv[])
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
         OPT_FIX_ALL,
+        OPT_GRID,
         OPT_MERGE,
         OPT_REMOVE_OBJECTS,
         OPT_DUMP,
@@ -330,6 +333,7 @@ int main(int argc, char *argv[])
         { "flatten",                     no_argument,       nullptr, OPT_FLATTEN },
         { "splitPolygon",                no_argument,       nullptr, OPT_SPLIT_POLYGON },
         { "combineTexture",              no_argument,       nullptr, OPT_COMBINE_TEXTURE },
+        { "grid",                        required_argument, nullptr, OPT_GRID },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
         { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
         { "fixAll",                      no_argument,       nullptr, OPT_FIX_ALL },
@@ -427,6 +431,17 @@ int main(int argc, char *argv[])
             fix_overlapping_2_sided_surface = true;
             combineTexture = true;
             break;
+        case OPT_GRID:
+        {
+            char *end = nullptr;
+            grid_size = std::strtod(optarg, &end);
+            if (end == optarg || *end != '\0' || !(grid_size > 0.0))
+            {
+                std::cerr << "Invalid grid size: " << optarg << std::endl;
+                return EXIT_FAILURE;
+            }
+            break;
+        }
         case OPT_MERGE:
             merge_files.push_back(optarg);
             break;
@@ -1307,6 +1322,15 @@ int main(int argc, char *argv[])
             std::cout << "combineTexture: " << ac3d.getWorldKidCount(0)
                       << " opaque textures "  << ac3d.getWorldKidCount(1)
                       << " transparent textures" << std::endl;
+        }
+
+        // After combineTexture rather than before: partitioning first would
+        // be undone by it, since combining gathers everything sharing a
+        // texture back into one object regardless of where it sits.
+        if (grid_size > 0.0)
+        {
+            ac3d.gridPartition(grid_size);
+            ac3d.clean();
         }
 
         if (!ac3d.write(out_file, version))
