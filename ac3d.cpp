@@ -7491,6 +7491,226 @@ bool AC3D::Object::addObject(const Object &object)
     return true;
 }
 
+// Everything an object says about itself that has to match before two of them
+// can be drawn as one. The texture set and the mapping applied to it are the
+// substance of it; the rest is included because merging would otherwise throw
+// one copy of it away.
+//
+// Surface state -- material, shading, sidedness -- is not object state: it
+// travels with each surface, and .acc is content for an object to hold a mix.
+// The set of those combinations is part of the key all the same, so that two
+// objects only merge when the result holds no mix its parts did not already
+// have. Without that, merging would quietly undo --splitMat and --splitSURF.
+std::string AC3D::Object::combineKey() const
+{
+    std::ostringstream key;
+
+    key << std::setprecision(17);
+    key << type.type;
+
+    for (const auto &texture : textures)
+        key << "|t" << static_cast<const std::string &>(texture.name) << ';' << texture.type;
+
+    for (const auto &texrep : texreps)
+        key << "|r" << texrep.texrep.x() << ',' << texrep.texrep.y();
+
+    for (const auto &texoff : texoffs)
+        key << "|o" << texoff.texoff.x() << ',' << texoff.texoff.y();
+
+    for (const auto &crease : creases)
+        key << "|c" << crease.crease;
+
+    for (const auto &subdiv : subdivs)
+        key << "|s" << subdiv.subdiv;
+
+    for (const auto &shader : shaders)
+        key << "|h" << static_cast<const std::string &>(shader.name);
+
+    // loc and rot place the object's vertices, so two objects can only be
+    // merged as they stand when both are placed the same way. --flatten
+    // removes them, which is what makes most models mergeable.
+    for (const auto &location : locations)
+        key << "|l" << location.location.x() << ',' << location.location.y() << ',' << location.location.z();
+
+    for (const auto &rotation : rotations)
+    {
+        key << "|m";
+        for (const double value : rotation.rotation)
+            key << value << ',';
+    }
+
+    key << "|f" << hidden.size() << ',' << locked.size() << ',' << folded.size();
+
+    for (const auto &url : urls)
+        key << "|u" << url.url;
+
+    for (const auto &item : data)
+        key << "|d" << item.data;
+
+    std::set<std::string> states;
+
+    for (const auto &surface : surfaces)
+    {
+        std::ostringstream state;
+
+        state << surface.flags;
+
+        for (const auto &mat : surface.mats)
+            state << ',' << mat.mat;
+
+        states.insert(state.str());
+    }
+
+    for (const auto &state : states)
+        key << "|S" << state;
+
+    return key.str();
+}
+
+// Draws fewer, bigger objects by merging the ones that sit side by side under
+// the same parent and say the same thing about themselves. Nothing moves: an
+// object keeps its place in the tree, so whatever grouping put it there --
+// combineTexture by texture, gridPartition by cell -- still decides what can
+// be rejected before drawing. Only the number of objects inside each group
+// goes down, and with it the number of draw calls.
+bool AC3D::Object::combineObjects(double size, size_t axis1, size_t axis2)
+{
+    bool changed = false;
+
+    for (auto &kid : kids)
+        changed |= kid.combineObjects(size, axis1, axis2);
+
+    if (kids.size() < 2)
+        return changed;
+
+    std::vector<Object> combined;
+    std::vector<Point3> mins;
+    std::vector<Point3> maxs;
+    // Several objects under one parent can say the same thing and still be too
+    // far apart to belong together, so a key names a list of merged objects
+    // rather than just one.
+    std::map<std::string, std::vector<size_t>> clusters;
+
+    combined.reserve(kids.size());
+    mins.reserve(kids.size());
+    maxs.reserve(kids.size());
+
+    for (auto &kid : kids)
+    {
+        Point3 min{ 0.0, 0.0, 0.0 };
+        Point3 max{ 0.0, 0.0, 0.0 };
+        bool any = false;
+
+        // A group is left where it is: merging one would flatten the tree and
+        // take its children's grouping with it. An object with nothing in it,
+        // or with nowhere to be, has nothing to contribute either.
+        if (kid.type.type != "poly" || kid.surfaces.empty() || !kid.kids.empty())
+            any = false;
+        else
+            accumulateBounds(kid, min, max, any);
+
+        if (!any)
+        {
+            combined.push_back(std::move(kid));
+            mins.push_back(min);
+            maxs.push_back(max);
+            continue;
+        }
+
+        std::vector<size_t> &list = clusters[kid.combineKey()];
+        bool found = false;
+        size_t best = 0;
+        double best_extent = 0.0;
+        Point3 best_min{ 0.0, 0.0, 0.0 };
+        Point3 best_max{ 0.0, 0.0, 0.0 };
+
+        for (const size_t index : list)
+        {
+            Point3 union_min = mins[index];
+            Point3 union_max = maxs[index];
+
+            for (size_t i = 0; i < 3; ++i)
+            {
+                union_min[i] = std::min(union_min[i], min[i]);
+                union_max[i] = std::max(union_max[i], max[i]);
+            }
+
+            // Measured across the ground rather than in three dimensions: a
+            // camera standing on a track takes in the whole height at once, so
+            // how tall the result is says nothing about what it costs to draw.
+            const double extent = std::hypot(union_max[axis1] - union_min[axis1],
+                                             union_max[axis2] - union_min[axis2]);
+
+            if (size > 0.0 && extent > size)
+                continue;
+
+            // The tightest fit, so that merging fills a cluster up rather than
+            // spreading the same objects over several loose ones.
+            if (!found || extent < best_extent)
+            {
+                found = true;
+                best = index;
+                best_extent = extent;
+                best_min = union_min;
+                best_max = union_max;
+            }
+        }
+
+        if (found && combined[best].addObject(kid))
+        {
+            mins[best] = best_min;
+            maxs[best] = best_max;
+            changed = true;
+            continue;
+        }
+
+        list.push_back(combined.size());
+        combined.push_back(std::move(kid));
+        mins.push_back(min);
+        maxs.push_back(max);
+    }
+
+    kids = std::move(combined);
+
+    return changed;
+}
+
+// size is how wide a merged object may be across the ground, or 0 for no
+// limit. Two objects that say the same thing about themselves can still sit at
+// opposite ends of whatever holds them -- two buildings in the same grid cell
+// -- and merging those produces one object as wide as the cell, which a camera
+// at either end then draws in full.
+bool AC3D::combineObjects(double size)
+{
+    Point3 min{ 0.0, 0.0, 0.0 };
+    Point3 max{ 0.0, 0.0, 0.0 };
+    bool any = false;
+
+    for (const auto &object : m_objects)
+        accumulateBounds(object, min, max, any);
+
+    // The ground plane is the two widest axes, chosen the same way
+    // gridPartition chooses them so that a limit given as a share of the cell
+    // size means what it says.
+    size_t thin = 0;
+
+    for (size_t i = 1; i < 3; ++i)
+    {
+        if ((max[i] - min[i]) < (max[thin] - min[thin]))
+            thin = i;
+    }
+
+    const size_t axis1 = std::min((thin + 1) % 3, (thin + 2) % 3);
+    const size_t axis2 = std::max((thin + 1) % 3, (thin + 2) % 3);
+
+    bool changed = false;
+
+    for (auto &object : m_objects)
+        changed |= object.combineObjects(size, axis1, axis2);
+
+    return changed;
+}
+
 void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects)
 {
     if (object.type.type == "poly")

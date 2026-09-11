@@ -252,6 +252,7 @@ public:
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
     void gridPartition(double size);
+    bool combineObjects(double size);
     void fixOverlapping2SidedSurface();
     void fixSurface2SidedOpaque();
     static std::string getDuration(const std::chrono::duration<double> &time_span);
@@ -1088,6 +1089,8 @@ private:
         bool rebuildStrips();
         bool addObject(const Object &object);
         bool sameTextures(const Object &object) const;
+        std::string combineKey() const;
+        bool combineObjects(double size, size_t axis1, size_t axis2);
     };
 
     class NullBuffer : public std::streambuf
