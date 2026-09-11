@@ -168,7 +168,7 @@ acclint can also convert .ac files to the .acc file format.
 ```
 acclint file.ac -o file.acc
 ```
-The converted file will have normals but will not have triangle strips.
+The converted file will have normals and triangle strips.
 
 acclint can also dump the object hiearchy of a file.
 ```
