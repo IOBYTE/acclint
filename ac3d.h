@@ -810,7 +810,6 @@ private:
         bool coplanar = true; // only for Polygon and ClosedLine
         Point3 normal = { 0.0, 0.0, 0.0 }; // only for Polygon
         bool concave = false; // only for Polygon
-        std::vector<Triangle> triangleStrip; // only for triangle strips
         std::vector<Triangle> transformedTriangles;
 
         enum : unsigned int
@@ -889,11 +888,6 @@ private:
             index = refs[ref].index;
             return true;
         }
-        const std::vector<Triangle> &getTriangleStrip() const
-        {
-            return triangleStrip;
-        }
-        void setTriangleStrip(const Object &object);
         bool isTriangle() const
         {
             return refs.size() == 3;
@@ -1205,6 +1199,15 @@ private:
     void checkDuplicateMaterials(std::istream &in);
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);
+    // Built where it is needed and dropped when the caller returns, rather
+    // than cached on the Surface. The triangles are copies of the vertices
+    // and of the ref indexes, so a cached copy is only valid until either
+    // changes -- and cleanVertices, cleanSurfaces, the splits and
+    // gridPartition all change one or the other. Keeping it as a cache meant
+    // every one of them had to remember to refresh it, which is a rule
+    // nothing stated and nothing checked.
+    static std::vector<Triangle> getTriangleStrip(const Object &object, const Surface &surface);
+    static std::vector<std::vector<Triangle>> getTriangleStrips(const Object &object);
     void checkDuplicateTriangles(std::istream &in, const Object &object);
     void checkMissingSurfaces(std::istream &in, const Object &object);
     void checkDuplicateSurfaces(std::istream &in, const Object &object);
@@ -1213,17 +1216,17 @@ private:
     void checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface);
     void checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface);
     void checkSurfaceSelfIntersecting(std::istream &in, const Object &object, const Surface &surface);
-    void checkSurfaceStripHole(std::istream &in, const Surface &surface);
-    void checkSurfaceStripSize(std::istream &in, const Surface &surface);
-    void checkSurfaceStripDegenerate(std::istream &in, const Surface &surface);
-    void checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &surface);
+    void checkSurfaceStripHole(std::istream &in, const Surface &surface, const std::vector<Triangle> &triangles);
+    void checkSurfaceStripSize(std::istream &in, const Surface &surface, const std::vector<Triangle> &triangles);
+    void checkSurfaceStripDegenerate(std::istream &in, const Surface &surface, const std::vector<Triangle> &triangles);
+    void checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &surface, const std::vector<Triangle> &triangles);
     void checkSurfaceNoTexture(std::istream &in, const Object &object, const Surface &surface);
-    void checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const Surface &surface);
+    void checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const Surface &surface, const std::vector<Triangle> &triangles);
     void checkSurface2SidedOpaque(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream &in, const Object &object);
     void checkDifferentUV(std::istream &in, const Object &object);
-    static Point3 surfaceRefNormal(const Surface &surface, size_t refIndex);
+    static Point3 surfaceRefNormal(const Surface &surface, size_t refIndex, const std::vector<Triangle> &triangles);
     void checkGroupWithGeometry(std::istream &in, const Object &object);
     static bool cleanObjects(std::vector<Object> &objects);
     static std::vector<size_t> clusterVertices(const std::vector<Vertex> &vertices);

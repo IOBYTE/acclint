@@ -267,6 +267,26 @@ bool isRegularFile(const std::filesystem::path &path)
 // object's vertex or surface count, and a timing path that only exists when
 // timing is switched on is a path that can quietly stop matching the one
 // that runs the rest of the time.
+// How a triangle strip comes apart, in one place.
+//
+// Triangle t of a strip is made from refs t, t+1 and t+2, with the first two
+// swapped on odd numbered triangles because a strip alternates its winding as
+// it is drawn. Writing that out at each site is what let splitPolygons fan a
+// strip from its first vertex instead, which kept one triangle in forty and
+// replaced the rest with geometry that was never in the model.
+//
+// A strip of n refs yields n - 2 triangles; a strip of fewer than 3 yields
+// none, which the loop condition gives without a separate check.
+void stripTriangle(size_t triangle, size_t &first, size_t &second, size_t &third)
+{
+    first = triangle;
+    second = triangle + 1;
+    third = triangle + 2;
+
+    if ((triangle & 1U) != 0)
+        std::swap(first, second);
+}
+
 class TimeAccumulator
 {
 public:
@@ -826,19 +846,19 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
             surface.refs.push_back(ref);
         }
 
-        surface.setTriangleStrip(object);
+        const std::vector<Triangle> triangles = getTriangleStrip(object, surface);
 
         checkDuplicateSurfaceVertices(in, object, surface);
         checkCollinearSurfaceVertices(in, object, surface);
         checkSurfaceCoplanar(in, object, surface);
         checkSurfacePolygonType(in, object, surface);
         checkSurfaceSelfIntersecting(in, object, surface);
-        checkSurfaceStripHole(in, surface);
-        checkSurfaceStripSize(in, surface);
-        checkSurfaceStripDegenerate(in, surface);
-        checkSurfaceStripDuplicateTriangles(in, surface);
+        checkSurfaceStripHole(in, surface, triangles);
+        checkSurfaceStripSize(in, surface, triangles);
+        checkSurfaceStripDegenerate(in, surface, triangles);
+        checkSurfaceStripDuplicateTriangles(in, surface, triangles);
         checkSurfaceNoTexture(in, object, surface);
-        checkSurfaceZeroAreaUV(in, object, surface);
+        checkSurfaceZeroAreaUV(in, object, surface, triangles);
         checkSurface2SidedOpaque(in, object, surface);
     }
     else
@@ -924,11 +944,19 @@ void AC3D::convertObjectToAc(Object &object)
         if (object.surfaces[i].refs.size() < 3)
             continue;
 
-        for (size_t j = 0; j < object.surfaces[i].refs.size() - 2; ++j)
+        for (size_t j = 0; j + 2 < object.surfaces[i].refs.size(); ++j)
         {
-            const Ref &r0 = object.surfaces[i].refs[j];
-            const Ref &r1 = object.surfaces[i].refs[j + 1];
-            const Ref &r2 = object.surfaces[i].refs[j + 2];
+            size_t first = 0;
+            size_t second = 0;
+            size_t third = 0;
+
+            // The winding is already applied by stripTriangle, so the refs
+            // come out in drawing order and are emitted as they are.
+            stripTriangle(j, first, second, third);
+
+            const Ref &r0 = object.surfaces[i].refs[first];
+            const Ref &r1 = object.surfaces[i].refs[second];
+            const Ref &r2 = object.surfaces[i].refs[third];
 
             if (r0.index >= object.vertices.size() ||
                 r1.index >= object.vertices.size() ||
@@ -944,18 +972,8 @@ void AC3D::convertObjectToAc(Object &object)
             surface.mats = object.surfaces[i].mats;
             surface.flags = object.surfaces[i].flags & Surface::FaceMask;
 
-            // Triangle strips alternate winding every other triangle; reverse
-            // vertex order on odd triangles so all output triangles wind the same way.
-            if ((j & 1U) == 0)
-            {
-                surface.refs.push_back(makeRef(r0));
-                surface.refs.push_back(makeRef(r1));
-            }
-            else
-            {
-                surface.refs.push_back(makeRef(r1));
-                surface.refs.push_back(makeRef(r0));
-            }
+            surface.refs.push_back(makeRef(r0));
+            surface.refs.push_back(makeRef(r1));
             surface.refs.push_back(makeRef(r2));
 
             surfaces.push_back(surface);
@@ -3173,41 +3191,49 @@ void AC3D::Surface::dump(size_t count, size_t level) const
     std::cout << " " << refs.size() << " ref" << (refs.size() == 1 ? "" : "s") << std::endl;
 }
 
-void AC3D::Surface::setTriangleStrip(const Object &object)
+std::vector<AC3D::Triangle> AC3D::getTriangleStrip(const Object &object, const Surface &surface)
 {
-    // TODO: Should we handle this being called more than once?
-    if (triangleStrip.empty() && isTriangleStrip())
+    std::vector<Triangle> triangles;
+
+    if (!surface.isTriangleStrip())
+        return triangles;
+
+    for (size_t i = 0; i + 2 < surface.refs.size(); i++)
     {
-        for (size_t i = 2; i < refs.size(); i++)
-        {
-            if ((i & 1u) == 0)
-            {
-                // check for invalid vertex index and skip triangle if any index is invalid
-                if (refs[i - 2].index >= object.vertices.size() ||
-                    refs[i - 1].index >= object.vertices.size() ||
-                    refs[i].index >= object.vertices.size())
-                    continue;
+        size_t first = 0;
+        size_t second = 0;
+        size_t third = 0;
 
-                triangleStrip.emplace_back(object.vertices[refs[i - 2].index],
-                                           object.vertices[refs[i - 1].index],
-                                           object.vertices[refs[i].index],
-                                           refs[i - 2], refs[i - 1], refs[i]);
-            }
-            else // reverse winding to match drawing order
-            {
-                // check for invalid vertex index and skip triangle if any index is invalid
-                if (refs[i - 1].index >= object.vertices.size() ||
-                    refs[i - 2].index >= object.vertices.size() ||
-                    refs[i].index >= object.vertices.size())
-                    continue;
+        stripTriangle(i, first, second, third);
 
-                triangleStrip.emplace_back(object.vertices[refs[i - 1].index],
-                                           object.vertices[refs[i - 2].index],
-                                           object.vertices[refs[i].index],
-                                           refs[i - 1], refs[i - 2], refs[i]);
-            }
-        }
+        // check for invalid vertex index and skip triangle if any index is invalid
+        if (surface.refs[first].index >= object.vertices.size() ||
+            surface.refs[second].index >= object.vertices.size() ||
+            surface.refs[third].index >= object.vertices.size())
+            continue;
+
+        triangles.emplace_back(object.vertices[surface.refs[first].index],
+                               object.vertices[surface.refs[second].index],
+                               object.vertices[surface.refs[third].index],
+                               surface.refs[first], surface.refs[second], surface.refs[third]);
     }
+
+    return triangles;
+}
+
+// One entry per surface, in surface order, so a check that compares surfaces
+// against each other builds each surface's triangles once rather than once
+// per pair.
+std::vector<std::vector<AC3D::Triangle>> AC3D::getTriangleStrips(const Object &object)
+{
+    std::vector<std::vector<Triangle>> triangles;
+
+    triangles.reserve(object.surfaces.size());
+
+    for (const auto &surface : object.surfaces)
+        triangles.push_back(getTriangleStrip(object, surface));
+
+    return triangles;
 }
 
 void AC3D::writeObject(std::ostream &out, const Object &object) const
@@ -3538,41 +3564,30 @@ void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matri
             }
             else if (surface.isTriangleStrip())
             {
-                for (size_t i = 2; i < surface.refs.size(); i++)
+                for (size_t i = 0; i + 2 < surface.refs.size(); i++)
                 {
-                    Triangle triangle;
-                    if ((i & 1u) == 0)
-                    {
-                        // check for invalid vertex index and skip triangle if any index is invalid
-                        if (surface.refs[i - 2].index >= object.vertices.size() ||
-                            surface.refs[i - 1].index >= object.vertices.size() ||
-                            surface.refs[i].index >= object.vertices.size())
-                            continue;
+                    size_t first = 0;
+                    size_t second = 0;
+                    size_t third = 0;
 
-                        triangle = Triangle(object.vertices[surface.refs[i - 2].index],
-                                            object.vertices[surface.refs[i - 1].index],
-                                            object.vertices[surface.refs[i].index],
-                                            surface.refs[i - 2],
-                                            surface.refs[i - 1],
-                                            surface.refs[i]);
-                    }
-                    else // reverse winding to match drawing order
-                    {
-                        // check for invalid vertex index and skip triangle if any index is invalid
-                        if (surface.refs[i - 1].index >= object.vertices.size() ||
-                            surface.refs[i - 2].index >= object.vertices.size() ||
-                            surface.refs[i].index >= object.vertices.size())
-                            continue;
+                    stripTriangle(i, first, second, third);
 
-                        triangle = Triangle(object.vertices[surface.refs[i - 1].index],
-                                            object.vertices[surface.refs[i - 2].index],
-                                            object.vertices[surface.refs[i].index],
-                                            surface.refs[i - 1],
-                                            surface.refs[i - 2],
-                                            surface.refs[i]);
-                    }
+                    // check for invalid vertex index and skip triangle if any index is invalid
+                    if (surface.refs[first].index >= object.vertices.size() ||
+                        surface.refs[second].index >= object.vertices.size() ||
+                        surface.refs[third].index >= object.vertices.size())
+                        continue;
+
+                    Triangle triangle(object.vertices[surface.refs[first].index],
+                                      object.vertices[surface.refs[second].index],
+                                      object.vertices[surface.refs[third].index],
+                                      surface.refs[first],
+                                      surface.refs[second],
+                                      surface.refs[third]);
+
                     if (triangle.degenerate)
                         continue;
+
                     triangle.transform(newMatrix);
                     surface.transformedTriangles.emplace_back(triangle);
                 }
@@ -3841,6 +3856,11 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
     if (object.surfaces.empty())
         return;
 
+    // Built once for the whole object: the loops below walk every pair of
+    // surfaces, so building inside them would rebuild each surface's
+    // triangles once per partner.
+    const std::vector<std::vector<Triangle>> strips = getTriangleStrips(object);
+
     for (size_t i = 0, endi = object.surfaces.size() - 1; i < endi; ++i)
     {
         const Surface &surface1 = object.surfaces[i];
@@ -3851,15 +3871,15 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
 
             if (surface1.isTriangleStrip())
             {
-                for (size_t k = 0; k < surface1.triangleStrip.size(); k++)
+                for (size_t k = 0; k < strips[i].size(); k++)
                 {
-                    const Triangle &triangle1 = surface1.triangleStrip[k];
+                    const Triangle &triangle1 = strips[i][k];
 
                     if (surface2.isTriangleStrip())
                     {
-                        for (size_t l = 0; l < surface2.triangleStrip.size(); l++)
+                        for (size_t l = 0; l < strips[j].size(); l++)
                         {
-                            const Triangle &triangle2 = surface2.triangleStrip[l];
+                            const Triangle &triangle2 = strips[j][l];
 
                             if (triangle1.sameTriangle(triangle2, Difference::None))
                             {
@@ -3936,9 +3956,9 @@ void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
             }
             else if (surface2.isTriangleStrip())
             {
-                for (size_t k = 0; k < surface2.triangleStrip.size(); k++)
+                for (size_t k = 0; k < strips[j].size(); k++)
                 {
-                    const Triangle &triangle2 = surface2.triangleStrip[k];
+                    const Triangle &triangle2 = strips[j][k];
 
                     if (triangle2.sameTriangle(object, surface1, Difference::None))
                     {
@@ -4116,12 +4136,11 @@ void AC3D::checkDifferentMat(std::istream &in, const Object &object)
 // directly can never fire for a triangle strip. For triangle strips, use
 // the normal of whichever constituent triangle actually contains the ref
 // at refIndex instead of the (unset) surface-wide normal.
-AC3D::Point3 AC3D::surfaceRefNormal(const Surface &surface, size_t refIndex)
+AC3D::Point3 AC3D::surfaceRefNormal(const Surface &surface, size_t refIndex,
+                                    const std::vector<Triangle> &triangles)
 {
     if (surface.isTriangleStrip())
     {
-        const std::vector<Triangle> &triangles = surface.getTriangleStrip();
-
         if (!triangles.empty())
         {
             size_t t = (refIndex >= 2) ? (refIndex - 2) : 0;
@@ -4157,6 +4176,11 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
 
     std::map<size_t, RefPtrSet> matches;
 
+    // Built once for the whole object: the loops below pair every surface
+    // with every other, so building inside them would rebuild each surface's
+    // triangles once per partner.
+    const std::vector<std::vector<Triangle>> strips = getTriangleStrips(object);
+
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         const Surface &surface1 = object.surfaces[i];
@@ -4172,8 +4196,8 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
                     if (surface1.refs[k].index == surface2.refs[l].index &&
                         surface1.refs[k].coordinates != surface2.refs[l].coordinates)
                     {
-                        const Point3 normal1 = surfaceRefNormal(surface1, k);
-                        const Point3 normal2 = surfaceRefNormal(surface2, l);
+                        const Point3 normal1 = surfaceRefNormal(surface1, k, strips[i]);
+                        const Point3 normal2 = surfaceRefNormal(surface2, l, strips[j]);
                         const double length1 = normal1.length();
                         const double length2 = normal2.length();
                         if (length1 <= Point3::SMALL_NUM || length2 <= Point3::SMALL_NUM)
@@ -4529,7 +4553,7 @@ void AC3D::checkSurfaceNoTexture(std::istream &in, const Object &object, const S
     }
 }
 
-void AC3D::checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const Surface &surface)
+void AC3D::checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const Surface &surface, const std::vector<Triangle> &triangles)
 {
     if (!m_surface_zero_area_uv)
         return;
@@ -4590,7 +4614,7 @@ void AC3D::checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const 
 
     if (!m_is_ac && surface.isTriangleStrip())
     {
-        for (const auto &triangle : surface.getTriangleStrip())
+        for (const auto &triangle : triangles)
         {
             if (triangle.degenerate)
                 continue;
@@ -5018,7 +5042,7 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
     return dP.length();   // return the closest distance
 }
 
-void AC3D::checkSurfaceStripSize(std::istream &in, const Surface &surface)
+void AC3D::checkSurfaceStripSize(std::istream &in, const Surface &surface, const std::vector<Triangle> &triangles)
 {
     if (!m_surface_strip_size)
         return;
@@ -5029,10 +5053,10 @@ void AC3D::checkSurfaceStripSize(std::istream &in, const Surface &surface)
     if (!surface.isTriangleStrip())
         return;
 
-    if (surface.getTriangleStrip().size() < 2)
+    if (triangles.size() < 2)
     {
         warningWithCount(m_surface_strip_size_count, surface.line_number)
-            << "triangle strip with" << (surface.getTriangleStrip().empty() ? " no triangles" : " 1 triangle") << std::endl;
+            << "triangle strip with" << (triangles.empty() ? " no triangles" : " 1 triangle") << std::endl;
         showLine(in, surface.line_pos);
     }
 }
@@ -5054,7 +5078,7 @@ bool AC3D::Triangle::sameTriangle(const Triangle &triangle, Difference differenc
     return false;
 }
 
-void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &surface)
+void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &surface, const std::vector<Triangle> &triangles)
 {
     if (!m_surface_strip_duplicate_triangles)
         return;
@@ -5065,7 +5089,7 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &
     if (!surface.isTriangleStrip())
         return;
 
-    for (size_t i = 0; i < surface.triangleStrip.size(); i++)
+    for (size_t i = 0; i < triangles.size(); i++)
     {
         // a degenerate triangle (a repeated vertex) trivially satisfies
         // sameTriangle() for None, Order and Winding simultaneously
@@ -5074,51 +5098,51 @@ void AC3D::checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &
         // that's not a meaningful "different order"/"different winding"
         // distinction, just noise, so skip it here the same way
         // addPoly() already skips degenerate triangles.
-        if (surface.triangleStrip[i].degenerate)
+        if (triangles[i].degenerate)
             continue;
 
-        for (size_t j = i + 1; j < surface.triangleStrip.size(); j++)
+        for (size_t j = i + 1; j < triangles.size(); j++)
         {
-            if (surface.triangleStrip[j].degenerate)
+            if (triangles[j].degenerate)
                 continue;
 
-            if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::None))
+            if (triangles[i].sameTriangle(triangles[j], Difference::None))
             {
                 warningWithCount(m_surface_strip_duplicate_triangles_count, surface.line_number)
                     << "triangle strip with duplicate triangle" << std::endl;
                 showLine(in, surface.line_pos);
-                note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
-                showLine(in, surface.triangleStrip[i].refs[2].line_pos);
-                note(surface.triangleStrip[j].refs[2].line_number) << "duplicate triangle" << std::endl;
-                showLine(in, surface.triangleStrip[j].refs[2].line_pos);
+                note(triangles[i].refs[2].line_number) << "first triangle" << std::endl;
+                showLine(in, triangles[i].refs[2].line_pos);
+                note(triangles[j].refs[2].line_number) << "duplicate triangle" << std::endl;
+                showLine(in, triangles[j].refs[2].line_pos);
             }
 
-            if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::Order))
+            if (triangles[i].sameTriangle(triangles[j], Difference::Order))
             {
                 warningWithCount(m_surface_strip_duplicate_triangles_count, surface.line_number)
                     << "triangle strip with duplicate triangle with different vertex order" << std::endl;
                 showLine(in, surface.line_pos);
-                note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
-                showLine(in, surface.triangleStrip[i].refs[2].line_pos);
-                note(surface.triangleStrip[j].refs[2].line_number) << "duplicate triangle" << std::endl;
-                showLine(in, surface.triangleStrip[j].refs[2].line_pos);
+                note(triangles[i].refs[2].line_number) << "first triangle" << std::endl;
+                showLine(in, triangles[i].refs[2].line_pos);
+                note(triangles[j].refs[2].line_number) << "duplicate triangle" << std::endl;
+                showLine(in, triangles[j].refs[2].line_pos);
             }
 
-            if (surface.triangleStrip[i].sameTriangle(surface.triangleStrip[j], Difference::Winding))
+            if (triangles[i].sameTriangle(triangles[j], Difference::Winding))
             {
                 warningWithCount(m_surface_strip_duplicate_triangles_count, surface.line_number)
                     << "triangle strip with duplicate triangle with different winding" << std::endl;
                 showLine(in, surface.line_pos);
-                note(surface.triangleStrip[i].refs[2].line_number) << "first triangle" << std::endl;
-                showLine(in, surface.triangleStrip[i].refs[2].line_pos);
-                note(surface.triangleStrip[j].refs[2].line_number) << "duplicate triangle" << std::endl;
-                showLine(in, surface.triangleStrip[j].refs[2].line_pos);
+                note(triangles[i].refs[2].line_number) << "first triangle" << std::endl;
+                showLine(in, triangles[i].refs[2].line_pos);
+                note(triangles[j].refs[2].line_number) << "duplicate triangle" << std::endl;
+                showLine(in, triangles[j].refs[2].line_pos);
             }
         }
     }
 }
 
-void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Surface &surface)
+void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Surface &surface, const std::vector<Triangle> &triangles)
 {
     if (!m_surface_strip_degenerate)
         return;
@@ -5130,7 +5154,7 @@ void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Surface &surface)
         return;
 
     size_t count = 0;
-    for (const auto &triangle : surface.getTriangleStrip())
+    for (const auto &triangle : triangles)
     {
         if (triangle.degenerate)
             count++;
@@ -5138,7 +5162,7 @@ void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Surface &surface)
 
     if (count > 0)
     {
-        const double size = static_cast<double>(surface.getTriangleStrip().size());
+        const double size = static_cast<double>(triangles.size());
         warningWithCount(m_surface_strip_degenerate_count, surface.line_number)
             << "triangle strip " << count << " out of " << size << " ("
             << ((count / size) * 100.0) << " percent) degenerate triangles" << std::endl;
@@ -5146,7 +5170,7 @@ void AC3D::checkSurfaceStripDegenerate(std::istream &in, const Surface &surface)
     }
 }
 
-void AC3D::checkSurfaceStripHole(std::istream &in, const Surface &surface)
+void AC3D::checkSurfaceStripHole(std::istream &in, const Surface &surface, const std::vector<Triangle> &triangles)
 {
     if (!m_surface_strip_hole)
         return;
@@ -5156,8 +5180,6 @@ void AC3D::checkSurfaceStripHole(std::istream &in, const Surface &surface)
 
     if (!surface.isTriangleStrip() || surface.isDoubleSided())
         return;
-
-    const auto &triangles = surface.getTriangleStrip();
 
     if (triangles.size() < 2)
         return;
@@ -6707,6 +6729,28 @@ bool AC3D::Object::splitPolygons()
 
             if (size > 3)
             {
+                // The split below fans from the first vertex -- refs[0],
+                // refs[j], refs[j+1] -- which only reproduces the original
+                // shape for a convex polygon.
+                //
+                // Applied to a triangle strip it invented geometry. A strip
+                // triangulates as (i-2, i-1, i) with the winding alternating
+                // every other triangle, so fanning from one distant vertex
+                // kept only the first triangle: of the 40 triangles in a 42
+                // ref strip, 39 came out as triangles that were never in the
+                // model, and nothing said so. convertObjectToAc already
+                // converts strips correctly and is what -v 11 uses.
+                //
+                // Applied to a line it was worse: a 5 ref closed line came
+                // out as three separate 3 ref closed lines.
+                //
+                // A concave polygon fans into triangles that cover ground
+                // outside it. checkSurfacePolygonType sets concave for every
+                // coplanar polygon whether or not -Wsurface-not-convex is
+                // enabled, so the flag can be relied on here.
+                if (!surfaces[i].isPolygon() || surfaces[i].concave)
+                    continue;
+
                 // clear flags
                 for (auto &ref : surfaces[i].refs)
                 {
