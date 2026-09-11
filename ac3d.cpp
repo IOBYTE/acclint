@@ -1000,18 +1000,73 @@ void AC3D::convertObjectToAc(Object &object)
     cleanSurfaces(object);
 }
 
-void AC3D::convertObjectsToAcc(std::vector<Object> &objects)
+// Writes every triangle strip out as separate triangles. .acc allows both,
+// so this only happens when it is asked for -- for a reader that does not
+// handle strips, or to compare against a file written before they were
+// generated.
+//
+// Unlike the .acc to .ac conversion this keeps every texture coordinate on
+// each ref, since the file being written is still .acc.
+void AC3D::splitTriangleStrips(Object &object)
+{
+    std::vector<Surface> surfaces;
+
+    surfaces.reserve(object.surfaces.size());
+
+    for (const auto &surface : object.surfaces)
+    {
+        if (!surface.isTriangleStrip())
+        {
+            surfaces.push_back(surface);
+            continue;
+        }
+
+        for (const auto &triangle : getTriangleStrip(object, surface))
+        {
+            // A degenerate triangle draws nothing. In a strip it is usually
+            // only there to join two runs into one surface, and once the runs
+            // are separate triangles there is nothing left for it to join.
+            if (triangle.degenerate)
+                continue;
+
+            Surface split = surface;
+
+            split.flags = (surface.flags & ~Surface::TypeMask) | Surface::Polygon;
+            split.refs.clear();
+            split.transformedTriangles.clear();
+
+            for (const auto &ref : triangle.refs)
+                split.refs.push_back(ref);
+
+            split.refs.declared_size = static_cast<int>(split.refs.size());
+            surfaces.push_back(split);
+        }
+    }
+
+    object.surfaces = surfaces;
+}
+
+void AC3D::splitTriangleStrips(std::vector<Object> &objects)
+{
+    for (auto &object : objects)
+    {
+        splitTriangleStrips(object);
+        splitTriangleStrips(object.kids);
+    }
+}
+
+void AC3D::convertObjectsToAcc(std::vector<Object> &objects, bool strips)
 {
     for (auto &object : objects)
     {
         if (object.type.type == "poly")
-            convertObjectToAcc(object);
+            convertObjectToAcc(object, strips);
         else
-            convertObjectsToAcc(object.kids);
+            convertObjectsToAcc(object.kids, strips);
     }
 }
 
-void AC3D::convertObjectToAcc(Object &object)
+void AC3D::convertObjectToAcc(Object &object, bool strips)
 {
     struct Triangle
     {
@@ -1205,19 +1260,88 @@ void AC3D::convertObjectToAcc(Object &object)
     object.vertices = vertices;
 
     object.surfaces.clear();
+
+    // Everything above turned the object into loose triangles. Triangles that
+    // would end up on the same SURF line -- same material, and same shading
+    // and sidedness flags -- can be strung together into triangle strips,
+    // which is what the .acc format is for. The texture does not enter into
+    // it: it is a property of the object, so every triangle here shares it.
+    //
+    // Order is by first appearance rather than by material id, so the output
+    // does not reshuffle when a material is renumbered.
+    std::vector<std::pair<unsigned int, size_t>> groups;
+    std::map<std::pair<unsigned int, size_t>, std::vector<Triangle *>> grouped;
+
     for (auto &triangle : triangles)
     {
-        Surface surface;
-        surface.flags = triangle.m_flags;
-        surface.mats.emplace_back(triangle.m_mat);
-        for (size_t i = 0; i < 3; i++)
+        const std::pair<unsigned int, size_t> key(triangle.m_flags, triangle.m_mat);
+
+        if (grouped.find(key) == grouped.end())
+            groups.push_back(key);
+
+        grouped[key].push_back(&triangle);
+    }
+
+    for (const auto &key : groups)
+    {
+        std::vector<AC3D::Triangle> group;
+
+        group.reserve(grouped[key].size());
+
+        for (const Triangle *triangle : grouped[key])
         {
-            Ref ref;
-            ref.index = triangle.m_vertex_index[i];
-            ref.coordinates = triangle.m_coordinates[i];
-            surface.refs.emplace_back(ref);
+            std::array<Ref, 3> refs;
+
+            for (size_t i = 0; i < 3; i++)
+            {
+                refs[i].index = triangle->m_vertex_index[i];
+                refs[i].coordinates = triangle->m_coordinates[i];
+            }
+
+            group.emplace_back(object.vertices[refs[0].index],
+                               object.vertices[refs[1].index],
+                               object.vertices[refs[2].index],
+                               refs[0], refs[1], refs[2]);
         }
-        object.surfaces.emplace_back(surface);
+
+        if (!strips)
+        {
+            // asked for triangles, so write each one on its own rather than
+            // building strips and taking them apart again
+            for (const auto &triangle : group)
+            {
+                Surface surface;
+
+                surface.flags = key.first;
+                surface.mats.emplace_back(key.second);
+
+                for (const auto &ref : triangle.refs)
+                    surface.refs.emplace_back(ref);
+
+                surface.refs.declared_size = static_cast<int>(surface.refs.size());
+                object.surfaces.emplace_back(surface);
+            }
+
+            continue;
+        }
+
+        for (const auto &strip : makeTriangleStrips(group))
+        {
+            Surface surface;
+
+            // A strip of one triangle is no better than the triangle and
+            // costs a warning of its own, so it stays a polygon.
+            surface.flags = strip.size() > 3
+                                ? ((key.first & ~Surface::TypeMask) | Surface::TriangleStrip)
+                                : key.first;
+            surface.mats.emplace_back(key.second);
+
+            for (const auto &ref : strip)
+                surface.refs.emplace_back(ref);
+
+            surface.refs.declared_size = static_cast<int>(surface.refs.size());
+            object.surfaces.emplace_back(surface);
+        }
     }
 }
 
@@ -3190,6 +3314,212 @@ void AC3D::Surface::dump(size_t count, size_t level) const
     }
 
     std::cout << " " << refs.size() << " ref" << (refs.size() == 1 ? "" : "s") << std::endl;
+}
+
+// Builds triangle strips out of a loose list of triangles, the inverse of
+// getTriangleStrip(). Splitting a strip is done by taking it apart, discarding
+// the triangles that are not wanted, and building strips again from what is
+// left, so this is the half that puts one back together.
+//
+// What identifies a position in a strip is the whole ref, not just the vertex
+// index it names. A strip stores one ref per position, so two triangles using
+// the same vertex with different texture coordinates cannot share it, and
+// joining them would silently move one of the two.
+//
+// Degenerate triangles are dropped rather than carried over. They draw
+// nothing, and in a generated model they are usually there to concatenate
+// separate strips into one surface; taking a surface apart and rebuilding it
+// therefore returns the runs that were really in it.
+//
+// The walk is greedy: repeatedly take the triangle with the fewest unused
+// neighbours -- the ones that will otherwise be stranded -- try each of its
+// three edges as the starting edge, and keep whichever grows longest. That is
+// not an optimal stripification, which is NP-hard, but a run that was a strip
+// to begin with comes back as the same strip.
+std::vector<std::vector<AC3D::Ref>> AC3D::makeTriangleStrips(const std::vector<Triangle> &triangles)
+{
+    using Key = std::pair<size_t, std::vector<Point2>>;
+
+    std::map<Key, size_t> ids;
+    std::vector<Ref> refs; // by id
+
+    const auto identify = [&ids, &refs](const Ref &ref) {
+        const auto result = ids.emplace(Key{ ref.index, ref.coordinates }, refs.size());
+
+        if (result.second)
+            refs.push_back(ref);
+
+        return result.first->second;
+    };
+
+    std::vector<std::array<size_t, 3>> faces;
+
+    for (const auto &triangle : triangles)
+    {
+        if (triangle.degenerate)
+            continue;
+
+        const std::array<size_t, 3> face{ identify(triangle.refs[0]),
+                                          identify(triangle.refs[1]),
+                                          identify(triangle.refs[2]) };
+
+        if (face[0] == face[1] || face[0] == face[2] || face[1] == face[2])
+            continue;
+
+        faces.push_back(face);
+    }
+
+    // every face on each of its edges
+    std::map<std::pair<size_t, size_t>, std::vector<size_t>> edges;
+
+    const auto edgeKey = [](size_t a, size_t b) {
+        return a < b ? std::pair<size_t, size_t>(a, b) : std::pair<size_t, size_t>(b, a);
+    };
+
+    for (size_t i = 0; i < faces.size(); ++i)
+        for (size_t k = 0; k < 3; ++k)
+            edges[edgeKey(faces[i][k], faces[i][(k + 1) % 3])].push_back(i);
+
+    std::vector<bool> used(faces.size(), false);
+
+    // how many of a face's neighbours are still available
+    const auto degree = [&faces, &edges, &used, &edgeKey](size_t i, const std::set<size_t> &taken) {
+        std::set<size_t> seen;
+
+        for (size_t k = 0; k < 3; ++k)
+        {
+            for (const size_t j : edges[edgeKey(faces[i][k], faces[i][(k + 1) % 3])])
+            {
+                if (j != i && !used[j] && taken.find(j) == taken.end())
+                    seen.insert(j);
+            }
+        }
+
+        return seen.size();
+    };
+
+    // Whether the three ids, in this order, are the face written out with the
+    // same winding -- that is, a rotation of it rather than a reflection.
+    const auto sameWinding = [](const std::array<size_t, 3> &face, size_t a, size_t b, size_t c) {
+        return (face[0] == a && face[1] == b && face[2] == c) ||
+               (face[1] == a && face[2] == b && face[0] == c) ||
+               (face[2] == a && face[0] == b && face[1] == c);
+    };
+
+    // The next triangle is number length - 2, so it is written (a, b, c) when
+    // the strip holds an even number of refs and (b, a, c) when it holds an
+    // odd number. Only a face that comes out with its own winding will do.
+    const auto findNext = [&](size_t a, size_t b, size_t length, const std::set<size_t> &taken,
+                              size_t &face, size_t &next) {
+        const bool forward = (length % 2) == 0;
+        bool found = false;
+        size_t best = 0;
+
+        for (const size_t j : edges[edgeKey(a, b)])
+        {
+            if (used[j] || taken.find(j) != taken.end())
+                continue;
+
+            size_t c = 0;
+            size_t others = 0;
+
+            for (size_t k = 0; k < 3; ++k)
+            {
+                if (faces[j][k] != a && faces[j][k] != b)
+                {
+                    c = faces[j][k];
+                    others++;
+                }
+            }
+
+            if (others != 1)
+                continue;
+
+            if (!(forward ? sameWinding(faces[j], a, b, c) : sameWinding(faces[j], b, a, c)))
+                continue;
+
+            const size_t d = degree(j, taken);
+
+            if (!found || d < best)
+            {
+                found = true;
+                best = d;
+                face = j;
+                next = c;
+            }
+        }
+
+        return found;
+    };
+
+    std::vector<std::vector<Ref>> strips;
+    std::set<size_t> remaining;
+
+    for (size_t i = 0; i < faces.size(); ++i)
+        remaining.insert(i);
+
+    const std::set<size_t> none;
+
+    while (!remaining.empty())
+    {
+        size_t seed = *remaining.begin();
+
+        for (const size_t i : remaining)
+        {
+            if (degree(i, none) < degree(seed, none))
+                seed = i;
+        }
+
+        std::vector<size_t> bestOrder;
+        std::vector<size_t> bestIds;
+
+        for (size_t start = 0; start < 3; ++start)
+        {
+            std::vector<size_t> ids3{ faces[seed][start],
+                                      faces[seed][(start + 1) % 3],
+                                      faces[seed][(start + 2) % 3] };
+            std::vector<size_t> order;
+            std::set<size_t> taken{ seed };
+
+            for (;;)
+            {
+                size_t face = 0;
+                size_t next = 0;
+
+                if (!findNext(ids3[ids3.size() - 2], ids3.back(), ids3.size(), taken, face, next))
+                    break;
+
+                taken.insert(face);
+                order.push_back(face);
+                ids3.push_back(next);
+            }
+
+            if (bestIds.empty() || order.size() > bestOrder.size())
+            {
+                bestOrder = order;
+                bestIds = ids3;
+            }
+        }
+
+        used[seed] = true;
+        remaining.erase(seed);
+
+        for (const size_t j : bestOrder)
+        {
+            used[j] = true;
+            remaining.erase(j);
+        }
+
+        std::vector<Ref> strip;
+        strip.reserve(bestIds.size());
+
+        for (const size_t id : bestIds)
+            strip.push_back(refs[id]);
+
+        strips.push_back(std::move(strip));
+    }
+
+    return strips;
 }
 
 std::vector<AC3D::Triangle> AC3D::getTriangleStrip(const Object &object, const Surface &surface)
@@ -5504,9 +5834,11 @@ bool AC3D::write(const std::string &file, int version)
     }
 
     if (m_is_ac && !is_ac) // convert .ac to .acc
-        convertObjectsToAcc(m_objects);
+        convertObjectsToAcc(m_objects, m_triangle_strips);
     else if (!m_is_ac && is_ac) // convert .acc to .ac
         convertObjectsToAc(m_objects);
+    else if (!is_ac && !m_triangle_strips) // .acc in, and strips not wanted out
+        splitTriangleStrips(m_objects);
 
     std::ofstream of(file, std::ofstream::binary);
 
@@ -6914,6 +7246,79 @@ void AC3D::flatten()
     transform(matrix);
 
     //TODO flatten the object hierarchy
+}
+
+// Takes every triangle strip apart and builds strips again from the triangles
+// that were in it. Exists so that makeTriangleStrips() is reachable and can be
+// tested; splitting a strip is the same operation with some of the triangles
+// dropped in between.
+//
+// It is not a no-op on a generated model: the degenerate triangles used to
+// concatenate separate strips into one surface carry no geometry and are not
+// carried over, so a surface that was several runs stitched together comes
+// back as those runs.
+bool AC3D::Object::rebuildStrips()
+{
+    bool changed = false;
+
+    if (type.type == "poly")
+    {
+        std::vector<Surface> rebuilt;
+
+        rebuilt.reserve(surfaces.size());
+
+        for (auto &surface : surfaces)
+        {
+            if (!surface.isTriangleStrip())
+            {
+                rebuilt.push_back(surface);
+                continue;
+            }
+
+            const std::vector<std::vector<Ref>> strips =
+                makeTriangleStrips(getTriangleStrip(*this, surface));
+
+            if (strips.size() == 1 && strips[0].size() == surface.refs.size())
+            {
+                rebuilt.push_back(surface);
+                continue;
+            }
+
+            for (const auto &strip : strips)
+            {
+                Surface copy = surface;
+
+                copy.refs.clear();
+                copy.transformedTriangles.clear();
+
+                for (const auto &ref : strip)
+                    copy.refs.push_back(ref);
+
+                copy.refs.declared_size = static_cast<int>(copy.refs.size());
+                rebuilt.push_back(copy);
+            }
+
+            changed = true;
+        }
+
+        if (changed)
+            surfaces = rebuilt;
+    }
+
+    for (auto &kid : kids)
+        changed |= kid.rebuildStrips();
+
+    return changed;
+}
+
+bool AC3D::rebuildStrips()
+{
+    bool changed = false;
+
+    for (auto &object : m_objects)
+        changed |= object.rebuildStrips();
+
+    return changed;
 }
 
 bool AC3D::splitPolygons()

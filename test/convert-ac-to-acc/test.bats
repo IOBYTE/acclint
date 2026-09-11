@@ -15,6 +15,24 @@ setup_file() {
 }
 
 ################################################################################
+# Converting .ac to .acc gives every vertex a normal, and turns the object
+# into triangles on the way -- polygons are fanned, and a normal is worked out
+# per vertex from the faces meeting there, honouring the object's crease
+# angle.
+#
+# Those triangles are then strung back together into triangle strips, which is
+# what the format is for. Only triangles that would share a SURF line can go
+# on one strip: same material, and same shading and sidedness flags. The
+# texture never enters into it, being a property of the object rather than of
+# a surface, so every triangle in an object already shares it.
+#
+# A strip of a single triangle is no improvement on the triangle and costs a
+# surface-strip-size warning, so it is written as a polygon instead. That is
+# why the cubes below come out as six strips of two triangles rather than as
+# twelve of anything, and why test5 -- whose two triangles meet at a corner
+# rather than along an edge, and so cannot share a strip -- is unchanged by
+# any of this.
+################################################################################
 
 @test "test1" {
   $RUN_TEST acclint test1.ac -o test1.output.acc

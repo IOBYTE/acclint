@@ -162,6 +162,8 @@ public:
 
     bool read(const std::string &file);
     bool write(const std::string &file, int version = 0);
+    void triangleStrips(bool value) { m_triangle_strips = value; }
+    bool triangleStrips() const { return m_triangle_strips; }
     void dump(DumpType dump_type) const;
     size_t warnings() const
     {
@@ -246,6 +248,7 @@ public:
     bool merge(const AC3D& ac3d);
     void flatten();
     bool splitPolygons();
+    bool rebuildStrips();
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
     void gridPartition(double size);
@@ -1082,6 +1085,7 @@ private:
         void transform(const Matrix &currentMatrix);
         void removeKids(const RemoveInfo &remove_info);
         bool splitPolygons();
+        bool rebuildStrips();
         bool addObject(const Object &object);
         bool sameTextures(const Object &object) const;
     };
@@ -1111,6 +1115,10 @@ private:
     size_t          m_warnings = 0;
     bool            m_is_utf_8 = false;
     bool            m_is_ac = false;
+    // Whether a .acc being written may contain triangle strips. They are
+    // what the format is for, so this is on; it is turned off to write the
+    // same geometry as plain triangles.
+    bool            m_triangle_strips = true;
     bool            m_crlf = false;
     bool            m_not_ac3d_file = true;
     bool            m_quiet = false;
@@ -1210,6 +1218,7 @@ private:
     // nothing stated and nothing checked.
     static std::vector<Triangle> getTriangleStrip(const Object &object, const Surface &surface);
     static std::vector<std::vector<Triangle>> getTriangleStrips(const Object &object);
+    static std::vector<std::vector<Ref>> makeTriangleStrips(const std::vector<Triangle> &triangles);
     void checkDuplicateTriangles(std::istream &in, const Object &object);
     void checkMissingSurfaces(std::istream &in, const Object &object);
     void checkDuplicateSurfaces(std::istream &in, const Object &object);
@@ -1244,8 +1253,10 @@ private:
     static bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);
     static void convertObjectsToAc(std::vector<Object> &objects);
     static void convertObjectToAc(Object &object);
-    static void convertObjectsToAcc(std::vector<Object> &objects);
-    static void convertObjectToAcc(Object &object);
+    static void convertObjectsToAcc(std::vector<Object> &objects, bool strips);
+    static void convertObjectToAcc(Object &object, bool strips);
+    static void splitTriangleStrips(std::vector<Object> &objects);
+    static void splitTriangleStrips(Object &object);
     static bool sameMaterial(const Material &material1, const Material &material2);
     static bool sameMaterialParameters(const Material &material1, const Material &material2);
     bool setMaterialUsed(size_t index);

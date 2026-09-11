@@ -134,6 +134,8 @@ void usage()
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
     std::cerr << "  --splitPolygon                         Split polygon surface into separate triangle surfaces." << std::endl;
+    std::cerr << "  --rebuildStrips                        Rebuild triangle strips from the triangles in them." << std::endl;
+    std::cerr << "  --noTriangleStrips                     Write triangles instead of triangle strips in a .acc file." << std::endl;
     std::cerr << "  --splitSURF                            Split objects with multiple surface types into separate objects." << std::endl;
     std::cerr << "  --splitMat                             Split objects with multiple materials into separate objects." << std::endl;
     std::cerr << "  --flatten                              Flatten objects." << std::endl;
@@ -290,6 +292,8 @@ int main(int argc, char *argv[])
     bool splitMat = false;
     bool flatten = false;
     bool splitPolygon = false;
+    bool rebuildStrips = false;
+    bool triangleStrips = true;
     bool combineTexture = false;
     double grid_size = 0.0;
     bool fix_overlapping_2_sided_surface = false;
@@ -316,6 +320,8 @@ int main(int argc, char *argv[])
         OPT_SPLIT_MAT,
         OPT_FLATTEN,
         OPT_SPLIT_POLYGON,
+        OPT_REBUILD_STRIPS,
+        OPT_NO_TRIANGLE_STRIPS,
         OPT_COMBINE_TEXTURE,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
@@ -336,6 +342,8 @@ int main(int argc, char *argv[])
         { "splitMat",                    no_argument,       nullptr, OPT_SPLIT_MAT },
         { "flatten",                     no_argument,       nullptr, OPT_FLATTEN },
         { "splitPolygon",                no_argument,       nullptr, OPT_SPLIT_POLYGON },
+        { "rebuildStrips",               no_argument,       nullptr, OPT_REBUILD_STRIPS },
+        { "noTriangleStrips",            no_argument,       nullptr, OPT_NO_TRIANGLE_STRIPS },
         { "combineTexture",              no_argument,       nullptr, OPT_COMBINE_TEXTURE },
         { "grid",                        required_argument, nullptr, OPT_GRID },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
@@ -416,6 +424,12 @@ int main(int argc, char *argv[])
             break;
         case OPT_SPLIT_POLYGON:
             splitPolygon = true;
+            break;
+        case OPT_REBUILD_STRIPS:
+            rebuildStrips = true;
+            break;
+        case OPT_NO_TRIANGLE_STRIPS:
+            triangleStrips = false;
             break;
         case OPT_COMBINE_TEXTURE:
             combineTexture = true;
@@ -1350,6 +1364,11 @@ int main(int argc, char *argv[])
             ac3d.gridPartition(grid_size);
             ac3d.clean();
         }
+
+        if (rebuildStrips)
+            ac3d.rebuildStrips();
+
+        ac3d.triangleStrips(triangleStrips);
 
         if (!ac3d.write(out_file, version))
         {
