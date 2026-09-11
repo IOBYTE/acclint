@@ -251,7 +251,7 @@ public:
     bool rebuildStrips();
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
-    void gridPartition(double size);
+    void gridPartition(double size, bool quad_tree);
     bool combineObjects(double size);
     void fixOverlapping2SidedSurface();
     void fixSurface2SidedOpaque();
@@ -1211,9 +1211,32 @@ private:
     static void regroupByTexture(Object &cell, const std::vector<std::pair<std::string, Object>> &groups);
     static void splitTriangleStripsForGrid(Object &object, double size, size_t axis1, size_t axis2,
                                            double origin1, double origin2);
-    static void gridPartition(Object &parent, double size, size_t axis1, size_t axis2,
-                              double origin1, double origin2,
-                              size_t &cells, size_t &surfaces, size_t &oversized, double &largest);
+    // What the partition is being asked for, and what it found while doing
+    // it. One thing to pass down the object tree rather than ten, and the
+    // counts come back in it for the summary.
+    struct GridInfo
+    {
+        double size = 0.0;
+        size_t axis1 = 0;
+        size_t axis2 = 1;
+        double origin1 = 0.0;
+        double origin2 = 0.0;
+        bool quad_tree = false;
+        size_t cells = 0;
+        size_t surfaces = 0;
+        size_t oversized = 0;
+        double largest = 0.0;
+        size_t nodes = 0;
+        size_t levels = 0;
+    };
+
+    // A cell and where it sits in the grid, kept together so that the quad
+    // tree can ask where a cell is after it has been taken out of the map.
+    using GridCells = std::vector<std::pair<std::pair<long long, long long>, Object>>;
+
+    static void gridPartition(Object &parent, GridInfo &info);
+    static Object quadTreeNode(GridCells &cells, long long origin1, long long origin2,
+                               long long extent, size_t level, GridInfo &info);
     void checkDuplicateMaterials(std::istream &in);
     void checkUnusedVertex(std::istream &in, const Object &object);
     void checkDuplicateVertices(std::istream &in, const Object &object);

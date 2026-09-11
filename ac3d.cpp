@@ -7038,15 +7038,19 @@ void AC3D::regroupByTexture(Object &cell, const std::vector<std::pair<std::strin
     }
 }
 
-void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2,
-                         double origin1, double origin2,
-                         size_t &cells, size_t &surfaces, size_t &oversized, double &largest)
+void AC3D::gridPartition(Object &parent, GridInfo &info)
 {
+    const double size = info.size;
+    const size_t axis1 = info.axis1;
+    const size_t axis2 = info.axis2;
+    const double origin1 = info.origin1;
+    const double origin2 = info.origin2;
+
     std::vector<std::pair<std::string, Object>> texture_groups;
     const bool hoisted = hoistTextureGroups(parent, texture_groups);
 
     for (auto &kid : parent.kids)
-        gridPartition(kid, size, axis1, axis2, origin1, origin2, cells, surfaces, oversized, largest);
+        gridPartition(kid, info);
 
     if (parent.kids.empty())
         return;
@@ -7129,7 +7133,7 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
                 ++count;
             }
 
-            ++surfaces;
+            ++info.surfaces;
 
             // A surface goes to the cell holding its centre and is never
             // divided, so one wider than a cell drags that cell's bounds out
@@ -7144,8 +7148,8 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
 
                 if (extent > size)
                 {
-                    ++oversized;
-                    largest = std::max(largest, extent);
+                    ++info.oversized;
+                    info.largest = std::max(info.largest, extent);
                 }
             }
 
@@ -7192,7 +7196,7 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
 
             if (cell.type.type.empty())
             {
-                ++cells;
+                ++info.cells;
                 cell.type.type = "group";
 
                 Name name;
@@ -7211,16 +7215,163 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
     for (auto &kid : unpartitioned)
         parent.kids.push_back(std::move(kid));
 
+    GridCells cell_list;
+
+    cell_list.reserve(cell_objects.size());
+
     for (auto &cell : cell_objects)
     {
         if (hoisted)
             regroupByTexture(cell.second, texture_groups);
 
-        parent.kids.push_back(std::move(cell.second));
+        cell_list.emplace_back(cell.first, std::move(cell.second));
+    }
+
+    // Left as a flat list, the cells are a row of equals: a camera that can
+    // see none of them still asks each one in turn. Ordered as a quad tree,
+    // a quarter of the model has bounds of its own, and one question rejects
+    // every cell inside it.
+    if (info.quad_tree && cell_list.size() > 1)
+    {
+        long long min1 = cell_list.front().first.first;
+        long long max1 = min1;
+        long long min2 = cell_list.front().first.second;
+        long long max2 = min2;
+
+        for (const auto &cell : cell_list)
+        {
+            min1 = std::min(min1, cell.first.first);
+            max1 = std::max(max1, cell.first.first);
+            min2 = std::min(min2, cell.first.second);
+            max2 = std::max(max2, cell.first.second);
+        }
+
+        // A square, and a power of two of cells across, so that halving it
+        // halves both sides at once and every quarter is a square of cells
+        // as well -- down to the single cell, which is where it stops.
+        long long extent = 1;
+
+        while (extent < (max1 - min1 + 1) || extent < (max2 - min2 + 1))
+            extent *= 2;
+
+        parent.kids.push_back(quadTreeNode(cell_list, min1, min2, extent, 0, info));
+    }
+    else
+    {
+        for (auto &cell : cell_list)
+            parent.kids.push_back(std::move(cell.second));
     }
 }
 
-void AC3D::gridPartition(double size)
+// One node of the tree. The cells given all lie inside the square that starts
+// at cell (origin1, origin2) and is extent cells across; the node is what
+// holds them, and its four quarters are the same thing one size down.
+//
+// A node holding a single cell is that cell: a group around one cell says the
+// same bounds twice, and a level that rejects nothing its child does not is a
+// level that only costs. A node whose cells all fall in one quarter is that
+// quarter, for the same reason -- which is what keeps the tree from growing a
+// chain of single kids down to a far corner of an empty square.
+AC3D::Object AC3D::quadTreeNode(GridCells &cells, long long origin1, long long origin2,
+                                long long extent, size_t level, GridInfo &info)
+{
+    if (cells.size() == 1)
+    {
+        info.levels = std::max(info.levels, level);
+
+        return std::move(cells.front().second);
+    }
+
+    const long long half = extent / 2;
+
+    // Cell coordinates are unique, so a square one cell across cannot hold
+    // two of them and this cannot be reached. Kept as a stop rather than an
+    // assumption: halving zero would divide the same cells for ever.
+    if (half < 1)
+    {
+        Object node;
+
+        node.type.type = "group";
+
+        Name name;
+
+        name.name.assign("quad_" + std::to_string(origin1) + "_" + std::to_string(origin2));
+        node.names.push_back(name);
+
+        ++info.nodes;
+        info.levels = std::max(info.levels, level + 1);
+
+        for (auto &cell : cells)
+            node.kids.push_back(std::move(cell.second));
+
+        return node;
+    }
+
+    std::array<GridCells, 4> quadrants;
+
+    for (auto &cell : cells)
+    {
+        const size_t index = (cell.first.first >= origin1 + half ? 1 : 0) +
+                             (cell.first.second >= origin2 + half ? 2 : 0);
+
+        quadrants[index].push_back(std::move(cell));
+    }
+
+    size_t used = 0;
+    size_t only = 0;
+
+    for (size_t i = 0; i < quadrants.size(); ++i)
+    {
+        if (!quadrants[i].empty())
+        {
+            ++used;
+            only = i;
+        }
+    }
+
+    const auto quadrantOrigin1 = [origin1, half](size_t index)
+    {
+        return origin1 + ((index & 1u) != 0 ? half : 0);
+    };
+
+    const auto quadrantOrigin2 = [origin2, half](size_t index)
+    {
+        return origin2 + ((index & 2u) != 0 ? half : 0);
+    };
+
+    if (used == 1)
+    {
+        return quadTreeNode(quadrants[only], quadrantOrigin1(only), quadrantOrigin2(only),
+                            half, level, info);
+    }
+
+    Object node;
+
+    node.type.type = "group";
+
+    Name name;
+
+    // Named for what it covers: the cell it starts at and how many cells
+    // across it is, so that a name says which cells are inside it.
+    name.name.assign("quad_" + std::to_string(origin1) + "_" + std::to_string(origin2) +
+                     "_" + std::to_string(extent));
+    node.names.push_back(name);
+
+    ++info.nodes;
+
+    for (size_t i = 0; i < quadrants.size(); ++i)
+    {
+        if (!quadrants[i].empty())
+        {
+            node.kids.push_back(quadTreeNode(quadrants[i], quadrantOrigin1(i), quadrantOrigin2(i),
+                                             half, level + 1, info));
+        }
+    }
+
+    return node;
+}
+
+void AC3D::gridPartition(double size, bool quad_tree)
 {
     if (size <= 0.0)
         return;
@@ -7259,21 +7410,32 @@ void AC3D::gridPartition(double size)
         const size_t axis1 = std::min((thin + 1) % 3, (thin + 2) % 3);
         const size_t axis2 = std::max((thin + 1) % 3, (thin + 2) % 3);
 
-        size_t cells = 0;
-        size_t surfaces = 0;
-        size_t oversized = 0;
-        double largest = 0.0;
+        GridInfo info;
+
+        info.size = size;
+        info.axis1 = axis1;
+        info.axis2 = axis2;
+        info.origin1 = min[axis1];
+        info.origin2 = min[axis2];
+        info.quad_tree = quad_tree;
 
         for (auto &object : m_objects)
-            gridPartition(object, size, axis1, axis2, min[axis1], min[axis2],
-                          cells, surfaces, oversized, largest);
+            gridPartition(object, info);
 
-        std::cout << "gridPartition: " << cells << " cells";
+        std::cout << "gridPartition: " << info.cells << " cells";
 
-        if (oversized != 0)
+        // No groups means there was nothing for the tree to order -- a single
+        // cell under each parent -- rather than a tree that came out empty.
+        if (quad_tree && info.nodes != 0)
         {
-            std::cout << ", " << oversized << " of " << surfaces
-                      << " surfaces wider than the cell (largest " << largest
+            std::cout << " in a quad tree of " << info.nodes << " group"
+                      << (info.nodes == 1 ? "" : "s") << " " << info.levels << " deep";
+        }
+
+        if (info.oversized != 0)
+        {
+            std::cout << ", " << info.oversized << " of " << info.surfaces
+                      << " surfaces wider than the cell (largest " << info.largest
                       << "): those cells cannot cull to the grid";
         }
 

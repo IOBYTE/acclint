@@ -143,6 +143,7 @@ void usage()
     std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
     std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
     std::cerr << "  --combineObjects[=percent]             Combine opaque sibling objects that share texture and surface state." << std::endl;
+    std::cerr << "  --quadTree                             Order the cells --grid makes as a quad tree." << std::endl;
     std::cerr << "                                         With --grid a merged object is kept within percent of the" << std::endl;
     std::cerr << "                                         cell size, 25 by default. Without --grid there is no limit." << std::endl;
     std::cerr << "                                         Enabled by --fixAll; give a percent to change the limit." << std::endl;
@@ -301,6 +302,7 @@ int main(int argc, char *argv[])
     bool combineTexture = false;
     bool combineObjects = false;
     bool combine_given = false;
+    bool quadTree = false;
     // A share of the grid cell size. Two objects that say the same thing can
     // still sit at opposite ends of a cell, and merging those gives one object
     // as wide as the cell for a camera at either end to draw in full.
@@ -334,6 +336,7 @@ int main(int argc, char *argv[])
         OPT_NO_TRIANGLE_STRIPS,
         OPT_COMBINE_TEXTURE,
         OPT_COMBINE_OBJECTS,
+        OPT_QUAD_TREE,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
         OPT_FIX_ALL,
@@ -358,6 +361,7 @@ int main(int argc, char *argv[])
         { "combineTexture",              no_argument,       nullptr, OPT_COMBINE_TEXTURE },
         { "combineObjects",              optional_argument, nullptr, OPT_COMBINE_OBJECTS },
         { "grid",                        required_argument, nullptr, OPT_GRID },
+        { "quadTree",                    no_argument,       nullptr, OPT_QUAD_TREE },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
         { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
         { "fixAll",                      no_argument,       nullptr, OPT_FIX_ALL },
@@ -478,6 +482,9 @@ int main(int argc, char *argv[])
             fix_overlapping_2_sided_surface = true;
             combineTexture = true;
             combineObjects = true;
+            break;
+        case OPT_QUAD_TREE:
+            quadTree = true;
             break;
         case OPT_GRID:
         {
@@ -1389,9 +1396,16 @@ int main(int argc, char *argv[])
         // After combineTexture rather than before: partitioning first would
         // be undone by it, since combining gathers everything sharing a
         // texture back into one object regardless of where it sits.
+        // An order for the cells only means something when there are cells.
+        if (quadTree && grid_size <= 0.0)
+        {
+            std::cerr << "--quadTree needs --grid" << std::endl;
+            return EXIT_FAILURE;
+        }
+
         if (grid_size > 0.0)
         {
-            ac3d.gridPartition(grid_size);
+            ac3d.gridPartition(grid_size, quadTree);
             ac3d.clean();
         }
 
