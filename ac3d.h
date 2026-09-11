@@ -101,6 +101,8 @@ private:                                               \
     CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
     CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
     CHECK(surfaceStripSize, m_surface_strip_size, false)
+    CHECK(surfaceWindingMixed, m_surface_winding_mixed, false)
+    CHECK(surfaceWindingOpposed, m_surface_winding_opposed, false)
     CHECK(surfaceZeroAreaUV, m_surface_zero_area_uv, false)
     CHECK(trailingText, m_trailing_text, true)
     CHECK(unsupportedVersion, m_unsupported_version, true)
@@ -1222,6 +1224,11 @@ private:
     void checkSurfaceStripDuplicateTriangles(std::istream &in, const Surface &surface, const std::vector<Triangle> &triangles);
     void checkSurfaceNoTexture(std::istream &in, const Object &object, const Surface &surface);
     void checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const Surface &surface, const std::vector<Triangle> &triangles);
+    void checkSurfaceWinding(std::istream &in, const Object &object, const Surface &surface, const std::vector<Triangle> &triangles);
+    // How a triangle's winding compares with the normals stored at its three
+    // vertices: 1 if they agree, -1 if they oppose, and 0 if the triangle
+    // cannot say -- which is not the same as agreeing.
+    static int triangleFacing(const Triangle &triangle);
     void checkSurface2SidedOpaque(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream &in, const Object &object);
@@ -1249,6 +1256,14 @@ private:
     static void addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix);
     static void fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2,
                                             std::set<Surface *> &surfaces);
+    // Whether a triangle strip's triangles agree with the normals stored for
+    // their vertices: Agree if all of them do, Opposed if all of them are
+    // reversed, Mixed if the strip disagrees with itself, and Unknown if
+    // nothing in it could be judged. Only Agree is acted on -- the other three
+    // say the stored normals do not vouch for the strip, not that anything
+    // about it is known to be wrong.
+    enum class StripFacing { Agree, Opposed, Mixed, Unknown };
+    static StripFacing stripFacing(const Object &object, const Surface &surface);
     bool hasOpaqueTexture(const Object &object);
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);

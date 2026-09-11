@@ -1,0 +1,7 @@
+test1.acc:21 warning: triangle strip with 1 possible hole (reversed triangle)
+SURF 0x14
+^
+test1.acc:33 note: ref
+1 1 0
+^
+1 warning

@@ -859,6 +859,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfaceStripDuplicateTriangles(in, surface, triangles);
         checkSurfaceNoTexture(in, object, surface);
         checkSurfaceZeroAreaUV(in, object, surface, triangles);
+        checkSurfaceWinding(in, object, surface, triangles);
         checkSurface2SidedOpaque(in, object, surface);
     }
     else
@@ -4638,6 +4639,105 @@ void AC3D::checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const 
     }
 }
 
+// Compares the way a surface is wound against the normals stored at its
+// vertices. .acc carries a normal per vertex, so the file states which way a
+// surface faces twice -- once in those normals and once in the order of the
+// refs -- and the two can end up disagreeing.
+//
+// This says nothing about which side of the surface is meant to be drawn.
+// That is a modelling decision the format does not record: a wall you are
+// meant to see the far side of through a window, a roof seen from inside a
+// building, and a wall modelled with no thickness all look the same from
+// here. What is reported is only that the file's two statements no longer
+// match each other, which is what editing a generated model by hand tends to
+// leave behind, and is worth a look rather than a fix.
+//
+// Mixed and opposed are separate warnings because they mean different things.
+// A consistently wound surface that faces the other way from its normals is
+// ordinary in a model with thin panels -- the back face of one inherits the
+// front's normals. A surface that agrees with its normals in places and
+// opposes them in others is the anomalous one.
+void AC3D::checkSurfaceWinding(std::istream &in, const Object &object, const Surface &surface,
+                               const std::vector<Triangle> &triangles)
+{
+    if (!m_surface_winding_mixed && !m_surface_winding_opposed)
+        return;
+
+    if (m_is_ac) // no per vertex normals to compare against
+        return;
+
+    // A strip arrives already split into triangles; a polygon is fanned here.
+    std::vector<Triangle> fan;
+
+    if (!surface.isTriangleStrip())
+    {
+        if (!surface.isPolygon() || surface.refs.size() < 3)
+            return;
+
+        for (size_t i = 1; i + 1 < surface.refs.size(); ++i)
+        {
+            if (surface.refs[0].index >= object.vertices.size() ||
+                surface.refs[i].index >= object.vertices.size() ||
+                surface.refs[i + 1].index >= object.vertices.size())
+                continue;
+
+            fan.emplace_back(object.vertices[surface.refs[0].index],
+                             object.vertices[surface.refs[i].index],
+                             object.vertices[surface.refs[i + 1].index],
+                             surface.refs[0], surface.refs[i], surface.refs[i + 1]);
+        }
+    }
+
+    const std::vector<Triangle> &list = surface.isTriangleStrip() ? triangles : fan;
+
+    size_t agree = 0;
+    std::vector<size_t> opposed;
+
+    for (size_t i = 0; i < list.size(); ++i)
+    {
+        const int facing = triangleFacing(list[i]);
+
+        if (facing > 0)
+            agree++;
+        else if (facing < 0)
+            opposed.push_back(i);
+    }
+
+    if (opposed.empty())
+        return;
+
+    const size_t judged = agree + opposed.size();
+
+    if (agree != 0)
+    {
+        if (!m_surface_winding_mixed)
+            return;
+
+        warningWithCount(m_surface_winding_mixed_count, surface.line_number)
+            << "surface winding agrees with the vertex normals in places and opposes them in others ("
+            << opposed.size() << " of " << judged << " triangles opposed)" << std::endl;
+        showLine(in, surface.line_pos);
+
+        for (const size_t i : opposed)
+        {
+            note(list[i].refs[2].line_number) << "ref" << std::endl;
+            showLine(in, list[i].refs[2].line_pos);
+        }
+    }
+    else
+    {
+        if (!m_surface_winding_opposed)
+            return;
+
+        // Every triangle opposes, so the surface line says it all; listing
+        // each ref would just print the surface back out.
+        warningWithCount(m_surface_winding_opposed_count, surface.line_number)
+            << "surface winding opposes the vertex normals (" << judged
+            << " triangle" << (judged != 1 ? "s" : "") << ")" << std::endl;
+        showLine(in, surface.line_pos);
+    }
+}
+
 void AC3D::checkSurface2SidedOpaque(std::istream &in, const Object &object, const Surface &surface)
 {
     if (!m_surface_2_sided_opaque)
@@ -5192,7 +5292,15 @@ void AC3D::checkSurfaceStripHole(std::istream &in, const Surface &surface, const
     for (size_t i = 0; i < triangles.size(); i++)
     {
         if (triangles[i].degenerate)
+        {
+            // A degenerate triangle is how two strips are concatenated into
+            // one surface: it carries no area, so it draws nothing, and the
+            // triangles either side of it belong to different pieces of the
+            // model. Skipping it while keeping the previous normal compared
+            // across that seam and reported the join as a hole.
+            hasOldNormal = false;
             continue;
+        }
 
         const Point3 &newNormal = triangles[i].normal;
 
@@ -7109,6 +7217,79 @@ void AC3D::fixSurface2SidedOpaque()
         fixSurface2SidedOpaque(object);
 }
 
+// A triangle strip is one surface carrying one sidedness flag, so it can only
+// be made single sided if every triangle in it faces the same way. .acc stores
+// an authored normal per vertex, which says which way that is: compare each
+// triangle's winding normal against the mean of its three vertex normals.
+//
+// Degenerate triangles are skipped -- they have no area, so no facing -- as
+// are triangles whose vertices carry no normal, or whose normals cancel out.
+//
+// So are triangles whose three vertices disagree with each other. A vertex is
+// shared by every face that uses it, so on anything thin -- a panel, a sign, a
+// box a few centimetres deep -- the two sides share vertices and the normals
+// stored there point opposite ways. Averaging those says nothing about which
+// way this face is meant to point, and taking it seriously reads a thin panel
+// as a strip that is wound backwards.
+int AC3D::triangleFacing(const Triangle &triangle)
+{
+    if (triangle.degenerate)
+        return 0;
+
+    Point3 normal{ 0.0, 0.0, 0.0 };
+
+    for (size_t i = 0; i < 3; ++i)
+    {
+        if (!triangle.vertices[i].has_normal)
+            return 0;
+
+        for (size_t j = i + 1; j < 3; ++j)
+        {
+            if (!triangle.vertices[j].has_normal ||
+                triangle.vertices[i].normal.dot(triangle.vertices[j].normal) <= 0.0)
+                return 0;
+        }
+
+        normal += triangle.vertices[i].normal;
+    }
+
+    if (normal.length() < Point3::SMALL_NUM)
+        return 0;
+
+    const double facing = triangle.normal.dot(normal);
+
+    return facing > 0.0 ? 1 : (facing < 0.0 ? -1 : 0);
+}
+
+AC3D::StripFacing AC3D::stripFacing(const Object &object, const Surface &surface)
+{
+    const std::vector<Triangle> triangles = getTriangleStrip(object, surface);
+
+    size_t agree = 0;
+    size_t opposed = 0;
+
+    for (const auto &triangle : triangles)
+    {
+        const int facing = triangleFacing(triangle);
+
+        if (facing > 0)
+            agree++;
+        else if (facing < 0)
+            opposed++;
+    }
+
+    if (agree != 0 && opposed != 0)
+        return StripFacing::Mixed;
+
+    if (agree != 0)
+        return StripFacing::Agree;
+
+    if (opposed != 0)
+        return StripFacing::Opposed;
+
+    return StripFacing::Unknown;
+}
+
 void AC3D::fixSurface2SidedOpaque(Object &object)
 {
     if (object.type.type == "poly")
@@ -7117,14 +7298,35 @@ void AC3D::fixSurface2SidedOpaque(Object &object)
         {
             for (auto &surface : object.surfaces)
             {
-                if ((surface.isPolygon() || surface.isTriangleStrip()) && surface.isDoubleSided())
+                if (!(surface.isPolygon() || surface.isTriangleStrip()) || !surface.isDoubleSided())
+                    continue;
+
+                if (surface.isTriangleStrip())
                 {
-                    //unsigned int flags = surface.flags;
-
-                    surface.setSingleSided();
-
-                    //std::cout << "changing " << object.getName() << " " << flags << " to " << surface.flags << std::endl;
+                    // A polygon is a single face and is consistent by
+                    // construction, but a strip can disagree with itself.
+                    // Clearing the flag on one of those turns a reversed
+                    // triangle -- which the second side hides -- into a hole,
+                    // so leave it 2 sided: hiding that is the one thing the
+                    // second side is still doing for it.
+                    //
+                    // Anything short of every triangle agreeing is left alone,
+                    // Opposed included. A strip that looks wound backwards is
+                    // not evidence that turning it over is what the author
+                    // wanted -- which side of a surface is meant to be drawn
+                    // is a modelling decision that the geometry does not
+                    // record, and a wall you see the far side of through a
+                    // window, a roof seen from inside, and a wall modelled
+                    // with no thickness all look like mistakes from here.
+                    if (stripFacing(object, surface) != StripFacing::Agree)
+                        continue;
                 }
+
+                //unsigned int flags = surface.flags;
+
+                surface.setSingleSided();
+
+                //std::cout << "changing " << object.getName() << " " << flags << " to " << surface.flags << std::endl;
             }
         }
     }
