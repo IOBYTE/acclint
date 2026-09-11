@@ -6917,10 +6917,134 @@ void AC3D::splitTriangleStripsForGrid(Object &object, double size, size_t axis1,
         object.surfaces = surfaces;
 }
 
+std::string AC3D::textureKey(const Object &object)
+{
+    std::string key;
+
+    for (const auto &texture : object.textures)
+    {
+        key += static_cast<const std::string &>(texture.name);
+        key += ';';
+        key += texture.type;
+        key += '|';
+    }
+
+    return key;
+}
+
+// combineTexture keeps transparent geometry in a group per texture instead of
+// merging it, because surfaces that are blended have to keep their own drawing
+// order. Partitioning would then happen inside each of those groups and divide
+// the same few regions of the model once per texture: on a real track eight
+// regions came back as a hundred and forty four groups, none of which could be
+// rejected without first descending through a texture group that spans the
+// whole model.
+//
+// So a level holding nothing but groups of one texture's geometry has that
+// geometry lifted out and partitioned here, and the groups are rebuilt inside
+// each cell. The cells end up above the textures, as they already are for
+// opaque geometry, and a region can be rejected in one test.
+//
+// It only fires where rebuilding gives back exactly what was there: every
+// group holds a single texture set, and no two groups hold the same one. That
+// is what combineTexture produces, and it is what makes regrouping by texture
+// inside a cell the inverse of taking the groups apart.
+bool AC3D::hoistTextureGroups(Object &parent, std::vector<std::pair<std::string, Object>> &groups)
+{
+    if (parent.kids.size() < 2)
+        return false;
+
+    for (const auto &kid : parent.kids)
+    {
+        if (kid.type.type != "group" || !kid.surfaces.empty() || kid.kids.empty())
+            return false;
+
+        for (const auto &grandkid : kid.kids)
+        {
+            if (grandkid.type.type != "poly" || grandkid.surfaces.empty() || !grandkid.kids.empty())
+                return false;
+        }
+    }
+
+    std::set<std::string> seen;
+
+    for (const auto &kid : parent.kids)
+    {
+        const std::string key = textureKey(kid.kids.front());
+
+        for (const auto &grandkid : kid.kids)
+        {
+            if (textureKey(grandkid) != key)
+                return false;
+        }
+
+        if (!seen.insert(key).second)
+            return false;
+    }
+
+    for (auto &kid : parent.kids)
+    {
+        Object group = kid;
+
+        group.kids.clear();
+        groups.emplace_back(textureKey(kid.kids.front()), std::move(group));
+    }
+
+    std::vector<Object> geometry;
+
+    for (auto &kid : parent.kids)
+    {
+        for (auto &grandkid : kid.kids)
+            geometry.push_back(std::move(grandkid));
+    }
+
+    parent.kids = std::move(geometry);
+
+    return true;
+}
+
+// Puts the groups back, inside one cell, in the order they were in before.
+void AC3D::regroupByTexture(Object &cell, const std::vector<std::pair<std::string, Object>> &groups)
+{
+    std::map<std::string, std::vector<Object>> buckets;
+
+    for (auto &kid : cell.kids)
+        buckets[textureKey(kid)].push_back(std::move(kid));
+
+    cell.kids.clear();
+
+    for (const auto &group : groups)
+    {
+        const auto found = buckets.find(group.first);
+
+        if (found == buckets.end())
+            continue;
+
+        Object rebuilt = group.second;
+
+        for (auto &kid : found->second)
+            rebuilt.kids.push_back(std::move(kid));
+
+        cell.kids.push_back(std::move(rebuilt));
+        buckets.erase(found);
+    }
+
+    // Anything whose texture was not among the groups keeps its place rather
+    // than being dropped: this is a regrouping, not a filter.
+    for (auto &bucket : buckets)
+    {
+        for (auto &kid : bucket.second)
+            cell.kids.push_back(std::move(kid));
+    }
+}
+
 void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2,
                          double origin1, double origin2,
                          size_t &cells, size_t &surfaces, size_t &oversized, double &largest)
 {
+    std::vector<std::pair<std::string, Object>> texture_groups;
+    const bool hoisted = hoistTextureGroups(parent, texture_groups);
+
     for (auto &kid : parent.kids)
         gridPartition(kid, size, axis1, axis2, origin1, origin2, cells, surfaces, oversized, largest);
 
@@ -7088,7 +7212,12 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
         parent.kids.push_back(std::move(kid));
 
     for (auto &cell : cell_objects)
+    {
+        if (hoisted)
+            regroupByTexture(cell.second, texture_groups);
+
         parent.kids.push_back(std::move(cell.second));
+    }
 }
 
 void AC3D::gridPartition(double size)
@@ -7573,12 +7702,12 @@ std::string AC3D::Object::combineKey() const
 // combineTexture by texture, gridPartition by cell -- still decides what can
 // be rejected before drawing. Only the number of objects inside each group
 // goes down, and with it the number of draw calls.
-bool AC3D::Object::combineObjects(double size, size_t axis1, size_t axis2)
+bool AC3D::Object::combineObjects(AC3D &ac3d, double size, size_t axis1, size_t axis2)
 {
     bool changed = false;
 
     for (auto &kid : kids)
-        changed |= kid.combineObjects(size, axis1, axis2);
+        changed |= kid.combineObjects(ac3d, size, axis1, axis2);
 
     if (kids.size() < 2)
         return changed;
@@ -7603,8 +7732,10 @@ bool AC3D::Object::combineObjects(double size, size_t axis1, size_t axis2)
 
         // A group is left where it is: merging one would flatten the tree and
         // take its children's grouping with it. An object with nothing in it,
-        // or with nowhere to be, has nothing to contribute either.
-        if (kid.type.type != "poly" || kid.surfaces.empty() || !kid.kids.empty())
+        // or with nowhere to be, has nothing to contribute either. Transparent
+        // geometry is left alone as well: see isTransparent.
+        if (kid.type.type != "poly" || kid.surfaces.empty() || !kid.kids.empty() ||
+            ac3d.isTransparent(kid))
             any = false;
         else
             accumulateBounds(kid, min, max, any);
@@ -7706,7 +7837,7 @@ bool AC3D::combineObjects(double size)
     bool changed = false;
 
     for (auto &object : m_objects)
-        changed |= object.combineObjects(size, axis1, axis2);
+        changed |= object.combineObjects(*this, size, axis1, axis2);
 
     return changed;
 }
@@ -8069,6 +8200,30 @@ bool AC3D::hasOpaqueTexture(const Object &object)
     m_transparent_textures[object.textures[0].path] = transparent;
 
     return !transparent;
+}
+
+// Transparent geometry is drawn after everything else and in order, back to
+// front, so that what is behind shows through what is in front. An object is
+// one thing to that order: merging two of them gives the pair a single place
+// in it, and whatever used to be drawn between them is now drawn either
+// before both or after both. So transparency is a reason not to merge, from
+// the texture as combineTexture reads it or from a material that is not
+// opaque.
+bool AC3D::isTransparent(const Object &object)
+{
+    if (hasTransparentTexture(object))
+        return true;
+
+    for (const auto &surface : object.surfaces)
+    {
+        for (const auto &mat : surface.mats)
+        {
+            if (mat.mat < m_materials.size() && m_materials[mat.mat].trans > 0.0)
+                return true;
+        }
+    }
+
+    return false;
 }
 
 bool AC3D::hasTransparentTexture(const Object &object)

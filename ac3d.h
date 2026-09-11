@@ -1090,7 +1090,7 @@ private:
         bool addObject(const Object &object);
         bool sameTextures(const Object &object) const;
         std::string combineKey() const;
-        bool combineObjects(double size, size_t axis1, size_t axis2);
+        bool combineObjects(AC3D &ac3d, double size, size_t axis1, size_t axis2);
     };
 
     class NullBuffer : public std::streambuf
@@ -1206,6 +1206,9 @@ private:
     void checkOverlapping2SidedSurface(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, const Poly &object2);
     static void accumulateBounds(const Object &object, Point3 &min, Point3 &max, bool &any);
+    static std::string textureKey(const Object &object);
+    static bool hoistTextureGroups(Object &parent, std::vector<std::pair<std::string, Object>> &groups);
+    static void regroupByTexture(Object &cell, const std::vector<std::pair<std::string, Object>> &groups);
     static void splitTriangleStripsForGrid(Object &object, double size, size_t axis1, size_t axis2,
                                            double origin1, double origin2);
     static void gridPartition(Object &parent, double size, size_t axis1, size_t axis2,
@@ -1281,6 +1284,7 @@ private:
     enum class StripFacing { Agree, Opposed, Mixed, Unknown };
     static StripFacing stripFacing(const Object &object, const Surface &surface);
     bool hasOpaqueTexture(const Object &object);
+    bool isTransparent(const Object &object);
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
     static void getObjects(std::vector<Object *> &polys, Object *object);

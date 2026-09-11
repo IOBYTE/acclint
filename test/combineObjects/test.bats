@@ -186,3 +186,48 @@ setup_file() {
 }
 
 ################################################################################
+# Transparent geometry is drawn after everything else and in order, back to
+# front, so that what is behind shows through what is in front. An object is
+# one thing to that order, so merging two of them gives the pair a single
+# place in it and whatever used to be drawn between them is now drawn either
+# before both or after both. So a transparent object is never merged, however
+# well it matches the one beside it.
+#
+# Transparency is read the same way combineTexture reads it -- alpha in the
+# texture -- and from the material as well, since a material that is not
+# opaque makes the surface blend whatever its texture says.
+#
+#   test7  a texture with an alpha channel
+#   test8  an opaque texture with a material that is not opaque
+#
+# Both are compared against the same file written WITHOUT the option, which is
+# the statement being made: the option changed nothing.
+################################################################################
+
+@test "test7.1" {
+  $RUN_TEST acclint test7.ac --combineObjects -o test7.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test7.output.ac)"
+  expected_file="$(tr -d '\r' < test7.result.ac)"
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.output.ac
+}
+
+@test "test8.1" {
+  $RUN_TEST acclint test8.ac --combineObjects -o test8.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test8.output.ac)"
+  expected_file="$(tr -d '\r' < test8.result.ac)"
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.output.ac
+}
+
+################################################################################

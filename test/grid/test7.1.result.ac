@@ -1,0 +1,82 @@
+AC3Db
+MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+OBJECT world
+kids 2
+OBJECT group
+name "cell_0_0"
+kids 2
+OBJECT group
+name "texA"
+kids 1
+OBJECT poly
+name "texA_0"
+texture "test.png"
+numvert 3
+0 0 0
+2 0 0
+0 0 2
+numsurf 1
+SURF 0x10
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 0 1
+kids 0
+OBJECT group
+name "texB"
+kids 1
+OBJECT poly
+name "texB_0"
+texture "alpha.png"
+numvert 3
+5 0 0
+7 0 0
+5 0 2
+numsurf 1
+SURF 0x10
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 0 1
+kids 0
+OBJECT group
+name "cell_1_0"
+kids 2
+OBJECT group
+name "texA"
+kids 1
+OBJECT poly
+name "texA_1"
+texture "test.png"
+numvert 3
+90 0 0
+92 0 0
+90 0 2
+numsurf 1
+SURF 0x10
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 0 1
+kids 0
+OBJECT group
+name "texB"
+kids 1
+OBJECT poly
+name "texB_1"
+texture "alpha.png"
+numvert 3
+95 0 0
+97 0 0
+95 0 2
+numsurf 1
+SURF 0x10
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 0 1
+kids 0

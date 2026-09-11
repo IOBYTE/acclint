@@ -142,7 +142,7 @@ void usage()
     std::cerr << "  --merge filename                       Merge filename with inputfile." << std::endl;
     std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
     std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
-    std::cerr << "  --combineObjects[=percent]             Combine sibling objects that share texture and surface state." << std::endl;
+    std::cerr << "  --combineObjects[=percent]             Combine opaque sibling objects that share texture and surface state." << std::endl;
     std::cerr << "                                         With --grid a merged object is kept within percent of the" << std::endl;
     std::cerr << "                                         cell size, 25 by default. Without --grid there is no limit." << std::endl;
     std::cerr << "                                         Enabled by --fixAll; give a percent to change the limit." << std::endl;

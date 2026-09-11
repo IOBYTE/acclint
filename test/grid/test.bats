@@ -179,3 +179,37 @@ setup_file() {
 }
 
 ################################################################################
+
+################################################################################
+# A level holding nothing but groups of one texture's geometry -- which is what
+# combineTexture leaves behind for transparent geometry, since those surfaces
+# are blended and cannot be merged without losing their drawing order -- is
+# partitioned here rather than inside each group.
+#
+# Otherwise the same few regions of the model are divided once per texture: on
+# a real track eight regions came back as a hundred and forty four groups, and
+# none of them could be rejected without first descending through a texture
+# group spanning the whole model. Lifting the geometry out puts the cells above
+# the textures, where they already are for opaque geometry.
+#
+#   before   world / texture / cell / poly
+#   after    world / cell / texture / poly
+#
+# The groups are rebuilt inside each cell, which is why this only fires where
+# rebuilding gives back what was there: one texture set per group, and no two
+# groups sharing one.
+################################################################################
+
+@test "test7.1" {
+  $RUN_TEST acclint -Wno-warnings test7.ac --grid 50 -o test7.output.ac
+  [ "$status" -eq 0 ]
+  actual_file="$(tr -d '\r' < test7.output.ac)"
+  expected_file="$(tr -d '\r' < test7.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test7.output.ac test7.1.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.output.ac
+}
+
+################################################################################
