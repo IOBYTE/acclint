@@ -1,0 +1,7 @@
+test2.acc:14 warning: surface winding agrees with the vertex normals in places and opposes them in others (1 of 2 triangles opposed)
+SURF 0x14
+^
+test2.acc:20 note: ref
+3 1 1
+^
+1 warning

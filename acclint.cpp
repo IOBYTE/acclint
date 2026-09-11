@@ -93,6 +93,8 @@ void usage()
     std::cerr << "  -Wno-surface-self-intersecting         Don't show surface self intersecting warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-degenerate          Don't show surface triangle strip degenerate warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
+    std::cerr << "  -Wno-surface-winding-mixed             Don't show surface winding partly opposing its vertex normals warnings." << std::endl;
+    std::cerr << "  -Wno-surface-winding-opposed           Don't show surface winding opposing its vertex normals warnings." << std::endl;
     std::cerr << "  -Wno-surface-zero-area-uv              Don't show surface triangle zero area uv mapping warnings." << std::endl;
     std::cerr << "  -Wno-trailing-text                     Don't show trailing text warnings." << std::endl;
     std::cerr << "  -Wno-unsupported-version               Don't show unsupported version warnings." << std::endl;
@@ -149,8 +151,8 @@ void usage()
     std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
     std::cerr << "  -l                                     Print the name of the input file." << std::endl;
     std::cerr << std::endl;
-    std::cerr << "By default all warnings (except blank-line, duplicate-triangles, surface-2-sided-opaque and surface-strip-*) " << std::endl;
-    std::cerr << "and errors are enabled." << std::endl;
+    std::cerr << "By default all warnings (except blank-line, duplicate-triangles, surface-2-sided-opaque, surface-strip-* " << std::endl;
+    std::cerr << "and surface-winding-*) and errors are enabled." << std::endl;
     std::cerr << "You can enable all warnings using -Wwarnings" << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
     std::cerr << "You can also disable all warnings or errors and then reenable specific ones" << std::endl;
@@ -248,6 +250,8 @@ int main(int argc, char *argv[])
     bool surface_self_intersecting = true;
     bool surface_strip_degenerate = false;
     bool surface_strip_size = false;
+    bool surface_winding_mixed = false;
+    bool surface_winding_opposed = false;
     bool surface_zero_area_uv = false;
     bool trailing_text = true;
     bool unsupported_version = true;
@@ -572,6 +576,8 @@ int main(int argc, char *argv[])
                 surface_strip_degenerate = value;
                 surface_strip_duplicate_triangles = value;
                 surface_strip_size = value;
+                surface_winding_mixed = value;
+                surface_winding_opposed = value;
                 surface_zero_area_uv = value;
                 trailing_text = value;
                 unsupported_version = value;
@@ -792,6 +798,14 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-surface-strip-size" || arg == "-Wsurface-strip-size")
             {
                 surface_strip_size = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-winding-mixed" || arg == "-Wsurface-winding-mixed")
+            {
+                surface_winding_mixed = isEnabled(arg);
+            }
+            else if (arg == "-Wno-surface-winding-opposed" || arg == "-Wsurface-winding-opposed")
+            {
+                surface_winding_opposed = isEnabled(arg);
             }
             else if (arg == "-Wno-surface-zero-area-uv" || arg == "-Wsurface-zero-area-uv")
             {
@@ -1069,6 +1083,8 @@ int main(int argc, char *argv[])
     ac3d.surfaceSelfIntersecting(surface_self_intersecting);
     ac3d.surfaceStripDegenerate(surface_strip_degenerate);
     ac3d.surfaceStripSize(surface_strip_size);
+    ac3d.surfaceWindingMixed(surface_winding_mixed);
+    ac3d.surfaceWindingOpposed(surface_winding_opposed);
     ac3d.surfaceZeroAreaUV(surface_zero_area_uv);
     ac3d.trailingText(trailing_text);
     ac3d.unsupportedVersion(unsupported_version);
@@ -1189,6 +1205,8 @@ int main(int argc, char *argv[])
             showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
             showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
             showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
+            showCount(ac3d.surfaceWindingMixedCount(), "surface winding mixed: ");
+            showCount(ac3d.surfaceWindingOpposedCount(), "surface winding opposed: ");
             showCount(ac3d.surfaceZeroAreaUVCount(), "surface zero area uv: ");
             showCount(ac3d.trailingTextCount(), "trailing text: ");
             showCount(ac3d.unsupportedVersionCount(), "unsupported version: ");

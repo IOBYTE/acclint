@@ -1,0 +1,4 @@
+test3.acc:14 warning: surface winding opposes the vertex normals (2 triangles)
+SURF 0x10
+^
+1 warning
