@@ -6829,6 +6829,94 @@ void AC3D::accumulateBounds(const Object &object, Point3 &min, Point3 &max, bool
 // bounds, which costs nothing because culling uses the real bounds. Vertices
 // used from either side of a boundary end up in both cells, which is the one
 // real cost: about 19% more vertices at 125m on that track.
+// A surface is placed whole, in the cell holding its centre, so one that runs
+// across the grid drags that cell's bounds out with it and the cell stops being
+// able to reject anything.
+//
+// A triangle strip is the one kind of surface that can be divided without
+// changing what is drawn: take it apart into its triangles, group those by the
+// cell each one's centre falls in, and build strips again per group. The
+// triangles are the same triangles, so the geometry is untouched -- only how
+// many SURF lines it is spread over.
+//
+// A strip whose triangles all land in one cell is left exactly as it is, so a
+// model that already sits inside the grid is not rewritten for nothing. A
+// single triangle is written as a polygon rather than a strip of one, which
+// would be no smaller and would earn a surface-strip-size warning.
+void AC3D::splitTriangleStripsForGrid(Object &object, double size, size_t axis1, size_t axis2,
+                                      double origin1, double origin2)
+{
+    const auto cellOf = [size, origin1, origin2](double a, double b)
+    {
+        return std::make_pair(static_cast<long long>(std::floor((a - origin1) / size)),
+                              static_cast<long long>(std::floor((b - origin2) / size)));
+    };
+
+    std::vector<Surface> surfaces;
+    bool changed = false;
+
+    surfaces.reserve(object.surfaces.size());
+
+    for (const auto &surface : object.surfaces)
+    {
+        if (!surface.isTriangleStrip())
+        {
+            surfaces.push_back(surface);
+            continue;
+        }
+
+        std::map<std::pair<long long, long long>, std::vector<Triangle>> buckets;
+
+        for (const auto &triangle : getTriangleStrip(object, surface))
+        {
+            if (triangle.degenerate)
+                continue;
+
+            double a = 0.0;
+            double b = 0.0;
+
+            for (const auto &vertex : triangle.vertices)
+            {
+                a += vertex.vertex[axis1];
+                b += vertex.vertex[axis2];
+            }
+
+            buckets[cellOf(a / 3.0, b / 3.0)].push_back(triangle);
+        }
+
+        if (buckets.size() < 2)
+        {
+            surfaces.push_back(surface);
+            continue;
+        }
+
+        for (const auto &bucket : buckets)
+        {
+            for (const auto &strip : makeTriangleStrips(bucket.second))
+            {
+                Surface piece = surface;
+
+                piece.refs.clear();
+                piece.transformedTriangles.clear();
+                piece.flags = strip.size() > 3
+                                  ? surface.flags
+                                  : ((surface.flags & ~Surface::TypeMask) | Surface::Polygon);
+
+                for (const auto &ref : strip)
+                    piece.refs.push_back(ref);
+
+                piece.refs.declared_size = static_cast<int>(piece.refs.size());
+                surfaces.push_back(piece);
+            }
+        }
+
+        changed = true;
+    }
+
+    if (changed)
+        object.surfaces = surfaces;
+}
+
 void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2,
                          double origin1, double origin2,
                          size_t &cells, size_t &surfaces, size_t &oversized, double &largest)
@@ -6874,6 +6962,10 @@ void AC3D::gridPartition(Object &parent, double size, size_t axis1, size_t axis2
             unpartitioned.push_back(std::move(kid));
             continue;
         }
+
+        // Divide any strip that runs across a cell boundary first, so the
+        // pieces can be placed in the cells they actually occupy.
+        splitTriangleStripsForGrid(kid, size, axis1, axis2, origin1, origin2);
 
         std::map<std::pair<long long, long long>, std::vector<size_t>> buckets;
 

@@ -116,3 +116,66 @@ setup_file() {
   [ "$actual" = "$expected" ]
   rm test5.output.ac
 }
+
+################################################################################
+# A surface is placed whole, in the cell holding its centre, so one that runs
+# across the grid drags that cell's bounds out with it and the cell stops being
+# able to reject anything. A triangle strip is the one kind of surface that can
+# be divided without changing what is drawn, so it is: taken apart into its
+# triangles, which are grouped by the cell each one's centre falls in and built
+# back into a strip per group.
+#
+# A triangle straddling a boundary still has to go to one side of it, so a
+# piece can overhang its cell by up to the width of one triangle. That is why
+# the fixture's triangles are two units against a cell of ten -- the proportion
+# a real model has, where triangles are metres and cells are hundreds of them.
+################################################################################
+
+# test5.1: one strip of twenty four triangles laid across twenty four units,
+# so it spans three cells of ten. It comes back as three strips, one per cell,
+# of twelve, twelve and six refs -- the same twenty four triangles, and four
+# refs more in total, since each cut repeats the edge it was made on.
+@test "test5.1" {
+  $RUN_TEST acclint -Wno-warnings test5.acc --grid 10 -o test5.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.1.output
+  fi
+  actual_file="$(tr -d '\r' < test5.output.acc)"
+  expected_file="$(tr -d '\r' < test5.1.result.acc)"
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.output.acc
+}
+
+# test5.2: and the point of doing it -- a strip wider than a cell is what the
+# oversized warning was reporting, so once it is divided there is nothing left
+# to report and the message is the plain cell count.
+@test "test5.2" {
+  $RUN_TEST acclint -Wno-warnings test5.acc --grid 10 -o test5.2.output.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.2.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test5.2.output.acc
+}
+
+# test6.1: the same strip scaled to sit inside a single cell. There is nothing
+# to divide, so the surface is left exactly as it was -- one strip of twenty
+# six refs -- rather than being taken apart and rebuilt for nothing. Only the
+# grouping the grid does anyway is applied.
+@test "test6.1" {
+  $RUN_TEST acclint -Wno-warnings test6.acc --grid 10 -o test6.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.1.output
+  fi
+  actual_file="$(tr -d '\r' < test6.output.acc)"
+  expected_file="$(tr -d '\r' < test6.1.result.acc)"
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.output.acc
+}
+
+################################################################################

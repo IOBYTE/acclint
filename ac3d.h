@@ -1203,6 +1203,8 @@ private:
     void checkOverlapping2SidedSurface(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, const Poly &object2);
     static void accumulateBounds(const Object &object, Point3 &min, Point3 &max, bool &any);
+    static void splitTriangleStripsForGrid(Object &object, double size, size_t axis1, size_t axis2,
+                                           double origin1, double origin2);
     static void gridPartition(Object &parent, double size, size_t axis1, size_t axis2,
                               double origin1, double origin2,
                               size_t &cells, size_t &surfaces, size_t &oversized, double &largest);
