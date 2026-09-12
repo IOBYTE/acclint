@@ -123,3 +123,31 @@ setup_file() {
 }
 
 ################################################################################
+
+@test "test7.1" {
+  $RUN_TEST acclint test7.ac -o test7.1.output.acc --noTriangleStrips
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test7.1.output.acc)"
+  expected_file="$(tr -d '\r' < test7.1.result.acc)"
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.1.output.acc
+}
+
+@test "test7.2" {
+  $RUN_TEST acclint test7.ac -o test7.2.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test7.2.output.acc)"
+  expected_file="$(tr -d '\r' < test7.2.result.acc)"
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.2.output.acc
+}
+
+################################################################################
