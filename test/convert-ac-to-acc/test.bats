@@ -154,24 +154,44 @@ setup_file() {
 # test8: a fan -- eight triangles round one vertex. A strip crosses from
 # triangle to triangle over the edge it just arrived at, and a fan turns the
 # same way at every step, so a strip that may only alternate has to stop every
-# second triangle. This came out as three surfaces.
+# second triangle: three surfaces for eight triangles.
 #
-# Repeating a couple of refs makes triangles with no area between them, which
-# draw nothing, and lets the strip turn the same way twice. The whole fan is
-# one surface, for two refs more than the three surfaces held between them.
+# --stripSwaps repeats a couple of refs to turn the same way twice. The
+# repeated refs make triangles with no area between them, which draw nothing,
+# and the whole fan becomes one surface for two refs more than the three
+# surfaces held between them.
+#
+# It is not what the writer does by default. Every model already in the wild
+# is written without a repeated ref, and a reader that has never been given
+# one is not worth surprising, so the strips stay alternating unless asked.
 ################################################################################
 
-@test "test8" {
-  $RUN_TEST acclint test8.ac -o test8.output.acc
+@test "test8.1" {
+  $RUN_TEST acclint test8.ac --stripSwaps -o test8.1.output.acc
   [ "$status" -eq 0 ]
   if [ "$output" != "" ]; then
-    echo "$output" > test8.output
+    echo "$output" > test8.1.output
   fi
   [ "$output" = "" ]
-  actual_file="$(tr -d '\r' < test8.output.acc)"
+  actual_file="$(tr -d '\r' < test8.1.output.acc)"
   expected_file="$(tr -d '\r' < test8.result.acc)"
   [ "$actual_file" = "$expected_file" ]
-  rm test8.output.acc
+  rm test8.1.output.acc
+}
+
+# test8.2: the same fan without the option -- three surfaces, and not a ref
+# repeated anywhere.
+@test "test8.2" {
+  $RUN_TEST acclint test8.ac -o test8.2.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test8.2.output.acc)"
+  expected_file="$(tr -d '\r' < test8.plain.result.acc)"
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.2.output.acc
 }
 
 ################################################################################

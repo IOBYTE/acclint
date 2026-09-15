@@ -148,6 +148,7 @@ void usage()
     std::cerr << "                                         Enabled by --fixAll; give a percent to change the limit." << std::endl;
     std::cerr << "  --quadTree                             Order the cells --grid makes as a quad tree." << std::endl;
     std::cerr << "  --stitchStrips                         Join neighbouring triangle strips into one surface." << std::endl;
+    std::cerr << "  --stripSwaps                           Let a triangle strip turn the same way twice by repeating refs." << std::endl;
     std::cerr << "  --grid size                            Partition objects into square cells of size in meters for culling." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
@@ -305,6 +306,7 @@ int main(int argc, char *argv[])
     bool combine_given = false;
     bool quadTree = false;
     bool stitchStrips = false;
+    bool stripSwaps = false;
     // A share of the grid cell size. Two objects that say the same thing can
     // still sit at opposite ends of a cell, and merging those gives one object
     // as wide as the cell for a camera at either end to draw in full.
@@ -340,6 +342,7 @@ int main(int argc, char *argv[])
         OPT_COMBINE_OBJECTS,
         OPT_QUAD_TREE,
         OPT_STITCH_STRIPS,
+        OPT_STRIP_SWAPS,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
         OPT_FIX_ALL,
@@ -366,6 +369,7 @@ int main(int argc, char *argv[])
         { "grid",                        required_argument, nullptr, OPT_GRID },
         { "quadTree",                    no_argument,       nullptr, OPT_QUAD_TREE },
         { "stitchStrips",                no_argument,       nullptr, OPT_STITCH_STRIPS },
+        { "stripSwaps",                  no_argument,       nullptr, OPT_STRIP_SWAPS },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
         { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
         { "fixAll",                      no_argument,       nullptr, OPT_FIX_ALL },
@@ -492,6 +496,9 @@ int main(int argc, char *argv[])
             break;
         case OPT_STITCH_STRIPS:
             stitchStrips = true;
+            break;
+        case OPT_STRIP_SWAPS:
+            stripSwaps = true;
             break;
         case OPT_GRID:
         {
@@ -1362,6 +1369,10 @@ int main(int argc, char *argv[])
 
         for (const auto &remove : removes)
             ac3d.removeObjects(remove);
+
+        // Set before anything that makes a strip: the grid splits them, and
+        // writing a .acc from an .ac makes them from nothing.
+        ac3d.stripSwaps(stripSwaps);
 
         if (flatten)
             ac3d.flatten();

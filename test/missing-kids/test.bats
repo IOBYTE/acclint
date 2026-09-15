@@ -11,7 +11,7 @@ setup() {
 # Delete any *.output debug files left over from a previous run before
 # running any tests in this file.
 setup_file() {
-    rm -f ./*.output
+    rm -f ./*.output ./*.output.ac
 }
 
 ################################################################################
@@ -155,6 +155,110 @@ setup_file() {
     echo "$output" > test4.3.output
   fi
   [ "$actual" = "$expected" ]
+}
+
+################################################################################
+# test5: a group that says it holds two objects when only one follows it. The
+# one it takes instead belongs to the world, so what is read is "second" and
+# its poly sitting inside "first", and the world left holding one object
+# where it asked for two. Nothing is lost -- every object is still there --
+# but the tree is not the one the file describes, and everything after the
+# read works on the tree.
+#
+# The counts say where the mistake is: whatever is still waiting when the
+# objects run out lies on the path to the last one read, and the surplus has
+# to come off one of those. It comes off the innermost that can carry it and
+# that has something above it still waiting, which is "first", and the same
+# objects are then put back together in the same order.
+#
+# test5.3 is the one that matters: the tree that is written out.
+################################################################################
+
+@test "test5.1" {
+  $RUN_TEST acclint test5.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test5.2" {
+  $RUN_TEST acclint -Wno-warnings test5.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.2.output
+  fi
+  [ "$output" = "" ]
+}
+
+@test "test5.3" {
+  $RUN_TEST acclint -Wno-warnings test5.ac -o test5.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.output.ac)"
+  expected_file="$(tr -d '\r' < test5.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.output.ac test5.3.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.output.ac
+}
+
+################################################################################
+# test6: "first" says two and one object follows it, "second" says two and one
+# object follows it, and the world says three and gets one. Three objects are
+# asked for that the file does not hold, and no single count can account for
+# all three -- either of the groups could have taken what belongs to the other,
+# and a count that is too large by a little reads exactly like one that is
+# right.
+#
+# So the objects stay where the read put them, and that is said out loud: this
+# is not the tree the file describes, and which group took what cannot be
+# worked out from the file. It is an error rather than a warning -- not
+# something -Wno-warnings puts aside (test6.2) -- because writing it out would
+# put this tree in a file of its own with the counts corrected to match it,
+# making the mistake permanent and leaving nothing behind to say it happened.
+# Nothing is written (test6.3).
+#
+# A file that merely stops short is a different thing and is left alone:
+# test1, test2 and test3 are those, and they still only warn.
+################################################################################
+
+@test "test6.1" {
+  $RUN_TEST acclint test6.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test6.2" {
+  $RUN_TEST acclint -Wno-warnings test6.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test6.3" {
+  $RUN_TEST acclint -Wno-warnings test6.ac -o test6.output.ac
+  [ "$status" -ne 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.3.output
+  fi
+  [ "$actual" = "$expected" ]
+  [ ! -f test6.output.ac ]
 }
 
 ################################################################################

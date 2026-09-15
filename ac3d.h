@@ -166,6 +166,8 @@ public:
     bool triangleStrips() const { return m_triangle_strips; }
     void stitchStrips(bool value) { m_stitch_strips = value; }
     bool stitchStrips() const { return m_stitch_strips; }
+    void stripSwaps(bool value) { m_strip_swaps = value; }
+    bool stripSwaps() const { return m_strip_swaps; }
     void dump(DumpType dump_type) const;
     size_t warnings() const
     {
@@ -974,6 +976,14 @@ private:
         Numvsurf numsurf;
         std::vector<Surface> surfaces;
         std::vector<Object> kids;
+        // What the kids line said, and where it was. Kept because a count
+        // that the file cannot honour has to be found again after the read,
+        // when the whole tree is there to be measured against it.
+        int declared_kids = 0;
+        LineInfo kids_info;
+        // Where the number sits on that line, so that what is said about the
+        // count can point at the count.
+        int kids_offset = 0;
         Matrix matrix;
 
         bool empty() const
@@ -1089,7 +1099,7 @@ private:
         void transform(const Matrix &currentMatrix);
         void removeKids(const RemoveInfo &remove_info);
         bool splitPolygons();
-        bool rebuildStrips();
+        bool rebuildStrips(bool swaps);
         bool stitchTriangleStrips();
         bool addObject(const Object &object);
         bool sameTextures(const Object &object) const;
@@ -1127,6 +1137,7 @@ private:
     // same geometry as plain triangles.
     bool            m_triangle_strips = true;
     bool            m_stitch_strips = false;
+    bool            m_strip_swaps = false;
     bool            m_crlf = false;
     bool            m_not_ac3d_file = true;
     bool            m_quiet = false;
@@ -1215,7 +1226,7 @@ private:
     static bool hoistTextureGroups(Object &parent, std::vector<std::pair<std::string, Object>> &groups);
     static void regroupByTexture(Object &cell, const std::vector<std::pair<std::string, Object>> &groups);
     static void splitTriangleStripsForGrid(Object &object, double size, size_t axis1, size_t axis2,
-                                           double origin1, double origin2);
+                                           double origin1, double origin2, bool swaps);
     // What the partition is being asked for, and what it found while doing
     // it. One thing to pass down the object tree rather than ten, and the
     // counts come back in it for the summary.
@@ -1227,6 +1238,7 @@ private:
         double origin1 = 0.0;
         double origin2 = 0.0;
         bool quad_tree = false;
+        bool swaps = false;
         size_t cells = 0;
         size_t surfaces = 0;
         size_t oversized = 0;
@@ -1254,7 +1266,8 @@ private:
     // nothing stated and nothing checked.
     static std::vector<Triangle> getTriangleStrip(const Object &object, const Surface &surface);
     static std::vector<std::vector<Triangle>> getTriangleStrips(const Object &object);
-    static std::vector<std::vector<Ref>> makeTriangleStrips(const std::vector<Triangle> &triangles);
+    static std::vector<std::vector<Ref>> makeTriangleStrips(const std::vector<Triangle> &triangles,
+                                                            bool swaps);
     void checkDuplicateTriangles(std::istream &in, const Object &object);
     void checkMissingSurfaces(std::istream &in, const Object &object);
     void checkDuplicateSurfaces(std::istream &in, const Object &object);
@@ -1289,8 +1302,11 @@ private:
     static bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);
     static void convertObjectsToAc(std::vector<Object> &objects);
     static void convertObjectToAc(Object &object);
-    static void convertObjectsToAcc(std::vector<Object> &objects, bool strips);
-    static void convertObjectToAcc(Object &object, bool strips);
+    bool repairKids(Object &root, std::istream &in);
+    static void flattenObjects(Object &object, std::vector<Object> &flat);
+    static Object buildObjects(std::vector<Object> &flat, size_t &index);
+    static void convertObjectsToAcc(std::vector<Object> &objects, bool strips, bool swaps);
+    static void convertObjectToAcc(Object &object, bool strips, bool swaps);
     static void splitTriangleStrips(std::vector<Object> &objects);
     static void splitTriangleStrips(Object &object);
     static bool sameMaterial(const Material &material1, const Material &material2);

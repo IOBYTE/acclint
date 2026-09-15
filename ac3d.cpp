@@ -351,6 +351,15 @@ void AC3D::showLine(std::istream &in, const std::streampos &pos, int offset) con
 {
     if (!m_quiet)
     {
+        // The line may be wanted after the read has already run out -- what
+        // is said about a kids count is only known once the objects it asked
+        // for failed to arrive -- and a stream that has hit the end will not
+        // seek until it is cleared. Both where it was and how it was are put
+        // back, so that showing a line is not something the caller can feel.
+        const std::ios_base::iostate state = in.rdstate();
+
+        in.clear();
+
         const std::streampos current = in.tellg();
         std::string line;
 
@@ -367,7 +376,9 @@ void AC3D::showLine(std::istream &in, const std::streampos &pos, int offset) con
             std::cerr << ' ';
         std::cerr << '^' << std::endl;
 
+        in.clear();
         in.seekg(current);
+        in.setstate(state);
     }
 }
 
@@ -1055,18 +1066,18 @@ void AC3D::splitTriangleStrips(std::vector<Object> &objects)
     }
 }
 
-void AC3D::convertObjectsToAcc(std::vector<Object> &objects, bool strips)
+void AC3D::convertObjectsToAcc(std::vector<Object> &objects, bool strips, bool swaps)
 {
     for (auto &object : objects)
     {
         if (object.type.type == "poly")
-            convertObjectToAcc(object, strips);
+            convertObjectToAcc(object, strips, swaps);
         else
-            convertObjectsToAcc(object.kids, strips);
+            convertObjectsToAcc(object.kids, strips, swaps);
     }
 }
 
-void AC3D::convertObjectToAcc(Object &object, bool strips)
+void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
 {
     struct Triangle
     {
@@ -1325,7 +1336,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips)
             continue;
         }
 
-        std::vector<std::vector<Ref>> group_strips = makeTriangleStrips(group);
+        std::vector<std::vector<Ref>> group_strips = makeTriangleStrips(group, swaps);
 
         // The strips of a group are written next to each other, so --stitchStrips
         // joins them back into one surface. A join repeats two refs, and a third
@@ -2933,7 +2944,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             iss1 >> kids;
 
             if (iss1 && kids >= 0)
+            {
+                object.declared_kids = kids;
+                object.kids_info = LineInfo(m_line_number, m_line_pos);
+                object.kids_offset = number_offset;
                 checkTrailing(iss1);
+            }
             else
             {
                 if (m_invalid_kids_count)
@@ -2967,6 +2983,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         break;
                     }
                 }
+
+                object.declared_kids = static_cast<int>(object.kids.size());
+                object.kids_info = LineInfo(m_line_number, m_line_pos);
                 continue;
             }
 
@@ -3028,7 +3047,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                 else
                                 {
                                     if (m_missing_kids)
-                                        warningWithCount(m_missing_kids_count, kids_line) << "missing kids: only " << i << " out of " << kids << " kids found" << std::endl;
+                                    {
+                                        warningWithCount(m_missing_kids_count, kids_line)
+                                            << "missing kids: only " << i << " out of " << kids
+                                            << " kids found" << std::endl;
+                                        showLine(in, object.kids_info.line_pos, object.kids_offset);
+                                    }
                                     return false;
                                 }
                             } while (true);
@@ -3037,7 +3061,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     else
                     {
                         if (m_missing_kids)
-                            warningWithCount(m_missing_kids_count, kids_line) << "missing kids: only " << i << " out of " << kids << " kids found" << std::endl;
+                        {
+                            warningWithCount(m_missing_kids_count, kids_line)
+                                << "missing kids: only " << i << " out of " << kids
+                                << " kids found" << std::endl;
+                            showLine(in, object.kids_info.line_pos, object.kids_offset);
+                        }
                         return false;
                     }
                 }
@@ -3349,7 +3378,8 @@ void AC3D::Surface::dump(size_t count, size_t level) const
 // three edges as the starting edge, and keep whichever grows longest. That is
 // not an optimal stripification, which is NP-hard, but a run that was a strip
 // to begin with comes back as the same strip.
-std::vector<std::vector<AC3D::Ref>> AC3D::makeTriangleStrips(const std::vector<Triangle> &triangles)
+std::vector<std::vector<AC3D::Ref>> AC3D::makeTriangleStrips(const std::vector<Triangle> &triangles,
+                                                             bool swaps)
 {
     using Key = std::pair<size_t, std::vector<Point2>>;
 
@@ -3457,15 +3487,22 @@ std::vector<std::vector<AC3D::Ref>> AC3D::makeTriangleStrips(const std::vector<T
     // leaves the strip holding one more triangle, and that triangle the one
     // asked for, is looked for directly: never more than three refs to repeat,
     // and only the last three to repeat from.
-    const auto appendFace = [&tailTriangles, &sameFace](std::vector<size_t> &ids,
-                                                        const std::array<size_t, 3> &face) {
+    const auto appendFace = [&tailTriangles, &sameFace, swaps](std::vector<size_t> &ids,
+                                                               const std::array<size_t, 3> &face) {
         const size_t start = ids.size() - 3;
         const std::vector<std::array<size_t, 3>> before = tailTriangles(ids, start);
         const std::array<size_t, 3> pool{ ids[ids.size() - 3], ids[ids.size() - 2], ids.back() };
 
         size_t combinations = 1;
 
-        for (size_t count = 0; count <= 3; ++count, combinations *= 3)
+        // Without swaps a strip may only alternate, so nothing is repeated and
+        // the only continuation on offer is the free one over the edge the
+        // strip arrived at. That is what every model already in the wild is
+        // written as, and what a reader that has never met a repeated ref
+        // expects.
+        const size_t repeats = swaps ? 3 : 0;
+
+        for (size_t count = 0; count <= repeats; ++count, combinations *= 3)
         {
             for (size_t code = 0; code < combinations; ++code)
             {
@@ -3708,6 +3745,220 @@ void AC3D::writeObject(std::ostream &out, const Object &object) const
         writeObject(out, kid);
 }
 
+// The tree, depth first, which is the order the file was written in.
+void AC3D::flattenObjects(Object &object, std::vector<Object> &flat)
+{
+    std::vector<Object> kids = std::move(object.kids);
+
+    object.kids.clear();
+    flat.push_back(std::move(object));
+
+    for (auto &kid : kids)
+        flattenObjects(kid, flat);
+}
+
+// And back again, giving each object the children it asks for, or what is
+// left if the file cannot supply them.
+AC3D::Object AC3D::buildObjects(std::vector<Object> &flat, size_t &index)
+{
+    Object object = std::move(flat[index]);
+
+    ++index;
+
+    for (int i = 0; i < object.declared_kids && index < flat.size(); ++i)
+        object.kids.push_back(buildObjects(flat, index));
+
+    return object;
+}
+
+// A group that says it holds more objects than the file has left takes the
+// ones that follow it, and those belong to whatever comes after. Nothing is
+// lost that way, but everything past the mistake ends up inside the group
+// that made it and every parent above it is left short: what is read is a
+// different tree from the one the file describes, and every pass after the
+// read works on that one instead. A single wrong count is enough to put a
+// whole model inside one of its own branches.
+//
+// The counts say where the mistake is. Whatever was still waiting for
+// children when the file ran out lies on the path down to the last object
+// read, and the surplus -- what the file asks for against what it can supply
+// -- has to come off one of those. It comes off the innermost that can carry
+// it, since that is the one that swallowed everything after it, and the same
+// objects are then put back together in the same order.
+bool AC3D::repairKids(Object &root, std::istream &in)
+{
+    std::vector<Object> flat;
+
+    flattenObjects(root, flat);
+
+    long long declared = 0;
+
+    for (const auto &object : flat)
+        declared += object.declared_kids;
+
+    const long long surplus = declared - static_cast<long long>(flat.size() - 1);
+
+    size_t blame = flat.size();
+
+    // Which objects were still waiting when the objects ran out: each one in
+    // turn holds the next, down to the last object in the file.
+    std::vector<size_t> open;
+    std::vector<int> wanted;
+
+    if (surplus > 0)
+    {
+        for (size_t i = 0; i < flat.size(); ++i)
+        {
+            while (!open.empty() && wanted.back() == 0)
+            {
+                open.pop_back();
+                wanted.pop_back();
+            }
+
+            if (!open.empty())
+                --wanted.back();
+
+            open.push_back(i);
+            wanted.push_back(flat[i].declared_kids);
+        }
+
+        // The root is never blamed: taking the surplus off it would only make
+        // the counts agree with the tree that was read, which is the tree the
+        // mistake produced. What is wanted is the one the file describes.
+        //
+        // And there is only something to put right if an object above the one
+        // blamed is still waiting for children. Otherwise the count is simply
+        // larger than the file that follows it -- the file stops short, which
+        // is what the missing kids warning already says -- and nothing moves
+        // by correcting it.
+        for (size_t i = open.size(); i-- > 1; )
+        {
+            if (flat[open[i]].declared_kids <= surplus)
+                continue;
+
+            bool starved = false;
+
+            for (size_t k = 0; k < i; ++k)
+            {
+                if (wanted[k] > 0)
+                {
+                    starved = true;
+                    break;
+                }
+            }
+
+            if (starved)
+            {
+                blame = open[i];
+                break;
+            }
+        }
+    }
+
+    size_t index = 0;
+
+    if (blame == flat.size())
+    {
+        // Either the counts add up, or the surplus is spread over more than
+        // one of them -- and where it came from cannot be told apart from
+        // where it did not, since a count that is too large by a little looks
+        // exactly like one that is right. Putting the objects back as they
+        // were read is then the most that can be said about them -- the file
+        // being short at the end, which is all a root left wanting means, is
+        // reported by the missing kids warning either way.
+        if (surplus > 0)
+        {
+            // A file that stops short leaves the objects it was in the middle
+            // of reading unsatisfied and nothing else: the ones still waiting
+            // are the innermost groups on the path to the end, one inside the
+            // next. Everything read is then where the file put it, and only
+            // the end is missing, which the missing kids warning says already.
+            //
+            // A group that has taken what belongs to another leaves a
+            // different mark: something further out is waiting while a group
+            // inside it was satisfied -- satisfied with objects that the one
+            // further out should have had. Which group took them cannot be
+            // told from the counts, so the tree that was read is the tree
+            // that stands, and it is not the one the file describes.
+            bool satisfied_inside = false;
+            bool unreconciled = false;
+
+            for (size_t i = open.size(); i-- > 0; )
+            {
+                if (flat[open[i]].type.type != "group" && flat[open[i]].type.type != "world")
+                    continue;
+
+                if (wanted[i] > 0)
+                {
+                    if (satisfied_inside)
+                    {
+                        unreconciled = true;
+                        break;
+                    }
+                }
+                else
+                    satisfied_inside = true;
+            }
+
+            if (unreconciled)
+            {
+                // Said against the outermost count that was left waiting:
+                // that is the one the file failed to honour, whoever took
+                // what it was owed.
+                size_t starved = open.front();
+
+                for (size_t i = 0; i < open.size(); ++i)
+                {
+                    if (wanted[i] > 0)
+                    {
+                        starved = open[i];
+                        break;
+                    }
+                }
+
+                // An error rather than a warning, and so not something
+                // -Wno-warnings can put aside: nothing can be written while
+                // it stands, since what would be written is this tree with
+                // the counts corrected to match it -- which makes the
+                // mistake permanent and leaves nothing to say it happened.
+                errorWithCount(m_missing_kids_count, flat[starved].kids_info.line_number)
+                    << "kids counts ask for " << surplus << " more object"
+                    << (surplus == 1 ? "" : "s") << " than the file holds and no single count"
+                    << " accounts for it: a group holds objects that belong to another, and the"
+                    << " file does not say which, so what was read is not the tree the file"
+                    << " describes" << std::endl;
+                showLine(in, flat[starved].kids_info.line_pos, flat[starved].kids_offset);
+            }
+        }
+
+        root = buildObjects(flat, index);
+
+        return false;
+    }
+
+    const int was = flat[blame].declared_kids;
+    const int now = was - static_cast<int>(surplus);
+    const std::string name = flat[blame].getName();
+    const LineInfo info = flat[blame].kids_info;
+    const int offset = flat[blame].kids_offset;
+
+    flat[blame].declared_kids = now;
+
+    root = buildObjects(flat, index);
+
+    if (m_missing_kids)
+    {
+        warningWithCount(m_missing_kids_count, info.line_number)
+            << "kids count of " << was << " is " << surplus << " more than the file holds"
+            << (name.empty() ? std::string() : (" (object: " + name + ")"))
+            << ": read as " << now << ", which gives every object above it the kids it asks for"
+            << std::endl;
+        showLine(in, info.line_pos, offset);
+    }
+
+    return true;
+}
+
 bool AC3D::read(const std::string &file)
 {
     m_file = file;
@@ -3829,6 +4080,11 @@ bool AC3D::read(const std::string &file)
     }
 
     in.clear(); // clear eof so we can seek in file
+
+    // Before any check looks at the tree: what was read is only the tree the
+    // file describes if every kids count could be honoured.
+    for (auto &object : m_objects)
+        repairKids(object, in);
 
     checkDuplicateMaterials(in);
     checkUnusedMaterial(in);
@@ -5931,7 +6187,7 @@ bool AC3D::write(const std::string &file, int version)
     }
 
     if (m_is_ac && !is_ac) // convert .ac to .acc
-        convertObjectsToAcc(m_objects, m_triangle_strips);
+        convertObjectsToAcc(m_objects, m_triangle_strips, m_strip_swaps);
     else if (!m_is_ac && is_ac) // convert .acc to .ac
         convertObjectsToAc(m_objects);
     else if (!is_ac && !m_triangle_strips) // .acc in, and strips not wanted out
@@ -6947,7 +7203,7 @@ void AC3D::accumulateBounds(const Object &object, Point3 &min, Point3 &max, bool
 // single triangle is written as a polygon rather than a strip of one, which
 // would be no smaller and would earn a surface-strip-size warning.
 void AC3D::splitTriangleStripsForGrid(Object &object, double size, size_t axis1, size_t axis2,
-                                      double origin1, double origin2)
+                                      double origin1, double origin2, bool swaps)
 {
     const auto cellOf = [size, origin1, origin2](double a, double b)
     {
@@ -6995,7 +7251,7 @@ void AC3D::splitTriangleStripsForGrid(Object &object, double size, size_t axis1,
 
         for (const auto &bucket : buckets)
         {
-            for (const auto &strip : makeTriangleStrips(bucket.second))
+            for (const auto &strip : makeTriangleStrips(bucket.second, swaps))
             {
                 Surface piece = surface;
 
@@ -7196,7 +7452,7 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
 
         // Divide any strip that runs across a cell boundary first, so the
         // pieces can be placed in the cells they actually occupy.
-        splitTriangleStripsForGrid(kid, size, axis1, axis2, origin1, origin2);
+        splitTriangleStripsForGrid(kid, size, axis1, axis2, origin1, origin2, info.swaps);
 
         std::map<std::pair<long long, long long>, std::vector<size_t>> buckets;
 
@@ -7521,6 +7777,7 @@ void AC3D::gridPartition(double size, bool quad_tree)
         info.origin1 = min[axis1];
         info.origin2 = min[axis2];
         info.quad_tree = quad_tree;
+        info.swaps = m_strip_swaps;
 
         for (auto &object : m_objects)
             gridPartition(object, info);
@@ -7743,7 +8000,7 @@ void AC3D::flatten()
 // concatenate separate strips into one surface carry no geometry and are not
 // carried over, so a surface that was several runs stitched together comes
 // back as those runs.
-bool AC3D::Object::rebuildStrips()
+bool AC3D::Object::rebuildStrips(bool swaps)
 {
     bool changed = false;
 
@@ -7762,7 +8019,7 @@ bool AC3D::Object::rebuildStrips()
             }
 
             const std::vector<std::vector<Ref>> strips =
-                makeTriangleStrips(getTriangleStrip(*this, surface));
+                makeTriangleStrips(getTriangleStrip(*this, surface), swaps);
 
             if (strips.size() == 1 && strips[0].size() == surface.refs.size())
             {
@@ -7792,7 +8049,7 @@ bool AC3D::Object::rebuildStrips()
     }
 
     for (auto &kid : kids)
-        changed |= kid.rebuildStrips();
+        changed |= kid.rebuildStrips(swaps);
 
     return changed;
 }
@@ -7802,7 +8059,7 @@ bool AC3D::rebuildStrips()
     bool changed = false;
 
     for (auto &object : m_objects)
-        changed |= object.rebuildStrips();
+        changed |= object.rebuildStrips(m_strip_swaps);
 
     return changed;
 }

@@ -1,9 +1,9 @@
 test1.ac:7 error: missing vertex: 1 out of 2000000000 found
 test1.ac:7 warning: unused vertex
-
+0 0 0
 ^
 test1.ac:4 warning: missing surfaces
-
+OBJECT poly
 ^
 2 warnings
 1 error

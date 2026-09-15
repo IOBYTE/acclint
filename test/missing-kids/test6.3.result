@@ -1,0 +1,5 @@
+test6.ac:4 error: kids counts ask for 3 more objects than the file holds and no single count accounts for it: a group holds objects that belong to another, and the file does not say which, so what was read is not the tree the file describes
+kids 3
+     ^
+1 error
+Can't write output file because input file has fatal errors

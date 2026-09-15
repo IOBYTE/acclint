@@ -1,7 +1,7 @@
 test1.ac:7 warning: unused vertex
-
+0 0 0
 ^
 test1.ac:4 warning: missing surfaces
-
+OBJECT poly
 ^
 2 warnings
