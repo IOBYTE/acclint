@@ -1111,7 +1111,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips)
         }
         bool good() const
         {
-            return m_vertices[0] != m_vertices[1] && m_vertices[0] != m_vertices[2] && m_vertices[1] != m_vertices[2];
+            return !m_vertices[0].equals(m_vertices[1]) && !m_vertices[0].equals(m_vertices[2]) && !m_vertices[1].equals(m_vertices[2]);
         }
         void smooth(Triangle &other)
         {
@@ -1325,7 +1325,20 @@ void AC3D::convertObjectToAcc(Object &object, bool strips)
             continue;
         }
 
-        for (const auto &strip : makeTriangleStrips(group))
+        std::vector<std::vector<Ref>> group_strips = makeTriangleStrips(group);
+
+        // The strips of a group are written next to each other, so --stitchStrips
+        // joins them back into one surface. A join repeats two refs, and a third
+        // when what it is being joined to has an odd number of refs -- which is
+        // whatever the strip before it left behind. So every strip with an odd
+        // number of refs costs an extra ref, except the last one written, which
+        // has nothing after it to pay for. Writing the odd ones last leaves
+        // exactly one of them free, which is the fewest a set of strips can be
+        // joined with.
+        std::stable_partition(group_strips.begin(), group_strips.end(),
+                              [](const std::vector<Ref> &strip) { return (strip.size() % 2) == 0; });
+
+        for (const auto &strip : group_strips)
         {
             Surface surface;
 
@@ -3382,74 +3395,129 @@ std::vector<std::vector<AC3D::Ref>> AC3D::makeTriangleStrips(const std::vector<T
 
     std::vector<bool> used(faces.size(), false);
 
-    // how many of a face's neighbours are still available
-    const auto degree = [&faces, &edges, &used, &edgeKey](size_t i, const std::set<size_t> &taken) {
-        std::set<size_t> seen;
+    // Which faces share an edge with which.
+    std::vector<std::vector<size_t>> neighbours(faces.size());
 
-        for (size_t k = 0; k < 3; ++k)
+    for (const auto &edge : edges)
+    {
+        for (const size_t i : edge.second)
         {
-            for (const size_t j : edges[edgeKey(faces[i][k], faces[i][(k + 1) % 3])])
+            for (const size_t j : edge.second)
             {
-                if (j != i && !used[j] && taken.find(j) == taken.end())
-                    seen.insert(j);
+                if (i != j &&
+                    std::find(neighbours[i].begin(), neighbours[i].end(), j) == neighbours[i].end())
+                    neighbours[i].push_back(j);
             }
         }
+    }
 
-        return seen.size();
-    };
+    // Triangle t of a strip is written from refs t, t + 1 and t + 2, with the
+    // first two swapped when t is odd. Rebuilding only the tail is enough to
+    // see what appending refs would add.
+    const auto tailTriangles = [](const std::vector<size_t> &ids, size_t start) {
+        std::vector<std::array<size_t, 3>> triangles;
 
-    // Whether the three ids, in this order, are the face written out with the
-    // same winding -- that is, a rotation of it rather than a reflection.
-    const auto sameWinding = [](const std::array<size_t, 3> &face, size_t a, size_t b, size_t c) {
-        return (face[0] == a && face[1] == b && face[2] == c) ||
-               (face[1] == a && face[2] == b && face[0] == c) ||
-               (face[2] == a && face[0] == b && face[1] == c);
-    };
-
-    // The next triangle is number length - 2, so it is written (a, b, c) when
-    // the strip holds an even number of refs and (b, a, c) when it holds an
-    // odd number. Only a face that comes out with its own winding will do.
-    const auto findNext = [&](size_t a, size_t b, size_t length, const std::set<size_t> &taken,
-                              size_t &face, size_t &next) {
-        const bool forward = (length % 2) == 0;
-        bool found = false;
-        size_t best = 0;
-
-        for (const size_t j : edges[edgeKey(a, b)])
+        for (size_t t = start; t + 2 < ids.size(); ++t)
         {
-            if (used[j] || taken.find(j) != taken.end())
+            size_t a = ids[t];
+            size_t b = ids[t + 1];
+            const size_t c = ids[t + 2];
+
+            if ((t % 2) != 0)
+                std::swap(a, b);
+
+            // No area between them, so nothing is drawn and nothing counts.
+            if (a == b || b == c || a == c)
                 continue;
 
-            size_t c = 0;
-            size_t others = 0;
+            triangles.push_back({ a, b, c });
+        }
 
-            for (size_t k = 0; k < 3; ++k)
+        return triangles;
+    };
+
+    // The same three ids the same way round, wherever the rotation starts.
+    const auto sameFace = [](const std::array<size_t, 3> &face, const std::array<size_t, 3> &other) {
+        return (face[0] == other[0] && face[1] == other[1] && face[2] == other[2]) ||
+               (face[0] == other[1] && face[1] == other[2] && face[2] == other[0]) ||
+               (face[0] == other[2] && face[1] == other[0] && face[2] == other[1]);
+    };
+
+    // Puts one more face on the end of a strip, for as few refs as it can.
+    //
+    // A strip crosses from triangle to triangle over a shared edge, and the
+    // edge it leaves by is fixed: the last two refs. Leaving by the triangle's
+    // other free edge -- which is what turning the same way twice means, and
+    // what a fan does at every step -- takes a couple of repeated refs first.
+    // They make triangles with no area between them, which draw nothing. That
+    // costs two refs, sometimes three, against the three refs and a surface of
+    // its own that stopping here and starting again would cost.
+    //
+    // Rather than work out which case this is, the shortest repetition that
+    // leaves the strip holding one more triangle, and that triangle the one
+    // asked for, is looked for directly: never more than three refs to repeat,
+    // and only the last three to repeat from.
+    const auto appendFace = [&tailTriangles, &sameFace](std::vector<size_t> &ids,
+                                                        const std::array<size_t, 3> &face) {
+        const size_t start = ids.size() - 3;
+        const std::vector<std::array<size_t, 3>> before = tailTriangles(ids, start);
+        const std::array<size_t, 3> pool{ ids[ids.size() - 3], ids[ids.size() - 2], ids.back() };
+
+        size_t combinations = 1;
+
+        for (size_t count = 0; count <= 3; ++count, combinations *= 3)
+        {
+            for (size_t code = 0; code < combinations; ++code)
             {
-                if (faces[j][k] != a && faces[j][k] != b)
+                for (const size_t last : face)
                 {
-                    c = faces[j][k];
-                    others++;
+                    std::vector<size_t> candidate = ids;
+                    size_t value = code;
+
+                    for (size_t k = 0; k < count; ++k)
+                    {
+                        candidate.push_back(pool[value % 3]);
+                        value /= 3;
+                    }
+
+                    candidate.push_back(last);
+
+                    const std::vector<std::array<size_t, 3>> after = tailTriangles(candidate, start);
+
+                    if (after.size() != before.size() + 1)
+                        continue;
+
+                    if (!std::equal(before.begin(), before.end(), after.begin()))
+                        continue;
+
+                    if (!sameFace(after.back(), face))
+                        continue;
+
+                    ids = candidate;
+
+                    return true;
                 }
             }
-
-            if (others != 1)
-                continue;
-
-            if (!(forward ? sameWinding(faces[j], a, b, c) : sameWinding(faces[j], b, a, c)))
-                continue;
-
-            const size_t d = degree(j, taken);
-
-            if (!found || d < best)
-            {
-                found = true;
-                best = d;
-                face = j;
-                next = c;
-            }
         }
 
-        return found;
+        return false;
+    };
+
+    // Which faces this attempt has already taken. A stamp rather than a set
+    // that has to be emptied: the number is bumped instead.
+    std::vector<size_t> stamp(faces.size(), 0);
+    size_t attempt = 0;
+
+    const auto available = [&neighbours, &used, &stamp, &attempt](size_t i) {
+        size_t count = 0;
+
+        for (const size_t j : neighbours[i])
+        {
+            if (!used[j] && stamp[j] != attempt)
+                ++count;
+        }
+
+        return count;
     };
 
     std::vector<std::vector<Ref>> strips;
@@ -3458,59 +3526,88 @@ std::vector<std::vector<AC3D::Ref>> AC3D::makeTriangleStrips(const std::vector<T
     for (size_t i = 0; i < faces.size(); ++i)
         remaining.insert(i);
 
-    const std::set<size_t> none;
-
     while (!remaining.empty())
     {
+        // A face with few neighbours left is the one most likely to be
+        // stranded on its own, so it is where a strip starts.
+        ++attempt;
+
         size_t seed = *remaining.begin();
 
         for (const size_t i : remaining)
         {
-            if (degree(i, none) < degree(seed, none))
+            if (available(i) < available(seed))
                 seed = i;
         }
 
-        std::vector<size_t> bestOrder;
         std::vector<size_t> bestIds;
+        std::vector<size_t> bestPath;
 
+        // Which of the seed's three edges to leave by is not obvious from the
+        // seed alone, so all three are grown and the longest kept.
         for (size_t start = 0; start < 3; ++start)
         {
-            std::vector<size_t> ids3{ faces[seed][start],
-                                      faces[seed][(start + 1) % 3],
-                                      faces[seed][(start + 2) % 3] };
-            std::vector<size_t> order;
-            std::set<size_t> taken{ seed };
+            ++attempt;
+
+            std::vector<size_t> ids{ faces[seed][start],
+                                     faces[seed][(start + 1) % 3],
+                                     faces[seed][(start + 2) % 3] };
+            std::vector<size_t> path{ seed };
+
+            stamp[seed] = attempt;
 
             for (;;)
             {
-                size_t face = 0;
-                size_t next = 0;
+                std::vector<size_t> candidates;
 
-                if (!findNext(ids3[ids3.size() - 2], ids3.back(), ids3.size(), taken, face, next))
+                for (const size_t j : neighbours[path.back()])
+                {
+                    if (!used[j] && stamp[j] != attempt)
+                        candidates.push_back(j);
+                }
+
+                if (candidates.empty())
                     break;
 
-                taken.insert(face);
-                order.push_back(face);
-                ids3.push_back(next);
+                std::sort(candidates.begin(), candidates.end(),
+                          [&available](size_t a, size_t b) { return available(a) < available(b); });
+
+                bool placed = false;
+
+                // Only the few most stranded are tried: a face that cannot be
+                // appended at all is rare, and looking at every neighbour of
+                // every face would cost more than the strip it saves.
+                for (size_t k = 0; k < candidates.size() && k < 3; ++k)
+                {
+                    if (appendFace(ids, faces[candidates[k]]))
+                    {
+                        stamp[candidates[k]] = attempt;
+                        path.push_back(candidates[k]);
+                        placed = true;
+                        break;
+                    }
+                }
+
+                if (!placed)
+                    break;
             }
 
-            if (bestIds.empty() || order.size() > bestOrder.size())
+            if (bestPath.empty() || path.size() > bestPath.size() ||
+                (path.size() == bestPath.size() && ids.size() < bestIds.size()))
             {
-                bestOrder = order;
-                bestIds = ids3;
+                bestPath = path;
+                bestIds = ids;
             }
         }
 
-        used[seed] = true;
-        remaining.erase(seed);
-
-        for (const size_t j : bestOrder)
+        for (const size_t j : bestPath)
         {
             used[j] = true;
             remaining.erase(j);
         }
 
         std::vector<Ref> strip;
+
         strip.reserve(bestIds.size());
 
         for (const size_t id : bestIds)
@@ -5840,6 +5937,12 @@ bool AC3D::write(const std::string &file, int version)
     else if (!is_ac && !m_triangle_strips) // .acc in, and strips not wanted out
         splitTriangleStrips(m_objects);
 
+    // After the conversion rather than before it, so that the strips the
+    // conversion just made from an .ac are joined as well as the ones an .acc
+    // arrived with. Only a .acc has strips to join.
+    if (!is_ac && m_triangle_strips && m_stitch_strips)
+        stitchTriangleStrips();
+
     std::ofstream of(file, std::ofstream::binary);
 
     if (!of)
@@ -7700,6 +7803,84 @@ bool AC3D::rebuildStrips()
 
     for (auto &object : m_objects)
         changed |= object.rebuildStrips();
+
+    return changed;
+}
+
+// Two strips drawn one after the other can be drawn as one. Repeating the last
+// ref of the first and the first ref of the second makes the triangles that
+// span the seam degenerate -- three refs with no area between them, which
+// draws nothing -- so the pair reads as the two strips it was made from and
+// costs one surface instead of two. The price is two refs, or three when the
+// second strip would otherwise begin on an odd triangle: a strip swaps the
+// first two refs of every odd triangle, so landing on the wrong one would turn
+// the whole of the second strip inside out.
+//
+// Only strips that already sit next to each other are joined, and only when
+// they say the same thing about themselves. Nothing is reordered -- a surface
+// of any other kind between two strips keeps them apart -- so the same
+// triangles are drawn in the same order as before, which is what makes this
+// safe for blended geometry as well.
+bool AC3D::Object::stitchTriangleStrips()
+{
+    bool changed = false;
+
+    if (type.type == "poly" && surfaces.size() > 1)
+    {
+        std::vector<Surface> stitched;
+
+        stitched.reserve(surfaces.size());
+
+        for (const auto &surface : surfaces)
+        {
+            const bool joinable = surface.isTriangleStrip() && surface.refs.size() > 2 &&
+                                  !stitched.empty() && stitched.back().isTriangleStrip() &&
+                                  stitched.back().refs.size() > 2 &&
+                                  stitched.back().flags == surface.flags &&
+                                  stitched.back().mats == surface.mats;
+
+            if (!joinable)
+            {
+                stitched.push_back(surface);
+                continue;
+            }
+
+            Surface &target = stitched.back();
+
+            // A copy rather than a reference: the pushes below can move the
+            // refs somewhere else and leave the reference pointing at nothing.
+            const Ref last = target.refs.back();
+
+            if ((target.refs.size() % 2) != 0)
+                target.refs.push_back(last);
+
+            target.refs.push_back(last);
+            target.refs.push_back(surface.refs.front());
+
+            for (const auto &ref : surface.refs)
+                target.refs.push_back(ref);
+
+            target.refs.declared_size = static_cast<int>(target.refs.size());
+            target.transformedTriangles.clear();
+            changed = true;
+        }
+
+        if (changed)
+            surfaces = stitched;
+    }
+
+    for (auto &kid : kids)
+        changed |= kid.stitchTriangleStrips();
+
+    return changed;
+}
+
+bool AC3D::stitchTriangleStrips()
+{
+    bool changed = false;
+
+    for (auto &object : m_objects)
+        changed |= object.stitchTriangleStrips();
 
     return changed;
 }

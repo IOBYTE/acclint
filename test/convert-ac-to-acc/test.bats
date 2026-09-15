@@ -151,3 +151,27 @@ setup_file() {
 }
 
 ################################################################################
+# test8: a fan -- eight triangles round one vertex. A strip crosses from
+# triangle to triangle over the edge it just arrived at, and a fan turns the
+# same way at every step, so a strip that may only alternate has to stop every
+# second triangle. This came out as three surfaces.
+#
+# Repeating a couple of refs makes triangles with no area between them, which
+# draw nothing, and lets the strip turn the same way twice. The whole fan is
+# one surface, for two refs more than the three surfaces held between them.
+################################################################################
+
+@test "test8" {
+  $RUN_TEST acclint test8.ac -o test8.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test8.output.acc)"
+  expected_file="$(tr -d '\r' < test8.result.acc)"
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.output.acc
+}
+
+################################################################################

@@ -143,10 +143,11 @@ void usage()
     std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
     std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
     std::cerr << "  --combineObjects[=percent]             Combine opaque sibling objects that share texture and surface state." << std::endl;
-    std::cerr << "  --quadTree                             Order the cells --grid makes as a quad tree." << std::endl;
     std::cerr << "                                         With --grid a merged object is kept within percent of the" << std::endl;
     std::cerr << "                                         cell size, 25 by default. Without --grid there is no limit." << std::endl;
     std::cerr << "                                         Enabled by --fixAll; give a percent to change the limit." << std::endl;
+    std::cerr << "  --quadTree                             Order the cells --grid makes as a quad tree." << std::endl;
+    std::cerr << "  --stitchStrips                         Join neighbouring triangle strips into one surface." << std::endl;
     std::cerr << "  --grid size                            Partition objects into square cells of size in meters for culling." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
@@ -303,6 +304,7 @@ int main(int argc, char *argv[])
     bool combineObjects = false;
     bool combine_given = false;
     bool quadTree = false;
+    bool stitchStrips = false;
     // A share of the grid cell size. Two objects that say the same thing can
     // still sit at opposite ends of a cell, and merging those gives one object
     // as wide as the cell for a camera at either end to draw in full.
@@ -337,6 +339,7 @@ int main(int argc, char *argv[])
         OPT_COMBINE_TEXTURE,
         OPT_COMBINE_OBJECTS,
         OPT_QUAD_TREE,
+        OPT_STITCH_STRIPS,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
         OPT_FIX_ALL,
@@ -362,6 +365,7 @@ int main(int argc, char *argv[])
         { "combineObjects",              optional_argument, nullptr, OPT_COMBINE_OBJECTS },
         { "grid",                        required_argument, nullptr, OPT_GRID },
         { "quadTree",                    no_argument,       nullptr, OPT_QUAD_TREE },
+        { "stitchStrips",                no_argument,       nullptr, OPT_STITCH_STRIPS },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
         { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
         { "fixAll",                      no_argument,       nullptr, OPT_FIX_ALL },
@@ -485,6 +489,9 @@ int main(int argc, char *argv[])
             break;
         case OPT_QUAD_TREE:
             quadTree = true;
+            break;
+        case OPT_STITCH_STRIPS:
+            stitchStrips = true;
             break;
         case OPT_GRID:
         {
@@ -1430,7 +1437,15 @@ int main(int argc, char *argv[])
         if (rebuildStrips)
             ac3d.rebuildStrips();
 
+        // Nothing to join when the strips are being taken apart.
+        if (stitchStrips && !triangleStrips)
+        {
+            std::cerr << "--stitchStrips cannot be used with --noTriangleStrips" << std::endl;
+            return EXIT_FAILURE;
+        }
+
         ac3d.triangleStrips(triangleStrips);
+        ac3d.stitchStrips(stitchStrips);
 
         if (!ac3d.write(out_file, version))
         {

@@ -164,6 +164,8 @@ public:
     bool write(const std::string &file, int version = 0);
     void triangleStrips(bool value) { m_triangle_strips = value; }
     bool triangleStrips() const { return m_triangle_strips; }
+    void stitchStrips(bool value) { m_stitch_strips = value; }
+    bool stitchStrips() const { return m_stitch_strips; }
     void dump(DumpType dump_type) const;
     size_t warnings() const
     {
@@ -249,6 +251,7 @@ public:
     void flatten();
     bool splitPolygons();
     bool rebuildStrips();
+    bool stitchTriangleStrips();
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
     void gridPartition(double size, bool quad_tree);
@@ -1087,6 +1090,7 @@ private:
         void removeKids(const RemoveInfo &remove_info);
         bool splitPolygons();
         bool rebuildStrips();
+        bool stitchTriangleStrips();
         bool addObject(const Object &object);
         bool sameTextures(const Object &object) const;
         std::string combineKey() const;
@@ -1122,6 +1126,7 @@ private:
     // what the format is for, so this is on; it is turned off to write the
     // same geometry as plain triangles.
     bool            m_triangle_strips = true;
+    bool            m_stitch_strips = false;
     bool            m_crlf = false;
     bool            m_not_ac3d_file = true;
     bool            m_quiet = false;
