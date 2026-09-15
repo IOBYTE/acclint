@@ -135,6 +135,13 @@ setup_file() {
 # so it spans three cells of ten. It comes back as three strips, one per cell,
 # of twelve, twelve and six refs -- the same twenty four triangles, and four
 # refs more in total, since each cut repeats the edge it was made on.
+#
+# The cells are named ___TKMN_cell_<i>_<j> here and cell_<i>_<j> in the .ac
+# tests above. Speed Dreams' .acc loader turns its group handling on only for a
+# model with an object name containing "__TKMN" and otherwise flattens the whole
+# thing into one leaf, which would leave these cells with nothing to reject and
+# would rebuild the strips the grid just made. The marker is written into a .acc
+# for that reason, and left out of an .ac, where it would mean nothing.
 @test "test5.1" {
   $RUN_TEST acclint -Wno-warnings test5.acc --grid 10 -o test5.output.acc
   [ "$status" -eq 0 ]

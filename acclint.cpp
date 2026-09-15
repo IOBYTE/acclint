@@ -1374,6 +1374,11 @@ int main(int argc, char *argv[])
         // writing a .acc from an .ac makes them from nothing.
         ac3d.stripSwaps(stripSwaps);
 
+        // Set before anything that makes a group: what the groups are called
+        // depends on what is being written, and they are made well before
+        // then.
+        ac3d.outputFile(out_file);
+
         if (flatten)
             ac3d.flatten();
 

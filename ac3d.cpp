@@ -7560,8 +7560,9 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
 
                 Name name;
 
-                name.name.assign("cell_" + std::to_string(bucket.first.first) + "_" +
-                                 std::to_string(bucket.first.second));
+                name.name.assign(groupName(info.acc_output,
+                                           "cell_" + std::to_string(bucket.first.first) + "_" +
+                                           std::to_string(bucket.first.second)));
                 cell.names.push_back(name);
             }
 
@@ -7622,6 +7623,30 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
     }
 }
 
+// Speed Dreams' .acc loader keeps the group tree only when some object name
+// contains "__TKMN": do_name in grloadac.cpp sets usegroup on that substring,
+// and grssgLoadAC3D calls ssgFlatten and ssgStripify on the whole model when
+// it was never set. Flattened, the track is one leaf -- every group's bounding
+// volume is gone, so nothing can be rejected before drawing, and the triangle
+// strips written here are thrown away and made again by plib. accc writes the
+// marker as ___TKMN<segment>_gl<ring>, one group per track segment and
+// distance ring; the loader reads nothing out of the name but that substring,
+// so the groups written here carry it in the same place and say what they
+// actually are after it. A name is only marked when a .acc is being written:
+// in an .ac it would mean nothing to anyone.
+std::string AC3D::groupName(bool acc_output, const std::string &name)
+{
+    if (!acc_output)
+        return name;
+
+    return "___TKMN_" + name;
+}
+
+void AC3D::outputFile(const std::string &file)
+{
+    m_acc_output = std::filesystem::path(file).extension().string() == ".acc";
+}
+
 // One node of the tree. The cells given all lie inside the square that starts
 // at cell (origin1, origin2) and is extent cells across; the node is what
 // holds them, and its four quarters are the same thing one size down.
@@ -7654,7 +7679,8 @@ AC3D::Object AC3D::quadTreeNode(GridCells &cells, long long origin1, long long o
 
         Name name;
 
-        name.name.assign("quad_" + std::to_string(origin1) + "_" + std::to_string(origin2));
+        name.name.assign(groupName(info.acc_output, "quad_" + std::to_string(origin1) + "_" +
+                                                     std::to_string(origin2)));
         node.names.push_back(name);
 
         ++info.nodes;
@@ -7712,8 +7738,9 @@ AC3D::Object AC3D::quadTreeNode(GridCells &cells, long long origin1, long long o
 
     // Named for what it covers: the cell it starts at and how many cells
     // across it is, so that a name says which cells are inside it.
-    name.name.assign("quad_" + std::to_string(origin1) + "_" + std::to_string(origin2) +
-                     "_" + std::to_string(extent));
+    name.name.assign(groupName(info.acc_output, "quad_" + std::to_string(origin1) + "_" +
+                                                 std::to_string(origin2) + "_" +
+                                                 std::to_string(extent)));
     node.names.push_back(name);
 
     ++info.nodes;
@@ -7778,6 +7805,7 @@ void AC3D::gridPartition(double size, bool quad_tree)
         info.origin2 = min[axis2];
         info.quad_tree = quad_tree;
         info.swaps = m_strip_swaps;
+        info.acc_output = m_acc_output;
 
         for (auto &object : m_objects)
             gridPartition(object, info);
@@ -8442,10 +8470,17 @@ bool AC3D::combineObjects(double size)
     return changed;
 }
 
-void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects)
+void AC3D::combineTexture(const Object &object, std::vector<Object> &objects,
+                          std::vector<Object> &transparent_objects,
+                          std::unordered_map<std::string, size_t> &opaque)
 {
     if (object.type.type == "poly")
     {
+        // Transparent geometry is gathered by texture but never merged: what
+        // it looks like depends on the order it is drawn in, and an object is
+        // drawn in one piece. Sharing a texture is all that is asked of the
+        // objects put in a group together, because putting them there costs
+        // none of them anything.
         if (hasTransparentTexture(object))
         {
             for (auto &obj : transparent_objects)
@@ -8462,20 +8497,34 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, st
             std::string name("transparent_group");
             name.append(std::to_string(transparent_objects.size()));
             Name quoted_name;
-            quoted_name.name = quoted_string(name);
+            quoted_name.name = quoted_string(groupName(name));
             transparent_objects.back().names.emplace_back(quoted_name);
             transparent_objects.back().kids.push_back(object);
             return;
         }
 
-        for (auto &obj : objects)
+        // Opaque geometry is merged, and merging is the whole of one object
+        // becoming part of another, so sharing a texture is not enough: the
+        // two have to agree about everything an object states, surface state
+        // included. combineKey is that agreement, the same one combineObjects
+        // requires. Matching only the texture name merged objects whose
+        // surfaces differ in SURF flags, material, or the mapping applied to
+        // the texture, which undoes --splitSURF and --splitMat and leaves an
+        // object holding a mix the .acc format expects it not to have; on
+        // alicante and corkscrew acclint went on to warn about its own output.
+        //
+        // The state a merge has to preserve is the point of the key, not the
+        // number of groups: objects that differ in it were always going to be
+        // separate draw calls, since nothing can draw two states at once.
+        const auto found = opaque.find(object.combineKey());
+
+        if (found != opaque.end())
         {
-            if (obj.sameTextures(object))
-            {
-                obj.addObject(object);
-                return;
-            }
+            objects[found->second].addObject(object);
+            return;
         }
+
+        opaque.emplace(object.combineKey(), objects.size());
         objects.push_back(object);
         if (m_rename_combine_texture)
         {
@@ -8490,7 +8539,7 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects, st
     if (object.type.type == "group" || object.type.type == "world")
     {
         for (const auto &kid : object.kids)
-            combineTexture(kid, objects, transparent_objects);
+            combineTexture(kid, objects, transparent_objects, opaque);
     }
 }
 
@@ -8516,9 +8565,13 @@ void AC3D::combineTexture()
 
     std::vector<Object> new_objects;
     std::vector<Object> new_transparent_objects;
+    // Which object in new_objects each combineKey landed in. The list itself
+    // stays in the order the objects were met, so the output does not depend
+    // on how the keys happen to hash.
+    std::unordered_map<std::string, size_t> opaque_index;
 
     for (const auto &object : m_objects)
-        combineTexture(object, new_objects, new_transparent_objects);
+        combineTexture(object, new_objects, new_transparent_objects, opaque_index);
 
     Object &world = m_objects[0];
 
@@ -8527,7 +8580,7 @@ void AC3D::combineTexture()
     Object opaque;
     opaque.type.type = "group";
     Name opaque_name;
-    opaque_name.name = quoted_string("OPAQUE");
+    opaque_name.name = quoted_string(groupName("OPAQUE"));
     opaque.names.emplace_back(opaque_name);
     world.kids.push_back(opaque);
     world.kids[0].kids.insert(world.kids[0].kids.begin(), new_objects.begin(), new_objects.end());
@@ -8535,7 +8588,7 @@ void AC3D::combineTexture()
     Object transparent;
     transparent.type.type = "group";
     Name transparent_name;
-    transparent_name.name = quoted_string("TRANSPARENT");
+    transparent_name.name = quoted_string(groupName("TRANSPARENT"));
     transparent.names.emplace_back(transparent_name);
     world.kids.push_back(transparent);
     world.kids[1].kids.insert(world.kids[1].kids.end(), new_transparent_objects.begin(), new_transparent_objects.end());

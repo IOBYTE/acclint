@@ -33,6 +33,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class AC3D
@@ -168,6 +169,7 @@ public:
     bool stitchStrips() const { return m_stitch_strips; }
     void stripSwaps(bool value) { m_strip_swaps = value; }
     bool stripSwaps() const { return m_strip_swaps; }
+    void outputFile(const std::string &file);
     void dump(DumpType dump_type) const;
     size_t warnings() const
     {
@@ -1138,6 +1140,11 @@ private:
     bool            m_triangle_strips = true;
     bool            m_stitch_strips = false;
     bool            m_strip_swaps = false;
+    // Whether the file being written is a .acc, which is Speed Dreams' own
+    // format and the only one whose loader cares how the groups are named.
+    // Taken from the output name, not the input one: an .ac read and written
+    // as a .acc is just as much a track.
+    bool            m_acc_output = false;
     bool            m_crlf = false;
     bool            m_not_ac3d_file = true;
     bool            m_quiet = false;
@@ -1239,6 +1246,7 @@ private:
         double origin2 = 0.0;
         bool quad_tree = false;
         bool swaps = false;
+        bool acc_output = false;
         size_t cells = 0;
         size_t surfaces = 0;
         size_t oversized = 0;
@@ -1315,7 +1323,11 @@ private:
     static bool splitMultipleSURF(std::vector<Object> &kids);
     static bool splitMultipleMat(std::vector<Object> &kids);
     void transform(const Matrix &matrix);
-    void combineTexture(const Object &object, std::vector<Object> &objects, std::vector<Object> &transparent_objects);
+    void combineTexture(const Object &object, std::vector<Object> &objects,
+                        std::vector<Object> &transparent_objects,
+                        std::unordered_map<std::string, size_t> &opaque);
+    static std::string groupName(bool acc_output, const std::string &name);
+    std::string groupName(const std::string &name) const { return groupName(m_acc_output, name); }
     static void addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matrix);
     static void fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2,
                                             std::set<Surface *> &surfaces);

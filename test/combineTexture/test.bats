@@ -84,3 +84,83 @@ setup_file() {
 }
 
 ################################################################################
+
+# Sharing a texture is not on its own a reason to become one object. Merging
+# puts every surface of one object into another, and an object's surfaces are
+# expected to agree about their state: the .acc loader takes an object's state
+# from what its surfaces say, and --splitSURF and --splitMat exist to give each
+# state an object of its own. Combining on the texture name alone put those
+# states back together again, and acclint went on to warn about the result.
+################################################################################
+
+# test2.1: three polys on red.png, the middle one two sided. Merging all three
+# would make one object holding both 0x10 and 0x30 -- what --splitSURF undoes.
+# p0 and p2 agree and become one object; p1 stays as it is.
+@test "test2.1" {
+  $RUN_TEST acclint test2.1.ac -T textures --combineTexture -o test2.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test2.1.output.ac)"
+  expected_file="$(tr -d '\r' < test2.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test2.1.output.ac test2.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test2.1.output.ac
+}
+
+# test2.2: the same three polys, agreeing about SURF and differing in material.
+# A material is state as much as the flags are, and is kept apart the same way.
+@test "test2.2" {
+  $RUN_TEST acclint test2.2.ac -T textures --combineTexture -o test2.2.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.2.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test2.2.output.ac)"
+  expected_file="$(tr -d '\r' < test2.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test2.2.output.ac test2.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test2.2.output.ac
+}
+
+################################################################################
+# Speed Dreams' .acc loader keeps the group tree only when some object name
+# contains "__TKMN" (do_name in grloadac.cpp); without it grssgLoadAC3D flattens
+# and re-stripifies the whole model, which costs every group bounding volume and
+# so all culling, and throws away the strips written here. combineTexture
+# replaces the groups the track arrived with, so the groups it writes carry the
+# marker -- but only into a .acc, the only format whose loader reads it.
+################################################################################
+
+# test3.1: the test1.1 model written as a .acc. The groups are named for what
+# they are, behind the marker the loader looks for.
+@test "test3.1" {
+  $RUN_TEST acclint test3.1.ac -T textures --combineTexture -o test3.1.output.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test3.1.output.acc)"
+  expected_file="$(tr -d '\r' < test3.1.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.1.output.acc test3.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.1.output.acc
+}
+
+################################################################################

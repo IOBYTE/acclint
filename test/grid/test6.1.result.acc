@@ -3,7 +3,7 @@ MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  tr
 OBJECT world
 kids 1
 OBJECT group
-name "cell_0_0"
+name "___TKMN_cell_0_0"
 kids 1
 OBJECT poly
 name "inside"
