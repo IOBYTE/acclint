@@ -188,24 +188,21 @@ setup_file() {
 ################################################################################
 
 ################################################################################
-# A level holding nothing but groups of one texture's geometry -- which is what
-# combineTexture leaves behind for transparent geometry, since those surfaces
-# are blended and cannot be merged without losing their drawing order -- is
-# partitioned here rather than inside each group.
+# Geometry that is see-through is left where it is.
 #
-# Otherwise the same few regions of the model are divided once per texture: on
-# a real track eight regions came back as a hundred and forty four groups, and
-# none of them could be rejected without first descending through a texture
-# group spanning the whole model. Lifting the geometry out puts the cells above
-# the textures, where they already are for opaque geometry.
-#
-#   before   world / texture / cell / poly
-#   after    world / cell / texture / poly
-#
-# The groups are rebuilt inside each cell, which is why this only fires where
-# rebuilding gives back what was there: one texture set per group, and no two
-# groups sharing one.
+# What a blended surface looks like depends on what was drawn before it, so for
+# this geometry the order it is written in is part of the picture. Partitioning
+# undoes that twice over: the objects of one texture are scattered across the
+# cells and drawn cell by cell instead of together, and a strip that crosses a
+# boundary is cut in two and its halves are blended at different points in the
+# frame. The cells it would buy are worth less than the picture -- this is a
+# small share of a track's surfaces, and the share where being drawn in the
+# right order is the whole of being drawn right.
 ################################################################################
+
+# test7.1: two groups of one texture each, one opaque and one on an alpha
+# texture, both spanning two cells. The opaque group is divided into cells; the
+# alpha group comes through exactly as it went in.
 
 @test "test7.1" {
   $RUN_TEST acclint -Wno-warnings test7.ac --grid 50 -o test7.output.ac

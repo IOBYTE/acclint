@@ -1229,9 +1229,6 @@ private:
     void checkOverlapping2SidedSurface(std::istream &in);
     void checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, const Poly &object2);
     static void accumulateBounds(const Object &object, Point3 &min, Point3 &max, bool &any);
-    static std::string textureKey(const Object &object);
-    static bool hoistTextureGroups(Object &parent, std::vector<std::pair<std::string, Object>> &groups);
-    static void regroupByTexture(Object &cell, const std::vector<std::pair<std::string, Object>> &groups);
     static void splitTriangleStripsForGrid(Object &object, double size, size_t axis1, size_t axis2,
                                            double origin1, double origin2, bool swaps);
     // What the partition is being asked for, and what it found while doing
@@ -1259,7 +1256,7 @@ private:
     // tree can ask where a cell is after it has been taken out of the map.
     using GridCells = std::vector<std::pair<std::pair<long long, long long>, Object>>;
 
-    static void gridPartition(Object &parent, GridInfo &info);
+    void gridPartition(Object &parent, GridInfo &info);
     static Object quadTreeNode(GridCells &cells, long long origin1, long long origin2,
                                long long extent, size_t level, GridInfo &info);
     void checkDuplicateMaterials(std::istream &in);
@@ -1325,6 +1322,7 @@ private:
     void transform(const Matrix &matrix);
     void combineTexture(const Object &object, std::vector<Object> &objects,
                         std::vector<Object> &transparent_objects,
+                        std::vector<Object> &other_objects,
                         std::unordered_map<std::string, size_t> &opaque);
     static std::string groupName(bool acc_output, const std::string &name);
     std::string groupName(const std::string &name) const { return groupName(m_acc_output, name); }

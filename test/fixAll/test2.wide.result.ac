@@ -7,10 +7,7 @@ name "TRANSPARENT"
 kids 1
 OBJECT group
 name "transparent_group1"
-kids 2
-OBJECT group
-name "cell_0_0"
-kids 2
+kids 3
 OBJECT poly
 name "quad"
 texture "alpha.png"
@@ -48,9 +45,6 @@ refs 3
 1 1 0
 2 0 1
 kids 0
-OBJECT group
-name "cell_1_0"
-kids 1
 OBJECT poly
 name "far"
 texture "alpha.png"

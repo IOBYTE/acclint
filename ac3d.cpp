@@ -1367,6 +1367,28 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
             object.surfaces.emplace_back(surface);
         }
     }
+
+    // The one-triangle strips left as polygons above are only harmless while
+    // nothing here is a strip. Speed Dreams' .acc loader cannot read an object
+    // holding both kinds: a strip surface only records its ref count in
+    // striplist and throws its own arrays away, and at "kids 0" it builds one
+    // GL_TRIANGLE_STRIP over the object's whole numvert array and slices it
+    // with those counts, while a polygon surface keeps its vertices in that
+    // array and takes no place in striplist. Every strip after the first
+    // polygon is then drawn through the wrong vertices. So once there is a
+    // strip, the single triangles are strips too -- three refs draw the same
+    // triangle either way.
+    const bool any_strip = std::any_of(object.surfaces.begin(), object.surfaces.end(),
+                                       [](const Surface &surface) { return surface.isTriangleStrip(); });
+
+    if (any_strip)
+    {
+        for (auto &surface : object.surfaces)
+        {
+            if (surface.isPolygon())
+                surface.flags = (surface.flags & ~Surface::TypeMask) | Surface::TriangleStrip;
+        }
+    }
 }
 
 bool AC3D::readHeader(std::istream &in)
@@ -7257,9 +7279,20 @@ void AC3D::splitTriangleStripsForGrid(Object &object, double size, size_t axis1,
 
                 piece.refs.clear();
                 piece.transformedTriangles.clear();
-                piece.flags = strip.size() > 3
-                                  ? surface.flags
-                                  : ((surface.flags & ~Surface::TypeMask) | Surface::Polygon);
+
+                // A piece of one triangle stays a triangle strip. It draws the
+                // same triangle either way, but Speed Dreams' .acc loader
+                // cannot read an object that holds both kinds: a strip surface
+                // only records its ref count in striplist and throws its own
+                // arrays away, and at "kids 0" the loader builds one
+                // GL_TRIANGLE_STRIP over the object's whole numvert array and
+                // slices it with those counts (grloadac.cpp, do_refs and
+                // do_kids). A polygon surface keeps its vertices in that array
+                // and takes no place in striplist, so every strip after it is
+                // drawn through the wrong vertices -- triangles stretched
+                // between unrelated parts of the model. Turning the odd
+                // one-triangle piece into a polygon put 51 such objects into
+                // alicante, which is what --noTriangleStrips was hiding.
 
                 for (const auto &ref : strip)
                     piece.refs.push_back(ref);
@@ -7276,127 +7309,6 @@ void AC3D::splitTriangleStripsForGrid(Object &object, double size, size_t axis1,
         object.surfaces = surfaces;
 }
 
-std::string AC3D::textureKey(const Object &object)
-{
-    std::string key;
-
-    for (const auto &texture : object.textures)
-    {
-        key += static_cast<const std::string &>(texture.name);
-        key += ';';
-        key += texture.type;
-        key += '|';
-    }
-
-    return key;
-}
-
-// combineTexture keeps transparent geometry in a group per texture instead of
-// merging it, because surfaces that are blended have to keep their own drawing
-// order. Partitioning would then happen inside each of those groups and divide
-// the same few regions of the model once per texture: on a real track eight
-// regions came back as a hundred and forty four groups, none of which could be
-// rejected without first descending through a texture group that spans the
-// whole model.
-//
-// So a level holding nothing but groups of one texture's geometry has that
-// geometry lifted out and partitioned here, and the groups are rebuilt inside
-// each cell. The cells end up above the textures, as they already are for
-// opaque geometry, and a region can be rejected in one test.
-//
-// It only fires where rebuilding gives back exactly what was there: every
-// group holds a single texture set, and no two groups hold the same one. That
-// is what combineTexture produces, and it is what makes regrouping by texture
-// inside a cell the inverse of taking the groups apart.
-bool AC3D::hoistTextureGroups(Object &parent, std::vector<std::pair<std::string, Object>> &groups)
-{
-    if (parent.kids.size() < 2)
-        return false;
-
-    for (const auto &kid : parent.kids)
-    {
-        if (kid.type.type != "group" || !kid.surfaces.empty() || kid.kids.empty())
-            return false;
-
-        for (const auto &grandkid : kid.kids)
-        {
-            if (grandkid.type.type != "poly" || grandkid.surfaces.empty() || !grandkid.kids.empty())
-                return false;
-        }
-    }
-
-    std::set<std::string> seen;
-
-    for (const auto &kid : parent.kids)
-    {
-        const std::string key = textureKey(kid.kids.front());
-
-        for (const auto &grandkid : kid.kids)
-        {
-            if (textureKey(grandkid) != key)
-                return false;
-        }
-
-        if (!seen.insert(key).second)
-            return false;
-    }
-
-    for (auto &kid : parent.kids)
-    {
-        Object group = kid;
-
-        group.kids.clear();
-        groups.emplace_back(textureKey(kid.kids.front()), std::move(group));
-    }
-
-    std::vector<Object> geometry;
-
-    for (auto &kid : parent.kids)
-    {
-        for (auto &grandkid : kid.kids)
-            geometry.push_back(std::move(grandkid));
-    }
-
-    parent.kids = std::move(geometry);
-
-    return true;
-}
-
-// Puts the groups back, inside one cell, in the order they were in before.
-void AC3D::regroupByTexture(Object &cell, const std::vector<std::pair<std::string, Object>> &groups)
-{
-    std::map<std::string, std::vector<Object>> buckets;
-
-    for (auto &kid : cell.kids)
-        buckets[textureKey(kid)].push_back(std::move(kid));
-
-    cell.kids.clear();
-
-    for (const auto &group : groups)
-    {
-        const auto found = buckets.find(group.first);
-
-        if (found == buckets.end())
-            continue;
-
-        Object rebuilt = group.second;
-
-        for (auto &kid : found->second)
-            rebuilt.kids.push_back(std::move(kid));
-
-        cell.kids.push_back(std::move(rebuilt));
-        buckets.erase(found);
-    }
-
-    // Anything whose texture was not among the groups keeps its place rather
-    // than being dropped: this is a regrouping, not a filter.
-    for (auto &bucket : buckets)
-    {
-        for (auto &kid : bucket.second)
-            cell.kids.push_back(std::move(kid));
-    }
-}
-
 void AC3D::gridPartition(Object &parent, GridInfo &info)
 {
     const double size = info.size;
@@ -7404,9 +7316,6 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
     const size_t axis2 = info.axis2;
     const double origin1 = info.origin1;
     const double origin2 = info.origin2;
-
-    std::vector<std::pair<std::string, Object>> texture_groups;
-    const bool hoisted = hoistTextureGroups(parent, texture_groups);
 
     for (auto &kid : parent.kids)
         gridPartition(kid, info);
@@ -7444,7 +7353,20 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
     {
         // Anything with children of its own, or with no geometry to place,
         // stays where it is.
-        if (kid.surfaces.empty() || !kid.kids.empty())
+        //
+        // So does anything see-through. What a blended surface looks like
+        // depends on what was drawn before it, so for this geometry the order
+        // it is written in is part of the picture -- which is why
+        // combineTexture groups it and never merges it. Partitioning undoes
+        // that twice over: the objects of one texture are scattered across the
+        // cells and drawn cell by cell instead of together, and a strip that
+        // crosses a cell boundary is cut in two and its halves are blended at
+        // different points in the frame. On alicante that took 374 objects in
+        // 533 surfaces to 385 in 567, every one of them drawn in a new order.
+        // The cells it would have bought are worth less than the picture: this
+        // is a small share of a track's surfaces, and it is the share where
+        // being drawn in the right order is the whole of being drawn right.
+        if (kid.surfaces.empty() || !kid.kids.empty() || isTransparent(kid))
         {
             unpartitioned.push_back(std::move(kid));
             continue;
@@ -7580,12 +7502,7 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
     cell_list.reserve(cell_objects.size());
 
     for (auto &cell : cell_objects)
-    {
-        if (hoisted)
-            regroupByTexture(cell.second, texture_groups);
-
         cell_list.emplace_back(cell.first, std::move(cell.second));
-    }
 
     // Left as a flat list, the cells are a row of equals: a camera that can
     // see none of them still asks each one in turn. Ordered as a quad tree,
@@ -7915,11 +7832,43 @@ void AC3D::Object::transform(const Matrix &currentMatrix)
                 newMatrix.transformNormal(vertex.normal);
         }
     }
-    else
+    else if (type.type != "group" && type.type != "world")
     {
-        for (auto &kid : kids)
-            kid.transform(newMatrix);
+        // A light has no vertices for its placement to be baked into, so
+        // clearing loc and rot the way a group's are cleared does not push the
+        // transform down into geometry -- there is none -- it throws the
+        // placement away, and every light in the file ends up at the origin.
+        // What the ancestors and the object together came to is written back
+        // instead: the same position and orientation, said without them.
+        const Point3 location = { newMatrix[3][0], newMatrix[3][1], newMatrix[3][2] };
+
+        if (location[0] != 0.0 || location[1] != 0.0 || location[2] != 0.0)
+        {
+            Location placed;
+
+            placed.location = location;
+            locations.push_back(placed);
+        }
+
+        const std::array<double, 9> rotation = { newMatrix[0][0], newMatrix[0][1], newMatrix[0][2],
+                                                 newMatrix[1][0], newMatrix[1][1], newMatrix[1][2],
+                                                 newMatrix[2][0], newMatrix[2][1], newMatrix[2][2] };
+
+        if (rotation != std::array<double, 9>{ 1, 0, 0, 0, 1, 0, 0, 0, 1 })
+        {
+            Rotation turned;
+
+            turned.rotation = rotation;
+            rotations.push_back(turned);
+        }
     }
+
+    // Every object's kids, a poly's included. A poly can be a parent in this
+    // format, and its kids were the one branch this walk never reached: their
+    // own loc and rot survived while the ancestors' were baked away, which
+    // left them placed against a parent transform that no longer exists.
+    for (auto &kid : kids)
+        kid.transform(newMatrix);
 }
 
 void AC3D::transform(const Matrix &matrix)
@@ -8472,25 +8421,68 @@ bool AC3D::combineObjects(double size)
 
 void AC3D::combineTexture(const Object &object, std::vector<Object> &objects,
                           std::vector<Object> &transparent_objects,
+                          std::vector<Object> &other_objects,
                           std::unordered_map<std::string, size_t> &opaque)
 {
-    if (object.type.type == "poly")
+    // A group is only where objects are kept, and this is rebuilding where
+    // everything is kept, so a group is walked through and not carried over.
+    if (object.type.type == "group" || object.type.type == "world")
     {
-        // Transparent geometry is gathered by texture but never merged: what
-        // it looks like depends on the order it is drawn in, and an object is
-        // drawn in one piece. Sharing a texture is all that is asked of the
-        // objects put in a group together, because putting them there costs
-        // none of them anything.
-        if (hasTransparentTexture(object))
+        for (const auto &kid : object.kids)
+            combineTexture(kid, objects, transparent_objects, other_objects, opaque);
+
+        return;
+    }
+
+    // Anything else holds something of its own and can hold kids as well, and
+    // the two have to part company here. The object is about to be put in a
+    // group, or merged into another object, and neither takes kids along:
+    // addObject copies vertices and surfaces and nothing else, so kids left on
+    // a merged object went wherever the discarded copy went -- a whole subtree
+    // missing from the output with nothing said about it. They are walked in
+    // their own right below instead, which is also what stops a texture group
+    // from surviving unnoticed inside another object. flatten() bakes the
+    // transforms but does not collapse the hierarchy (see the TODO there), so
+    // an object with kids reaches this untouched.
+    Object leaf = object;
+
+    leaf.kids.clear();
+
+    if (object.type.type != "poly")
+    {
+        // A light, or whatever else a file may hold: not geometry, nothing it
+        // could be combined with. The world below is rebuilt out of what this
+        // walk collected and nothing else, so an object this function does not
+        // collect is an object deleted from the file without a word -- which
+        // is what became of every light in a model that was run through here.
+        other_objects.push_back(std::move(leaf));
+    }
+    // Transparent geometry is gathered by texture but never merged: what it
+    // looks like depends on the order it is drawn in, and an object is drawn
+    // in one piece. Sharing a texture is all that is asked of the objects put
+    // in a group together, because putting them there costs none of them
+    // anything.
+    //
+    // Transparent means isTransparent, not hasTransparentTexture: an object is
+    // just as see-through when the transparency comes from its material's
+    // trans, and merging that is the thing combineObjects is forbidden to do
+    // for exactly the same reason.
+    else if (isTransparent(leaf))
+    {
+        bool grouped = false;
+
+        for (auto &obj : transparent_objects)
         {
-            for (auto &obj : transparent_objects)
+            if (obj.kids[0].sameTextures(leaf))
             {
-                if (obj.kids[0].sameTextures(object))
-                {
-                    obj.kids.push_back(object);
-                    return;
-                }
+                obj.kids.push_back(std::move(leaf));
+                grouped = true;
+                break;
             }
+        }
+
+        if (!grouped)
+        {
             Object group;
             group.type.type = "group";
             transparent_objects.push_back(group);
@@ -8499,48 +8491,47 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects,
             Name quoted_name;
             quoted_name.name = quoted_string(groupName(name));
             transparent_objects.back().names.emplace_back(quoted_name);
-            transparent_objects.back().kids.push_back(object);
-            return;
+            transparent_objects.back().kids.push_back(std::move(leaf));
         }
-
-        // Opaque geometry is merged, and merging is the whole of one object
-        // becoming part of another, so sharing a texture is not enough: the
-        // two have to agree about everything an object states, surface state
-        // included. combineKey is that agreement, the same one combineObjects
-        // requires. Matching only the texture name merged objects whose
-        // surfaces differ in SURF flags, material, or the mapping applied to
-        // the texture, which undoes --splitSURF and --splitMat and leaves an
-        // object holding a mix the .acc format expects it not to have; on
-        // alicante and corkscrew acclint went on to warn about its own output.
-        //
-        // The state a merge has to preserve is the point of the key, not the
-        // number of groups: objects that differ in it were always going to be
-        // separate draw calls, since nothing can draw two states at once.
-        const auto found = opaque.find(object.combineKey());
+    }
+    // Opaque geometry is merged, and merging is the whole of one object
+    // becoming part of another, so sharing a texture is not enough: the two
+    // have to agree about everything an object states, surface state included.
+    // combineKey is that agreement, the same one combineObjects requires.
+    // Matching only the texture name merged objects whose surfaces differ in
+    // SURF flags, material, or the mapping applied to the texture, which
+    // undoes --splitSURF and --splitMat and leaves an object holding a mix the
+    // .acc format expects it not to have; on alicante and corkscrew acclint
+    // went on to warn about its own output.
+    //
+    // The state a merge has to preserve is the point of the key, not the
+    // number of groups: objects that differ in it were always going to be
+    // separate draw calls, since nothing can draw two states at once.
+    else
+    {
+        const std::string key = leaf.combineKey();
+        const auto found = opaque.find(key);
 
         if (found != opaque.end())
         {
-            objects[found->second].addObject(object);
-            return;
+            objects[found->second].addObject(leaf);
         }
-
-        opaque.emplace(object.combineKey(), objects.size());
-        objects.push_back(object);
-        if (m_rename_combine_texture)
+        else
         {
-            std::string name("object");
-            name.append(std::to_string(objects.size()));
-            if (objects.back().names.size() == 1)
-                objects.back().names[0].name = quoted_string(name);
+            opaque.emplace(key, objects.size());
+            objects.push_back(std::move(leaf));
+            if (m_rename_combine_texture)
+            {
+                std::string name("object");
+                name.append(std::to_string(objects.size()));
+                if (objects.back().names.size() == 1)
+                    objects.back().names[0].name = quoted_string(name);
+            }
         }
-        return;
     }
 
-    if (object.type.type == "group" || object.type.type == "world")
-    {
-        for (const auto &kid : object.kids)
-            combineTexture(kid, objects, transparent_objects, opaque);
-    }
+    for (const auto &kid : object.kids)
+        combineTexture(kid, objects, transparent_objects, other_objects, opaque);
 }
 
 void AC3D::combineTexture()
@@ -8565,13 +8556,15 @@ void AC3D::combineTexture()
 
     std::vector<Object> new_objects;
     std::vector<Object> new_transparent_objects;
+    std::vector<Object> new_other_objects;
     // Which object in new_objects each combineKey landed in. The list itself
     // stays in the order the objects were met, so the output does not depend
     // on how the keys happen to hash.
     std::unordered_map<std::string, size_t> opaque_index;
 
     for (const auto &object : m_objects)
-        combineTexture(object, new_objects, new_transparent_objects, opaque_index);
+        combineTexture(object, new_objects, new_transparent_objects, new_other_objects,
+                       opaque_index);
 
     Object &world = m_objects[0];
 
@@ -8592,6 +8585,12 @@ void AC3D::combineTexture()
     transparent.names.emplace_back(transparent_name);
     world.kids.push_back(transparent);
     world.kids[1].kids.insert(world.kids[1].kids.end(), new_transparent_objects.begin(), new_transparent_objects.end());
+
+    // After the two groups rather than before them: nothing here is drawn, so
+    // where it sits decides nothing, while OPAQUE and TRANSPARENT in that order
+    // is what makes the blending come out right -- and leaving them at kid 0
+    // and kid 1 is what lets the summary count them.
+    world.kids.insert(world.kids.end(), new_other_objects.begin(), new_other_objects.end());
 
     if (m_show_times)
     {

@@ -164,3 +164,63 @@ setup_file() {
 }
 
 ################################################################################
+
+# A poly is geometry, and in the .ac format it can be a parent as well. Its
+# kids are objects in their own right and have to be treated as such: the poly
+# is about to be put in a group or merged into another object, and neither
+# takes kids along -- addObject copies vertices and surfaces and nothing else.
+# Kids left attached to a merged object went out with it. flatten() bakes
+# transforms but does not collapse the hierarchy, so this is reachable.
+################################################################################
+
+# test4.1: p1 carries p2 and merges into p0, which has the same texture and the
+# same surface state. p2 is on blue.png and used to disappear from the output
+# with p1; it is now hoisted into OPAQUE as the texture group it is.
+@test "test4.1" {
+  $RUN_TEST acclint test4.1.ac -T textures --combineTexture -o test4.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test4.1.output.ac)"
+  expected_file="$(tr -d '\r' < test4.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.1.output.ac test4.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.1.output.ac
+}
+
+################################################################################
+# An object is see-through when its material's trans says so, not only when its
+# texture has an alpha channel, and it is the seeing through that makes the
+# order it is drawn in matter. Testing the texture alone sent this geometry to
+# OPAQUE and merged it, which is what combineObjects is forbidden to do for
+# exactly the same reason.
+################################################################################
+
+# test4.2: three polys on one opaque texture, the outer two on a material with
+# trans 0.5. They go to TRANSPARENT, grouped together but each still its own
+# object; only the opaque one is left in OPAQUE.
+@test "test4.2" {
+  $RUN_TEST acclint test4.2.ac -T textures --combineTexture -o test4.2.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.2.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test4.2.output.ac)"
+  expected_file="$(tr -d '\r' < test4.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.2.output.ac test4.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.2.output.ac
+}
+
+################################################################################

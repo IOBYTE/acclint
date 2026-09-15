@@ -97,3 +97,50 @@ setup_file() {
 }
 
 ################################################################################
+
+# Flattening pushes each object's placement down into the geometry underneath
+# it and then drops the loc and rot that said it. Two things were reached by
+# the dropping but not by the pushing.
+################################################################################
+
+# test3.1: a light has no vertices for a placement to be pushed into, so
+# clearing its loc threw the placement away and put it at the origin. It keeps
+# where it is instead, with its ancestors' placement composed into it: the
+# nested light under a group at x=10 comes out at x=11, and the group's own loc
+# is gone as it should be.
+@test "test3.1" {
+  $RUN_TEST acclint test3.1.ac --flatten -o test3.1.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test3.1.output.ac)"
+  expected_file="$(tr -d '\r' < test3.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.1.output.ac test3.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.1.output.ac
+}
+
+# test3.2: a poly can be a parent in this format, and its kids were the one
+# branch the walk never entered -- the parent's vertices moved and the kid's
+# did not, leaving the kid ten units from where it belongs.
+@test "test3.2" {
+  $RUN_TEST acclint test3.2.ac --flatten -o test3.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test3.2.output.ac)"
+  expected_file="$(tr -d '\r' < test3.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.2.output.ac test3.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.2.output.ac
+}
+
+################################################################################

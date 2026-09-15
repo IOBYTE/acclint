@@ -82,6 +82,11 @@ setup_file() {
 # is transparency rather than the bound, which is why test2.3 says the same
 # thing as test2.2 instead of undoing it.
 #
+# The grid leaves it alone for the same reason: the order blended surfaces are
+# written in is part of the picture, so they are not scattered across cells and
+# not cut at a cell boundary. The three stay together under the group
+# combineTexture put them in, whatever the grid does around them.
+#
 # The rest of --fixAll is still visible here: the quad is split, the object
 # placed with loc has been resolved, and the group is the one combineTexture
 # made.
