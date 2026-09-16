@@ -8469,30 +8469,38 @@ void AC3D::combineTexture(const Object &object, std::vector<Object> &objects,
     // for exactly the same reason.
     else if (isTransparent(leaf))
     {
-        bool grouped = false;
+        // Which group it belongs in is settled before it is moved anywhere, so
+        // that the move happens once and in one place. Written as a move in
+        // each branch it was still only ever one of them, but nothing reading
+        // it -- a person or an analyser -- could see that without following
+        // the break out of the loop.
+        std::vector<Object> *group = nullptr;
 
         for (auto &obj : transparent_objects)
         {
             if (obj.kids[0].sameTextures(leaf))
             {
-                obj.kids.push_back(std::move(leaf));
-                grouped = true;
+                group = &obj.kids;
                 break;
             }
         }
 
-        if (!grouped)
+        if (group == nullptr)
         {
-            Object group;
-            group.type.type = "group";
-            transparent_objects.push_back(group);
+            Object created;
+            created.type.type = "group";
+            transparent_objects.push_back(created);
             std::string name("transparent_group");
             name.append(std::to_string(transparent_objects.size()));
             Name quoted_name;
             quoted_name.name = quoted_string(groupName(name));
             transparent_objects.back().names.emplace_back(quoted_name);
-            transparent_objects.back().kids.push_back(std::move(leaf));
+
+            // Taken after the push_back, which may have moved the vector.
+            group = &transparent_objects.back().kids;
         }
+
+        group->push_back(std::move(leaf));
     }
     // Opaque geometry is merged, and merging is the whole of one object
     // becoming part of another, so sharing a texture is not enough: the two
