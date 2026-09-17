@@ -195,3 +195,29 @@ setup_file() {
 }
 
 ################################################################################
+
+# What gets smoothed with what is settled by the vertex each face names, not
+# by where that vertex lies. Both corners below are two smooth faces meeting
+# at twenty degrees, well inside the default forty-five degree crease, and the
+# geometry of the two is identical. The first reaches its corner through two
+# coincident vertices, which is the only way a .ac can ask for an edge the
+# crease would round off, and both normals must survive. The second reaches
+# its corner through one shared vertex and must come out blended. Matching on
+# position instead read straight past the split and blended both.
+@test "test9" {
+  $RUN_TEST acclint test9.ac -o test9.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test9.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test9.output.acc)"
+  expected_file="$(tr -d '\r' < test9.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test9.output.acc test9.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test9.output.acc
+}
+
+################################################################################

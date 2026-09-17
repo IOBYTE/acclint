@@ -172,9 +172,12 @@ setup_file() {
 # A .ac has no vertex normals: shading is worked out when the file is read, by
 # averaging the faces that meet at a vertex, so splitting a vertex in two is
 # the only way to state an edge the crease angle would otherwise smooth away.
-# The first pair of coincident vertices is used by smooth shaded surfaces and
-# is carrying such an edge, so they are not the same vertex; the second pair is
-# used by flat shaded ones, where the split does nothing and they are.
+# The first pair of coincident vertices is used by two smooth shaded faces that
+# meet at about 20 degrees, well inside the default 45 degree crease, so the
+# split is the only thing keeping that corner sharp and they are not the same
+# vertex. The second pair is used by flat shaded faces, which take their
+# normals from their own planes whatever meets them there, so the split does
+# nothing and they are.
 @test "test5" {
   $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test5.ac
   [ "$status" -eq 0 ]

@@ -1266,20 +1266,30 @@ private:
     // the rest of the object says about it. Built once per object.
     struct SameVertex
     {
-        // .acc: vertices already given two sets of texture coordinates, which
-        // is a fault of their own rather than anything to do with merging.
+        // Vertices already given two sets of texture coordinates, which is a
+        // fault of their own rather than anything to do with merging.
         std::vector<bool>                        separate;
-        // .acc: the coordinates each vertex is given, where it is only ever
-        // given one set. Points into the object's refs, so it lasts only as
-        // long as the object is left alone.
+        // The coordinates each vertex is given, where it is only ever given
+        // one set. Points into the object's refs, so it lasts only as long as
+        // the object is left alone.
         std::vector<const std::vector<Point2> *> coordinates;
-        // .ac: which surfaces name each vertex, in order, and whether any of
-        // them is smooth shaded.
+        // The smooth shaded surfaces naming each vertex, in order, and the
+        // plane each surface of the object lies in. Flat shaded surfaces are
+        // left out: one takes its normal from its own plane and nothing that
+        // meets it at a vertex changes that.
         std::vector<std::vector<size_t>>         surfaces;
-        std::vector<bool>                        smooth;
-        bool                                     is_ac = false;
+        std::vector<Point3>                      normals;
+        std::vector<bool>                        normal_known;
+        double                                   crease = 45.0;
+        // Whether a split vertex is the only way an edge can be stated, and
+        // whether one set of coordinates per vertex is all that survives.
+        // The two are asked separately because they are not always both
+        // true of the same file: an .ac written as a .acc is shaded by its
+        // topology and read a pair of coordinates at a time.
+        bool                                     shading_from_topology = false;
+        bool                                     one_uv_per_vertex = false;
 
-        void build(const Object &object, bool ac);
+        void build(const Object &object, bool topology, bool single_uv);
         bool operator()(const Object &object, size_t index1, size_t index2) const;
     };
     void checkDuplicateVertices(std::istream &in, const Object &object);
@@ -1321,9 +1331,10 @@ private:
     void checkGroupWithGeometry(std::istream &in, const Object &object);
     static bool cleanObjects(std::vector<Object> &objects);
     static std::vector<size_t> clusterVertices(const std::vector<Vertex> &vertices);
-    static void separateVertexUv(const Object &object, std::vector<size_t> &representative);
-    static bool cleanVertices(std::vector<Object> &objects, bool separate_uv);
-    static bool cleanVertices(Object &object, bool separate_uv);
+    static void separateVertices(const Object &object, std::vector<size_t> &representative,
+                                 bool topology, bool single_uv);
+    static bool cleanVertices(std::vector<Object> &objects, bool topology, bool single_uv);
+    static bool cleanVertices(Object &object, bool topology, bool single_uv);
     static bool cleanSurfaces(std::vector<Object> &objects);
     static bool cleanSurfaces(Object &object);
     static bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);

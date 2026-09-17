@@ -1008,9 +1008,13 @@ void AC3D::convertObjectToAc(Object &object)
 
     // removing normals on vertices can create duplicate vertices
     //
-    // separate_uv is false: this is writing a .ac, where the coordinates stay
-    // on the ref and a shared vertex carrying two of them is no trouble.
-    cleanVertices(object, false);
+    // Neither is asked for. A .ac keeps its coordinates on the ref, so a
+    // shared vertex carrying two sets is no trouble; and the vertices that
+    // have just stopped stating a normal stated one a moment ago, so the
+    // faces meeting at them were never what said how they are shaded. What
+    // that loses is an edge sharper than the crease angle, which the normals
+    // had and the .ac has no way to keep without splitting the vertex again.
+    cleanVertices(object, false, false);
     cleanSurfaces(object);
 }
 
@@ -1086,10 +1090,14 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
     {
         Triangle() = delete;
         Triangle(unsigned int flags, size_t mat,
+            size_t source0, size_t source1, size_t source2,
             const Point3 &v0, const Point3 &v1, const Point3 &v2,
             const std::vector<Point2> &uv0, const std::vector<Point2> &uv1, const std::vector<Point2> &uv2)
             : m_flags(flags), m_mat(mat)
         {
+            m_source[0] = source0;
+            m_source[1] = source1;
+            m_source[2] = source2;
             m_vertices[0] = v0;
             m_vertices[1] = v1;
             m_vertices[2] = v2;
@@ -1127,13 +1135,22 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
         {
             return !m_vertices[0].equals(m_vertices[1]) && !m_vertices[0].equals(m_vertices[2]) && !m_vertices[1].equals(m_vertices[2]);
         }
+        // Two faces are smoothed together where they meet at a vertex, and
+        // what settles that is the vertex each one names, not where it lies.
+        // A .ac has no normals of its own: two coincident vertices are how it
+        // states an edge the crease angle would otherwise round off, so faces
+        // that reach the same point through different vertices were told not
+        // to blend. Comparing positions here read straight past that and
+        // averaged them anyway, and the .acc came out with the edge gone --
+        // a corner of two faces twenty degrees apart writing one normal
+        // halfway between the two.
         void smooth(Triangle &other)
         {
             for (size_t i = 0; i < 3; i++)
             {
                 for (size_t j = 0; j < 3; j++)
                 {
-                    if (m_vertices[i] == other.m_vertices[j])
+                    if (m_source[i] == other.m_source[j])
                     {
                         m_normals[i].emplace_back(other.m_normals[j][0]);
                         other.m_normals[j].emplace_back(m_normals[i][0]);
@@ -1165,6 +1182,11 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
         Point3 m_normal;
         unsigned int m_flags;
         size_t m_mat;
+        // Which vertex of the object this corner came from, and which vertex
+        // of the object being built it goes to. The first decides what is
+        // smoothed with what, the second is filled in once the new vertices
+        // are known.
+        size_t m_source[3]{ 0, 0, 0 };
         size_t m_vertex_index[3]{ 0, 0, 0 };
     };
 
@@ -1199,6 +1221,9 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
                             continue;
 
                         const Triangle triangle(surface.flags, surface.mats[0].mat,
+                            surface.refs[0].index,
+                            surface.refs[i - 1].index,
+                            surface.refs[i].index,
                             object.vertices[surface.refs[0].index].vertex,
                             object.vertices[surface.refs[i - 1].index].vertex,
                             object.vertices[surface.refs[i].index].vertex,
@@ -1218,6 +1243,9 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
                     continue;
 
                 const Triangle triangle(surface.flags, surface.mats[0].mat,
+                    surface.refs[0].index,
+                    surface.refs[1].index,
+                    surface.refs[2].index,
                     object.vertices[surface.refs[0].index].vertex,
                     object.vertices[surface.refs[1].index].vertex,
                     object.vertices[surface.refs[2].index].vertex,
@@ -5057,57 +5085,99 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
 // fault of its own and merging is not the subject.
 //
 // A .ac has no normals to compare. Shading is worked out when the file is
-// read, by averaging the faces that meet at each vertex, so splitting a
-// vertex in two is the only way to ask for an edge that the crease angle
-// would otherwise smooth away. Merging gives each of the two the other's
-// faces, which changes nothing in two cases: when the same surfaces name
-// both of them already -- a vertex listed twice in one polygon, say -- and
-// when none of the surfaces involved is smooth shaded, a flat face taking
-// its normal from its own plane whatever meets it there. Otherwise the
-// split is holding two faces apart at a point where they touch, and
-// merging them takes the edge away. Coordinates do not come into it: a .ac
-// keeps them on the ref and every reader of one takes a surface at a time,
-// so a vertex serving several is ordinary.
-void AC3D::SameVertex::build(const Object &object, bool ac)
+// read, by averaging the smooth shaded faces that meet at a vertex and lie
+// within the crease angle of each other, so splitting a vertex in two is
+// the only way to ask for an edge the crease would otherwise smooth away.
+// Merging gives each of the two the other's faces, and the question is
+// whether that changes any of those averages. It does not when the faces
+// brought in lie in the same plane as the ones already there, since parallel
+// normals add up to the same direction, and it does not when they lie beyond
+// the crease, since the average leaves them out. What is left -- a face that
+// is neither parallel nor beyond the crease -- is an edge the split was
+// holding open, and merging rounds it off. Where the planes cannot be worked
+// out at all the answer is no, because a merge that cannot be shown harmless
+// is not one to make quietly.
+//
+// Coordinates do not come into a .ac: it keeps them on the ref and every
+// reader of one takes a surface at a time, so a vertex serving several is
+// ordinary.
+void AC3D::SameVertex::build(const Object &object, bool topology, bool single_uv)
 {
-    is_ac = ac;
+    shading_from_topology = topology;
+    one_uv_per_vertex = single_uv;
+
     separate.assign(object.vertices.size(), false);
 
-    if (is_ac)
+    if (shading_from_topology)
     {
-        coordinates.clear();
+        crease = object.creases.empty() ? 45.0 : object.creases[0].crease;
         surfaces.assign(object.vertices.size(), {});
-        smooth.assign(object.vertices.size(), false);
+        normals.assign(object.surfaces.size(), Point3{ 0.0, 0.0, 0.0 });
+        normal_known.assign(object.surfaces.size(), false);
     }
     else
     {
         surfaces.clear();
-        smooth.clear();
-        coordinates.assign(object.vertices.size(), nullptr);
+        normals.clear();
+        normal_known.clear();
     }
+
+    if (one_uv_per_vertex)
+        coordinates.assign(object.vertices.size(), nullptr);
+    else
+        coordinates.clear();
 
     for (size_t index = 0; index < object.surfaces.size(); ++index)
     {
         const Surface &surface = object.surfaces[index];
+
+        if (shading_from_topology && surface.isSmoothShaded())
+        {
+            // The first three refs that are not a sliver. A surface that
+            // never offers three leaves normal_known false, and pairs
+            // touching it are refused rather than guessed at.
+            for (size_t i = 0; i + 2 < surface.refs.size(); ++i)
+            {
+                const size_t index0 = surface.refs[i].index;
+                const size_t index1 = surface.refs[i + 1].index;
+                const size_t index2 = surface.refs[i + 2].index;
+
+                if (index0 >= object.vertices.size() || index1 >= object.vertices.size() ||
+                    index2 >= object.vertices.size())
+                    continue;
+
+                const Point3 &point0 = object.vertices[index0].vertex;
+                const Point3 &point1 = object.vertices[index1].vertex;
+                const Point3 &point2 = object.vertices[index2].vertex;
+
+                if (degenerate(point0, point1, point2))
+                    continue;
+
+                normals[index] = normalizedNormal(point0, point1, point2);
+                normal_known[index] = true;
+                break;
+            }
+        }
 
         for (const auto &ref : surface.refs)
         {
             if (ref.index >= object.vertices.size())
                 continue;
 
-            if (is_ac)
+            if (shading_from_topology && surface.isSmoothShaded())
             {
                 // Named twice by the one surface is still the one surface.
                 if (surfaces[ref.index].empty() || surfaces[ref.index].back() != index)
                     surfaces[ref.index].push_back(index);
-
-                if (surface.isSmoothShaded())
-                    smooth[ref.index] = true;
             }
-            else if (coordinates[ref.index] == nullptr)
-                coordinates[ref.index] = &ref.coordinates;
-            else if (*coordinates[ref.index] != ref.coordinates)
-                separate[ref.index] = true;
+
+            if (one_uv_per_vertex)
+            {
+                if (coordinates[ref.index] == nullptr)
+                    coordinates[ref.index] = &ref.coordinates;
+                else if (*coordinates[ref.index] != ref.coordinates)
+                    separate[ref.index] = true;
+            }
         }
     }
 }
@@ -5117,22 +5187,45 @@ bool AC3D::SameVertex::operator()(const Object &object, size_t index1, size_t in
     if (!(object.vertices[index1] == object.vertices[index2]))
         return false;
 
-    if (is_ac)
+    // Only where the vertices state no normal of their own. Where they do,
+    // the comparison above has already asked the question, and the faces
+    // meeting at a vertex have no say in how it is shaded.
+    if (shading_from_topology && !object.vertices[index1].has_normal)
     {
-        // Merging brings neither of them a face it did not already have.
-        if (surfaces[index1] == surfaces[index2])
-            return true;
+        for (const size_t surface1 : surfaces[index1])
+        {
+            for (const size_t surface2 : surfaces[index2])
+            {
+                // Already meeting at both, so merging brings nothing.
+                if (surface1 == surface2)
+                    continue;
 
-        return !smooth[index1] && !smooth[index2];
+                if (!normal_known[surface1] || !normal_known[surface2])
+                    return false;
+
+                // Parallel planes average to the direction they already had.
+                if (normals[surface1].equals(normals[surface2]))
+                    continue;
+
+                if (normals[surface1].angleDegrees(normals[surface2]) < crease)
+                    return false;
+            }
+        }
     }
 
-    if (separate[index1] || separate[index2])
-        return false;
+    if (one_uv_per_vertex)
+    {
+        if (separate[index1] || separate[index2])
+            return false;
 
-    // A vertex no surface names is given no coordinates and so disagrees
-    // with nothing.
-    return coordinates[index1] == nullptr || coordinates[index2] == nullptr ||
-           *coordinates[index1] == *coordinates[index2];
+        // A vertex no surface names is given no coordinates and so disagrees
+        // with nothing.
+        if (coordinates[index1] != nullptr && coordinates[index2] != nullptr &&
+            *coordinates[index1] != *coordinates[index2])
+            return false;
+    }
+
+    return true;
 }
 
 void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
@@ -5143,7 +5236,9 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
     const TimeAccumulator timer(m_duplicate_vertices_time);
 
     SameVertex same;
-    same.build(object, m_is_ac);
+    // Of the input, as read: an .ac is shaded by its topology and keeps its
+    // coordinates on the ref, a .acc the other way about.
+    same.build(object, m_is_ac, !m_is_ac);
 
     std::vector<bool> duplicates(object.vertices.size(), false);
 
@@ -6804,7 +6899,9 @@ bool AC3D::cleanVertices()
         start = std::chrono::system_clock::now();
     }
 
-    const bool result = cleanVertices(m_objects, m_acc_output);
+    // What the vertices mean is set by the file they came from; what has to
+    // survive is set by the file being written.
+    const bool result = cleanVertices(m_objects, m_is_ac, m_acc_output);
 
     if (m_show_times)
     {
@@ -6921,55 +7018,39 @@ std::vector<size_t> AC3D::clusterVertices(const std::vector<Vertex> &vertices)
     return representative;
 }
 
-bool AC3D::cleanVertices(std::vector<Object> &objects, bool separate_uv)
+bool AC3D::cleanVertices(std::vector<Object> &objects, bool topology, bool single_uv)
 {
     bool cleaned = false;
 
     for (auto &object : objects)
     {
-        cleaned |= cleanVertices(object, separate_uv);
-        cleaned |= cleanVertices(object.kids, separate_uv);
+        cleaned |= cleanVertices(object, topology, single_uv);
+        cleaned |= cleanVertices(object.kids, topology, single_uv);
     }
 
     return cleaned;
 }
 
-// The texture coordinates of a .acc live on the ref, so one vertex can be used
-// with several sets of them. Speed Dreams' loader does not keep them there:
-// for an object of triangle strips it stores one pair per vertex -- t0tab[vtx]
-// in grloadac.cpp's do_refs -- and the last ref to name a vertex is the one
-// that decides. Merging two vertices that are used with different coordinates
-// therefore throws one set away, and whatever used it comes out textured with
-// the other one's coordinates.
+// clusterVertices merges on what the vertex records themselves say, which is
+// all it is given. SameVertex knows what the rest of the object says about
+// them, so whatever the two disagree about is put back on its own.
 //
-// Nothing that built the track does this: alicante has no such vertex. But
-// combineTexture and combineObjects bring formerly separate objects together,
-// and vertices the two had in common then look like duplicates -- 72 of them
-// after combineTexture, 55 after combineObjects, on a file that arrived with
-// none. So while a .acc is being written, a vertex is only merged onto another
-// when everything using either of them agrees about its coordinates. The cost
-// is a handful of vertices that could have been shared; acclint's own
-// "different uv" warning is what this leaves nothing to report.
-void AC3D::separateVertexUv(const Object &object, std::vector<size_t> &representative)
+// Nothing that built these files merges what it should not: alicante arrives
+// with no such vertex. It is combineTexture and combineObjects that bring
+// formerly separate objects together, and vertices the two had in common then
+// look alike -- 72 of them after combineTexture, 55 after combineObjects, on a
+// file that arrived with none. The cost of keeping them apart is a handful of
+// vertices that could have been shared; what it buys is that acclint's own
+// "duplicate vertices" warning, which asks SameVertex the same question, has
+// nothing left to report about what acclint wrote.
+void AC3D::separateVertices(const Object &object, std::vector<size_t> &representative,
+                            bool topology, bool single_uv)
 {
-    std::map<size_t, std::vector<Point2>> coordinates;
-    std::set<size_t> mixed;
+    if (!topology && !single_uv)
+        return;
 
-    for (const auto &surface : object.surfaces)
-    {
-        for (const auto &ref : surface.refs)
-        {
-            if (ref.index >= representative.size())
-                continue;
-
-            const auto found = coordinates.find(ref.index);
-
-            if (found == coordinates.end())
-                coordinates.emplace(ref.index, ref.coordinates);
-            else if (found->second != ref.coordinates)
-                mixed.insert(ref.index);
-        }
-    }
+    SameVertex same;
+    same.build(object, topology, single_uv);
 
     for (size_t i = 0; i < representative.size(); ++i)
     {
@@ -6978,23 +7059,12 @@ void AC3D::separateVertexUv(const Object &object, std::vector<size_t> &represent
         if (leader == i)
             continue;
 
-        const auto mine = coordinates.find(i);
-        const auto theirs = coordinates.find(leader);
-
-        // A vertex no surface uses has no coordinates to disagree about, and
-        // is on its way out as unused regardless.
-        if (mine == coordinates.end() || theirs == coordinates.end())
-            continue;
-
-        if (mixed.find(i) != mixed.end() || mixed.find(leader) != mixed.end() ||
-            mine->second != theirs->second)
-        {
+        if (!same(object, i, leader))
             representative[i] = i;
-        }
     }
 }
 
-bool AC3D::cleanVertices(Object &object, bool separate_uv)
+bool AC3D::cleanVertices(Object &object, bool topology, bool single_uv)
 {
     if (object.vertices.empty())
         return false;
@@ -7022,8 +7092,7 @@ bool AC3D::cleanVertices(Object &object, bool separate_uv)
     // to match when they do.
     std::vector<size_t> representative = clusterVertices(object.vertices);
 
-    if (separate_uv)
-        separateVertexUv(object, representative);
+    separateVertices(object, representative, topology, single_uv);
 
     for (size_t i = 0; i < object.vertices.size(); i++)
     {
