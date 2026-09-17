@@ -116,6 +116,7 @@ private:                                               \
 
     // warnings without tests
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
+    CHECK(repairableKidsCount, m_repairable_kids_count, true)
     CHECK(surfaceStripHole, m_surface_strip_hole, false)
 
     // errors with tests
@@ -132,6 +133,7 @@ private:                                               \
     CHECK(invalidVertex, m_invalid_vertex, true)
     CHECK(missingVertex, m_missing_vertex, true)
     CHECK(moreSURFThanSpecified, m_more_surf_than_specified, true)
+    CHECK(unrepairableKidsCount, m_unrepairable_kids_count, true)
 
     //errors without tests
 #undef CHECK

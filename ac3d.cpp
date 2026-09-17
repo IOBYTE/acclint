@@ -4111,13 +4111,16 @@ bool AC3D::repairKids(Object &root, std::istream &in)
                 // it stands, since what would be written is this tree with
                 // the counts corrected to match it -- which makes the
                 // mistake permanent and leaves nothing to say it happened.
-                errorWithCount(m_missing_kids_count, flat[starved].kids_info.line_number)
-                    << "kids counts ask for " << surplus << " more object"
-                    << (surplus == 1 ? "" : "s") << " than the file holds and no single count"
-                    << " accounts for it: a group holds objects that belong to another, and the"
-                    << " file does not say which, so what was read is not the tree the file"
-                    << " describes" << std::endl;
-                showLine(in, flat[starved].kids_info.line_pos, flat[starved].kids_offset);
+                if (m_unrepairable_kids_count)
+                {
+                    errorWithCount(m_unrepairable_kids_count_count, flat[starved].kids_info.line_number)
+                        << "kids counts ask for " << surplus << " more object"
+                        << (surplus == 1 ? "" : "s") << " than the file holds and no single count"
+                        << " accounts for it: a group holds objects that belong to another, and the"
+                        << " file does not say which, so what was read is not the tree the file"
+                        << " describes" << std::endl;
+                    showLine(in, flat[starved].kids_info.line_pos, flat[starved].kids_offset);
+                }
             }
         }
 
@@ -4136,9 +4139,9 @@ bool AC3D::repairKids(Object &root, std::istream &in)
 
     root = buildObjects(flat, index);
 
-    if (m_missing_kids)
+    if (m_repairable_kids_count)
     {
-        warningWithCount(m_missing_kids_count, info.line_number)
+        warningWithCount(m_repairable_kids_count_count, info.line_number)
             << "kids count of " << was << " is " << surplus << " more than the file holds"
             << (name.empty() ? std::string() : (" (object: " + name + ")"))
             << ": read as " << now << ", which gives every object above it the kids it asks for"
