@@ -1261,6 +1261,27 @@ private:
                                long long extent, size_t level, GridInfo &info);
     void checkDuplicateMaterials(std::istream &in);
     void checkUnusedVertex(std::istream &in, const Object &object);
+    // Whether two vertices of one object are the same vertex. Vertex's own
+    // operator == answers what the vertex record holds; this answers what
+    // the rest of the object says about it. Built once per object.
+    struct SameVertex
+    {
+        // .acc: vertices already given two sets of texture coordinates, which
+        // is a fault of their own rather than anything to do with merging.
+        std::vector<bool>                        separate;
+        // .acc: the coordinates each vertex is given, where it is only ever
+        // given one set. Points into the object's refs, so it lasts only as
+        // long as the object is left alone.
+        std::vector<const std::vector<Point2> *> coordinates;
+        // .ac: which surfaces name each vertex, in order, and whether any of
+        // them is smooth shaded.
+        std::vector<std::vector<size_t>>         surfaces;
+        std::vector<bool>                        smooth;
+        bool                                     is_ac = false;
+
+        void build(const Object &object, bool ac);
+        bool operator()(const Object &object, size_t index1, size_t index2) const;
+    };
     void checkDuplicateVertices(std::istream &in, const Object &object);
     // Built where it is needed and dropped when the caller returns, rather
     // than cached on the Surface. The triangles are copies of the vertices
@@ -1300,8 +1321,9 @@ private:
     void checkGroupWithGeometry(std::istream &in, const Object &object);
     static bool cleanObjects(std::vector<Object> &objects);
     static std::vector<size_t> clusterVertices(const std::vector<Vertex> &vertices);
-    static bool cleanVertices(std::vector<Object> &objects);
-    static bool cleanVertices(Object &object);
+    static void separateVertexUv(const Object &object, std::vector<size_t> &representative);
+    static bool cleanVertices(std::vector<Object> &objects, bool separate_uv);
+    static bool cleanVertices(Object &object, bool separate_uv);
     static bool cleanSurfaces(std::vector<Object> &objects);
     static bool cleanSurfaces(Object &object);
     static bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);

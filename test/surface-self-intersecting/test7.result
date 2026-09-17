@@ -1,9 +1,3 @@
-test7.ac:13 warning: duplicate vertices
-0.0 0.0 0.0
-^
-test7.ac:8 note: first instance
-0.0 0.0 0.0
-^
 test7.ac:19 warning: duplicate surface vertices
 5 0 0
 ^
@@ -30,5 +24,11 @@ test7.ac:11 note: third vertex
 ^
 test7.ac:15 warning: surface self intersecting
 SURF 0x10
+^
+test7.ac:13 warning: duplicate vertices
+0.0 0.0 0.0
+^
+test7.ac:8 note: first instance
+0.0 0.0 0.0
 ^
 4 warnings

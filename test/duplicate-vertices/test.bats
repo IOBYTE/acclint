@@ -168,3 +168,39 @@ setup_file() {
 }
 
 ################################################################################
+
+# A .ac has no vertex normals: shading is worked out when the file is read, by
+# averaging the faces that meet at a vertex, so splitting a vertex in two is
+# the only way to state an edge the crease angle would otherwise smooth away.
+# The first pair of coincident vertices is used by smooth shaded surfaces and
+# is carrying such an edge, so they are not the same vertex; the second pair is
+# used by flat shaded ones, where the split does nothing and they are.
+@test "test5" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test5.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# A .acc keeps the normal on the vertex and the texture coordinates on the ref,
+# and Speed Dreams keeps one of each per vertex, so two vertices given
+# different coordinates are two vertices however alike their records look. The
+# first pair is given different coordinates and the second pair the same ones.
+@test "test6" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test6.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

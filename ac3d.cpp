@@ -1007,7 +1007,10 @@ void AC3D::convertObjectToAc(Object &object)
         vertex.has_normal = false;
 
     // removing normals on vertices can create duplicate vertices
-    cleanVertices(object);
+    //
+    // separate_uv is false: this is writing a .ac, where the coordinates stay
+    // on the ref and a shared vertex carrying two of them is no trouble.
+    cleanVertices(object, false);
     cleanSurfaces(object);
 }
 
@@ -2916,8 +2919,6 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     break;
                 }
             }
-
-            checkDuplicateVertices(in, object);
         }
         else if (token == numsurf_token)
         {
@@ -3178,6 +3179,11 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         showLine(iss, 0);
     }
 
+    // After the surfaces, not with the vertices they follow: what makes two
+    // vertices the same vertex is partly in the refs, so asking while only
+    // the numvert block had been read could only ever compare positions and
+    // normals.
+    checkDuplicateVertices(in, object);
     checkUnusedVertex(in, object);
     checkMissingSurfaces(in, object);
     checkDuplicateSurfaces(in, object);
@@ -5035,12 +5041,109 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
     }
 }
 
+// What makes two vertices the same vertex, beyond the position and normal
+// that Vertex::operator == compares. Both formats keep part of what a vertex
+// means outside the vertex record, and they keep different parts in
+// different places, so the same two lines of numbers can be one vertex in a
+// .ac and two in a .acc.
+//
+// A .acc puts the normal on the vertex and the texture coordinates on the
+// ref, and Speed Dreams keeps one of each per vertex: t0tab in
+// grloadac.cpp is indexed by vertex number, so of the refs naming a vertex
+// only the last one's coordinates survive. Two vertices given different
+// coordinates are two vertices however alike they look, because either one
+// alone could only carry one set. A vertex already given two -- what the
+// "different uv" warning is about -- is left out of this entirely: it is a
+// fault of its own and merging is not the subject.
+//
+// A .ac has no normals to compare. Shading is worked out when the file is
+// read, by averaging the faces that meet at each vertex, so splitting a
+// vertex in two is the only way to ask for an edge that the crease angle
+// would otherwise smooth away. Merging gives each of the two the other's
+// faces, which changes nothing in two cases: when the same surfaces name
+// both of them already -- a vertex listed twice in one polygon, say -- and
+// when none of the surfaces involved is smooth shaded, a flat face taking
+// its normal from its own plane whatever meets it there. Otherwise the
+// split is holding two faces apart at a point where they touch, and
+// merging them takes the edge away. Coordinates do not come into it: a .ac
+// keeps them on the ref and every reader of one takes a surface at a time,
+// so a vertex serving several is ordinary.
+void AC3D::SameVertex::build(const Object &object, bool ac)
+{
+    is_ac = ac;
+    separate.assign(object.vertices.size(), false);
+
+    if (is_ac)
+    {
+        coordinates.clear();
+        surfaces.assign(object.vertices.size(), {});
+        smooth.assign(object.vertices.size(), false);
+    }
+    else
+    {
+        surfaces.clear();
+        smooth.clear();
+        coordinates.assign(object.vertices.size(), nullptr);
+    }
+
+    for (size_t index = 0; index < object.surfaces.size(); ++index)
+    {
+        const Surface &surface = object.surfaces[index];
+
+        for (const auto &ref : surface.refs)
+        {
+            if (ref.index >= object.vertices.size())
+                continue;
+
+            if (is_ac)
+            {
+                // Named twice by the one surface is still the one surface.
+                if (surfaces[ref.index].empty() || surfaces[ref.index].back() != index)
+                    surfaces[ref.index].push_back(index);
+
+                if (surface.isSmoothShaded())
+                    smooth[ref.index] = true;
+            }
+            else if (coordinates[ref.index] == nullptr)
+                coordinates[ref.index] = &ref.coordinates;
+            else if (*coordinates[ref.index] != ref.coordinates)
+                separate[ref.index] = true;
+        }
+    }
+}
+
+bool AC3D::SameVertex::operator()(const Object &object, size_t index1, size_t index2) const
+{
+    if (!(object.vertices[index1] == object.vertices[index2]))
+        return false;
+
+    if (is_ac)
+    {
+        // Merging brings neither of them a face it did not already have.
+        if (surfaces[index1] == surfaces[index2])
+            return true;
+
+        return !smooth[index1] && !smooth[index2];
+    }
+
+    if (separate[index1] || separate[index2])
+        return false;
+
+    // A vertex no surface names is given no coordinates and so disagrees
+    // with nothing.
+    return coordinates[index1] == nullptr || coordinates[index2] == nullptr ||
+           *coordinates[index1] == *coordinates[index2];
+}
+
 void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 {
     if (!m_duplicate_vertices)
         return;
 
     const TimeAccumulator timer(m_duplicate_vertices_time);
+
+    SameVertex same;
+    same.build(object, m_is_ac);
 
     std::vector<bool> duplicates(object.vertices.size(), false);
 
@@ -5052,7 +5155,7 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
             if (duplicates[j])
                 continue;
 
-            if (object.vertices[i] == object.vertices[j])
+            if (same(object, i, j))
             {
                 duplicates[j] = true;
 
@@ -6701,7 +6804,7 @@ bool AC3D::cleanVertices()
         start = std::chrono::system_clock::now();
     }
 
-    const bool result = cleanVertices(m_objects);
+    const bool result = cleanVertices(m_objects, m_acc_output);
 
     if (m_show_times)
     {
@@ -6818,20 +6921,80 @@ std::vector<size_t> AC3D::clusterVertices(const std::vector<Vertex> &vertices)
     return representative;
 }
 
-bool AC3D::cleanVertices(std::vector<Object> &objects)
+bool AC3D::cleanVertices(std::vector<Object> &objects, bool separate_uv)
 {
     bool cleaned = false;
 
     for (auto &object : objects)
     {
-        cleaned |= cleanVertices(object);
-        cleaned |= cleanVertices(object.kids);
+        cleaned |= cleanVertices(object, separate_uv);
+        cleaned |= cleanVertices(object.kids, separate_uv);
     }
 
     return cleaned;
 }
 
-bool AC3D::cleanVertices(Object &object)
+// The texture coordinates of a .acc live on the ref, so one vertex can be used
+// with several sets of them. Speed Dreams' loader does not keep them there:
+// for an object of triangle strips it stores one pair per vertex -- t0tab[vtx]
+// in grloadac.cpp's do_refs -- and the last ref to name a vertex is the one
+// that decides. Merging two vertices that are used with different coordinates
+// therefore throws one set away, and whatever used it comes out textured with
+// the other one's coordinates.
+//
+// Nothing that built the track does this: alicante has no such vertex. But
+// combineTexture and combineObjects bring formerly separate objects together,
+// and vertices the two had in common then look like duplicates -- 72 of them
+// after combineTexture, 55 after combineObjects, on a file that arrived with
+// none. So while a .acc is being written, a vertex is only merged onto another
+// when everything using either of them agrees about its coordinates. The cost
+// is a handful of vertices that could have been shared; acclint's own
+// "different uv" warning is what this leaves nothing to report.
+void AC3D::separateVertexUv(const Object &object, std::vector<size_t> &representative)
+{
+    std::map<size_t, std::vector<Point2>> coordinates;
+    std::set<size_t> mixed;
+
+    for (const auto &surface : object.surfaces)
+    {
+        for (const auto &ref : surface.refs)
+        {
+            if (ref.index >= representative.size())
+                continue;
+
+            const auto found = coordinates.find(ref.index);
+
+            if (found == coordinates.end())
+                coordinates.emplace(ref.index, ref.coordinates);
+            else if (found->second != ref.coordinates)
+                mixed.insert(ref.index);
+        }
+    }
+
+    for (size_t i = 0; i < representative.size(); ++i)
+    {
+        const size_t leader = representative[i];
+
+        if (leader == i)
+            continue;
+
+        const auto mine = coordinates.find(i);
+        const auto theirs = coordinates.find(leader);
+
+        // A vertex no surface uses has no coordinates to disagree about, and
+        // is on its way out as unused regardless.
+        if (mine == coordinates.end() || theirs == coordinates.end())
+            continue;
+
+        if (mixed.find(i) != mixed.end() || mixed.find(leader) != mixed.end() ||
+            mine->second != theirs->second)
+        {
+            representative[i] = i;
+        }
+    }
+}
+
+bool AC3D::cleanVertices(Object &object, bool separate_uv)
 {
     if (object.vertices.empty())
         return false;
@@ -6857,7 +7020,10 @@ bool AC3D::cleanVertices(Object &object)
     // The normals are part of the comparison: Vertex::operator== requires
     // both vertices to carry a normal or neither, and requires the normals
     // to match when they do.
-    const std::vector<size_t> representative = clusterVertices(object.vertices);
+    std::vector<size_t> representative = clusterVertices(object.vertices);
+
+    if (separate_uv)
+        separateVertexUv(object, representative);
 
     for (size_t i = 0; i < object.vertices.size(); i++)
     {

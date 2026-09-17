@@ -1,0 +1,7 @@
+test6.acc:17 warning: duplicate vertices
+5 0 0 0 0 1
+^
+test6.acc:14 note: first instance
+5 0 0 0 0 1
+^
+1 warning
