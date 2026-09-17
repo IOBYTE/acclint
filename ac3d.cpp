@@ -4877,6 +4877,12 @@ void AC3D::checkUnusedVertex(std::istream &in, const Object &object)
     }
 }
 
+// Of both formats. What is being reported is that the object changes state
+// part way through, which is true of the file whoever reads it: every change
+// is a state change for whatever draws it, and one object was asked to be two
+// things. Speed Dreams makes it worse -- it keeps one value per object and
+// takes it from whichever surface it read last, see Surface::state -- but that
+// is the severity, not the reason.
 void AC3D::checkDifferentSURF(std::istream &in, const Object &object)
 {
     if (!m_different_surf)
@@ -4956,6 +4962,12 @@ void AC3D::checkMixedSurfaceTypes(std::istream &in, const Object &object)
     showLine(in, first->line_pos);
 }
 
+// Of both formats, for the same reason as checkDifferentSURF: an object that
+// changes material part way through is one object asked to be two, and every
+// change costs a state change for whatever draws it. Speed Dreams again makes
+// it worse rather than making it the reason -- it keeps one material per
+// object, "vtab->setState(get_state(current_material))" in grloadac.cpp's
+// do_kids, with current_material left by whichever "mat" line came last.
 void AC3D::checkDifferentMat(std::istream &in, const Object &object)
 {
     if (!m_different_mat)
@@ -5212,19 +5224,26 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
 // different places, so the same two lines of numbers can be one vertex in a
 // .ac and two in a .acc.
 //
-// A .acc puts the normal on the vertex and the texture coordinates on the
-// ref, and Speed Dreams keeps one of each per vertex: t0tab in
-// grloadac.cpp is indexed by vertex number, so of the refs naming a vertex
-// only the last one's coordinates survive. Two vertices given different
-// coordinates are two vertices however alike they look, because either one
-// alone could only carry one set. A vertex already given two -- what the
-// "different uv" warning is about -- is left out of this entirely: it is a
-// fault of its own and merging is not the subject.
+// Both formats keep the texture coordinates on the ref; a .acc adds further
+// sets on the same ref rather than moving them. What cannot keep them there
+// is Speed Dreams, which holds one set per vertex -- t0tab in grloadac.cpp is
+// indexed by vertex number, so of the refs naming a vertex only the last
+// one's coordinates survive. So this is asked of a file Speed Dreams will
+// read rather than of a format: two vertices given different coordinates are
+// two vertices however alike they look, because either one alone could only
+// carry one set. A vertex already given two -- what the "different uv"
+// warning is about -- is left out of this entirely: it is a fault of its own
+// and merging is not the subject.
 //
-// A .ac has no normals to compare. Shading is worked out when the file is
-// read, by averaging the smooth shaded faces that meet at a vertex and lie
-// within the crease angle of each other, so splitting a vertex in two is
-// the only way to ask for an edge the crease would otherwise smooth away.
+// A vertex that states no normal has no normal to compare. Its shading is
+// worked out when the file is read, by averaging the smooth shaded faces that
+// meet at it and lie within the crease angle of each other, so splitting such
+// a vertex in two is the only way to ask for an edge the crease would
+// otherwise smooth away. That is the vertex's own doing and not the format's:
+// a .acc adds normals to a .ac rather than requiring them, so a .acc vertex
+// written without one is shaded exactly as a .ac vertex is. Asking the format
+// instead of the vertex got that wrong -- the same object kept its edge
+// written as a .ac and lost it written as a .acc.
 // Merging gives each of the two the other's faces, and the question is
 // whether that changes any of those averages. It does not when the faces
 // brought in lie in the same plane as the ones already there, since parallel
@@ -5238,9 +5257,12 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
 // Coordinates do not come into a .ac: it keeps them on the ref and every
 // reader of one takes a surface at a time, so a vertex serving several is
 // ordinary.
-void AC3D::SameVertex::build(const Object &object, bool topology, bool single_uv)
+void AC3D::SameVertex::build(const Object &object, bool consider_topology, bool single_uv)
 {
-    shading_from_topology = topology;
+    // The vertices decide, not the file name.
+    shading_from_topology = consider_topology &&
+                            std::any_of(object.vertices.begin(), object.vertices.end(),
+                                        [](const Vertex &vertex) { return !vertex.has_normal; });
     one_uv_per_vertex = single_uv;
 
     separate.assign(object.vertices.size(), false);
@@ -5373,9 +5395,10 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
     const TimeAccumulator timer(m_duplicate_vertices_time);
 
     SameVertex same;
-    // Of the input, as read: an .ac is shaded by its topology and keeps its
-    // coordinates on the ref, a .acc the other way about.
-    same.build(object, m_is_ac, !m_is_ac);
+    // Topology always considered -- build asks the vertices whether it
+    // applies. One set of coordinates per vertex only for a .acc, because
+    // that is the file Speed Dreams reads.
+    same.build(object, true, !m_is_ac);
 
     std::vector<bool> duplicates(object.vertices.size(), false);
 
@@ -7065,9 +7088,9 @@ bool AC3D::cleanVertices()
         start = std::chrono::system_clock::now();
     }
 
-    // What the vertices mean is set by the file they came from; what has to
-    // survive is set by the file being written.
-    const bool result = cleanVertices(m_objects, m_is_ac, m_acc_output);
+    // Topology always considered -- build asks the vertices whether it
+    // applies. What has to survive is set by the file being written.
+    const bool result = cleanVertices(m_objects, true, m_acc_output);
 
     if (m_show_times)
     {
@@ -7184,14 +7207,14 @@ std::vector<size_t> AC3D::clusterVertices(const std::vector<Vertex> &vertices)
     return representative;
 }
 
-bool AC3D::cleanVertices(std::vector<Object> &objects, bool topology, bool single_uv)
+bool AC3D::cleanVertices(std::vector<Object> &objects, bool consider_topology, bool single_uv)
 {
     bool cleaned = false;
 
     for (auto &object : objects)
     {
-        cleaned |= cleanVertices(object, topology, single_uv);
-        cleaned |= cleanVertices(object.kids, topology, single_uv);
+        cleaned |= cleanVertices(object, consider_topology, single_uv);
+        cleaned |= cleanVertices(object.kids, consider_topology, single_uv);
     }
 
     return cleaned;
@@ -7210,13 +7233,13 @@ bool AC3D::cleanVertices(std::vector<Object> &objects, bool topology, bool singl
 // "duplicate vertices" warning, which asks SameVertex the same question, has
 // nothing left to report about what acclint wrote.
 void AC3D::separateVertices(const Object &object, std::vector<size_t> &representative,
-                            bool topology, bool single_uv)
+                            bool consider_topology, bool single_uv)
 {
-    if (!topology && !single_uv)
+    if (!consider_topology && !single_uv)
         return;
 
     SameVertex same;
-    same.build(object, topology, single_uv);
+    same.build(object, consider_topology, single_uv);
 
     for (size_t i = 0; i < representative.size(); ++i)
     {
@@ -7230,7 +7253,7 @@ void AC3D::separateVertices(const Object &object, std::vector<size_t> &represent
     }
 }
 
-bool AC3D::cleanVertices(Object &object, bool topology, bool single_uv)
+bool AC3D::cleanVertices(Object &object, bool consider_topology, bool single_uv)
 {
     if (object.vertices.empty())
         return false;
@@ -7258,7 +7281,7 @@ bool AC3D::cleanVertices(Object &object, bool topology, bool single_uv)
     // to match when they do.
     std::vector<size_t> representative = clusterVertices(object.vertices);
 
-    separateVertices(object, representative, topology, single_uv);
+    separateVertices(object, representative, consider_topology, single_uv);
 
     for (size_t i = 0; i < object.vertices.size(); i++)
     {

@@ -207,3 +207,40 @@ setup_file() {
 }
 
 ################################################################################
+
+# The same object as test5, written as a .acc and still stating no normals. A
+# .acc adds normals to a .ac rather than requiring them, so a vertex written
+# without one is shaded by the faces that meet at it exactly as a .ac vertex
+# is, and the answer here has to be test5's answer: the smooth pair holding
+# the twenty degree edge is not one vertex, the flat pair is. Asking the file
+# name instead of the vertex got this wrong -- the same object kept its edge
+# as a .ac and lost it as a .acc.
+@test "test7" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test7.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test7.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# And it is not merged away either, so the edge survives being written.
+@test "test7.1" {
+  $RUN_TEST acclint -Wno-warnings test7.acc -o test7.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test7.output.acc)"
+  expected_file="$(tr -d '\r' < test7.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test7.output.acc test7.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.output.acc
+}
+
+################################################################################

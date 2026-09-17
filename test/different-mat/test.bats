@@ -63,3 +63,19 @@ setup_file() {
 }
 
 ################################################################################
+
+# The same object written as a .acc. What is reported is that the object
+# changes state part way through, which is true of the file whoever reads it,
+# so both formats are asked the same question and answer it the same way.
+@test "test2" {
+  $RUN_TEST acclint test2.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

@@ -1307,15 +1307,16 @@ private:
         std::vector<Point3>                      normals;
         std::vector<bool>                        normal_known;
         double                                   crease = 45.0;
-        // Whether a split vertex is the only way an edge can be stated, and
-        // whether one set of coordinates per vertex is all that survives.
-        // The two are asked separately because they are not always both
-        // true of the same file: an .ac written as a .acc is shaded by its
-        // topology and read a pair of coordinates at a time.
+        // Whether a split vertex is the only way an edge can be stated here,
+        // which build works out from the vertices themselves, and whether one
+        // set of coordinates per vertex is all that survives, which is about
+        // what will read the file. The two are asked separately because they
+        // are not always both true of it: an .ac written as a .acc is shaded
+        // by its topology and read one set of coordinates per vertex.
         bool                                     shading_from_topology = false;
         bool                                     one_uv_per_vertex = false;
 
-        void build(const Object &object, bool topology, bool single_uv);
+        void build(const Object &object, bool consider_topology, bool single_uv);
         bool operator()(const Object &object, size_t index1, size_t index2) const;
     };
     void checkDuplicateVertices(std::istream &in, const Object &object);
@@ -1360,9 +1361,9 @@ private:
     static bool cleanObjects(std::vector<Object> &objects);
     static std::vector<size_t> clusterVertices(const std::vector<Vertex> &vertices);
     static void separateVertices(const Object &object, std::vector<size_t> &representative,
-                                 bool topology, bool single_uv);
-    static bool cleanVertices(std::vector<Object> &objects, bool topology, bool single_uv);
-    static bool cleanVertices(Object &object, bool topology, bool single_uv);
+                                 bool consider_topology, bool single_uv);
+    static bool cleanVertices(std::vector<Object> &objects, bool consider_topology, bool single_uv);
+    static bool cleanVertices(Object &object, bool consider_topology, bool single_uv);
     static bool cleanSurfaces(std::vector<Object> &objects);
     static bool cleanSurfaces(Object &object);
     static bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);

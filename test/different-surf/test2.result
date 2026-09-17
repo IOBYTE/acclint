@@ -1,0 +1,7 @@
+test2.acc:21 warning: mixed surface types (object: test)
+SURF 0x34
+^
+test2.acc:15 note: SURF
+SURF 0x30
+^
+1 warning
