@@ -1,7 +1,7 @@
 test5.acc:27 error: invalid ref vertex index: 999 of 5
 999 0 0
 ^
-test5.acc:22 warning: different SURF (object: test)
+test5.acc:22 warning: mixed surface types (object: test)
 SURF 0x00
 ^
 test5.acc:14 note: SURF

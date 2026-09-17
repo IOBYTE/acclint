@@ -99,8 +99,9 @@ setup_file() {
 ################################################################################
 
 # Flattening pushes each object's placement down into the geometry underneath
-# it and then drops the loc and rot that said it. Two things were reached by
-# the dropping but not by the pushing.
+# it and then drops the loc and rot that said it. What has to hold is that
+# everything the dropping reaches the pushing reaches too, at every depth and
+# whatever is found there.
 ################################################################################
 
 # test3.1: a light has no vertices for a placement to be pushed into, so
@@ -124,9 +125,11 @@ setup_file() {
   rm test3.1.output.ac
 }
 
-# test3.2: a poly can be a parent in this format, and its kids were the one
-# branch the walk never entered -- the parent's vertices moved and the kid's
-# did not, leaving the kid ten units from where it belongs.
+# test3.2: placements compose all the way down. "shallow" sits under one group
+# at x=10 and "deep" under a further group at y=5 inside it, so the two have to
+# come out ten apart in x and five apart in y, and both locs have to be gone. A
+# walk that pushed only the nearest ancestor's placement, or dropped a loc on
+# the way down without carrying it, leaves "deep" somewhere it does not belong.
 @test "test3.2" {
   $RUN_TEST acclint test3.2.ac --flatten -o test3.2.output.ac
   [ "$status" -eq 0 ]

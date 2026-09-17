@@ -70,8 +70,14 @@ setup_file() {
 # test2: two strips that must stay apart. In "separated" a polygon sits between
 # them, and joining across it would draw the strips before the polygon instead
 # of around it. In "states" the second strip has a different material, so one
-# surface could not describe both. The file is compared against itself written
-# without the option: nothing changed.
+# surface could not describe both. Neither is joined, and the geometry comes
+# out as it went in.
+#
+# The polygon in "separated" is written as a strip, because a .acc object may
+# not hold both kinds and writing one unifies them. That happens after the
+# stitching, so the decision not to join was taken while the polygon was still
+# a polygon, which is the point of the test; and three refs draw the same
+# triangle either way, so the surface itself is unchanged.
 ################################################################################
 
 @test "test2.1" {

@@ -94,6 +94,8 @@ private:                                               \
     CHECK(multipleUrl, m_multiple_url, true)
     CHECK(multipleWorld, m_multiple_world, true)
     CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
+    CHECK(mixedSurfaceTypes, m_mixed_surface_types, true)
+    CHECK(polyWithKids, m_poly_with_kids, true)
     CHECK(surface2SidedOpaque, m_surface_2_sided_opaque, false)
     CHECK(surfaceNotConvex, m_surface_not_convex, true)
     CHECK(surfaceNotCoplanar, m_surface_not_coplanar, true)
@@ -848,6 +850,30 @@ private:
         {
             return (flags & TypeMask) == TriangleStrip;
         }
+        // What the object holding this surface has to agree about, which is
+        // not the whole of the SURF byte.
+        //
+        // Speed Dreams keeps one of each of these per object and takes it
+        // from whichever surface it read last -- current_flags in
+        // grloadac.cpp's setup_vertex_table_states for the sidedness -- so
+        // surfaces that disagree are drawn with another surface's state.
+        // osggraph keys its primitive bins on the same things in the same
+        // order: line-ness, then shading, then sidedness.
+        //
+        // The face type is not among them. A polygon and a strip that agree
+        // about all of this belong in one object, and which of the two the
+        // object is written as is settled at write time, by
+        // unifySurfaceTypes. Anything that is not a face keeps its type in
+        // the key: a line is not a face and can never share an object with
+        // one whatever its state, and a type that is not one of the four is
+        // not to be lumped in with faces on the strength of a guess.
+        unsigned int state() const
+        {
+            const unsigned int type = flags & TypeMask;
+            const unsigned int keep = (type == Polygon || type == TriangleStrip) ? 0 : type;
+
+            return keep | (flags & (ShadeMask | SideMask));
+        }
         bool isFlatShaded() const
         {
             return (flags & ShadeMask) == 0;
@@ -1325,10 +1351,12 @@ private:
     static int triangleFacing(const Triangle &triangle);
     void checkSurface2SidedOpaque(std::istream &in, const Object &object, const Surface &surface);
     void checkDifferentSURF(std::istream &in, const Object &object);
+    void checkMixedSurfaceTypes(std::istream &in, const Object &object);
     void checkDifferentMat(std::istream &in, const Object &object);
     void checkDifferentUV(std::istream &in, const Object &object);
     static Point3 surfaceRefNormal(const Surface &surface, size_t refIndex, const std::vector<Triangle> &triangles);
     void checkGroupWithGeometry(std::istream &in, const Object &object);
+    void checkPolyWithKids(std::istream &in, const Object &object);
     static bool cleanObjects(std::vector<Object> &objects);
     static std::vector<size_t> clusterVertices(const std::vector<Vertex> &vertices);
     static void separateVertices(const Object &object, std::vector<size_t> &representative,
@@ -1338,6 +1366,8 @@ private:
     static bool cleanSurfaces(std::vector<Object> &objects);
     static bool cleanSurfaces(Object &object);
     static bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);
+    static void unifySurfaceTypes(std::vector<Object> &objects);
+    static void unifySurfaceTypes(Object &object);
     static void convertObjectsToAc(std::vector<Object> &objects);
     static void convertObjectToAc(Object &object);
     bool repairKids(Object &root, std::istream &in);

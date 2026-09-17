@@ -165,17 +165,18 @@ setup_file() {
 
 ################################################################################
 
-# A poly is geometry, and in the .ac format it can be a parent as well. Its
-# kids are objects in their own right and have to be treated as such: the poly
-# is about to be put in a group or merged into another object, and neither
-# takes kids along -- addObject copies vertices and surfaces and nothing else.
-# Kids left attached to a merged object went out with it. flatten() bakes
-# transforms but does not collapse the hierarchy, so this is reachable.
+# An object's kids are objects in their own right and have to be treated as
+# such: an object about to be put in a group or merged into another one takes
+# no kids along, addObject copying vertices and surfaces and nothing else, so
+# kids left attached to a merged object went out with it. flatten() bakes
+# transforms but does not collapse the hierarchy, so a tree still arrives here
+# whatever else has run.
 ################################################################################
 
-# test4.1: p1 carries p2 and merges into p0, which has the same texture and the
-# same surface state. p2 is on blue.png and used to disappear from the output
-# with p1; it is now hoisted into OPAQUE as the texture group it is.
+# test4.1: p1 sits under a group beside p2 and merges into p0, which is outside
+# that group and has the same texture and the same surface state. p2 is on
+# blue.png and has to come through the walk on its own and be hoisted into
+# OPAQUE as the texture group it is.
 @test "test4.1" {
   $RUN_TEST acclint test4.1.ac -T textures --combineTexture -o test4.1.output.ac
   [ "$status" -eq 0 ]
@@ -221,6 +222,43 @@ setup_file() {
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test4.2.output.ac
+}
+
+################################################################################
+
+# Texture coordinates live on the ref, so one vertex can be used with several
+# sets of them -- and Speed Dreams' .acc loader does not keep them there. For
+# an object of triangle strips it stores one pair per vertex (t0tab[vtx], in
+# grloadac.cpp's do_refs) and the last ref to name a vertex decides. So two
+# vertices used with different coordinates have to stay two vertices while a
+# .acc is being written, however alike they otherwise are.
+#
+# Nothing that builds a track does this. Merging is what creates it: two
+# objects that met along an edge each had their own vertex there, and once they
+# are one object those vertices look like duplicates for cleanVertices to
+# remove. 72 of them on alicante after combineTexture, on a file that arrived
+# with none.
+################################################################################
+
+# test5.1: a and b meet at one corner and disagree about its uv. They merge
+# into one object, and the corner stays two vertices -- six, not five. In a .ac
+# it would merge, because there the coordinates stay on the ref.
+@test "test5.1" {
+  $RUN_TEST acclint test5.1.acc -T textures --combineTexture -o test5.1.output.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test5.1.output.acc)"
+  expected_file="$(tr -d '\r' < test5.1.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.1.output.acc test5.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.1.output.acc
 }
 
 ################################################################################

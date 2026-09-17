@@ -81,3 +81,25 @@ setup_file() {
 }
 
 ################################################################################
+
+# An object being split is being split, not copied: its children belong to it
+# once. Carrying them into each split off object put a second copy of the whole
+# subtree in the file, drawn on top of the first. "c" must appear
+# exactly once, under the original.
+@test "test2" {
+  $RUN_TEST acclint test2.ac --splitMat -Wno-different-mat -Wno-poly-with-kids -o test2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test2.output.ac)"
+  expected_file="$(tr -d '\r' < test2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test2.output.ac test2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test2.output.ac
+}
+
+################################################################################

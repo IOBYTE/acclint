@@ -5,9 +5,9 @@ kids 1
 OBJECT group
 name "g"
 loc 10 0 0
-kids 1
+kids 2
 OBJECT poly
-name "parent"
+name "shallow"
 numvert 3
 0 0 0
 1 0 0
@@ -19,9 +19,13 @@ refs 3
 0 0 0
 1 0 0
 2 0 0
+kids 0
+OBJECT group
+name "h"
+loc 0 5 0
 kids 1
 OBJECT poly
-name "child"
+name "deep"
 numvert 3
 0 0 0
 1 0 0

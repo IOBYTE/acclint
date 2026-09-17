@@ -1,0 +1,7 @@
+test1.acc:21 warning: mixed surface types (object: o)
+SURF 0x14
+^
+test1.acc:15 note: SURF
+SURF 0x10
+^
+1 warning

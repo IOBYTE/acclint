@@ -921,6 +921,59 @@ void AC3D::writeVertices(std::ostream &out, const Object &object) const
     }
 }
 
+// An object of a .acc may not hold both polygons and triangle strips --
+// checkMixedSurfaceTypes says why at length -- so once an object holds a
+// strip, its polygons become strips too.
+//
+// Three refs draw the same triangle either kind of way, so that much is free.
+// More than three do not: a polygon of n refs fans as (0,1,2), (0,2,3) and so
+// on, while a strip of n refs is (0,1,2), (2,1,3) and so on, which is not the
+// same surface. Such a polygon is fanned into triangles first, which is what
+// splitPolygons does and what --splitPolygon and --fixAll have already done
+// by the time this runs. A concave polygon cannot be fanned, so it cannot be
+// made a strip and is left as it is; the mix it leaves is what
+// checkMixedSurfaceTypes reports of acclint's own output, which is the right
+// answer to a file that cannot be written correctly rather than a quiet
+// wrong one.
+//
+// This is where the question belongs, not in splitMultipleSURF. Whether an
+// object's surfaces are written as polygons or as strips says nothing about
+// what the object is; it is a property of the file being written, settled
+// when it is written.
+void AC3D::unifySurfaceTypes(Object &object)
+{
+    for (auto &kid : object.kids)
+        unifySurfaceTypes(kid);
+
+    if (object.surfaces.empty())
+        return;
+
+    const bool any_strip = std::any_of(object.surfaces.begin(), object.surfaces.end(),
+                                       [](const Surface &surface) { return surface.isTriangleStrip(); });
+
+    if (!any_strip)
+        return;
+
+    const bool any_fan = std::any_of(object.surfaces.begin(), object.surfaces.end(),
+                                     [](const Surface &surface)
+                                     { return surface.isPolygon() && surface.refs.size() > 3; });
+
+    if (any_fan)
+        object.splitPolygons();
+
+    for (auto &surface : object.surfaces)
+    {
+        if (surface.isPolygon() && surface.refs.size() == 3)
+            surface.flags = (surface.flags & ~Surface::TypeMask) | Surface::TriangleStrip;
+    }
+}
+
+void AC3D::unifySurfaceTypes(std::vector<Object> &objects)
+{
+    for (auto &object : objects)
+        unifySurfaceTypes(object);
+}
+
 void AC3D::convertObjectsToAc(std::vector<Object> &objects)
 {
     for (auto &object : objects)
@@ -3217,7 +3270,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     checkDuplicateSurfaces(in, object);
     checkDifferentUV(in, object);
     checkGroupWithGeometry(in, object);
+    checkPolyWithKids(in, object);
     checkDifferentSURF(in, object);
+    checkMixedSurfaceTypes(in, object);
     checkDifferentMat(in, object);
     checkDuplicateTriangles(in, object);
 
@@ -4830,11 +4885,16 @@ void AC3D::checkDifferentSURF(std::istream &in, const Object &object)
     if (object.surfaces.empty())
         return;
 
-    const unsigned int flags = object.surfaces[0].flags;
+    // Surface::state, not the whole byte: two surfaces differing only in
+    // whether they are written as a polygon or as a strip are not in
+    // disagreement about anything the object keeps one of. That they have to
+    // end up written as one kind is a separate matter, and
+    // checkMixedSurfaceTypes is what says so.
+    const unsigned int state = object.surfaces[0].state();
 
     for (size_t i = 1; i < object.surfaces.size(); ++i)
     {
-        if (object.surfaces[i].flags != flags)
+        if (object.surfaces[i].state() != state)
         {
             warningWithCount(m_different_surf_count, object.surfaces[i].line_number) << "different SURF (object: " << object.getName() << ")" << std::endl;
             showLine(in, object.surfaces[i].line_pos);
@@ -4842,6 +4902,58 @@ void AC3D::checkDifferentSURF(std::istream &in, const Object &object)
             showLine(in, object.surfaces[0].line_pos);
         }
     }
+}
+
+// An object of a .acc may not hold both polygons and triangle strips.
+// Neither loader can read one that does. In ssggraph a strip surface records
+// only its ref count, in striplist, and throws its own arrays away, while a
+// polygon surface leaves its refs in the object's index array and takes no
+// place in striplist; cgrVtxTable::draw_geometry_array then walks the index
+// array in runs of the strip counts, so every strip after the first polygon
+// is drawn through the wrong vertices. In osggraph SurfaceBin::isTriangleStrip
+// tests the flags of the surface that created the bin and endPrimitive applies
+// that verdict to everything in it, so whichever kind came first, the rest
+// are decoded as it.
+//
+// This is not the same fault as "different SURF" and does not have the same
+// remedy. A state mix means the object is drawn with one surface's sidedness
+// or shading; a type mix means it is drawn through the wrong vertices
+// altogether. Writing a .acc unifies the types rather than splitting the
+// object, so what this reports is a file that arrived holding a mix.
+//
+// A .ac is not asked. It cannot hold a strip in the first place -- type 4 is
+// not a valid surface type there and is reported as one -- so the mix cannot
+// arise, and a file that tries has already been told what is wrong with it.
+void AC3D::checkMixedSurfaceTypes(std::istream &in, const Object &object)
+{
+    if (!m_mixed_surface_types)
+        return;
+
+    if (m_is_ac)
+        return;
+
+    const Surface *polygon = nullptr;
+    const Surface *strip = nullptr;
+
+    for (const auto &surface : object.surfaces)
+    {
+        if (surface.isPolygon() && polygon == nullptr)
+            polygon = &surface;
+        else if (surface.isTriangleStrip() && strip == nullptr)
+            strip = &surface;
+    }
+
+    if (polygon == nullptr || strip == nullptr)
+        return;
+
+    const Surface *second = polygon->line_number > strip->line_number ? polygon : strip;
+    const Surface *first = second == polygon ? strip : polygon;
+
+    warningWithCount(m_mixed_surface_types_count, second->line_number)
+        << "mixed surface types (object: " << object.getName() << ")" << std::endl;
+    showLine(in, second->line_pos);
+    note(first->line_number) << "SURF" << std::endl;
+    showLine(in, first->line_pos);
 }
 
 void AC3D::checkDifferentMat(std::istream &in, const Object &object)
@@ -4984,6 +5096,31 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
                 showLine(in, entry->line_pos);
             }
         }
+    }
+}
+
+// A poly holds geometry and nothing else. Children belong to a group, which
+// is what a group is for, and the two are not interchangeable. AC3D writes a
+// group for any object that has children, and Speed Dreams' loader takes the
+// kids count as the sign that an object is finished: do_kids in
+// grloadac.cpp builds the object's strip vertex table only for
+// "last_num_kids == 0", so a poly that claims children has its triangle
+// strips left unbuilt.
+//
+// The complement of "group with geometry", and as much a contradiction: one
+// says the object is a container and then fills it with surfaces, the other
+// says it is geometry and then hangs a tree off it.
+void AC3D::checkPolyWithKids(std::istream &in, const Object &object)
+{
+    if (!m_poly_with_kids)
+        return;
+
+    if (object.type.type == "poly" && !object.kids.empty())
+    {
+        warningWithCount(m_poly_with_kids_count, object.type.line_number) << "poly with kids" << std::endl;
+        showLine(in, object.type.line_pos, object.type.type_offset);
+        note(object.kids_info.line_number) << "kids" << std::endl;
+        showLine(in, object.kids_info.line_pos, object.kids_offset);
     }
 }
 
@@ -6419,6 +6556,14 @@ bool AC3D::write(const std::string &file, int version)
     if (!is_ac && m_triangle_strips && m_stitch_strips)
         stitchTriangleStrips();
 
+    // Last of all, and only for a .acc: an object may not hold both polygons
+    // and triangle strips, and this is the one place that knows what is about
+    // to be written. Everything above is free to leave a mix -- the grid
+    // splits strips, combineTexture and combineObjects merge objects that
+    // were written as different kinds -- because it is settled here.
+    if (!is_ac)
+        unifySurfaceTypes(m_objects);
+
     std::ofstream of(file, std::ofstream::binary);
 
     if (!of)
@@ -6538,26 +6683,41 @@ bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
             continue;
         }
 
-        const unsigned int flags = kid->surfaces[0].flags;
-        std::set<unsigned int> newFlags;
+        // Surface::state, not the whole byte. What the split is for is
+        // state the object keeps one of and the loader takes from whichever
+        // surface it read last; the primitive type is not that, and
+        // splitting on it took apart objects that agreed about everything
+        // that matters -- undoing combineTexture and combineObjects for no
+        // gain, since a polygon and a strip are one draw call either way.
+        // Which kind the object is written as is settled at write time by
+        // unifySurfaceTypes.
+        const unsigned int state = kid->surfaces[0].state();
+        std::set<unsigned int> newStates;
 
         for (size_t i = 1; i < kid->surfaces.size(); ++i)
         {
-            if (kid->surfaces[i].flags != flags)
+            if (kid->surfaces[i].state() != state)
             {
-                if (!newFlags.contains(kid->surfaces[i].flags))
+                if (!newStates.contains(kid->surfaces[i].state()))
                 {
-                    newFlags.insert(kid->surfaces[i].flags);
+                    newStates.insert(kid->surfaces[i].state());
                     newKids.push_back(*kid);
+
+                    // The object is being split, not copied. Its children
+                    // belong to it once, and they stay with the original:
+                    // carrying them along here put a second copy of the whole
+                    // subtree in the file, drawn on top of the first.
+                    newKids.back().kids.clear();
 
                     if (!newKids.back().names.empty())
                         newKids.back().names[0].name += ("-split" + std::to_string(newKids.size()));
 
+                    const unsigned int wanted = kid->surfaces[i].state();
                     auto it = newKids.back().surfaces.begin();
                     while (it != newKids.back().surfaces.end())
                     {
                         // remove surfaces that don't match
-                        if (it->flags != kid->surfaces[i].flags)
+                        if (it->state() != wanted)
                             it = newKids.back().surfaces.erase(it);
                         else
                             ++it;
@@ -6570,7 +6730,7 @@ bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
         while (it != kid->surfaces.end())
         {
             // remove surfaces that don't match
-            if (it->flags != flags)
+            if (it->state() != state)
                 it = kid->surfaces.erase(it);
             else
                 ++it;
@@ -6626,6 +6786,12 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
                 {
                     newMat.insert(kid->surfaces[i].mats[0].mat);
                     newKids.push_back(*kid);
+
+                    // The object is being split, not copied. Its children
+                    // belong to it once, and they stay with the original:
+                    // carrying them along here put a second copy of the whole
+                    // subtree in the file, drawn on top of the first.
+                    newKids.back().kids.clear();
 
                     if (!newKids.back().names.empty())
                         newKids.back().names[0].name += ("-split" + std::to_string(newKids.size()));

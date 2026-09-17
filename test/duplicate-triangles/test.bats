@@ -308,7 +308,7 @@ setup_file() {
 # should reference surface2.refs[2], matching the mirror-order branch
 # (plain triangle first, strip second), which was already correct.
 @test "test6" {
-  $RUN_TEST acclint -Wno-duplicate-surfaces -Wno-different-surf -Wduplicate-triangles test6.acc
+  $RUN_TEST acclint -Wno-duplicate-surfaces -Wno-different-surf -Wno-mixed-surface-types -Wduplicate-triangles test6.acc
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test6.result)"

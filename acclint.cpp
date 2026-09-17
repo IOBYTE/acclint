@@ -84,8 +84,10 @@ void usage()
     std::cerr << "  -Wno-multiple-texrep                   Don't show multiple texrep warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texture                  Don't show multiple texture warnings." << std::endl;
     std::cerr << "  -Wno-multiple-url                      Don't show multiple url warnings." << std::endl;
+    std::cerr << "  -Wno-mixed-surface-types               Don't show mixed surface types warnings." << std::endl;
     std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
+    std::cerr << "  -Wno-poly-with-kids                    Don't show poly with kids warnings." << std::endl;
     std::cerr << "  -Wno-surface-2-sided-opaque            Don't show surface 2 sided opaque warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-convex                Don't show surface not convex warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-coplanar              Don't show surface not coplanar warnings." << std::endl;
@@ -251,7 +253,9 @@ int main(int argc, char *argv[])
     bool multiple_texture = true;
     bool multiple_url = true;
     bool multiple_world = true;
+    bool mixed_surface_types = true;
     bool overlapping_2_sided_surface = true;
+    bool poly_with_kids = true;
     bool surface_2_sided_opaque = false;
     bool surface_not_convex = true;
     bool surface_not_coplanar = true;
@@ -632,7 +636,9 @@ int main(int argc, char *argv[])
                 multiple_texture = value;
                 multiple_url = value;
                 multiple_world = value;
+                mixed_surface_types = value;
                 overlapping_2_sided_surface = value;
+                poly_with_kids = value;
                 surface_2_sided_opaque = value;
                 surface_not_convex = value;
                 surface_not_coplanar = value;
@@ -828,6 +834,10 @@ int main(int argc, char *argv[])
             {
                 multiple_url = isEnabled(arg);
             }
+            else if (arg == "-Wno-mixed-surface-types" || arg == "-Wmixed-surface-types")
+            {
+                mixed_surface_types = isEnabled(arg);
+            }
             else if (arg == "-Wno-multiple-world" || arg == "-Wmultiple-world")
             {
                 multiple_world = isEnabled(arg);
@@ -835,6 +845,10 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-overlapping-2-sided-surface" || arg == "-Woverlapping-2-sided-surface")
             {
                 overlapping_2_sided_surface = isEnabled(arg);
+            }
+            else if (arg == "-Wno-poly-with-kids" || arg == "-Wpoly-with-kids")
+            {
+                poly_with_kids = isEnabled(arg);
             }
             else if (arg == "-Wno-surface-2-sided-opaque" || arg == "-Wsurface-2-sided-opaque")
             {
@@ -1140,7 +1154,9 @@ int main(int argc, char *argv[])
     ac3d.multipleTexture(multiple_texture);
     ac3d.multipleUrl(multiple_url);
     ac3d.multipleWorld(multiple_world);
+    ac3d.mixedSurfaceTypes(mixed_surface_types);
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
+    ac3d.polyWithKids(poly_with_kids);
     ac3d.surface2SidedOpaque(surface_2_sided_opaque);
     ac3d.surfaceNotConvex(surface_not_convex);
     ac3d.surfaceNotCoplanar(surface_not_coplanar);
@@ -1262,7 +1278,9 @@ int main(int argc, char *argv[])
             showCount(ac3d.multipleTextureCount(), "multiple texture: ");
             showCount(ac3d.multipleUrlCount(), "multiple url: ");
             showCount(ac3d.multipleWorldCount(), "multiple world: ");
+            showCount(ac3d.mixedSurfaceTypesCount(), "mixed surface types: ");
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
+            showCount(ac3d.polyWithKidsCount(), "poly with kids: ");
             showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
             showCount(ac3d.surfaceNotConvexCount(), "surface not convex: ");
             showCount(ac3d.surfaceNotCoplanarCount(), "surface not coplanar: ");
@@ -1405,6 +1423,19 @@ int main(int argc, char *argv[])
 
             ac3d.fixOverlapping2SidedSurface();
         }
+
+        // Both of those clear the two sided flag on surfaces one at a time,
+        // which can leave an object holding a mix of surface states that
+        // --splitSURF had already taken apart: on alicante three wheels come
+        // out of fixOverlapping2SidedSurface with two surfaces one sided and
+        // the third still two sided. An object is expected not to hold a mix.
+        // The .acc loader takes the cull face for a whole strip object from
+        // whichever surface it read last -- current_flags, in grloadac.cpp's
+        // setup_vertex_table_states -- so the surfaces that disagree are drawn
+        // with the wrong sidedness. Splitting again restores what --splitSURF
+        // established before these ran.
+        if (fix_surface_2_sided_opaque || fix_overlapping_2_sided_surface)
+            ac3d.splitMultipleSURF();
 
         if (combineTexture)
         {

@@ -1,0 +1,7 @@
+test1.ac:5 warning: poly with kids
+OBJECT poly
+       ^
+test1.ac:18 note: kids
+kids 1
+     ^
+1 warning

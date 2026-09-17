@@ -63,3 +63,52 @@ setup_file() {
 }
 
 ################################################################################
+
+# An object being split is being split, not copied: its children belong to it
+# once. Carrying them into each split off object put a second copy of the whole
+# subtree in the file, drawn on top of the first. "child" must appear
+# exactly once, under the original.
+@test "test2" {
+  $RUN_TEST acclint test2.ac --splitSURF -Wno-different-surf -Wno-poly-with-kids -o test2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test2.output.ac)"
+  expected_file="$(tr -d '\r' < test2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test2.output.ac test2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test2.output.ac
+}
+
+################################################################################
+
+# What --splitSURF is for is state an object keeps one of and Speed Dreams
+# takes from whichever surface it read last: shading, sidedness, material.
+# Whether a surface is written as a polygon or as a triangle strip is not
+# that, so the two surfaces below -- 0x30 and 0x34, agreeing about shading,
+# sidedness and material and differing only in kind -- have every reason to
+# stay in the one object, and must not be taken apart. Splitting on the whole
+# SURF byte took them apart and undid what combineTexture and combineObjects
+# had just done, for no gain: a polygon and a strip are one draw call either
+# way. Which kind they are written as is settled when the file is written.
+@test "test3" {
+  $RUN_TEST acclint test3.acc --splitSURF -Wno-mixed-surface-types -o test3.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test3.output.acc)"
+  expected_file="$(tr -d '\r' < test3.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.output.acc test3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.output.acc
+}
+
+################################################################################
