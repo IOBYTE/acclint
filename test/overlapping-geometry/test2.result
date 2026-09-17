@@ -1,0 +1,25 @@
+test2.ac:28 warning: overlapping geometry (object: roof texture:  sides: 1 facing: same)
+SURF 0x10
+^
+test2.ac:31 note: ref
+4 0 0
+^
+test2.ac:32 note: ref
+5 0 0
+^
+test2.ac:33 note: ref
+6 0 0
+^
+test2.ac:16 note: first instance (object: roof texture:  sides: 1)
+SURF 0x10
+^
+test2.ac:19 note: ref
+0 0 0
+^
+test2.ac:20 note: ref
+1 0 0
+^
+test2.ac:21 note: ref
+2 0 0
+^
+1 warning

@@ -1,0 +1,25 @@
+test8.ac:26 warning: overlapping geometry (object: patch texture:  sides: 1 facing: back to back)
+SURF 0x10
+^
+test8.ac:29 note: ref
+2 0 0
+^
+test8.ac:30 note: ref
+1 0 0
+^
+test8.ac:31 note: ref
+0 0 0
+^
+test8.ac:12 note: first instance (object: panel texture:  sides: 1)
+SURF 0x10
+^
+test8.ac:15 note: ref
+0 0 0
+^
+test8.ac:16 note: ref
+1 0 0
+^
+test8.ac:17 note: ref
+2 0 0
+^
+1 warning

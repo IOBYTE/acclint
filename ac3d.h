@@ -94,6 +94,7 @@ private:                                               \
     CHECK(multipleUrl, m_multiple_url, true)
     CHECK(multipleWorld, m_multiple_world, true)
     CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
+    CHECK(overlappingGeometry, m_overlapping_geometry, false)
     CHECK(mixedSurfaceTypes, m_mixed_surface_types, true)
     CHECK(polyWithKids, m_poly_with_kids, true)
     CHECK(surface2SidedOpaque, m_surface_2_sided_opaque, false)
@@ -263,6 +264,7 @@ public:
     void gridPartition(double size, bool quad_tree);
     bool combineObjects(double size);
     void fixOverlapping2SidedSurface();
+    void fixBackToBackMirror();
     void fixSurface2SidedOpaque();
     static std::string getDuration(const std::chrono::duration<double> &time_span);
     static std::string getDuration(const std::chrono::time_point<std::chrono::system_clock> &start,
@@ -1122,6 +1124,7 @@ private:
 
         bool hasTransparentTexture() const;
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
+        bool mirroredSurface(size_t index1, size_t index2) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
         void incrementMaterialIndex(size_t num_materials);
         void transform(const Matrix &currentMatrix);
@@ -1252,8 +1255,14 @@ private:
     void checkTrailing(std::istringstream &iss);
     void checkUnusedMaterial(std::istream &in);
     void checkMissingMat(std::istream &in);
-    void checkOverlapping2SidedSurface(std::istream &in);
+    void checkOverlapping(std::istream &in);
+    void checkOverlapping2SidedSurface(std::istream &in, const std::vector<Poly> &polys);
     void checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, const Poly &object2);
+    void checkOverlappingGeometry(std::istream &in, const std::vector<Poly> &polys);
+    void checkOverlappingGeometry(std::istream &in, const Poly &object1, const Poly &object2);
+    void checkOverlappingGeometry(std::istream &in, const Poly &poly);
+    void reportOverlappingGeometry(std::istream &in, const Object &object1, const Surface &surface1,
+                                   const Object &object2, const Surface &surface2);
     static void accumulateBounds(const Object &object, Point3 &min, Point3 &max, bool &any);
     static void splitTriangleStripsForGrid(Object &object, double size, size_t axis1, size_t axis2,
                                            double origin1, double origin2, bool swaps);
@@ -1405,6 +1414,7 @@ private:
     bool isTransparent(const Object &object);
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
+    static void fixBackToBackMirror(Object &object);
     static void getObjects(std::vector<Object *> &polys, Object *object);
 
     friend std::ostream & operator << (std::ostream &out, const Vertex &v);

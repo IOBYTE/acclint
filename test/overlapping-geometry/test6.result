@@ -1,0 +1,25 @@
+test6.acc:28 warning: overlapping geometry (object: stripB texture:  sides: 1 facing: same duplicate)
+SURF 0x14
+^
+test6.acc:33 note: ref
+2 0 0
+^
+test6.acc:34 note: ref
+3 0 0
+^
+test6.acc:35 note: ref
+4 0 0
+^
+test6.acc:12 note: first instance (object: triA texture:  sides: 1)
+SURF 0x10
+^
+test6.acc:15 note: ref
+0 0 0
+^
+test6.acc:16 note: ref
+1 0 0
+^
+test6.acc:17 note: ref
+2 0 0
+^
+1 warning

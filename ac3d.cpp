@@ -3379,6 +3379,85 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
     return false;
 }
 
+// True when two surfaces are the same polygon wound the other way and
+// nothing else: the same positions in reverse order, the same uv
+// coordinates where they meet, and either no vertex normals or matching
+// ones. sameSurface's Difference::Winding answers the first of those, but
+// the alignment it finds is needed to compare what sits on the refs, so the
+// walk is repeated here rather than called.
+//
+// The last two conditions are what makes folding the pair into one two
+// sided surface lose nothing. A single surface carries one uv coordinate per
+// ref and one normal per vertex, so a pair whose faces disagree about either
+// is two different faces that happen to occupy the same area, and merging
+// them would throw one face's mapping or lighting away. A .acc back to back
+// pair authored with opposite vertex normals is exactly that case: each face
+// has normals of its own, and one two sided surface cannot hold both.
+bool AC3D::Object::mirroredSurface(size_t index1, size_t index2) const
+{
+    const Surface &surface1 = surfaces[index1];
+    const Surface &surface2 = surfaces[index2];
+
+    if (!surface1.isPolygon() || !surface2.isPolygon())
+        return false;
+
+    if (surface1.refs.size() != surface2.refs.size() || surface1.refs.size() < 3)
+        return false;
+
+    const size_t size = surface1.refs.size();
+
+    for (size_t j = 0; j < size; ++j)
+    {
+        bool same = true;
+
+        for (size_t k = 0; k < size; ++k)
+        {
+            const Ref &ref1 = surface1.refs[k];
+            const Ref &ref2 = surface2.refs[(j + size - k) % size];
+
+            // guard against invalid file data (out of range vertex index)
+            if (ref1.index >= vertices.size() || ref2.index >= vertices.size())
+            {
+                same = false;
+                break;
+            }
+
+            if (!sameVertex(ref1.index, ref2.index))
+            {
+                same = false;
+                break;
+            }
+
+            // Exact, the same way checkDifferentUV compares uv coordinates.
+            if (ref1.coordinates != ref2.coordinates)
+            {
+                same = false;
+                break;
+            }
+
+            const Vertex &vertex1 = vertices[ref1.index];
+            const Vertex &vertex2 = vertices[ref2.index];
+
+            if (vertex1.has_normal != vertex2.has_normal)
+            {
+                same = false;
+                break;
+            }
+
+            if (vertex1.has_normal && !vertex1.normal.equals(vertex2.normal))
+            {
+                same = false;
+                break;
+            }
+        }
+
+        if (same)
+            return true;
+    }
+
+    return false;
+}
+
 void AC3D::Object::removeKids(const RemoveInfo &remove_info)
 {
     auto kid = kids.begin();
@@ -4201,7 +4280,7 @@ bool AC3D::read(const std::string &file)
     checkUnusedMaterial(in);
     checkMissingMat(in);
 
-    checkOverlapping2SidedSurface(in);
+    checkOverlapping(in);
 
     if (m_show_times)
     {
@@ -4507,7 +4586,26 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, 
     }
 }
 
-void AC3D::checkOverlapping2SidedSurface(std::istream &in)
+// Both overlap checks read the same transformed triangles and the same
+// bounds, and addPoly rebuilds all of them from scratch, so the flattened
+// object list is built once here rather than once per check: a run with both
+// enabled would otherwise triangulate the whole file twice.
+void AC3D::checkOverlapping(std::istream &in)
+{
+    if (!m_overlapping_2_sided_surface && !m_overlapping_geometry)
+        return;
+
+    std::vector<Poly> polys;
+    const Matrix matrix;
+
+    for (auto &world : m_objects)
+        addPoly(polys, world, matrix);
+
+    checkOverlapping2SidedSurface(in, polys);
+    checkOverlappingGeometry(in, polys);
+}
+
+void AC3D::checkOverlapping2SidedSurface(std::istream &in, const std::vector<Poly> &polys)
 {
     if (!m_overlapping_2_sided_surface)
         return;
@@ -4519,12 +4617,6 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
         std::cout << "checkOverlapping2SidedSurface starting" << std::endl;
         start = std::chrono::system_clock::now();
     }
-
-    std::vector<Poly> polys;
-    const Matrix matrix;
-
-    for (auto &world : m_objects)
-        addPoly(polys, world, matrix);
 
     // addPoly summarised each object on the way in, so a pair is rejected
     // here by a handful of comparisons instead of by walking two surface
@@ -4556,6 +4648,210 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in)
     {
         const std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
         std::cout << "checkOverlapping2SidedSurface done: duration: " << getDuration(start, end) << std::endl;
+    }
+}
+
+// Reports every overlapping triangle pair of two surfaces. The later surface
+// is the warning and the earlier one the note, so this reads the same way
+// checkOverlapping2SidedSurface's output does.
+void AC3D::reportOverlappingGeometry(std::istream &in, const Object &object1, const Surface &surface1,
+                                     const Object &object2, const Surface &surface2)
+{
+    // Whether the two triangles cover the same area rather than merely
+    // sharing some of it: the same three positions in any order. Vertex's
+    // own operator== would also require the normals to match, and the pair
+    // this most needs to recognise -- one triangle wound both ways to give a
+    // one sided surface a second face -- is normally authored in a .acc with
+    // opposite vertex normals, so only the positions are compared. addPoly
+    // has already dropped degenerate triangles, so three matching positions
+    // really are a permutation of each other and not a repeated vertex.
+    const auto samePositions = [](const Triangle &t1, const Triangle &t2)
+    {
+        const auto has = [](const Triangle &t, const Point3 &p)
+        {
+            return t.vertices[0].vertex.equals(p) ||
+                   t.vertices[1].vertex.equals(p) ||
+                   t.vertices[2].vertex.equals(p);
+        };
+
+        return has(t2, t1.vertices[0].vertex) && has(t2, t1.vertices[1].vertex) &&
+               has(t2, t1.vertices[2].vertex) && has(t1, t2.vertices[0].vertex) &&
+               has(t1, t2.vertices[1].vertex) && has(t1, t2.vertices[2].vertex);
+    };
+
+    for (const auto &triangle1 : surface1.transformedTriangles)
+    {
+        for (const auto &triangle2 : surface2.transformedTriangles)
+        {
+            if (trianglesOverlap(triangle1, triangle2))
+            {
+                // Triangle::normal is the object space normal: transform()
+                // moves the vertices and leaves it alone, so the normals the
+                // two surfaces are actually drawn with have to be taken from
+                // the transformed vertices instead of read off the triangle.
+                //
+                // The pair is coplanar (trianglesOverlap reports nothing
+                // else unless all three vertices are shared, which is
+                // coplanar too), so the two normals are parallel and their
+                // dot product only has its sign left to say: the surfaces
+                // either face the same way, which is what z fights, or they
+                // are back to back, which is how a one sided wall is given a
+                // second face and usually deliberate.
+                const Point3 normal1 = normalizedNormal(triangle1.vertices[0].vertex,
+                                                        triangle1.vertices[1].vertex,
+                                                        triangle1.vertices[2].vertex);
+                const Point3 normal2 = normalizedNormal(triangle2.vertices[0].vertex,
+                                                        triangle2.vertices[1].vertex,
+                                                        triangle2.vertices[2].vertex);
+                const bool same_facing = normal1.dot(normal2) > 0.0;
+
+                // Two triangles covering the same area are the deliberate
+                // constructions: wound the same way it is one triangle drawn
+                // twice, wound the other way it is a one sided surface given
+                // a second face. Anything else is a partial overlap, where
+                // only part of each surface is involved.
+                const bool coincident = samePositions(triangle1, triangle2);
+                const char *facing = same_facing ? (coincident ? "same duplicate)" : "same)")
+                                                 : (coincident ? "back to back mirror)" : "back to back)");
+
+                warningWithCount(m_overlapping_geometry_count, surface2.line_number) <<
+                    "overlapping geometry (object: " <<
+                    object2.getName() << " texture: " << object2.getTexture() <<
+                    " sides: " << (surface2.isDoubleSided() ? "2" : "1") <<
+                    " facing: " << facing << std::endl;
+                showLine(in, surface2.line_pos);
+                note(triangle2.refs[0].line_number) << "ref" << std::endl;
+                showLine(in, triangle2.refs[0].line_pos);
+                note(triangle2.refs[1].line_number) << "ref" << std::endl;
+                showLine(in, triangle2.refs[1].line_pos);
+                note(triangle2.refs[2].line_number) << "ref" << std::endl;
+                showLine(in, triangle2.refs[2].line_pos);
+
+                note(surface1.line_number) << "first instance (object: " <<
+                    object1.getName() << " texture: " << object1.getTexture() <<
+                    " sides: " << (surface1.isDoubleSided() ? "2)" : "1)") << std::endl;
+                showLine(in, surface1.line_pos);
+                note(triangle1.refs[0].line_number) << "ref" << std::endl;
+                showLine(in, triangle1.refs[0].line_pos);
+                note(triangle1.refs[1].line_number) << "ref" << std::endl;
+                showLine(in, triangle1.refs[1].line_pos);
+                note(triangle1.refs[2].line_number) << "ref" << std::endl;
+                showLine(in, triangle1.refs[2].line_pos);
+            }
+        }
+    }
+}
+
+// Two surfaces of one object overlap each other exactly as visibly as two
+// objects do, and nothing else reports it: duplicateSurfaces and
+// duplicateTriangles only match surfaces that describe the same triangle,
+// and surfaceSelfIntersecting stays inside a single surface. Triangles of
+// the same surface are left to that check rather than reported here.
+//
+// checkOverlapping2SidedSurface never looks at a pair from one object, so
+// nothing here can be a second report of what it already said, whatever the
+// sidedness of the two surfaces.
+void AC3D::checkOverlappingGeometry(std::istream &in, const Poly &poly)
+{
+    const Object &object = *poly.object;
+
+    for (size_t i = 0; i + 1 < object.surfaces.size(); ++i)
+    {
+        const Bounds &box1 = poly.surfaces[i];
+
+        if (!box1.triangles)
+            continue;
+
+        for (size_t j = i + 1; j < object.surfaces.size(); ++j)
+        {
+            const Bounds &box2 = poly.surfaces[j];
+
+            if (!box2.triangles)
+                continue;
+
+            if (!boundingBoxesOverlap(box1.min, box1.max, box2.min, box2.max))
+                continue;
+
+            reportOverlappingGeometry(in, object, object.surfaces[i], object, object.surfaces[j]);
+        }
+    }
+}
+
+void AC3D::checkOverlappingGeometry(std::istream &in, const Poly &object1, const Poly &object2)
+{
+    for (size_t i = 0; i < object1.object->surfaces.size(); ++i)
+    {
+        const Surface &surface1 = object1.object->surfaces[i];
+        const Bounds &box1 = object1.surfaces[i];
+
+        if (!box1.triangles)
+            continue;
+
+        for (size_t j = 0; j < object2.object->surfaces.size(); ++j)
+        {
+            const Surface &surface2 = object2.object->surfaces[j];
+            const Bounds &box2 = object2.surfaces[j];
+
+            if (!box2.triangles)
+                continue;
+
+            // checkOverlapping2SidedSurface reports exactly the pairs from
+            // two objects where at least one side is two sided, so those are
+            // left to it while it is enabled. Turning it off hands them back
+            // to this check instead of losing them.
+            if (m_overlapping_2_sided_surface && (box1.double_sided || box2.double_sided))
+                continue;
+
+            if (!boundingBoxesOverlap(box1.min, box1.max, box2.min, box2.max))
+                continue;
+
+            reportOverlappingGeometry(in, *object1.object, surface1, *object2.object, surface2);
+        }
+    }
+}
+
+// Unlike checkOverlapping2SidedSurface this cannot reject a pair for being
+// one sided, so on a track model far more pairs reach the triangle loops and
+// far more of what it finds is deliberate (a road laid over the terrain it
+// sits on, a kerb sharing the road's edge). That is why it is off by
+// default.
+void AC3D::checkOverlappingGeometry(std::istream &in, const std::vector<Poly> &polys)
+{
+    if (!m_overlapping_geometry)
+        return;
+
+    std::chrono::system_clock::time_point start;
+
+    if (m_show_times)
+    {
+        std::cout << "checkOverlappingGeometry starting" << std::endl;
+        start = std::chrono::system_clock::now();
+    }
+
+    for (size_t i = 0; i < polys.size(); ++i)
+    {
+        if (!polys[i].bounds.triangles)
+            continue;
+
+        checkOverlappingGeometry(in, polys[i]);
+
+        for (size_t j = i + 1; j < polys.size(); ++j)
+        {
+            if (!polys[j].bounds.triangles)
+                continue;
+
+            if (!boundingBoxesOverlap(polys[i].bounds.min, polys[i].bounds.max,
+                                      polys[j].bounds.min, polys[j].bounds.max))
+                continue;
+
+            checkOverlappingGeometry(in, polys[i], polys[j]);
+        }
+    }
+
+    if (m_show_times)
+    {
+        const std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+        std::cout << "checkOverlappingGeometry done: duration: " << getDuration(start, end) << std::endl;
     }
 }
 
@@ -9141,6 +9437,83 @@ void AC3D::fixOverlapping2SidedSurface(const Poly &object1, const Poly &object2,
             }
         }
     }
+}
+
+// Two single sided polygons of one object wound opposite ways are one two
+// sided polygon written twice: each is the other's back face. Keeping the
+// first and setting its two sided flag draws the same thing with half the
+// geometry, which is what the file should have said in the first place.
+//
+// Only pairs inside one object are merged. Two objects can hold a mirrored
+// pair as well -- that is the cross object half of what overlappingGeometry
+// reports -- but merging those means taking a surface out of another object
+// that has its own matrix, texture and material, and may be left holding
+// nothing at all. --flatten first brings the pairs that belong together into
+// one object, where this sees them.
+void AC3D::fixBackToBackMirror()
+{
+    for (auto &object : m_objects)
+        fixBackToBackMirror(object);
+}
+
+void AC3D::fixBackToBackMirror(Object &object)
+{
+    for (auto &kid : object.kids)
+        fixBackToBackMirror(kid);
+
+    if (object.surfaces.size() < 2)
+        return;
+
+    const auto sameMats = [](const Surface &surface1, const Surface &surface2)
+    {
+        if (surface1.mats.size() != surface2.mats.size())
+            return false;
+
+        for (size_t i = 0; i < surface1.mats.size(); ++i)
+            if (surface1.mats[i].mat != surface2.mats[i].mat)
+                return false;
+
+        return true;
+    };
+
+    std::vector<bool> merged(object.surfaces.size(), false);
+
+    for (size_t i = 0; i + 1 < object.surfaces.size(); ++i)
+    {
+        if (merged[i] || object.surfaces[i].isDoubleSided())
+            continue;
+
+        for (size_t j = i + 1; j < object.surfaces.size(); ++j)
+        {
+            if (merged[j] || object.surfaces[j].isDoubleSided())
+                continue;
+
+            // What the one surface left can only say once: its shading --
+            // state() holds that and the sidedness, which is already known
+            // to be single sided on both -- and its material.
+            if (object.surfaces[i].state() != object.surfaces[j].state())
+                continue;
+
+            if (!sameMats(object.surfaces[i], object.surfaces[j]))
+                continue;
+
+            if (!object.mirroredSurface(i, j))
+                continue;
+
+            object.surfaces[i].flags |= Surface::DoubleSided;
+            merged[j] = true;
+
+            // Surface i has both faces now, so it has no second back face to
+            // look for. A third surface mirroring it is a duplicate of one
+            // of the two, which is duplicateSurfaces' business, not a merge.
+            break;
+        }
+    }
+
+    // Last first, so the indices of the ones not yet reached still hold.
+    for (size_t i = object.surfaces.size(); i-- > 0;)
+        if (merged[i])
+            object.surfaces.erase(object.surfaces.begin() + static_cast<std::ptrdiff_t>(i));
 }
 
 void AC3D::fixSurface2SidedOpaque()

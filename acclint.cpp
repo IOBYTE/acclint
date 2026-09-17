@@ -87,6 +87,7 @@ void usage()
     std::cerr << "  -Wno-mixed-surface-types               Don't show mixed surface types warnings." << std::endl;
     std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
+    std::cerr << "  -Wno-overlapping-geometry              Don't show overlapping geometry warnings." << std::endl;
     std::cerr << "  -Wno-poly-with-kids                    Don't show poly with kids warnings." << std::endl;
     std::cerr << "  -Wno-surface-2-sided-opaque            Don't show surface 2 sided opaque warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-convex                Don't show surface not convex warnings." << std::endl;
@@ -153,6 +154,7 @@ void usage()
     std::cerr << "  --stripSwaps                           Let a triangle strip turn the same way twice by repeating refs." << std::endl;
     std::cerr << "  --grid size                            Partition objects into square cells of size in meters for culling." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
+    std::cerr << "  --fixBackToBackMirror                  Convert 2 single sided back to back mirror surfaces to 1 double sided." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --fixAll                               Fix everything." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
@@ -162,8 +164,8 @@ void usage()
     std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
     std::cerr << "  -l                                     Print the name of the input file." << std::endl;
     std::cerr << std::endl;
-    std::cerr << "By default all warnings (except blank-line, duplicate-triangles, surface-2-sided-opaque, surface-strip-* " << std::endl;
-    std::cerr << "and surface-winding-*) and errors are enabled." << std::endl;
+    std::cerr << "By default all warnings (except blank-line, duplicate-triangles, overlapping-geometry, " << std::endl;
+    std::cerr << "surface-2-sided-opaque, surface-strip-* and surface-winding-*) and errors are enabled." << std::endl;
     std::cerr << "You can enable all warnings using -Wwarnings" << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
     std::cerr << "You can also disable all warnings or errors and then reenable specific ones" << std::endl;
@@ -255,6 +257,7 @@ int main(int argc, char *argv[])
     bool multiple_world = true;
     bool mixed_surface_types = true;
     bool overlapping_2_sided_surface = true;
+    bool overlapping_geometry = false;
     bool poly_with_kids = true;
     bool surface_2_sided_opaque = false;
     bool surface_not_convex = true;
@@ -317,6 +320,7 @@ int main(int argc, char *argv[])
     double combine_percent = 25.0;
     double grid_size = 0.0;
     bool fix_overlapping_2_sided_surface = false;
+    bool fix_back_to_back_mirror = false;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
@@ -348,6 +352,7 @@ int main(int argc, char *argv[])
         OPT_STITCH_STRIPS,
         OPT_STRIP_SWAPS,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
+        OPT_FIX_BACK_TO_BACK_MIRROR,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
         OPT_FIX_ALL,
         OPT_GRID,
@@ -375,6 +380,7 @@ int main(int argc, char *argv[])
         { "stitchStrips",                no_argument,       nullptr, OPT_STITCH_STRIPS },
         { "stripSwaps",                  no_argument,       nullptr, OPT_STRIP_SWAPS },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
+        { "fixBackToBackMirror",         no_argument,       nullptr, OPT_FIX_BACK_TO_BACK_MIRROR },
         { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
         { "fixAll",                      no_argument,       nullptr, OPT_FIX_ALL },
         { "merge",                       required_argument, nullptr, OPT_MERGE },
@@ -481,6 +487,9 @@ int main(int argc, char *argv[])
             break;
         case OPT_FIX_OVERLAPPING_2_SIDED_SURFACE:
             fix_overlapping_2_sided_surface = true;
+            break;
+        case OPT_FIX_BACK_TO_BACK_MIRROR:
+            fix_back_to_back_mirror = true;
             break;
         case OPT_FIX_SURFACE_2_SIDED_OPAQUE:
             fix_surface_2_sided_opaque = true;
@@ -638,6 +647,7 @@ int main(int argc, char *argv[])
                 multiple_world = value;
                 mixed_surface_types = value;
                 overlapping_2_sided_surface = value;
+                overlapping_geometry = value;
                 poly_with_kids = value;
                 surface_2_sided_opaque = value;
                 surface_not_convex = value;
@@ -845,6 +855,10 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-overlapping-2-sided-surface" || arg == "-Woverlapping-2-sided-surface")
             {
                 overlapping_2_sided_surface = isEnabled(arg);
+            }
+            else if (arg == "-Wno-overlapping-geometry" || arg == "-Woverlapping-geometry")
+            {
+                overlapping_geometry = isEnabled(arg);
             }
             else if (arg == "-Wno-poly-with-kids" || arg == "-Wpoly-with-kids")
             {
@@ -1156,6 +1170,7 @@ int main(int argc, char *argv[])
     ac3d.multipleWorld(multiple_world);
     ac3d.mixedSurfaceTypes(mixed_surface_types);
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
+    ac3d.overlappingGeometry(overlapping_geometry);
     ac3d.polyWithKids(poly_with_kids);
     ac3d.surface2SidedOpaque(surface_2_sided_opaque);
     ac3d.surfaceNotConvex(surface_not_convex);
@@ -1280,6 +1295,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.multipleWorldCount(), "multiple world: ");
             showCount(ac3d.mixedSurfaceTypesCount(), "mixed surface types: ");
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
+            showCount(ac3d.overlappingGeometryCount(), "overlapping geometry: ");
             showCount(ac3d.polyWithKidsCount(), "poly with kids: ");
             showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
             showCount(ac3d.surfaceNotConvexCount(), "surface not convex: ");
@@ -1412,6 +1428,19 @@ int main(int argc, char *argv[])
         ac3d.fixMultipleWorlds();
 
         ac3d.clean();
+
+        // Before the two fixes below, both of which clear the two sided flag
+        // this one sets: fixSurface2SidedOpaque would take the merged
+        // surface straight back to single sided, and this removes the
+        // overlap that fixOverlapping2SidedSurface would otherwise have
+        // answered by making both faces one sided again. Merging first also
+        // leaves them less to look at. The clean afterwards collects the
+        // vertices the surface that went away was the only user of.
+        if (fix_back_to_back_mirror)
+        {
+            ac3d.fixBackToBackMirror();
+            ac3d.clean();
+        }
 
         if (fix_surface_2_sided_opaque)
             ac3d.fixSurface2SidedOpaque();
