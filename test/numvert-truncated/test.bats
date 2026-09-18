@@ -10,7 +10,7 @@
 # is in every other suite here. The Windows job still gets the output
 # assertions, just without the wall clock bound.
 setup() {
-    if [[ "$(uname)" == "Linux" ]]; then
+    if [[ "$(uname)" == "Linux" && "${USE_VALGRIND:-true}" == "true" ]]; then
         export RUN_TEST="run timeout 60 valgrind --leak-check=full --error-exitcode=1 --quiet"
     else
         export RUN_TEST="run"

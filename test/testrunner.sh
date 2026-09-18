@@ -7,6 +7,24 @@
 set -u
 shopt -s nullglob
 
+trap 'echo; echo "Interrupted." >&2; exit 130' INT
+
+use_valgrind=true
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --no-valgrind)
+            use_valgrind=false
+            shift
+            ;;
+        *)
+            echo "error: unknown option: $1" >&2
+            echo "usage: $0 [--no-valgrind]" >&2
+            exit 2
+            ;;
+    esac
+done
+
 if ! command -v bats > /dev/null 2>&1; then
     echo "error: bats not found in PATH" >&2
     exit 1
@@ -29,8 +47,15 @@ for dir in */; do
 
     echo "$name"
 
-    # Subshell so a failed cd can never leak into the next iteration.
-    if ! ( cd "$dir" && bats test.bats -T ); then
+    (
+        cd "$dir" || exit
+        USE_VALGRIND="$use_valgrind" bats test.bats -T
+    )
+    status=$?
+
+    if [ "$status" -eq 130 ]; then
+        exit 130
+    elif [ "$status" -ne 0 ]; then
         failed+=("$name")
     fi
 done
@@ -43,3 +68,4 @@ fi
 
 echo
 echo "all suites passed"
+

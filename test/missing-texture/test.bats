@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 setup() {
-    if [[ "$(uname)" == "Linux" ]]; then
+    if [[ "$(uname)" == "Linux" && "${USE_VALGRIND:-true}" == "true" ]]; then
         export RUN_TEST="run valgrind --leak-check=full --error-exitcode=1 --quiet"
     else
         export RUN_TEST="run"
@@ -81,3 +81,4 @@ setup_file() {
 }
 
 ################################################################################
+
