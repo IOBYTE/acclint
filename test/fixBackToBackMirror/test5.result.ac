@@ -4,6 +4,7 @@ OBJECT world
 kids 2
 OBJECT poly
 name "outside"
+texture "test1.png"
 numvert 4
 0 0 0
 1 0 0
@@ -20,6 +21,7 @@ refs 4
 kids 0
 OBJECT poly
 name "inside"
+texture "test1.png"
 numvert 4
 0 0 0
 1 0 0
