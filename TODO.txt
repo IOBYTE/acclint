@@ -1,45 +1,18 @@
 This program is functional but has room for improvements.
 
-1. Not all errors and warnings can be disabled or enabled yet.
-
-2. When outputting a file it is not possible to disable or enable specific cleanups
+1. When outputting a file it is not possible to disable or enable specific cleanups
    or optimizations.  This will be added in a future release.
 
-3. More cleanups and optimizations like transforming geometry (removing loc an rot)
-   will be added in a future release.
-
-   split multiple polygons per surface into multiple surfaces
-   split non coplanar polygons into multiple surfaces
-   split self intersecting polygons into multiple surfaces
-
-   convert polygons that are two sided because they are defined
-   with a clockwise vertex order to be single sided with a counterclockwise order
-
-   add the ability to change, delete, or extract specific objects or groups of objects
-
-4. It is not possible to convert a .ac file to .acc.
-
-   acclint file.ac -o file.acc
-
-   will not convert a .ac file to the .acc file format.  Use accc from TORCS or
-   Speed Dreams to do this conversion.
-
-   It is possible to convert a .acc file to .ac.
-
-5. More checks will be added in a future release.
-
-   self intersecting polygons
-
-6. Only a single file can be checked.  Multiple files could be checked at once
+2. Only a single file can be checked.  Multiple files could be checked at once
    but outputting a file complicates things.  We could not allow outputting a file
    when multiple inputs are present or we could merge multiple inputs into a single
    output.
 
-7. Major refactoring and performance improvements once feature complete.
+3. Major refactoring and performance improvements once feature complete.
 
-8. Add more tests.
+4. Add more tests.
 
-9. I'm conflicted about the name acclint. This name makes sense for TORCS and Speed
+5. I'm conflicted about the name acclint. This name makes sense for TORCS and Speed
    Dreams content developers because they are accustomed to using both .ac and .acc
    files.  Because .acc files are an extension to the .ac file format this tool can
    handle both formats and has format specific checks.
