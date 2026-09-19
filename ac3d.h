@@ -116,7 +116,7 @@ private:                                               \
 
     // warnings without tests
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
-    CHECK(repairableKidsCount, m_repairable_kids_count, true)
+    CHECK(fixableKidsCount, m_fixable_kids_count, true)
     CHECK(surfaceStripHole, m_surface_strip_hole, false)
 
     // errors with tests
@@ -133,7 +133,7 @@ private:                                               \
     CHECK(invalidVertex, m_invalid_vertex, true)
     CHECK(missingVertex, m_missing_vertex, true)
     CHECK(moreSURFThanSpecified, m_more_surf_than_specified, true)
-    CHECK(unrepairableKidsCount, m_unrepairable_kids_count, true)
+    CHECK(unfixableKidsCount, m_unfixable_kids_count, true)
 
     //errors without tests
 #undef CHECK
@@ -1382,7 +1382,7 @@ private:
     static void unifySurfaceTypes(Object &object);
     static void convertObjectsToAc(std::vector<Object> &objects);
     static void convertObjectToAc(Object &object);
-    bool repairKids(Object &root, std::istream &in);
+    bool fixKids(Object &root, std::istream &in);
     static void flattenObjects(Object &object, std::vector<Object> &flat);
     static Object buildObjects(std::vector<Object> &flat, size_t &index);
     static void convertObjectsToAcc(std::vector<Object> &objects, bool strips, bool swaps);

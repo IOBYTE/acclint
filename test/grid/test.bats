@@ -145,7 +145,9 @@ setup_file() {
 @test "test5.1" {
   $RUN_TEST acclint -Wno-warnings test5.acc --grid 10 -o test5.output.acc
   [ "$status" -eq 0 ]
-  if [ "$output" != "" ]; then
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.1.result)"
+  if [ "$actual" != "$expected" ]; then
     echo "$output" > test5.1.output
   fi
   actual_file="$(tr -d '\r' < test5.output.acc)"
@@ -176,7 +178,9 @@ setup_file() {
 @test "test6.1" {
   $RUN_TEST acclint -Wno-warnings test6.acc --grid 10 -o test6.output.acc
   [ "$status" -eq 0 ]
-  if [ "$output" != "" ]; then
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.1.result)"
+  if [ "$actual" != "$expected" ]; then
     echo "$output" > test6.1.output
   fi
   actual_file="$(tr -d '\r' < test6.output.acc)"

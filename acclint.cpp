@@ -108,7 +108,7 @@ void usage()
     // warnings without tests
     std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
-    std::cerr << "  -Wno-repairable-kids-count             Don't show repairable kids count warnings." << std::endl;
+    std::cerr << "  -Wno-fixable-kids-count                Don't show fixable kids count warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
 
@@ -131,7 +131,7 @@ void usage()
     std::cerr << "  -Wno-more-surf-than-specified          Don't show more surf than specified errors." << std::endl;
 
     // errors without tests
-    std::cerr << "  -Wno-unrepairable-kids-count           Don't show unrepairable kids count errors." << std::endl;
+    std::cerr << "  -Wno-unfixable-kids-count              Don't show unfixable kids count errors." << std::endl;
 
     std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
 
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
     bool overlapping_2_sided_surface = true;
     bool overlapping_geometry = false;
     bool poly_with_kids = true;
-    bool repairable_kids_count = true;
+    bool fixable_kids_count = true;
     bool surface_2_sided_opaque = false;
     bool surface_not_convex = true;
     bool surface_not_coplanar = true;
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
     bool invalid_token = true;
     bool invalid_texture_coordinate = true;
     bool invalid_vertex = true;
-    bool unrepairable_kids_count = true;
+    bool unfixable_kids_count = true;
     bool missing_vertex = true;
     bool more_surf_than_specified = true;
 
@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
                 overlapping_2_sided_surface = value;
                 overlapping_geometry = value;
                 poly_with_kids = value;
-                repairable_kids_count = value;
+                fixable_kids_count = value;
                 surface_2_sided_opaque = value;
                 surface_not_convex = value;
                 surface_not_coplanar = value;
@@ -869,9 +869,9 @@ int main(int argc, char *argv[])
             {
                 poly_with_kids = isEnabled(arg);
             }
-            else if (arg == "-Wno-repairable-kids-count" || arg == "-Wrepairable-kids-count")
+            else if (arg == "-Wno-fixable-kids-count" || arg == "-Wfixable-kids-count")
             {
-                repairable_kids_count = isEnabled(arg);
+                fixable_kids_count = isEnabled(arg);
             }
             else if (arg == "-Wno-surface-2-sided-opaque" || arg == "-Wsurface-2-sided-opaque")
             {
@@ -970,7 +970,7 @@ int main(int argc, char *argv[])
                 invalid_texture_coordinate = value;
                 invalid_vertex = value;
                 missing_vertex = value;
-                unrepairable_kids_count = value;
+                unfixable_kids_count = value;
                 more_surf_than_specified = value;
 
                 // errors without tests
@@ -1023,9 +1023,9 @@ int main(int argc, char *argv[])
             {
                 invalid_texture_coordinate = isEnabled(arg);
             }
-            else if (arg == "-Wno-unrepairable-kids-count" || arg == "-Wunrepairable-kids-countx")
+            else if (arg == "-Wno-unfixable-kids-count" || arg == "-Wunfixable-kids-countx")
             {
-                unrepairable_kids_count = isEnabled(arg);
+                unfixable_kids_count = isEnabled(arg);
             }
             else if (arg == "-Wno-missing-vertex" || arg == "-Wmissing-vertex")
             {
@@ -1204,7 +1204,7 @@ int main(int argc, char *argv[])
 
     // warnings without tests
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
-    ac3d.repairableKidsCount(repairable_kids_count);
+    ac3d.fixableKidsCount(fixable_kids_count);
     ac3d.surfaceStripHole(surface_strip_hole);
     ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
 
@@ -1224,7 +1224,7 @@ int main(int argc, char *argv[])
     ac3d.moreSURFThanSpecified(more_surf_than_specified);
 
     // errors without tests
-    ac3d.unrepairableKidsCount(unrepairable_kids_count);
+    ac3d.unfixableKidsCount(unfixable_kids_count);
 
     ac3d.notAC3DFile(not_ac3d_file);
     ac3d.texturePaths(texture_paths);
@@ -1332,7 +1332,7 @@ int main(int argc, char *argv[])
             // warnings without test
             showCount(ac3d.floatingPointCount(), "floating point: ");
             showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
-            showCount(ac3d.repairableKidsCountCount(), "repairable kids count: ");
+            showCount(ac3d.fixableKidsCountCount(), "fixable kids count: ");
             showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
             showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
         }
@@ -1363,7 +1363,7 @@ int main(int argc, char *argv[])
 
             // errors without tests
             showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
-            showCount(ac3d.unrepairableKidsCountCount(), "unrepairable kids count: ");
+            showCount(ac3d.unfixableKidsCountCount(), "unfixable kids count: ");
         }
     }
 

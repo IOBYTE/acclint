@@ -3975,7 +3975,7 @@ AC3D::Object AC3D::buildObjects(std::vector<Object> &flat, size_t &index)
 // -- has to come off one of those. It comes off the innermost that can carry
 // it, since that is the one that swallowed everything after it, and the same
 // objects are then put back together in the same order.
-bool AC3D::repairKids(Object &root, std::istream &in)
+bool AC3D::fixKids(Object &root, std::istream &in)
 {
     std::vector<Object> flat;
 
@@ -4111,9 +4111,9 @@ bool AC3D::repairKids(Object &root, std::istream &in)
                 // it stands, since what would be written is this tree with
                 // the counts corrected to match it -- which makes the
                 // mistake permanent and leaves nothing to say it happened.
-                if (m_unrepairable_kids_count)
+                if (m_unfixable_kids_count)
                 {
-                    errorWithCount(m_unrepairable_kids_count_count, flat[starved].kids_info.line_number)
+                    errorWithCount(m_unfixable_kids_count_count, flat[starved].kids_info.line_number)
                         << "kids counts ask for " << surplus << " more object"
                         << (surplus == 1 ? "" : "s") << " than the file holds and no single count"
                         << " accounts for it: a group holds objects that belong to another, and the"
@@ -4139,9 +4139,9 @@ bool AC3D::repairKids(Object &root, std::istream &in)
 
     root = buildObjects(flat, index);
 
-    if (m_repairable_kids_count)
+    if (m_fixable_kids_count)
     {
-        warningWithCount(m_repairable_kids_count_count, info.line_number)
+        warningWithCount(m_fixable_kids_count_count, info.line_number)
             << "kids count of " << was << " is " << surplus << " more than the file holds"
             << (name.empty() ? std::string() : (" (object: " + name + ")"))
             << ": read as " << now << ", which gives every object above it the kids it asks for"
@@ -4277,7 +4277,7 @@ bool AC3D::read(const std::string &file)
     // Before any check looks at the tree: what was read is only the tree the
     // file describes if every kids count could be honoured.
     for (auto &object : m_objects)
-        repairKids(object, in);
+        fixKids(object, in);
 
     checkDuplicateMaterials(in);
     checkUnusedMaterial(in);
@@ -8159,7 +8159,7 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
 
             // A surface naming no usable vertex has nowhere to be placed, so
             // it is left with the first cell rather than dropped: this is a
-            // regrouping, not a repair.
+            // regrouping, not a fix.
             buckets[count == 0 ? std::make_pair(0LL, 0LL) : cellOf(a / count, b / count)].push_back(i);
         }
 
