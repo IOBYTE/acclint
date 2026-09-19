@@ -48,7 +48,7 @@ setup_file() {
 }
 
 @test "test1.4" {
-  $RUN_TEST acclint -Wno-extra-object test1.ac -o test1.4.output.ac
+  $RUN_TEST acclint -Wno-extra-object test1.ac --fixMultipleWorlds -o test1.4.output.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.result)"

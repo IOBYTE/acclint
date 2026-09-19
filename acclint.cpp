@@ -155,13 +155,14 @@ void usage()
     std::cerr << "  --stitchStrips                         Join neighbouring triangle strips into one surface." << std::endl;
     std::cerr << "  --stripSwaps                           Let a triangle strip turn the same way twice by repeating refs." << std::endl;
     std::cerr << "  --grid size                            Partition objects into square cells of size in meters for culling." << std::endl;
-    std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
-    std::cerr << "  --fixBackToBackMirror                  Convert 2 single sided back to back mirror surfaces to 1 double sided." << std::endl;
-    std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --fixAll                               Fix everything." << std::endl;
+    std::cerr << "  --fixBackToBackMirror                  Convert 2 single sided back to back mirror surfaces to 1 double sided." << std::endl;
+    std::cerr << "  --fixMultipleWorlds                    Removes extra worlds." << std::endl;
+    std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
+    std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
-    std::cerr << "  --quiet                                Don't show warning messages." << std::endl;
-    std::cerr << "  --summary                              Show summary of warnings." << std::endl;
+    std::cerr << "  --quiet                                Don't show warning and error messages." << std::endl;
+    std::cerr << "  --summary                              Show summary of warnings and errors." << std::endl;
 
     std::cerr << "  -j #                                   Set number of threads to use." << std::endl;
     std::cerr << "  -l                                     Print the name of the input file." << std::endl;
@@ -304,7 +305,6 @@ int main(int argc, char *argv[])
     bool not_ac3d_file = true;
 
     std::vector<std::string> texture_paths;
-    bool fix_surface_2_sided_opaque = false;
     bool dump = false;
     bool splitSURF = false;
     bool splitMat = false;
@@ -323,8 +323,10 @@ int main(int argc, char *argv[])
     // as wide as the cell for a camera at either end to draw in full.
     double combine_percent = 25.0;
     double grid_size = 0.0;
-    bool fix_overlapping_2_sided_surface = false;
     bool fix_back_to_back_mirror = false;
+    bool fix_multiple_worlds = false;
+    bool fix_overlapping_2_sided_surface = false;
+    bool fix_surface_2_sided_opaque = false;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
     std::vector<std::string> merge_files;
@@ -355,6 +357,7 @@ int main(int argc, char *argv[])
         OPT_QUAD_TREE,
         OPT_STITCH_STRIPS,
         OPT_STRIP_SWAPS,
+        OPT_FIX_MULTIPLE_WORLDS,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
         OPT_FIX_BACK_TO_BACK_MIRROR,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
@@ -383,10 +386,11 @@ int main(int argc, char *argv[])
         { "quadTree",                    no_argument,       nullptr, OPT_QUAD_TREE },
         { "stitchStrips",                no_argument,       nullptr, OPT_STITCH_STRIPS },
         { "stripSwaps",                  no_argument,       nullptr, OPT_STRIP_SWAPS },
-        { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
-        { "fixBackToBackMirror",         no_argument,       nullptr, OPT_FIX_BACK_TO_BACK_MIRROR },
-        { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
         { "fixAll",                      no_argument,       nullptr, OPT_FIX_ALL },
+        { "fixBackToBackMirror",         no_argument,       nullptr, OPT_FIX_BACK_TO_BACK_MIRROR },
+        { "fixMultipleWorlds",           no_argument,       nullptr, OPT_FIX_MULTIPLE_WORLDS },
+        { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
+        { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
         { "merge",                       required_argument, nullptr, OPT_MERGE },
         { "removeObjects",               required_argument, nullptr, OPT_REMOVE_OBJECTS },
         { "dump",                        required_argument, nullptr, OPT_DUMP },
@@ -489,24 +493,28 @@ int main(int argc, char *argv[])
         case OPT_COMBINE_TEXTURE:
             combineTexture = true;
             break;
-        case OPT_FIX_OVERLAPPING_2_SIDED_SURFACE:
-            fix_overlapping_2_sided_surface = true;
-            break;
-        case OPT_FIX_BACK_TO_BACK_MIRROR:
-            fix_back_to_back_mirror = true;
-            break;
-        case OPT_FIX_SURFACE_2_SIDED_OPAQUE:
-            fix_surface_2_sided_opaque = true;
-            break;
         case OPT_FIX_ALL:
             flatten = true;
             splitPolygon = true;
             splitSURF = true;
             splitMat = true;
+            fix_multiple_worlds = true;
             fix_surface_2_sided_opaque = true;
             fix_overlapping_2_sided_surface = true;
             combineTexture = true;
             combineObjects = true;
+            break;
+        case OPT_FIX_BACK_TO_BACK_MIRROR:
+            fix_back_to_back_mirror = true;
+            break;
+        case OPT_FIX_MULTIPLE_WORLDS:
+            fix_multiple_worlds = true;
+            break;
+        case OPT_FIX_OVERLAPPING_2_SIDED_SURFACE:
+            fix_overlapping_2_sided_surface = true;
+            break;
+        case OPT_FIX_SURFACE_2_SIDED_OPAQUE:
+            fix_surface_2_sided_opaque = true;
             break;
         case OPT_QUAD_TREE:
             quadTree = true;
@@ -1443,7 +1451,8 @@ int main(int argc, char *argv[])
         if (splitMat)
             ac3d.splitMultipleMat();
 
-        ac3d.fixMultipleWorlds();
+        if (fix_multiple_worlds)
+            ac3d.fixMultipleWorlds();
 
         ac3d.clean();
 
