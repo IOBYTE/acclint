@@ -1,0 +1,16 @@
+test5.ac:10 warning: missing kids: only 3 out of 5 kids found
+kids 5
+     ^
+test5.ac:7 warning: missing kids: only 1 out of 2 kids found
+kids 2
+     ^
+test5.ac:4 warning: missing kids: only 1 out of 3 kids found
+kids 3
+     ^
+test5.ac:10 warning: kids count of 5 is 4 more than this group can hold (object: ___TKMN9_gl1): reading it as 1 puts ___TKMN9_gl0 under TKMN9_g, where it belongs
+kids 5
+     ^
+test5.ac:44 warning: kids count of 2 is 1 more than the file holds (object: misc): reading it as 1 gives every object above it the kids it asks for
+kids 2
+     ^
+5 warnings

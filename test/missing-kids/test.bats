@@ -171,7 +171,10 @@ setup_file() {
 # that has something above it still waiting, which is "first", and the same
 # objects are then put back together in the same order.
 #
-# test5.3 is the one that matters: the tree that is written out.
+# test5.3 is the one that matters: the tree that is written out, which is
+# this one only when --fixKids asks for it. The counting runs either way and
+# says what it found either way, but a read that is only being told what is
+# wrong with a file leaves its tree alone (test5.4).
 ################################################################################
 
 @test "test5.1" {
@@ -195,13 +198,26 @@ setup_file() {
 }
 
 @test "test5.3" {
-  $RUN_TEST acclint -Wno-warnings test5.ac -o test5.output.ac
+  $RUN_TEST acclint -Wno-warnings --fixKids test5.ac -o test5.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   actual_file="$(tr -d '\r' < test5.output.ac)"
   expected_file="$(tr -d '\r' < test5.result.ac)"
   if [ "$actual_file" != "$expected_file" ]; then
     cp test5.output.ac test5.3.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.output.ac
+}
+
+@test "test5.4" {
+  $RUN_TEST acclint -Wno-warnings test5.ac -o test5.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.output.ac)"
+  expected_file="$(tr -d '\r' < test5.as-read.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.output.ac test5.4.output
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test5.output.ac
@@ -262,3 +278,49 @@ setup_file() {
 }
 
 ################################################################################
+
+################################################################################
+# test7: every group in the file takes exactly the children it asks for, and
+# the world asks for four and gets two. Nothing is above the world, so there
+# is nowhere else those two could have gone and no other count is in question:
+# what was read is the tree the file describes, and the file simply stops
+# short of what the world's own count asks for. So it warns like test1, test2
+# and test3 rather than erroring like test6, and the file is written out with
+# the count the world can honour (test7.3).
+#
+# Two counts left waiting is test6 again: then a group inside really may hold
+# what one of them was owed, and the file does not say which.
+################################################################################
+
+@test "test7.1" {
+  $RUN_TEST acclint test7.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test7.2" {
+  $RUN_TEST acclint -Wno-warnings test7.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.2.output
+  fi
+  [ "$output" = "" ]
+}
+
+@test "test7.3" {
+  $RUN_TEST acclint -Wno-warnings test7.ac -o test7.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test7.output.ac)"
+  expected_file="$(tr -d '\r' < test7.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test7.output.ac test7.3.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.output.ac
+}

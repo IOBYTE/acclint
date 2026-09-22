@@ -157,6 +157,8 @@ void usage()
     std::cerr << "  --grid size                            Partition objects into square cells of size in meters for culling." << std::endl;
     std::cerr << "  --fixAll                               Fix everything." << std::endl;
     std::cerr << "  --fixBackToBackMirror                  Convert 2 single sided back to back mirror surfaces to 1 double sided." << std::endl;
+    std::cerr << "  --fixKids                              Put right kids counts the file cannot honour and" << std::endl;
+    std::cerr << "                                         rebuild the object tree from them." << std::endl;
     std::cerr << "  --fixMultipleWorlds                    Removes extra worlds." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
@@ -324,6 +326,7 @@ int main(int argc, char *argv[])
     double combine_percent = 25.0;
     double grid_size = 0.0;
     bool fix_back_to_back_mirror = false;
+    bool fix_kids = false;
     bool fix_multiple_worlds = false;
     bool fix_overlapping_2_sided_surface = false;
     bool fix_surface_2_sided_opaque = false;
@@ -357,6 +360,7 @@ int main(int argc, char *argv[])
         OPT_QUAD_TREE,
         OPT_STITCH_STRIPS,
         OPT_STRIP_SWAPS,
+        OPT_FIX_KIDS,
         OPT_FIX_MULTIPLE_WORLDS,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
         OPT_FIX_BACK_TO_BACK_MIRROR,
@@ -388,6 +392,7 @@ int main(int argc, char *argv[])
         { "stripSwaps",                  no_argument,       nullptr, OPT_STRIP_SWAPS },
         { "fixAll",                      no_argument,       nullptr, OPT_FIX_ALL },
         { "fixBackToBackMirror",         no_argument,       nullptr, OPT_FIX_BACK_TO_BACK_MIRROR },
+        { "fixKids",                     no_argument,       nullptr, OPT_FIX_KIDS },
         { "fixMultipleWorlds",           no_argument,       nullptr, OPT_FIX_MULTIPLE_WORLDS },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
         { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
@@ -498,6 +503,7 @@ int main(int argc, char *argv[])
             splitPolygon = true;
             splitSURF = true;
             splitMat = true;
+            fix_kids = true;
             fix_multiple_worlds = true;
             fix_surface_2_sided_opaque = true;
             fix_overlapping_2_sided_surface = true;
@@ -506,6 +512,9 @@ int main(int argc, char *argv[])
             break;
         case OPT_FIX_BACK_TO_BACK_MIRROR:
             fix_back_to_back_mirror = true;
+            break;
+        case OPT_FIX_KIDS:
+            fix_kids = true;
             break;
         case OPT_FIX_MULTIPLE_WORLDS:
             fix_multiple_worlds = true;
@@ -1031,7 +1040,7 @@ int main(int argc, char *argv[])
             {
                 invalid_texture_coordinate = isEnabled(arg);
             }
-            else if (arg == "-Wno-unfixable-kids-count" || arg == "-Wunfixable-kids-countx")
+            else if (arg == "-Wno-unfixable-kids-count" || arg == "-Wunfixable-kids-count")
             {
                 unfixable_kids_count = isEnabled(arg);
             }
@@ -1237,6 +1246,10 @@ int main(int argc, char *argv[])
     ac3d.notAC3DFile(not_ac3d_file);
     ac3d.texturePaths(texture_paths);
     ac3d.showTimes(show_times);
+    // Only when a file is being written. Reading it to be told what is wrong
+    // with it leaves the tree exactly as the file gave it; the counting still
+    // runs either way and still says what it found.
+    ac3d.fixKids(fix_kids && !out_file.empty());
     ac3d.quiet(quiet);
     ac3d.summary(summary);
     ac3d.threads(threads);

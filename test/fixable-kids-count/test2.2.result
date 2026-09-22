@@ -1,0 +1,4 @@
+test2.ac:10 warning: kids count of 18 is 17 more than this group can hold (object: ___TKMN369_gl3): reading it as 1 puts ___TKMN369_gl1 under TKMN369_g, where it belongs
+kids 18
+     ^
+1 warning

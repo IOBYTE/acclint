@@ -1,0 +1,10 @@
+test7.ac:7 warning: missing kids: only 3 out of 4 kids found
+kids 4
+     ^
+test7.ac:4 warning: missing kids: only 1 out of 3 kids found
+kids 3
+     ^
+test7.ac:7 warning: kids count of 4 is 3 more than this group can hold (object: tribune): reading it as 1 puts TKMN1_g under the world, where it belongs
+kids 4
+     ^
+3 warnings

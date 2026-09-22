@@ -3975,11 +3975,210 @@ AC3D::Object AC3D::buildObjects(std::vector<Object> &flat, size_t &index)
 // -- has to come off one of those. It comes off the innermost that can carry
 // it, since that is the one that swallowed everything after it, and the same
 // objects are then put back together in the same order.
+
+namespace
+{
+
+// The part of a track object's name that says which segment it belongs to:
+// "TKMN" and the digits after it. A segment's group is named TKMN<n>_g and
+// its levels of detail are groups named ___TKMN<n>_gl<m>, one of which the
+// segment's own geometry sits in, so the three leading underscores are what
+// separates a level of detail from the group that holds it. Anything else
+// is not part of the convention and is left alone: false is returned for it
+// and nothing is decided from its name.
+bool trackSegment(const std::string &name, std::string &segment, bool &level)
+{
+    size_t start = 0;
+
+    while (start < name.size() && name[start] == '_')
+        ++start;
+
+    // Exactly the two spellings the convention uses. A name with some other
+    // number of leading underscores is not one of them.
+    if (start != 0 && start != 3)
+        return false;
+
+    if (name.compare(start, 4, "TKMN") != 0)
+        return false;
+
+    size_t end = start + 4;
+
+    while (end < name.size() && name[end] >= '0' && name[end] <= '9')
+        ++end;
+
+    segment = name.substr(start, end - start);
+    level = start != 0;
+
+    return true;
+}
+
+} // namespace
+
+// What the counts cannot say, the names sometimes can.
+//
+// A track model's segments are groups named TKMN<n>_g, and each one holds its
+// levels of detail: groups named ___TKMN<n>_gl<m> for the same segment. Two
+// things follow from that, and each says where an object belongs whatever the
+// counts around it have made of it:
+//
+//   a segment group is a child of the world, so it is never inside anything
+//   else;
+//
+//   a level of detail is a child of its own segment's group, so it is never
+//   inside another level of detail, nor inside anything opened after that
+//   group was.
+//
+// When one is read in the wrong place anyway, every group opened since the
+// one it belongs to asked for more children than it can have, and what each
+// actually holds is known exactly: what it had taken when this object
+// arrived.
+//
+// Only counts that are too large are put right here, which is what asking
+// that the object's own group still be waiting for children comes to. One
+// that has already taken every child it asked for is left alone: that this
+// object has nowhere to go says its count is too small, but not by how much,
+// nor whether the fault is its own or an earlier sibling's.
+bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
+{
+    bool fixed = false;
+
+    // The objects still taking children, outermost first, with how many each
+    // is still waiting for and how many it has taken. Every object is pushed,
+    // the same way the counting in fixKids does it, and the ones that never
+    // wanted children come straight back off at the top of the next turn.
+    std::vector<size_t> open;
+    std::vector<int>    wanted;
+    std::vector<int>    taken;
+
+    for (size_t i = 0; i < flat.size(); ++i)
+    {
+        while (!open.empty() && wanted.back() == 0)
+        {
+            open.pop_back();
+            wanted.pop_back();
+            taken.pop_back();
+        }
+
+        std::string segment;
+        bool        level = false;
+
+        if (trackSegment(flat[i].getName(), segment, level) && !open.empty())
+        {
+            // Where this object belongs, if that is one of the objects still
+            // open further out and still waiting for children. Without it
+            // there is nothing here to say where the object should have gone,
+            // so nothing is changed.
+            size_t owner = open.size();
+
+            if (level)
+            {
+                // Its own segment's group, wherever that is.
+                for (size_t k = open.size(); k-- > 0;)
+                {
+                    std::string other;
+                    bool        other_level = false;
+
+                    if (wanted[k] > 0 && flat[open[k]].type.type == "group" &&
+                        trackSegment(flat[open[k]].getName(), other, other_level) &&
+                        !other_level && other == segment)
+                    {
+                        owner = k;
+                        break;
+                    }
+                }
+            }
+            else if (flat[i].type.type == "group" && wanted[0] > 0)
+            {
+                // The world, which is the object everything was flattened
+                // from and so the first one open. A segment's own geometry is
+                // a poly of the same name inside one of its levels of detail,
+                // not a segment group, so only groups are placed this way.
+                owner = 0;
+            }
+
+            for (size_t k = open.size(); owner != open.size() && k-- > owner + 1;)
+            {
+                Object    &object = flat[open[k]];
+                const int  was    = object.declared_kids;
+                const int  now    = taken[k];
+
+                object.declared_kids = now;
+                fixed = true;
+
+                if (m_fixable_kids_count)
+                {
+                    const std::string name  = object.getName();
+                    const std::string owner_name = flat[open[owner]].getName();
+
+                    warningWithCount(m_fixable_kids_count_count, object.kids_info.line_number)
+                        << "kids count of " << was << " is " << (was - now)
+                        << " more than this group can hold"
+                        << (name.empty() ? std::string() : (" (object: " + name + ")"))
+                        << ": reading it as " << now << " puts " << flat[i].getName()
+                        << " under " << (owner_name.empty() ? "the world" : owner_name)
+                        << ", where it belongs"
+                        << std::endl;
+                    showLine(in, object.kids_info.line_pos, object.kids_offset);
+                }
+
+                open.pop_back();
+                wanted.pop_back();
+                taken.pop_back();
+            }
+        }
+
+        if (!open.empty())
+        {
+            --wanted.back();
+            ++taken.back();
+        }
+
+        open.push_back(i);
+        wanted.push_back(flat[i].declared_kids);
+        taken.push_back(0);
+    }
+
+    return fixed;
+}
+
 bool AC3D::fixKids(Object &root, std::istream &in)
 {
     std::vector<Object> flat;
 
     flattenObjects(root, flat);
+
+    // What the file said, kept because flattenObjects moved the tree out of
+    // the root and it has to be built again from these either way. The work
+    // below writes what it concludes into the counts, and that is only what
+    // the tree is rebuilt from when this was asked to put them right:
+    // otherwise everything said here is said about a tree that is then left
+    // exactly as the file gave it.
+    std::vector<int> as_read;
+
+    as_read.reserve(flat.size());
+
+    for (const auto &object : flat)
+        as_read.push_back(object.declared_kids);
+
+    const auto rebuild = [this, &root, &flat, &as_read]()
+    {
+        if (!m_fix_kids)
+        {
+            for (size_t i = 0; i < flat.size(); ++i)
+                flat[i].declared_kids = as_read[i];
+        }
+
+        size_t index = 0;
+
+        root = buildObjects(flat, index);
+    };
+
+    // Before anything is counted: a track model names its objects in a way
+    // that says where some of them belong, and every count put right from
+    // the names is one the counting below no longer has to explain. What the
+    // names cannot reach is left to the counts, which is all there is to go
+    // on everywhere else.
+    fixTrackSegmentKids(flat, in);
 
     long long declared = 0;
 
@@ -4045,8 +4244,6 @@ bool AC3D::fixKids(Object &root, std::istream &in)
         }
     }
 
-    size_t index = 0;
-
     if (blame == flat.size())
     {
         // Either the counts add up, or the surplus is spread over more than
@@ -4070,8 +4267,10 @@ bool AC3D::fixKids(Object &root, std::istream &in)
             // further out should have had. Which group took them cannot be
             // told from the counts, so the tree that was read is the tree
             // that stands, and it is not the one the file describes.
-            bool satisfied_inside = false;
-            bool unreconciled = false;
+            bool   satisfied_inside = false;
+            bool   unreconciled = false;
+            size_t still_waiting = 0;
+            size_t last_waiting = open.size();
 
             for (size_t i = open.size(); i-- > 0; )
             {
@@ -4080,15 +4279,28 @@ bool AC3D::fixKids(Object &root, std::istream &in)
 
                 if (wanted[i] > 0)
                 {
+                    ++still_waiting;
+                    last_waiting = i;
+
                     if (satisfied_inside)
-                    {
                         unreconciled = true;
-                        break;
-                    }
                 }
                 else
                     satisfied_inside = true;
             }
+
+            // Unless the root is the one thing left waiting. Nothing is above
+            // it, so there is nowhere else its children could have gone, and
+            // every other count in the file was honoured exactly: what was
+            // read is the tree the file describes, and the root simply asks
+            // for more objects than the file goes on to give it. That is what
+            // the missing kids warning says, and writing the file out with
+            // the count the root can honour keeps every object where the file
+            // put it. Two counts left waiting is the other thing again --
+            // then a group inside really may hold what one of them was owed,
+            // and which one cannot be told.
+            if (still_waiting == 1 && open[last_waiting] == 0)
+                unreconciled = false;
 
             if (unreconciled)
             {
@@ -4124,7 +4336,7 @@ bool AC3D::fixKids(Object &root, std::istream &in)
             }
         }
 
-        root = buildObjects(flat, index);
+        rebuild();
 
         return false;
     }
@@ -4137,19 +4349,19 @@ bool AC3D::fixKids(Object &root, std::istream &in)
 
     flat[blame].declared_kids = now;
 
-    root = buildObjects(flat, index);
+    rebuild();
 
     if (m_fixable_kids_count)
     {
         warningWithCount(m_fixable_kids_count_count, info.line_number)
             << "kids count of " << was << " is " << surplus << " more than the file holds"
             << (name.empty() ? std::string() : (" (object: " + name + ")"))
-            << ": read as " << now << ", which gives every object above it the kids it asks for"
+            << ": reading it as " << now << " gives every object above it the kids it asks for"
             << std::endl;
         showLine(in, info.line_pos, offset);
     }
 
-    return true;
+    return m_fix_kids;
 }
 
 bool AC3D::read(const std::string &file)

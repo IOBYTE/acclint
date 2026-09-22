@@ -65,6 +65,7 @@ private:                                               \
     CHECK(emptyObject, m_empty_object, true)
     CHECK(extraObject, m_extra_object, true)
     CHECK(extraUVCoordinates, m_extra_uv_coordinates, true)
+    CHECK(fixableKidsCount, m_fixable_kids_count, true)
     CHECK(floatingPoint, m_floating_point, true)
     CHECK(groupWithGeometry, m_group_with_geometry, true)
     CHECK(invalidMaterial, m_invalid_material, true)
@@ -116,7 +117,6 @@ private:                                               \
 
     // warnings without tests
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
-    CHECK(fixableKidsCount, m_fixable_kids_count, true)
     CHECK(surfaceStripHole, m_surface_strip_hole, false)
 
     // errors with tests
@@ -168,6 +168,8 @@ public:
 
     bool read(const std::string &file);
     bool write(const std::string &file, int version = 0);
+    void fixKids(bool value) { m_fix_kids = value; }
+    bool fixKids() const { return m_fix_kids; }
     void triangleStrips(bool value) { m_triangle_strips = value; }
     bool triangleStrips() const { return m_triangle_strips; }
     void stitchStrips(bool value) { m_stitch_strips = value; }
@@ -1169,6 +1171,7 @@ private:
     // what the format is for, so this is on; it is turned off to write the
     // same geometry as plain triangles.
     bool            m_triangle_strips = true;
+    bool            m_fix_kids = false;
     bool            m_stitch_strips = false;
     bool            m_strip_swaps = false;
     // Whether the file being written is a .acc, which is Speed Dreams' own
@@ -1383,6 +1386,7 @@ private:
     static void convertObjectsToAc(std::vector<Object> &objects);
     static void convertObjectToAc(Object &object);
     bool fixKids(Object &root, std::istream &in);
+    bool fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in);
     static void flattenObjects(Object &object, std::vector<Object> &flat);
     static Object buildObjects(std::vector<Object> &flat, size_t &index);
     static void convertObjectsToAcc(std::vector<Object> &objects, bool strips, bool swaps);
