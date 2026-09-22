@@ -79,6 +79,7 @@ private:                                               \
     CHECK(missingSurfaces, m_missing_surfaces, true)
     CHECK(missingTexture, m_missing_texture, true)
     CHECK(missingUVCoordinates, m_missing_uv_coordinates, true)
+    CHECK(mixedSurfaceTypes, m_mixed_surface_types, true)
     CHECK(multipleCrease, m_multiple_crease, true)
     CHECK(multipleData, m_multiple_data, true)
     CHECK(multipleFolded, m_multiple_folded, true)
@@ -96,7 +97,6 @@ private:                                               \
     CHECK(multipleWorld, m_multiple_world, true)
     CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
     CHECK(overlappingGeometry, m_overlapping_geometry, false)
-    CHECK(mixedSurfaceTypes, m_mixed_surface_types, true)
     CHECK(polyWithKids, m_poly_with_kids, true)
     CHECK(surface2SidedOpaque, m_surface_2_sided_opaque, false)
     CHECK(surfaceNotConvex, m_surface_not_convex, true)
@@ -105,6 +105,7 @@ private:                                               \
     CHECK(surfaceSelfIntersecting, m_surface_self_intersecting, true)
     CHECK(surfaceStripDegenerate, m_surface_strip_degenerate, false)
     CHECK(surfaceStripDuplicateTriangles, m_surface_strip_duplicate_triangles, false)
+    CHECK(surfaceStripHole, m_surface_strip_hole, false)
     CHECK(surfaceStripSize, m_surface_strip_size, false)
     CHECK(surfaceWindingMixed, m_surface_winding_mixed, false)
     CHECK(surfaceWindingOpposed, m_surface_winding_opposed, false)
@@ -117,7 +118,6 @@ private:                                               \
 
     // warnings without tests
     CHECK(multiplePolygonSurface, m_multiple_polygon_surface, true)
-    CHECK(surfaceStripHole, m_surface_strip_hole, false)
 
     // errors with tests
     CHECK(invalidKidsCount, m_invalid_kids_count, true)
@@ -133,9 +133,10 @@ private:                                               \
     CHECK(invalidVertex, m_invalid_vertex, true)
     CHECK(missingVertex, m_missing_vertex, true)
     CHECK(moreSURFThanSpecified, m_more_surf_than_specified, true)
-    CHECK(unfixableKidsCount, m_unfixable_kids_count, true)
 
     //errors without tests
+    CHECK(unfixableKidsCount, m_unfixable_kids_count, true)
+
 #undef CHECK
 
     void showLine(std::istringstream &in) const;
@@ -1015,11 +1016,8 @@ private:
         std::vector<Vertex> vertices;
         Numvsurf numsurf;
         std::vector<Surface> surfaces;
-        std::vector<Object> kids;
-        // What the kids line said, and where it was. Kept because a count
-        // that the file cannot honour has to be found again after the read,
-        // when the whole tree is there to be measured against it.
         Numkids numkids;
+        std::vector<Object> kids;
         Matrix matrix;
 
         bool empty() const

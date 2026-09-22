@@ -58,6 +58,8 @@ void usage()
     std::cerr << "  -Wno-empty-object                      Don't show empty object warnings." << std::endl;
     std::cerr << "  -Wno-extra-object                      Don't show extra object warnings." << std::endl;
     std::cerr << "  -Wno-extra-uv-coordinates              Don't show extra uv coordinates warnings." << std::endl;
+    std::cerr << "  -Wno-fixable-kids-count                Don't show fixable kids count warnings." << std::endl;
+    std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-group-with-geometry               Don't show group with geometry warnings." << std::endl;
     std::cerr << "  -Wno-invalid-material                  Don't show invalid material warnings." << std::endl;
     std::cerr << "  -Wno-invalid-normal-length             Don't show invalid normal length warnings." << std::endl;
@@ -70,6 +72,7 @@ void usage()
     std::cerr << "  -Wno-missing-surfaces                  Don't show missing surfaces warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates warnings." << std::endl;
+    std::cerr << "  -Wno-mixed-surface-types               Don't show mixed surface types warnings." << std::endl;
     std::cerr << "  -Wno-multiple-crease                   Don't show multiple crease warnings." << std::endl;
     std::cerr << "  -Wno-multiple-data                     Don't show multiple data warnings." << std::endl;
     std::cerr << "  -Wno-multiple-folded                   Don't show multiple folded warnings." << std::endl;
@@ -84,7 +87,6 @@ void usage()
     std::cerr << "  -Wno-multiple-texrep                   Don't show multiple texrep warnings." << std::endl;
     std::cerr << "  -Wno-multiple-texture                  Don't show multiple texture warnings." << std::endl;
     std::cerr << "  -Wno-multiple-url                      Don't show multiple url warnings." << std::endl;
-    std::cerr << "  -Wno-mixed-surface-types               Don't show mixed surface types warnings." << std::endl;
     std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-geometry              Don't show overlapping geometry warnings." << std::endl;
@@ -95,6 +97,8 @@ void usage()
     std::cerr << "  -Wno-surface-no-texture                Don't show surface no texture warnings." << std::endl;
     std::cerr << "  -Wno-surface-self-intersecting         Don't show surface self intersecting warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-degenerate          Don't show surface triangle strip degenerate warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
+    std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
     std::cerr << "  -Wno-surface-strip-size                Don't show surface triangle strip with only 1 triangle warnings." << std::endl;
     std::cerr << "  -Wno-surface-winding-mixed             Don't show surface winding partly opposing its vertex normals warnings." << std::endl;
     std::cerr << "  -Wno-surface-winding-opposed           Don't show surface winding opposing its vertex normals warnings." << std::endl;
@@ -106,11 +110,7 @@ void usage()
     std::cerr << "  -Wno-utf8-bom                          Don't show utf8 bom warnings." << std::endl;
 
     // warnings without tests
-    std::cerr << "  -Wno-floating-point                    Don't show floating point warnings." << std::endl;
     std::cerr << "  -Wno-multiple-polygon-surface          Don't show multiple polygon surface warnings." << std::endl;
-    std::cerr << "  -Wno-fixable-kids-count                Don't show fixable kids count warnings." << std::endl;
-    std::cerr << "  -Wno-surface-strip-duplicate-triangles Don't show surface triangle strip with duplicate triangle warnings." << std::endl;
-    std::cerr << "  -Wno-surface-strip-hole                Don't show surface triangle strip with hole warnings." << std::endl;
 
     // errors
     std::cerr << "  -Wno-errors                            Don't show any errors." << std::endl;
@@ -232,6 +232,7 @@ int main(int argc, char *argv[])
     bool empty_object = true;
     bool extra_object = true;
     bool extra_uv_coordinates = true;
+    bool fixable_kids_count = true;
     bool floating_point = true;
     bool group_with_geometry = true;
     bool invalid_material = true;
@@ -264,13 +265,14 @@ int main(int argc, char *argv[])
     bool overlapping_2_sided_surface = true;
     bool overlapping_geometry = false;
     bool poly_with_kids = true;
-    bool fixable_kids_count = true;
     bool surface_2_sided_opaque = false;
     bool surface_not_convex = true;
     bool surface_not_coplanar = true;
     bool surface_no_texture = true;
     bool surface_self_intersecting = true;
     bool surface_strip_degenerate = false;
+    bool surface_strip_duplicate_triangles = false;
+    bool surface_strip_hole = false;
     bool surface_strip_size = false;
     bool surface_winding_mixed = false;
     bool surface_winding_opposed = false;
@@ -283,8 +285,6 @@ int main(int argc, char *argv[])
 
     // warnings without tests
     bool multiple_polygon_surface = true;
-    bool surface_strip_duplicate_triangles = false;
-    bool surface_strip_hole = false;
 
     // errors with tests
     bool invalid_kids_count = true;
@@ -298,9 +298,9 @@ int main(int argc, char *argv[])
     bool invalid_token = true;
     bool invalid_texture_coordinate = true;
     bool invalid_vertex = true;
-    bool unfixable_kids_count = true;
     bool missing_vertex = true;
     bool more_surf_than_specified = true;
+    bool unfixable_kids_count = true;
 
     // errors without tests
 
@@ -1171,6 +1171,7 @@ int main(int argc, char *argv[])
     ac3d.emptyObject(empty_object);
     ac3d.extraObject(extra_object);
     ac3d.extraUVCoordinates(extra_uv_coordinates);
+    ac3d.fixableKidsCount(fixable_kids_count);
     ac3d.floatingPoint(floating_point);
     ac3d.groupWithGeometry(group_with_geometry);
     ac3d.invalidMaterial(invalid_material);
@@ -1209,6 +1210,8 @@ int main(int argc, char *argv[])
     ac3d.surfaceNoTexture(surface_no_texture);
     ac3d.surfaceSelfIntersecting(surface_self_intersecting);
     ac3d.surfaceStripDegenerate(surface_strip_degenerate);
+    ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
+    ac3d.surfaceStripHole(surface_strip_hole);
     ac3d.surfaceStripSize(surface_strip_size);
     ac3d.surfaceWindingMixed(surface_winding_mixed);
     ac3d.surfaceWindingOpposed(surface_winding_opposed);
@@ -1221,9 +1224,6 @@ int main(int argc, char *argv[])
 
     // warnings without tests
     ac3d.multiplePolygonSurface(multiple_polygon_surface);
-    ac3d.fixableKidsCount(fixable_kids_count);
-    ac3d.surfaceStripHole(surface_strip_hole);
-    ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
 
     // errors with tests
     ac3d.invalidKidsCount(invalid_kids_count);
@@ -1303,6 +1303,8 @@ int main(int argc, char *argv[])
             showCount(ac3d.emptyObjectCount(), "empty object: ");
             showCount(ac3d.extraObjectCount(), "extra object: ");
             showCount(ac3d.extraUVCoordinatesCount(), "extra uv coordinates: ");
+            showCount(ac3d.fixableKidsCountCount(), "fixable kids count: ");
+            showCount(ac3d.floatingPointCount(), "floating point: ");
             showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
             showCount(ac3d.invalidMaterialCount(), "invalid material: ");
             showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
@@ -1340,6 +1342,8 @@ int main(int argc, char *argv[])
             showCount(ac3d.surfaceNoTextureCount(), "surface no texture: ");
             showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
             showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
+            showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
+            showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
             showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
             showCount(ac3d.surfaceWindingMixedCount(), "surface winding mixed: ");
             showCount(ac3d.surfaceWindingOpposedCount(), "surface winding opposed: ");
@@ -1351,11 +1355,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.utf8BomCount(), "utf8 bom: ");
 
             // warnings without test
-            showCount(ac3d.floatingPointCount(), "floating point: ");
             showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
-            showCount(ac3d.fixableKidsCountCount(), "fixable kids count: ");
-            showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
-            showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
         }
     }
 
@@ -1380,10 +1380,10 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
             showCount(ac3d.invalidVertexCount(), "invalid vertex: ");
             showCount(ac3d.invalidRefVertexIndexCount(), "invalid ref vertex index: ");
+            showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
             showCount(ac3d.missingVertexCount(), "missing vertex: ");
 
             // errors without tests
-            showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
             showCount(ac3d.unfixableKidsCountCount(), "unfixable kids count: ");
         }
     }
