@@ -988,6 +988,12 @@ private:
         int number_offset = 0;
     };
 
+    struct Numkids : public LineInfo
+    {
+        int number = 0;
+        int number_offset = 0;
+    };
+
     struct Object : public LineInfo
     {
         Type type;
@@ -1013,11 +1019,7 @@ private:
         // What the kids line said, and where it was. Kept because a count
         // that the file cannot honour has to be found again after the read,
         // when the whole tree is there to be measured against it.
-        int declared_kids = 0;
-        LineInfo kids_info;
-        // Where the number sits on that line, so that what is said about the
-        // count can point at the count.
-        int kids_offset = 0;
+        Numkids numkids;
         Matrix matrix;
 
         bool empty() const

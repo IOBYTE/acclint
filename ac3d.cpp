@@ -3049,9 +3049,10 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (iss1 && kids >= 0)
             {
-                object.declared_kids = kids;
-                object.kids_info = LineInfo(m_line_number, m_line_pos);
-                object.kids_offset = number_offset;
+                object.numkids.number = kids;
+                object.numkids.line_number = m_line_number;
+                object.numkids.line_pos = m_line_pos;
+                object.numkids.number_offset = number_offset;
                 checkTrailing(iss1);
             }
             else
@@ -3088,8 +3089,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     }
                 }
 
-                object.declared_kids = static_cast<int>(object.kids.size());
-                object.kids_info = LineInfo(m_line_number, m_line_pos);
+                object.numkids.number = static_cast<int>(object.kids.size());
+                object.numkids.line_number = m_line_number;
+                object.numkids.line_pos = m_line_pos;
                 continue;
             }
 
@@ -3155,7 +3157,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                         warningWithCount(m_missing_kids_count, kids_line)
                                             << "missing kids: only " << i << " out of " << kids
                                             << " kids found" << std::endl;
-                                        showLine(in, object.kids_info.line_pos, object.kids_offset);
+                                        showLine(in, object.numkids.line_pos, object.numkids.number_offset);
                                     }
                                     return false;
                                 }
@@ -3169,7 +3171,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             warningWithCount(m_missing_kids_count, kids_line)
                                 << "missing kids: only " << i << " out of " << kids
                                 << " kids found" << std::endl;
-                            showLine(in, object.kids_info.line_pos, object.kids_offset);
+                            showLine(in, object.numkids.line_pos, object.numkids.number_offset);
                         }
                         return false;
                     }
@@ -3955,7 +3957,7 @@ AC3D::Object AC3D::buildObjects(std::vector<Object> &flat, size_t &index)
 
     ++index;
 
-    for (int i = 0; i < object.declared_kids && index < flat.size(); ++i)
+    for (int i = 0; i < object.numkids.number && index < flat.size(); ++i)
         object.kids.push_back(buildObjects(flat, index));
 
     return object;
@@ -4099,10 +4101,10 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
             for (size_t k = open.size(); owner != open.size() && k-- > owner + 1;)
             {
                 Object    &object = flat[open[k]];
-                const int  was    = object.declared_kids;
+                const int  was    = object.numkids.number;
                 const int  now    = taken[k];
 
-                object.declared_kids = now;
+                object.numkids.number = now;
                 fixed = true;
 
                 if (m_fixable_kids_count)
@@ -4110,7 +4112,7 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
                     const std::string name  = object.getName();
                     const std::string owner_name = flat[open[owner]].getName();
 
-                    warningWithCount(m_fixable_kids_count_count, object.kids_info.line_number)
+                    warningWithCount(m_fixable_kids_count_count, object.numkids.line_number)
                         << "kids count of " << was << " is " << (was - now)
                         << " more than this group can hold"
                         << (name.empty() ? std::string() : (" (object: " + name + ")"))
@@ -4118,7 +4120,7 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
                         << " under " << (owner_name.empty() ? "the world" : owner_name)
                         << ", where it belongs"
                         << std::endl;
-                    showLine(in, object.kids_info.line_pos, object.kids_offset);
+                    showLine(in, object.numkids.line_pos, object.numkids.number_offset);
                 }
 
                 open.pop_back();
@@ -4134,7 +4136,7 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
         }
 
         open.push_back(i);
-        wanted.push_back(flat[i].declared_kids);
+        wanted.push_back(flat[i].numkids.number);
         taken.push_back(0);
     }
 
@@ -4158,14 +4160,14 @@ bool AC3D::fixKids(Object &root, std::istream &in)
     as_read.reserve(flat.size());
 
     for (const auto &object : flat)
-        as_read.push_back(object.declared_kids);
+        as_read.push_back(object.numkids.number);
 
     const auto rebuild = [this, &root, &flat, &as_read]()
     {
         if (!m_fix_kids)
         {
             for (size_t i = 0; i < flat.size(); ++i)
-                flat[i].declared_kids = as_read[i];
+                flat[i].numkids.number = as_read[i];
         }
 
         size_t index = 0;
@@ -4183,7 +4185,7 @@ bool AC3D::fixKids(Object &root, std::istream &in)
     long long declared = 0;
 
     for (const auto &object : flat)
-        declared += object.declared_kids;
+        declared += object.numkids.number;
 
     const long long surplus = declared - static_cast<long long>(flat.size() - 1);
 
@@ -4208,7 +4210,7 @@ bool AC3D::fixKids(Object &root, std::istream &in)
                 --wanted.back();
 
             open.push_back(i);
-            wanted.push_back(flat[i].declared_kids);
+            wanted.push_back(flat[i].numkids.number);
         }
 
         // The root is never blamed: taking the surplus off it would only make
@@ -4222,7 +4224,7 @@ bool AC3D::fixKids(Object &root, std::istream &in)
         // by correcting it.
         for (size_t i = open.size(); i-- > 1; )
         {
-            if (flat[open[i]].declared_kids <= surplus)
+            if (flat[open[i]].numkids.number <= surplus)
                 continue;
 
             bool starved = false;
@@ -4325,13 +4327,13 @@ bool AC3D::fixKids(Object &root, std::istream &in)
                 // mistake permanent and leaves nothing to say it happened.
                 if (m_unfixable_kids_count)
                 {
-                    errorWithCount(m_unfixable_kids_count_count, flat[starved].kids_info.line_number)
+                    errorWithCount(m_unfixable_kids_count_count, flat[starved].numkids.line_number)
                         << "kids counts ask for " << surplus << " more object"
                         << (surplus == 1 ? "" : "s") << " than the file holds and no single count"
                         << " accounts for it: a group holds objects that belong to another, and the"
                         << " file does not say which, so what was read is not the tree the file"
                         << " describes" << std::endl;
-                    showLine(in, flat[starved].kids_info.line_pos, flat[starved].kids_offset);
+                    showLine(in, flat[starved].numkids.line_pos, flat[starved].numkids.number_offset);
                 }
             }
         }
@@ -4341,13 +4343,12 @@ bool AC3D::fixKids(Object &root, std::istream &in)
         return false;
     }
 
-    const int was = flat[blame].declared_kids;
+    const int was = flat[blame].numkids.number;
     const int now = was - static_cast<int>(surplus);
     const std::string name = flat[blame].getName();
-    const LineInfo info = flat[blame].kids_info;
-    const int offset = flat[blame].kids_offset;
+    const Numkids info = flat[blame].numkids;
 
-    flat[blame].declared_kids = now;
+    flat[blame].numkids.number = now;
 
     rebuild();
 
@@ -4358,7 +4359,7 @@ bool AC3D::fixKids(Object &root, std::istream &in)
             << (name.empty() ? std::string() : (" (object: " + name + ")"))
             << ": reading it as " << now << " gives every object above it the kids it asks for"
             << std::endl;
-        showLine(in, info.line_pos, offset);
+        showLine(in, info.line_pos, info.number_offset);
     }
 
     return m_fix_kids;
@@ -5642,8 +5643,8 @@ void AC3D::checkPolyWithKids(std::istream &in, const Object &object)
     {
         warningWithCount(m_poly_with_kids_count, object.type.line_number) << "poly with kids" << std::endl;
         showLine(in, object.type.line_pos, object.type.type_offset);
-        note(object.kids_info.line_number) << "kids" << std::endl;
-        showLine(in, object.kids_info.line_pos, object.kids_offset);
+        note(object.numkids.line_number) << "kids" << std::endl;
+        showLine(in, object.numkids.line_pos, object.numkids.number_offset);
     }
 }
 
