@@ -57,7 +57,7 @@ setup_file() {
 }
 
 @test "test1.5" {
-  $RUN_TEST acclint --summary test1.ac
+  $RUN_TEST acclint --quiet test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.5.result)"
@@ -68,7 +68,7 @@ setup_file() {
 }
 
 @test "test1.6" {
-  $RUN_TEST acclint --quiet test1.ac
+  $RUN_TEST acclint --summary test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.6.result)"

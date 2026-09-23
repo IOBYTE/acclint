@@ -1,8 +1,1 @@
-test1.ac:14 error: invalid refs
-refs z
-     ^
-test1.ac:18 error: invalid ref count: unknown  actual: 3
-refs z
-     ^
 2 errors
-invalid refs: 1

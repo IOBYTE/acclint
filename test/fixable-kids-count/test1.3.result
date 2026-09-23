@@ -1,0 +1,4 @@
+test1.ac:7 warning: kids count of 2 is 1 more than the file holds (object: g): reading it as 1 gives every object above it the kids it asks for
+kids 2
+     ^
+1 warning

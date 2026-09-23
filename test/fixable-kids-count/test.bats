@@ -36,30 +36,85 @@ setup_file() {
 }
 
 @test "test1.2" {
+  $RUN_TEST acclint -Wno-warnings test1.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.2.output
+  fi
+  [ "$output" = "" ]
+}
+
+@test "test1.3" {
+  $RUN_TEST acclint -Wno-warnings -Wfixable-kids-count test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.4" {
+  $RUN_TEST acclint --quiet test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.5" {
+  $RUN_TEST acclint --summary test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.6" {
+  $RUN_TEST acclint --quiet --summary test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.7" {
   $RUN_TEST acclint -Wno-warnings -Wno-errors test1.ac -o test1.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   actual_file="$(tr -d '\r' < test1.output.ac)"
   expected_file="$(tr -d '\r' < test1.result.ac)"
   if [ "$actual_file" != "$expected_file" ]; then
-    cp test1.output.ac test1.2.output
+    cp test1.output.ac test1.7.output
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test1.output.ac
 }
 
-@test "test1.3" {
+@test "test1.8" {
   $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test1.ac -o test1.output.ac
   [ "$status" -eq 0 ]
   [ "$output" = "" ]
   actual_file="$(tr -d '\r' < test1.output.ac)"
   expected_file="$(tr -d '\r' < test1.fixed.result.ac)"
   if [ "$actual_file" != "$expected_file" ]; then
-    cp test1.output.ac test1.3.output
+    cp test1.output.ac test1.8.output
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test1.output.ac
 }
+
+
 
 ################################################################################
 
