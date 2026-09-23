@@ -1,0 +1,5 @@
+test1.ac:12 warning: invalid ref count: polygon with 1 vertex 
+refs 1
+     ^
+1 warning
+invalid ref count: 1

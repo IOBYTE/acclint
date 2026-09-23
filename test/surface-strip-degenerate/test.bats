@@ -56,5 +56,38 @@ setup_file() {
   [ "$actual" = "$expected" ]
 }
 
+@test "test1.5" {
+  $RUN_TEST acclint --quiet -Wsurface-strip-degenerate test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.6" {
+  $RUN_TEST acclint --summary -Wsurface-strip-degenerate test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.7" {
+  $RUN_TEST acclint --quiet --summary -Wsurface-strip-degenerate test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.7.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
 ################################################################################
 

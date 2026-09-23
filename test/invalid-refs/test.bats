@@ -57,7 +57,7 @@ setup_file() {
 }
 
 @test "test1.5" {
-  $RUN_TEST acclint --summary -Wno-warnings -Wno-errors -Winvalid-refs  test1.ac
+  $RUN_TEST acclint --summary test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.5.result)"
@@ -68,12 +68,23 @@ setup_file() {
 }
 
 @test "test1.6" {
-  $RUN_TEST acclint --quiet --summary -Wno-warnings -Wno-errors -Winvalid-refs  test1.ac
+  $RUN_TEST acclint --quiet test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.6.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.7" {
+  $RUN_TEST acclint --quiet --summary test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.7.output
   fi
   [ "$actual" = "$expected" ]
 }

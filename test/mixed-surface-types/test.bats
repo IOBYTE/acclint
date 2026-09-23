@@ -67,31 +67,64 @@ setup_file() {
   [ "$actual" = "$expected" ]
 }
 
+@test "test1.4" {
+  $RUN_TEST acclint --quiet test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.5" {
+  $RUN_TEST acclint --summary test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.6" {
+  $RUN_TEST acclint --quiet --summary test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
 # Writing it unifies the types: one object still, and both surfaces strips.
 # Three refs draw the same triangle either way, so nothing about the geometry
 # changes.
-@test "test1.4" {
+@test "test1.7" {
   $RUN_TEST acclint -Wno-warnings test1.acc -o test1.output.acc
   [ "$status" -eq 0 ]
   if [ "$output" != "" ]; then
-    echo "$output" > test1.4.output
+    echo "$output" > test1.7.output
   fi
   [ "$output" = "" ]
   actual_file="$(tr -d '\r' < test1.output.acc)"
   expected_file="$(tr -d '\r' < test1.result.acc)"
   if [ "$actual_file" != "$expected_file" ]; then
-    cp test1.output.acc test1.4.actual.output
+    cp test1.output.acc test1.7.actual.output
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test1.output.acc
 }
 
 # What was written is no longer a mix, so linting it again says nothing.
-@test "test1.5" {
+@test "test1.8" {
   $RUN_TEST acclint test1.result.acc
   [ "$status" -eq 0 ]
   if [ "$output" != "" ]; then
-    echo "$output" > test1.5.output
+    echo "$output" > test1.8.output
   fi
   [ "$output" = "" ]
 }

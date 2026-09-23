@@ -39,12 +39,65 @@ setup_file() {
 
 # test1.2: the hole itself. Off by default, so it has to be asked for.
 @test "test1.2" {
-  $RUN_TEST acclint -Wno-warnings -Wsurface-strip-hole test1.acc
+  $RUN_TEST acclint -Wsurface-strip-hole test1.acc
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test1.2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.3" {
+  $RUN_TEST acclint -Wno-warnings test1.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.3.output
+  fi
+  [ "$output" = "" ]
+}
+
+@test "test1.4" {
+  $RUN_TEST acclint -Wno-warnings -Wsurface-strip-hole test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.5" {
+  $RUN_TEST acclint --quiet -Wsurface-strip-hole test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.6" {
+  $RUN_TEST acclint --summary -Wsurface-strip-hole test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.7" {
+  $RUN_TEST acclint --quiet --summary -Wsurface-strip-hole test1.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.7.output
   fi
   [ "$actual" = "$expected" ]
 }

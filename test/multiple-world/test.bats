@@ -48,18 +48,52 @@ setup_file() {
 }
 
 @test "test1.4" {
-  $RUN_TEST acclint -Wno-extra-object test1.ac --fixMultipleWorlds -o test1.4.output.ac
+  $RUN_TEST acclint -Wno-extra-object --quiet test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
-  expected="$(tr -d '\r' < test1.result)"
+  expected="$(tr -d '\r' < test1.4.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test1.4.output
   fi
   [ "$actual" = "$expected" ]
-  actual_ac="$(tr -d '\r' < test1.4.output.ac)"
-  expected_ac="$(tr -d '\r' < test1.4.result.ac)"
-  [ "$actual_ac" = "$expected_ac" ]
-  rm test1.4.output.ac
 }
+
+@test "test1.5" {
+  $RUN_TEST acclint -Wno-extra-object --summary test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.6" {
+  $RUN_TEST acclint -Wno-extra-object --quiet --summary test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.7" {
+  $RUN_TEST acclint -Wno-extra-object test1.ac --fixMultipleWorlds -o test1.7.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.7.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_ac="$(tr -d '\r' < test1.7.output.ac)"
+  expected_ac="$(tr -d '\r' < test1.7.result.ac)"
+  [ "$actual_ac" = "$expected_ac" ]
+  rm test1.7.output.ac
+}
+
 
 ################################################################################

@@ -1,0 +1,5 @@
+test1.acc:13 warning: triangle strip with 1 triangle
+SURF 0x24
+^
+1 warning
+surface strip size: 1

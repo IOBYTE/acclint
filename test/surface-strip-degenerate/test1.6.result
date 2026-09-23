@@ -1,0 +1,5 @@
+test1.acc:14 warning: triangle strip 1 out of 3 (33.3333 percent) degenerate triangles
+SURF 0x14
+^
+1 warning
+surface strip degenerate: 1

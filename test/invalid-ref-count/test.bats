@@ -57,7 +57,7 @@ setup_file() {
 }
 
 @test "test1.5" {
-  $RUN_TEST acclint --summary -Wno-warnings test1.ac
+  $RUN_TEST acclint --quiet test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.5.result)"
@@ -68,7 +68,7 @@ setup_file() {
 }
 
 @test "test1.6" {
-  $RUN_TEST acclint --quiet --summary -Wno-warnings test1.ac
+  $RUN_TEST acclint --summary test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.6.result)"
@@ -79,16 +79,27 @@ setup_file() {
 }
 
 @test "test1.7" {
-  $RUN_TEST acclint -Wno-warnings test1.ac -o test1.7.output.ac
+  $RUN_TEST acclint --quiet --summary test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.8" {
+  $RUN_TEST acclint test1.ac -o test1.8.output.ac  -Wno-warnings
   [ "$status" -eq 0 ]
   if [ "$output" != "" ]; then
-    echo "$output" > test1.7.output
+    echo "$output" > test1.8.output
   fi
   [ "$output" = "" ]
-  actual="$(tr -d '\r' < test1.7.output.ac)"
-  expected="$(tr -d '\r' < test1.7.result.ac)"
+  actual="$(tr -d '\r' < test1.8.output.ac)"
+  expected="$(tr -d '\r' < test1.8.result.ac)"
   [ "$actual" = "$expected" ]
-  rm test1.7.output.ac
+  rm test1.8.output.ac
 }
 
 ################################################################################

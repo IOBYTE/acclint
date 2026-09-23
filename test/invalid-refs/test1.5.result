@@ -1,5 +1,30 @@
 test1.ac:14 error: invalid refs
 refs z
      ^
-1 error
+test1.ac:14 warning: invalid ref count: polygon with 0 vertices
+refs z
+     ^
+test1.ac:15 error: invalid token: 0
+0 0 0
+^
+test1.ac:16 error: invalid token: 1
+1 0 0
+^
+test1.ac:17 error: invalid token: 2
+2 0 0
+^
+test1.ac:8 warning: unused vertex
+0 0 0
+^
+test1.ac:9 warning: unused vertex
+0 1 0
+^
+test1.ac:10 warning: unused vertex
+1 1 0
+^
+4 warnings
+invalid ref count: 1
+unused vertex: 3
+4 errors
 invalid refs: 1
+invalid token: 3
