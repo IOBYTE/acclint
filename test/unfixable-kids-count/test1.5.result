@@ -1,0 +1,5 @@
+test1.ac:7 error: kids counts ask for 1 more object than the file holds and no single count accounts for it: a group holds objects that belong to another, and the file does not say which, so what was read is not the tree the file describes
+kids 2
+     ^
+1 error
+unfixable kids count: 1
