@@ -1092,6 +1092,9 @@ int main(int argc, char *argv[])
             case 'W':
                 std::cerr << "Missing warning flag" << std::endl;
                 break;
+            case OPT_GRID:
+                std::cerr << "Missing grid size" << std::endl;
+                break;
             case OPT_MERGE:
                 std::cerr << "Missing merge file" << std::endl;
                 break;

@@ -80,6 +80,22 @@ setup_file() {
   rm test1.3.output.ac
 }
 
+@test "test1.4" {
+  $RUN_TEST acclint test1.4.ac --splitMat -Wno-different-mat -Wno-missing-mat -o test1.4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.4.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test1.4.output.ac)"
+  expected_file="$(tr -d '\r' < test1.4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test1.4.output.ac test1.4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test1.4.output.ac
+}
+
 ################################################################################
 
 # An object being split is being split, not copied: its children belong to it

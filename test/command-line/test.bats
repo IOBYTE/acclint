@@ -156,3 +156,17 @@ setup_file() {
 }
 
 ################################################################################
+
+# Missing required arguments, continued: --grid was the one option that wanted
+# a value and had no message of its own, so leaving it off reported it as an
+# unknown option instead.
+################################################################################
+
+# test16: missing --grid argument
+@test "test16" {
+  $RUN_TEST acclint test1.ac --grid
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Missing grid size" ]
+}
+
+################################################################################
