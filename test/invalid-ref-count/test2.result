@@ -1,0 +1,4 @@
+test2.ac:13 warning: invalid ref count: polygon with 2 vertices
+refs 2
+     ^
+1 warning

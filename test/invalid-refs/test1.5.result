@@ -1,0 +1,5 @@
+test1.ac:14 error: invalid refs
+refs z
+     ^
+1 error
+invalid refs: 1

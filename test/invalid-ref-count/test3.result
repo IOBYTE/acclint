@@ -1,0 +1,4 @@
+test3.ac:18 error: invalid ref count: 2000000000 actual: 3
+refs 2000000000
+     ^
+1 error

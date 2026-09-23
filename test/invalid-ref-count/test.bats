@@ -37,18 +37,16 @@ setup_file() {
 }
 
 @test "test1.3" {
-  $RUN_TEST acclint -Wno-warnings -Wduplicate-surfaces-winding test1.ac
+  $RUN_TEST acclint -Wno-invalid-ref-count test1.ac
   [ "$status" -eq 0 ]
-  actual="$(echo "$output" | tr -d '\r')"
-  expected="$(tr -d '\r' < test1.result)"
-  if [ "$actual" != "$expected" ]; then
+  if [ "$output" != "" ]; then
     echo "$output" > test1.3.output
   fi
-  [ "$actual" = "$expected" ]
+  [ "$output" = "" ]
 }
 
 @test "test1.4" {
-  $RUN_TEST acclint --quiet test1.ac
+  $RUN_TEST acclint -Wno-warnings -Winvalid-ref-count test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.4.result)"
@@ -59,7 +57,7 @@ setup_file() {
 }
 
 @test "test1.5" {
-  $RUN_TEST acclint --summary test1.ac
+  $RUN_TEST acclint --summary -Wno-warnings test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.5.result)"
@@ -70,7 +68,7 @@ setup_file() {
 }
 
 @test "test1.6" {
-  $RUN_TEST acclint --quiet --summary test1.ac
+  $RUN_TEST acclint --quiet --summary -Wno-warnings test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.6.result)"
@@ -80,37 +78,43 @@ setup_file() {
   [ "$actual" = "$expected" ]
 }
 
+@test "test1.7" {
+  $RUN_TEST acclint -Wno-warnings test1.ac -o test1.7.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.7.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test1.7.output.ac)"
+  expected="$(tr -d '\r' < test1.7.result.ac)"
+  [ "$actual" = "$expected" ]
+  rm test1.7.output.ac
+}
+
 ################################################################################
 
-@test "test2.1" {
+@test "test2" {
   $RUN_TEST acclint test2.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test2.result)"
   if [ "$actual" != "$expected" ]; then
-    echo "$output" > test2.1.output
+    echo "$output" > test2.output
   fi
   [ "$actual" = "$expected" ]
 }
 
 @test "test2.2" {
-  $RUN_TEST acclint -Wno-warnings test2.ac
+  $RUN_TEST acclint -Wno-warnings test2.ac -o test2.output.ac
   [ "$status" -eq 0 ]
   if [ "$output" != "" ]; then
     echo "$output" > test2.2.output
   fi
   [ "$output" = "" ]
-}
-
-@test "test2.3" {
-  $RUN_TEST acclint -Wno-warnings -Wduplicate-surfaces-winding test2.ac
-  [ "$status" -eq 0 ]
-  actual="$(echo "$output" | tr -d '\r')"
-  expected="$(tr -d '\r' < test2.result)"
-  if [ "$actual" != "$expected" ]; then
-    echo "$output" > test2.3.output
-  fi
+  actual="$(tr -d '\r' < test2.output.ac)"
+  expected="$(tr -d '\r' < test2.result.ac)"
   [ "$actual" = "$expected" ]
+  rm test2.output.ac
 }
 
 ################################################################################
@@ -136,7 +140,7 @@ setup_file() {
 }
 
 @test "test3.3" {
-  $RUN_TEST acclint -Wno-warnings -Wduplicate-surfaces-winding test3.ac
+  $RUN_TEST acclint -Wno-warnings -Winvalid-ref-count test3.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test3.result)"
@@ -147,4 +151,3 @@ setup_file() {
 }
 
 ################################################################################
-

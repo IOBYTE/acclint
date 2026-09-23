@@ -125,7 +125,7 @@ private:                                               \
     CHECK(invalidNormal, m_invalid_normal, true)
     CHECK(invalidNumsurf, m_invalid_numsurf, true)
     CHECK(invalidNumvert, m_invalid_numvert, true)
-    CHECK(invalidRefsCount, m_invalid_refs_count, true)
+    CHECK(invalidRefs, m_invalid_refs, true)
     CHECK(invalidRefVertexIndex, m_invalid_ref_vertex_index, true)
     CHECK(invalidSurfaceType, m_invalid_surface_type, true)
     CHECK(invalidToken, m_invalid_token, true)
@@ -594,7 +594,8 @@ private:
     class Refs : public LineInfo, public std::vector<Ref>
     {
     public:
-        int declared_size = 0;
+        int number = 0;
+        int number_offset = 0;
     };
 
     struct Mat : public LineInfo
@@ -1230,7 +1231,6 @@ private:
         Bounds bounds;                  // the whole object
         std::vector<Bounds> surfaces;   // one per surface, in surface order
     };
-
 
     bool readHeader(std::istream &in);
     void writeHeader(std::ostream &out, const Header &header) const;

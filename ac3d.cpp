@@ -518,8 +518,20 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
 
     if (!in)
     {
+        in.clear();
+        in.seekg(0, std::ios::beg);
+
+        std::string text;
+
+        in >> text;
+
+        if (text == "kids" || text == "SURF")
+            return false;
+
         if (m_invalid_ref_vertex_index)
         {
+            in.clear();
+            in.seekg(0, std::ios::beg);
             errorWithCount(m_invalid_ref_vertex_index_count) << "invalid ref vertex index" << std::endl;
             showLine(in);
         }
@@ -787,20 +799,24 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
     if (token == refs_token)
     {
+        iss >> std::ws;
+        const std::streampos pos = iss.tellg();
+
         surface.refs.line_number = m_line_number;
         surface.refs.line_pos = m_line_pos;
+        surface.refs.number_offset = static_cast<int>(pos);
 
-        iss >> surface.refs.declared_size;
+        iss >> surface.refs.number;
 
-        if (iss)
+        if (iss && surface.refs.number >= 0)
             checkTrailing(iss);
-        else if (m_invalid_refs_count)
+        else if (m_invalid_refs)
         {
-            errorWithCount(m_invalid_refs_count_count) << "invalid refs count" << std::endl;
-            showLine(iss);
+            errorWithCount(m_invalid_refs_count) << "invalid refs" << std::endl;
+            showLine(iss, pos);
         }
 
-        for (int j = 0; j < surface.refs.declared_size; ++j)
+        for (int j = 0; j < surface.refs.number; ++j)
         {
             // declared_size comes straight from the file and is otherwise
             // unbounded (e.g. a crafted "refs 2000000000" with no ref
@@ -821,13 +837,28 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                 {
                     if (m_invalid_ref_vertex_index)
                     {
+                        iss1.clear();
+                        iss1.seekg(0);
                         errorWithCount(m_invalid_ref_vertex_index_count) << "invalid ref vertex index: " << ref.index << " of "
                                 << object.vertices.size() << std::endl;
-                        showLine(iss1, 0);
+                        showLine(iss1);
                     }
                 }
                 else
                     object.vertices[ref.index].used = true;
+            }
+            else
+            {
+                if (!ref.invalid_index)
+                {
+                    if (m_invalid_ref_count)
+                    {
+                        errorWithCount(m_invalid_ref_count_count) << "invalid ref count: " << surface.refs.number << " actual: " << j << std::endl;
+                        showLine(iss, surface.refs.number_offset);
+                    }
+                    ungetLine(in);
+                    break;
+                }
             }
             if (!ref.invalid_coordinates) // skip when invalid
             {
@@ -1109,7 +1140,7 @@ void AC3D::splitTriangleStrips(Object &object)
             for (const auto &ref : triangle.refs)
                 split.refs.push_back(ref);
 
-            split.refs.declared_size = static_cast<int>(split.refs.size());
+            split.refs.number = static_cast<int>(split.refs.size());
             surfaces.push_back(split);
         }
     }
@@ -1413,7 +1444,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
                 for (const auto &ref : triangle.refs)
                     surface.refs.emplace_back(ref);
 
-                surface.refs.declared_size = static_cast<int>(surface.refs.size());
+                surface.refs.number = static_cast<int>(surface.refs.size());
                 object.surfaces.emplace_back(surface);
             }
 
@@ -1447,7 +1478,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
             for (const auto &ref : strip)
                 surface.refs.emplace_back(ref);
 
-            surface.refs.declared_size = static_cast<int>(surface.refs.size());
+            surface.refs.number = static_cast<int>(surface.refs.size());
             object.surfaces.emplace_back(surface);
         }
     }
@@ -5970,8 +6001,9 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
     {
         if (m_invalid_ref_count)
         {
-            warningWithCount(m_invalid_ref_count_count, surface.refs.line_number) << "invalid ref count" << std::endl;
-            showLine(in, surface.refs.line_pos);
+            warningWithCount(m_invalid_ref_count_count, surface.refs.line_number)
+                << "invalid ref count: polygon with " << size << (size == 1 ? " vertex " : " vertices") << std::endl;
+            showLine(in, surface.refs.line_pos, surface.refs.number_offset);
         }
         return;
     }
@@ -8233,7 +8265,7 @@ void AC3D::splitTriangleStripsForGrid(Object &object, double size, size_t axis1,
                 for (const auto &ref : strip)
                     piece.refs.push_back(ref);
 
-                piece.refs.declared_size = static_cast<int>(piece.refs.size());
+                piece.refs.number = static_cast<int>(piece.refs.size());
                 surfaces.push_back(piece);
             }
         }
@@ -8950,7 +8982,7 @@ bool AC3D::Object::rebuildStrips(bool swaps)
                 for (const auto &ref : strip)
                     copy.refs.push_back(ref);
 
-                copy.refs.declared_size = static_cast<int>(copy.refs.size());
+                copy.refs.number = static_cast<int>(copy.refs.size());
                 rebuilt.push_back(copy);
             }
 
@@ -9030,7 +9062,7 @@ bool AC3D::Object::stitchTriangleStrips()
             for (const auto &ref : surface.refs)
                 target.refs.push_back(ref);
 
-            target.refs.declared_size = static_cast<int>(target.refs.size());
+            target.refs.number = static_cast<int>(target.refs.size());
             target.transformedTriangles.clear();
             changed = true;
         }

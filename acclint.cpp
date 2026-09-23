@@ -121,7 +121,7 @@ void usage()
     std::cerr << "  -Wno-invalid-normal                    Don't show invalid normal errors." << std::endl;
     std::cerr << "  -Wno-invalid-numsurf                   Don't show invalid numsurf errors." << std::endl;
     std::cerr << "  -Wno-invalid-numvert                   Don't show invalid numvert errors." << std::endl;
-    std::cerr << "  -Wno-invalid-refs-count                Don't show invalid refs count errors." << std::endl;
+    std::cerr << "  -Wno-invalid-refs                      Don't show invalid refs errors." << std::endl;
     std::cerr << "  -Wno-invalid-ref-vertex-index          Don't show invalid ref vertex index errors." << std::endl;
     std::cerr << "  -Wno-invalid-surface-type              Don't show invalid surface type errors." << std::endl;
     std::cerr << "  -Wno-invalid-token                     Don't show invalid token errors." << std::endl;
@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
     bool invalid_normal = true;
     bool invalid_numsurf = true;
     bool invalid_numvert = true;
-    bool invalid_refs_count = true;
+    bool invalid_refs = true;
     bool invalid_ref_vertex_index = true;
     bool invalid_surface_type = true;
     bool invalid_token = true;
@@ -979,7 +979,7 @@ int main(int argc, char *argv[])
                 invalid_normal = value;
                 invalid_numsurf = value;
                 invalid_numvert = value;
-                invalid_refs_count = value;
+                invalid_refs = value;
                 invalid_ref_vertex_index = value;
                 invalid_surface_type = value;
                 invalid_token = value;
@@ -991,6 +991,7 @@ int main(int argc, char *argv[])
 
                 // errors without tests
                 unfixable_kids_count = value;
+
             }
 
             // errors with tests
@@ -1018,9 +1019,9 @@ int main(int argc, char *argv[])
             {
                 invalid_vertex = isEnabled(arg);
             }
-            else if (arg == "-Wno-invalid-refs-count" || arg == "-Winvalid-refs-count")
+            else if (arg == "-Wno-invalid-refs" || arg == "-Winvalid-refs")
             {
-                invalid_refs_count = isEnabled(arg);
+                invalid_refs = isEnabled(arg);
             }
             else if (arg == "-Wno-invalid-ref-vertex-index" || arg == "-Winvalid-ref-vertex-index")
             {
@@ -1232,7 +1233,7 @@ int main(int argc, char *argv[])
     ac3d.invalidNormal(invalid_normal);
     ac3d.invalidNumsurf(invalid_numsurf);
     ac3d.invalidNumvert(invalid_numvert);
-    ac3d.invalidRefsCount(invalid_refs_count);
+    ac3d.invalidRefs(invalid_refs);
     ac3d.invalidSurfaceType(invalid_surface_type);
     ac3d.invalidToken(invalid_token);
     ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
@@ -1375,7 +1376,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidNormalCount(), "invalid normal: ");
             showCount(ac3d.invalidNumsurfCount(), "invalid numsurf: ");
             showCount(ac3d.invalidNumvertCount(), "invalid numvert: ");
-            showCount(ac3d.invalidRefsCountCount(), "invalid refs count: ");
+            showCount(ac3d.invalidRefsCount(), "invalid refs: ");
             showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
             showCount(ac3d.invalidTokenCount(), "invalid token: ");
             showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");

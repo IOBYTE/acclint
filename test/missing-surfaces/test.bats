@@ -47,5 +47,38 @@ setup_file() {
   [ "$actual" = "$expected" ]
 }
 
+@test "test1.4" {
+  $RUN_TEST acclint -Wno-unused-vertex -Wno-unused-material --quiet test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.5" {
+  $RUN_TEST acclint -Wno-unused-vertex -Wno-unused-material --summary test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test1.6" {
+  $RUN_TEST acclint -Wno-unused-vertex -Wno-unused-material --quiet --summary test1.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
 ################################################################################
 
