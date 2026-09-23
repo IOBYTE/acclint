@@ -162,3 +162,29 @@ setup_file() {
 }
 
 ################################################################################
+
+@test "test4" {
+  $RUN_TEST acclint test4.ac -Wno-invalid-refs
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test4.1" {
+  $RUN_TEST acclint test4.ac -o test4.1.output.ac -Wno-warnings -Wno-errors
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test4.1.output.ac)"
+  expected="$(tr -d '\r' < test4.1.result.ac)"
+  [ "$actual" = "$expected" ]
+  rm test4.1.output.ac
+}
+
+################################################################################

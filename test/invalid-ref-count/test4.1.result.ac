@@ -6,7 +6,7 @@ OBJECT poly
 name "test"
 numvert 3
 0 0 0
-1 0 0
+0 1 0
 1 1 0
 numsurf 1
 SURF 0x20

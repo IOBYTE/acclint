@@ -596,6 +596,7 @@ private:
     public:
         int number = 0;
         int number_offset = 0;
+        bool invalid = false;
     };
 
     struct Mat : public LineInfo

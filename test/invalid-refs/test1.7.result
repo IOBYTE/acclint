@@ -1,6 +1,2 @@
-4 warnings
-invalid ref count: 1
-unused vertex: 3
-4 errors
+2 errors
 invalid refs: 1
-invalid token: 3

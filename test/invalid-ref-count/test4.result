@@ -1,0 +1,4 @@
+test4.ac:18 error: invalid ref count: unknown actual: 3
+refs z
+     ^
+1 error

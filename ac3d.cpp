@@ -525,7 +525,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
 
         in >> text;
 
-        if (text == "kids" || text == "SURF")
+        if (text == kids_token || text == SURF_token)
             return false;
 
         if (m_invalid_ref_vertex_index)
@@ -810,20 +810,21 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
         if (iss && surface.refs.number >= 0)
             checkTrailing(iss);
-        else if (m_invalid_refs)
+        else
         {
-            errorWithCount(m_invalid_refs_count) << "invalid refs" << std::endl;
-            showLine(iss, pos);
+            surface.refs.invalid = true;
+
+            if (m_invalid_refs)
+            {
+                errorWithCount(m_invalid_refs_count) << "invalid refs" << std::endl;
+                showLine(iss, pos);
+            }
+
+            surface.refs.number = std::numeric_limits<int>::max();
         }
 
         for (int j = 0; j < surface.refs.number; ++j)
         {
-            // declared_size comes straight from the file and is otherwise
-            // unbounded (e.g. a crafted "refs 2000000000" with no ref
-            // lines after it): without this break, running out of input
-            // partway through just spun the loop for the rest of
-            // declared_size doing nothing every time getLine() failed,
-            // instead of stopping once there is nothing left to read.
             if (!getLine(in))
                 break;
 
@@ -849,7 +850,18 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
             }
             else
             {
-                if (!ref.invalid_index)
+                if (surface.refs.invalid)
+                {
+                    surface.refs.number = j;
+                    if (m_invalid_ref_count)
+                    {
+                        errorWithCount(m_invalid_ref_count_count) << "invalid ref count: unknown actual: " << surface.refs.number << std::endl;
+                        showLine(iss, surface.refs.number_offset);
+                    }
+                    ungetLine(in);
+                    break;
+                }
+                else if (!ref.invalid_index)
                 {
                     if (m_invalid_ref_count)
                     {
