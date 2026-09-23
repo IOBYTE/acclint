@@ -129,11 +129,10 @@ void usage()
     std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
     std::cerr << "  -Wno-more-surf-than-specified          Don't show more surf than specified errors." << std::endl;
+    std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
 
     // errors without tests
     std::cerr << "  -Wno-unfixable-kids-count              Don't show unfixable kids count errors." << std::endl;
-
-    std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
 
     // options
     std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
@@ -987,12 +986,11 @@ int main(int argc, char *argv[])
                 invalid_texture_coordinate = value;
                 invalid_vertex = value;
                 missing_vertex = value;
-                unfixable_kids_count = value;
                 more_surf_than_specified = value;
+                not_ac3d_file = value;
 
                 // errors without tests
-
-                not_ac3d_file = value;
+                unfixable_kids_count = value;
             }
 
             // errors with tests
@@ -1242,11 +1240,11 @@ int main(int argc, char *argv[])
     ac3d.invalidRefVertexIndex(invalid_ref_vertex_index);
     ac3d.missingVertex(missing_vertex);
     ac3d.moreSURFThanSpecified(more_surf_than_specified);
+    ac3d.notAC3DFile(not_ac3d_file);
 
     // errors without tests
     ac3d.unfixableKidsCount(unfixable_kids_count);
 
-    ac3d.notAC3DFile(not_ac3d_file);
     ac3d.texturePaths(texture_paths);
     ac3d.showTimes(show_times);
     // Only when a file is being written. Reading it to be told what is wrong

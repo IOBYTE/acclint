@@ -1,0 +1,14 @@
+test1.ac:20 warning: different uv
+4 .5 .5
+^
+test1.ac:26 note: instance
+4 .5 .5
+^
+test1.ac:32 note: instance
+4 .5 .5
+^
+test1.ac:38 note: instance
+4 .5 .75
+^
+1 warning
+different uv: 1
