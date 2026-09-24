@@ -170,3 +170,101 @@ setup_file() {
 }
 
 ################################################################################
+
+# Values the parser will not take. The tests above cover an option given no
+# argument at all; these cover one given an argument it cannot use. --grid and
+# -v are already covered that way, by the grid and output-version suites.
+################################################################################
+
+# test17: a dump type that is not one of the three
+@test "test17" {
+  $RUN_TEST acclint test1.ac --dump bogus
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Invalid dump type: bogus" ]
+}
+
+# test18: fewer threads than one
+@test "test18" {
+  $RUN_TEST acclint test1.ac -j 0
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Invalid number of threads: 0" ]
+}
+
+# test19: one thread past the 256 the parser allows. test20 pins the other
+# side of that boundary, so moving the limit cannot go unnoticed.
+@test "test19" {
+  $RUN_TEST acclint test1.ac -j 257
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Invalid number of threads: 257" ]
+}
+
+# test20: 256 threads is accepted
+@test "test20" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors test1.ac -j 256
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+}
+
+# test21: a thread count that is not a number
+@test "test21" {
+  $RUN_TEST acclint test1.ac -j abc
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Invalid number of threads: abc" ]
+}
+
+# test22: a combine percent of nothing. The value has to be above zero for the
+# share of the cell to mean anything.
+@test "test22" {
+  $RUN_TEST acclint test1.ac --combineObjects=0
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Invalid combine percent: 0" ]
+}
+
+# test23: an object type that is not group, poly or light
+@test "test23" {
+  $RUN_TEST acclint test1.ac --removeObjects bogus x
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Invalid removeObjects type: bogus" ]
+}
+
+# test24: a regex that will not compile. What follows the colon is the
+# standard library's own wording and differs between implementations, so only
+# the part acclint writes is checked.
+@test "test24" {
+  $RUN_TEST acclint test1.ac --removeObjects poly "["
+  [ "$status" -ne 0 ]
+  [[ "$(echo "${lines[0]}" | tr -d '\r')" == "Invalid removeObjects expression:"* ]]
+}
+
+################################################################################
+# Input files: exactly one is required.
+################################################################################
+
+# test25: two files named on their own
+@test "test25" {
+  $RUN_TEST acclint test1.ac test1.ac
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Multiple input files not supported: test1.ac" ]
+}
+
+# test26: none at all, with an option given so that the usage text is not
+# printed for an empty command line instead
+@test "test26" {
+  $RUN_TEST acclint -Wno-warnings
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "No input file specified" ]
+}
+
+################################################################################
+# --version prints the version and stops. The number comes from config.h and
+# changes with the release, so only the name is checked.
+################################################################################
+
+# test27: --version
+@test "test27" {
+  $RUN_TEST acclint --version
+  [ "$status" -eq 0 ]
+  [[ "$(echo "${lines[0]}" | tr -d '\r')" == "acclint "* ]]
+}
+
+################################################################################
