@@ -32,7 +32,7 @@ test1.ac:11 warning: trailing text: " "
 folded 
       ^
 test1.ac:12 warning: trailing text: " "
-texture "test.rgb" 
+texture "test.png" 
                   ^
 test1.ac:13 warning: trailing text: " "
 texrep 0 0 

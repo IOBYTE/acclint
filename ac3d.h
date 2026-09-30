@@ -257,7 +257,6 @@ public:
     bool cleanVertices();
     bool cleanSurfaces();
     bool cleanMaterials();
-    bool fixMultipleWorlds();
     bool splitMultipleSURF();
     bool splitMultipleMat();
     bool merge(const AC3D& ac3d);
@@ -269,8 +268,10 @@ public:
     void combineTexture();
     void gridPartition(double size, bool quad_tree);
     bool combineObjects(double size);
-    void fixOverlapping2SidedSurface();
     void fixBackToBackMirror();
+    bool fixMultipleWorlds();
+    void fixOverlapping2SidedSurface();
+    void fixRgbTexture();
     void fixSurface2SidedOpaque();
     static std::string getDuration(const std::chrono::duration<double> &time_span);
     static std::string getDuration(const std::chrono::time_point<std::chrono::system_clock> &start,
@@ -1423,6 +1424,7 @@ private:
     bool isTransparent(const Object &object);
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
+    void fixRgbTexture(Object &object);
     static void fixBackToBackMirror(Object &object);
     static void getObjects(std::vector<Object *> &polys, Object *object);
 

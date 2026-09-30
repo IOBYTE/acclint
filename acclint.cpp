@@ -91,7 +91,7 @@ void usage()
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-geometry              Don't show overlapping geometry warnings." << std::endl;
     std::cerr << "  -Wno-poly-with-kids                    Don't show poly with kids warnings." << std::endl;
-    std::cerr << "  -Wno-rgb-texture                       Don't show rgb and rgba texture deprecated warnings." << std::endl;
+    std::cerr << "  -Wno-rgb-texture                       Don't show rgb and rgba texture warnings." << std::endl;
     std::cerr << "  -Wno-surface-2-sided-opaque            Don't show surface 2 sided opaque warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-convex                Don't show surface not convex warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-coplanar              Don't show surface not coplanar warnings." << std::endl;
@@ -161,6 +161,7 @@ void usage()
     std::cerr << "                                         rebuild the object tree from them." << std::endl;
     std::cerr << "  --fixMultipleWorlds                    Removes extra worlds." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
+    std::cerr << "  --fixRgbTexture                        Rename texture to use png texture." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
     std::cerr << "  --quiet                                Don't show warning and error messages." << std::endl;
@@ -330,6 +331,7 @@ int main(int argc, char *argv[])
     bool fix_kids = false;
     bool fix_multiple_worlds = false;
     bool fix_overlapping_2_sided_surface = false;
+    bool fix_rgb_texture = false;
     bool fix_surface_2_sided_opaque = false;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
     int version = 0;
@@ -364,6 +366,7 @@ int main(int argc, char *argv[])
         OPT_FIX_KIDS,
         OPT_FIX_MULTIPLE_WORLDS,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
+        OPT_FIX_RGB_TEXTURE,
         OPT_FIX_BACK_TO_BACK_MIRROR,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
         OPT_FIX_ALL,
@@ -396,6 +399,7 @@ int main(int argc, char *argv[])
         { "fixKids",                     no_argument,       nullptr, OPT_FIX_KIDS },
         { "fixMultipleWorlds",           no_argument,       nullptr, OPT_FIX_MULTIPLE_WORLDS },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
+        { "fixRgbTexture",               no_argument,       nullptr, OPT_FIX_RGB_TEXTURE },
         { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
         { "merge",                       required_argument, nullptr, OPT_MERGE },
         { "removeObjects",               required_argument, nullptr, OPT_REMOVE_OBJECTS },
@@ -506,8 +510,9 @@ int main(int argc, char *argv[])
             splitMat = true;
             fix_kids = true;
             fix_multiple_worlds = true;
-            fix_surface_2_sided_opaque = true;
             fix_overlapping_2_sided_surface = true;
+            fix_rgb_texture = true;
+            fix_surface_2_sided_opaque = true;
             combineTexture = true;
             combineObjects = true;
             break;
@@ -522,6 +527,9 @@ int main(int argc, char *argv[])
             break;
         case OPT_FIX_OVERLAPPING_2_SIDED_SURFACE:
             fix_overlapping_2_sided_surface = true;
+            break;
+        case OPT_FIX_RGB_TEXTURE:
+            fix_rgb_texture = true;
             break;
         case OPT_FIX_SURFACE_2_SIDED_OPAQUE:
             fix_surface_2_sided_opaque = true;
@@ -1346,7 +1354,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
             showCount(ac3d.overlappingGeometryCount(), "overlapping geometry: ");
             showCount(ac3d.polyWithKidsCount(), "poly with kids: ");
-            showCount(ac3d.rgbTexture(), "rgb texture: ");
+            showCount(ac3d.rgbTextureCount(), "rgb texture: ");
             showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
             showCount(ac3d.surfaceNotConvexCount(), "surface not convex: ");
             showCount(ac3d.surfaceNotCoplanarCount(), "surface not coplanar: ");
@@ -1479,6 +1487,9 @@ int main(int argc, char *argv[])
             ac3d.fixMultipleWorlds();
 
         ac3d.clean();
+
+        if (fix_rgb_texture)
+            ac3d.fixRgbTexture();
 
         // Before the two fixes below, both of which clear the two sided flag
         // this one sets: fixSurface2SidedOpaque would take the merged

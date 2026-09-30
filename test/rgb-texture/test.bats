@@ -81,3 +81,59 @@ setup_file() {
 }
 
 ################################################################################
+
+# test2: the same texture named with an upper case extension. A file system
+# that does not care about case hands ".RGB" back as readily as ".rgb", and
+# the check asked ends_with("rgb") of the name, so it saw neither. What is
+# being asked about is the name, not the file, so the texture need not be
+# there for it.
+################################################################################
+
+@test "test2.1" {
+  $RUN_TEST acclint -Wno-missing-texture test2.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+# test3: a texture called "bigrgb". It ends in the letters but has no
+# extension at all, so it is not an SGI texture and nothing is said. Asking
+# ends_with of the whole name used to report it.
+################################################################################
+
+@test "test3.1" {
+  $RUN_TEST acclint -Wno-missing-texture test3.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################
+# test4: --fixRgbTexture renames the upper case one too, keeping the stem it
+# had and putting .png in place of the extension.
+################################################################################
+
+@test "test4.1" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixRgbTexture test2.ac -o test4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.output.ac)"
+  expected_file="$(tr -d '\r' < test4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.output.ac test4.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.output.ac
+}
+
+################################################################################

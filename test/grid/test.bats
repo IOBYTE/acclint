@@ -9,7 +9,7 @@ setup() {
 }
 
 setup_file() {
-    rm -f ./*.output ./*.output.ac
+    rm -f ./*.output ./*.output.ac ./*.output.acc
 }
 
 ################################################################################
@@ -150,8 +150,12 @@ setup_file() {
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test5.1.output
   fi
+  [ "$actual" = "$expected" ]
   actual_file="$(tr -d '\r' < test5.output.acc)"
   expected_file="$(tr -d '\r' < test5.1.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.output.acc test5.1.actual.output
+  fi
   [ "$actual_file" = "$expected_file" ]
   rm test5.output.acc
 }
@@ -183,8 +187,12 @@ setup_file() {
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test6.1.output
   fi
+  [ "$actual" = "$expected" ]
   actual_file="$(tr -d '\r' < test6.output.acc)"
   expected_file="$(tr -d '\r' < test6.1.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.output.acc test6.1.actual.output
+  fi
   [ "$actual_file" = "$expected_file" ]
   rm test6.output.acc
 }

@@ -10,8 +10,8 @@ hidden
 locked 
 folded 
 shader "ENV" 
-texture "test.rgb" base 
-texture "test.rgb" tiled 
+texture "test.png" base 
+texture "test.png" tiled 
 texrep 0 0 
 rot 0 0 0 0 0 0 0 0 0 
 loc 0 0 0 

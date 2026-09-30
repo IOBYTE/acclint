@@ -9,7 +9,7 @@ data 4
 hidden 
 locked 
 folded 
-texture "test.rgb" 
+texture "test.png" 
 texrep 0 0 
 rot 0 0 0 0 0 0 0 0 0 
 loc 0 0 0 

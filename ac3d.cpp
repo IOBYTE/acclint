@@ -238,6 +238,17 @@ bool icasecmp(const std::string &l, const std::string_view &r)
                      std::toupper(static_cast<unsigned char>(r1)); });
 }
 
+// The .rgb and .rgba textures SGI left behind, which --fixRgbTexture renames
+// to .png. It is the extension that names them rather than the end of the
+// name, or a texture called "bigrgb" would answer to it, and a file system
+// that does not care about case hands back ".RGB" as readily as ".rgb".
+bool isRgbTexture(const std::string &name)
+{
+    const std::string extension = std::filesystem::path(name).extension().string();
+
+    return icasecmp(extension, ".rgb") || icasecmp(extension, ".rgba");
+}
+
 // A texture has to be a regular file to be usable, which is a stricter
 // question than exists(): a directory named like the texture satisfies
 // exists(), and what file_size() then makes of it is platform specific --
@@ -2387,12 +2398,10 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                     texture.path = texture.name;
 
-                    if (m_rgb_texture)
+                    if (m_rgb_texture && isRgbTexture(texture.name))
                     {
-                        if (texture.name.ends_with("rgb") || texture.name.ends_with("rgba")) {
-                            warningWithCount(m_rgb_texture_count) << "rgb texture" << std::endl;
-                            showLine(iss1, texture.name_pos);
-                        }
+                        warningWithCount(m_rgb_texture_count) << "rgb texture" << std::endl;
+                        showLine(iss1, texture.name_pos);
                     }
 
                     // use parent path of file when available
@@ -7463,6 +7472,29 @@ bool AC3D::fixMultipleWorlds()
     return true;
 }
 
+void AC3D::fixRgbTexture()
+{
+    for (auto &object : m_objects)
+        fixRgbTexture(object);
+}
+
+void AC3D::fixRgbTexture(Object &object)
+{
+    if (object.type.type == "poly")
+    {
+        for (auto &texture : object.textures)
+        {
+            // isRgbTexture only says yes when there is an extension to
+            // find, so the dot is there to be found.
+            if (isRgbTexture(texture.name))
+                texture.name.replace(texture.name.rfind('.'), std::string::npos, ".png");
+        }
+    }
+
+    for (auto &kid : object.kids)
+        fixRgbTexture(kid);
+}
+
 bool AC3D::cleanMaterials()
 {
     bool cleaned = false;
@@ -8718,7 +8750,8 @@ void AC3D::gridPartition(double size, bool quad_tree)
         for (auto &object : m_objects)
             gridPartition(object, info);
 
-        std::cout << "gridPartition: " << info.cells << " cells";
+        std::cout << "gridPartition: " << info.cells << " cell"
+                  << (info.cells == 1 ? "" : "s");
 
         // No groups means there was nothing for the tree to order -- a single
         // cell under each parent -- rather than a tree that came out empty.

@@ -35,10 +35,10 @@ test9.acc:12 warning: trailing text: " "
 shader "ENV" 
             ^
 test9.acc:13 warning: trailing text: " "
-texture "test.rgb" base 
+texture "test.png" base 
                        ^
 test9.acc:14 warning: trailing text: " "
-texture "test.rgb" tiled 
+texture "test.png" tiled 
                         ^
 test9.acc:15 warning: trailing text: " "
 texrep 0 0 

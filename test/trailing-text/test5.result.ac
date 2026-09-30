@@ -13,7 +13,7 @@ folded
 data 4
 12
 4
-texture "test.rgb"
+texture "test.png"
 texrep 0 0
 subdiv 0
 numvert 3
