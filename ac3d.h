@@ -98,6 +98,7 @@ private:                                               \
     CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
     CHECK(overlappingGeometry, m_overlapping_geometry, false)
     CHECK(polyWithKids, m_poly_with_kids, true)
+    CHECK(rgbTexture, m_rgb_texture, true)
     CHECK(surface2SidedOpaque, m_surface_2_sided_opaque, false)
     CHECK(surfaceNotConvex, m_surface_not_convex, true)
     CHECK(surfaceNotCoplanar, m_surface_not_coplanar, true)
@@ -564,6 +565,7 @@ private:
         quoted_string name;
         std::string type;
         std::string path;
+        std::streampos name_pos;
     };
 
     struct TexRep : public LineInfo

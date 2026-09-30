@@ -2325,6 +2325,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             texture.line_number = m_line_number;
             texture.line_pos = m_line_pos;
 
+            iss1 >> std::ws;
+            texture.name_pos = iss1.tellg();
+
             iss1 >> texture.name;
 
             if (iss1)
@@ -2384,6 +2387,14 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                     texture.path = texture.name;
 
+                    if (m_rgb_texture)
+                    {
+                        if (texture.name.ends_with("rgb") || texture.name.ends_with("rgba")) {
+                            warningWithCount(m_rgb_texture_count) << "rgb texture" << std::endl;
+                            showLine(iss1, texture.name_pos);
+                        }
+                    }
+
                     // use parent path of file when available
                     // and texture path is not absolute
                     if (!file_path.parent_path().empty() && !absolute)
@@ -2416,7 +2427,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         if (!found && m_missing_texture)
                         {
                             warningWithCount(m_missing_texture_count) << "missing texture: " << std::quoted(texture_path.generic_string()) << std::endl;
-                            showLine(iss1, 0);
+                            showLine(iss1, texture.name_pos);
                         }
                     }
                     else if (!absolute && !m_texture_paths.empty()) // look for duplicate textures

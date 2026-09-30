@@ -91,6 +91,7 @@ void usage()
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-geometry              Don't show overlapping geometry warnings." << std::endl;
     std::cerr << "  -Wno-poly-with-kids                    Don't show poly with kids warnings." << std::endl;
+    std::cerr << "  -Wno-rgb-texture                       Don't show rgb and rgba texture deprecated warnings." << std::endl;
     std::cerr << "  -Wno-surface-2-sided-opaque            Don't show surface 2 sided opaque warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-convex                Don't show surface not convex warnings." << std::endl;
     std::cerr << "  -Wno-surface-not-coplanar              Don't show surface not coplanar warnings." << std::endl;
@@ -264,6 +265,7 @@ int main(int argc, char *argv[])
     bool overlapping_2_sided_surface = true;
     bool overlapping_geometry = false;
     bool poly_with_kids = true;
+    bool rgb_texture = true;
     bool surface_2_sided_opaque = false;
     bool surface_not_convex = true;
     bool surface_not_coplanar = true;
@@ -569,7 +571,7 @@ int main(int argc, char *argv[])
                 }
                 catch (const std::exception &ex)
                 {
-                    std::cerr << "Invalid removeObjects expression:  " << expression << " " << ex.what() << std::endl;
+                    std::cerr << "Invalid removeObjects expression: " << expression << " " << ex.what() << std::endl;
                     usage();
                     return EXIT_FAILURE;
                 }
@@ -669,6 +671,7 @@ int main(int argc, char *argv[])
                 overlapping_2_sided_surface = value;
                 overlapping_geometry = value;
                 poly_with_kids = value;
+                rgb_texture = value;
                 fixable_kids_count = value;
                 surface_2_sided_opaque = value;
                 surface_not_convex = value;
@@ -884,6 +887,10 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-poly-with-kids" || arg == "-Wpoly-with-kids")
             {
                 poly_with_kids = isEnabled(arg);
+            }
+            else if (arg == "-Wno-rgb-texture" || arg == "-Wrgb-texture")
+            {
+                rgb_texture = isEnabled(arg);
             }
             else if (arg == "-Wno-fixable-kids-count" || arg == "-Wfixable-kids-count")
             {
@@ -1206,6 +1213,7 @@ int main(int argc, char *argv[])
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
     ac3d.overlappingGeometry(overlapping_geometry);
     ac3d.polyWithKids(poly_with_kids);
+    ac3d.rgbTexture(rgb_texture);
     ac3d.surface2SidedOpaque(surface_2_sided_opaque);
     ac3d.surfaceNotConvex(surface_not_convex);
     ac3d.surfaceNotCoplanar(surface_not_coplanar);
@@ -1338,6 +1346,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
             showCount(ac3d.overlappingGeometryCount(), "overlapping geometry: ");
             showCount(ac3d.polyWithKidsCount(), "poly with kids: ");
+            showCount(ac3d.rgbTexture(), "rgb texture: ");
             showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
             showCount(ac3d.surfaceNotConvexCount(), "surface not convex: ");
             showCount(ac3d.surfaceNotCoplanarCount(), "surface not coplanar: ");

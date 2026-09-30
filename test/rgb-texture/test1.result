@@ -1,0 +1,4 @@
+test1.ac:7 warning: rgb texture
+texture test1.rgb
+        ^
+1 warning
