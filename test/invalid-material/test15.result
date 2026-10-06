@@ -1,0 +1,10 @@
+test15.ac:7 warning: invalid material shi: missing separator
+shi 64,5
+      ^
+test15.ac:8 warning: invalid material trans: missing separator
+trans 0,75
+       ^
+test15.ac:2 warning: unused material
+MAT "glass"
+^
+3 warnings

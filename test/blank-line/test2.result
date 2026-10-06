@@ -1,0 +1,10 @@
+test2.ac:11 warning: blank line
+test2.ac:12 warning: blank line
+test2.ac:13 error: missing vertex: 3 out of 4 found
+numsurf 1
+^
+test2.ac:21 error: invalid token: bogus
+bogus
+^
+2 warnings
+2 errors

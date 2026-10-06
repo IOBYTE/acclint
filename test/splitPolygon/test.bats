@@ -124,4 +124,47 @@ setup_file() {
 }
 
 ################################################################################
+# The surface after a split polygon was never split itself: having inserted
+# size - 3 triangles after the first, the loop skipped size - 2 surfaces and
+# its own ++i stepped one past the next original. Three quads in a row came
+# out as refs 3 3 4 3 3, and nothing said so.
+#
+# test3.1 is that case. test3.2 mixes sizes -- a pentagon inserts two
+# triangles, a quad one -- and ends on a triangle, so a skip of the wrong
+# length in either direction shows up as an unsplit polygon or a lost one.
+################################################################################
+
+@test "test3.1" {
+  $RUN_TEST acclint test3.1.ac --splitPolygon -o test3.1.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test3.1.output.ac)"
+  expected_file="$(tr -d '\r' < test3.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.1.output.ac test3.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.1.output.ac
+}
+
+@test "test3.2" {
+  $RUN_TEST acclint test3.2.ac --splitPolygon -o test3.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test3.2.output.ac)"
+  expected_file="$(tr -d '\r' < test3.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.2.output.ac test3.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.2.output.ac
+}
+
+################################################################################
 

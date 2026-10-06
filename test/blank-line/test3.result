@@ -1,0 +1,7 @@
+test3.ac:19 error: less surfaces than specified
+kids 0
+^
+test3.ac:12 note: number specified
+numsurf 2
+        ^
+1 error

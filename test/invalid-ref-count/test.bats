@@ -161,6 +161,28 @@ setup_file() {
   [ "$actual" = "$expected" ]
 }
 
+# test3.4: the round trip. invalid ref count is a warning, so -Wno-errors
+# leaves it showing and does not stop the file being written, with the refs
+# count taken from the refs actually read. It used to be reported as an
+# error: -Wno-errors could not silence it and the write was refused.
+@test "test3.4" {
+  $RUN_TEST acclint -Wno-errors test3.ac -o test3.4.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.4.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test3.4.output.ac)"
+  expected_file="$(tr -d '\r' < test3.4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.4.output.ac test3.4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.4.output.ac
+}
+
 ################################################################################
 
 @test "test4" {

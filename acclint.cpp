@@ -161,6 +161,7 @@ void usage()
     std::cerr << "                                         rebuild the object tree from them." << std::endl;
     std::cerr << "  --fixMultipleWorlds                    Removes extra worlds." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
+    std::cerr << "  --fixPolyWithKids                      Convert a poly with kids and no surfaces to a group." << std::endl;
     std::cerr << "  --fixRgbTexture                        Rename texture to use png texture." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
@@ -331,6 +332,7 @@ int main(int argc, char *argv[])
     bool fix_kids = false;
     bool fix_multiple_worlds = false;
     bool fix_overlapping_2_sided_surface = false;
+    bool fix_poly_with_kids = false;
     bool fix_rgb_texture = false;
     bool fix_surface_2_sided_opaque = false;
     AC3D::DumpType dump_type = AC3D::DumpType::group;
@@ -366,6 +368,7 @@ int main(int argc, char *argv[])
         OPT_FIX_KIDS,
         OPT_FIX_MULTIPLE_WORLDS,
         OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
+        OPT_FIX_POLY_WITH_KIDS,
         OPT_FIX_RGB_TEXTURE,
         OPT_FIX_BACK_TO_BACK_MIRROR,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
@@ -399,6 +402,7 @@ int main(int argc, char *argv[])
         { "fixKids",                     no_argument,       nullptr, OPT_FIX_KIDS },
         { "fixMultipleWorlds",           no_argument,       nullptr, OPT_FIX_MULTIPLE_WORLDS },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
+        { "fixPolyWithKids",             no_argument,       nullptr, OPT_FIX_POLY_WITH_KIDS },
         { "fixRgbTexture",               no_argument,       nullptr, OPT_FIX_RGB_TEXTURE },
         { "fixSurface2SidedOpaque",      no_argument,       nullptr, OPT_FIX_SURFACE_2_SIDED_OPAQUE },
         { "merge",                       required_argument, nullptr, OPT_MERGE },
@@ -511,6 +515,7 @@ int main(int argc, char *argv[])
             fix_kids = true;
             fix_multiple_worlds = true;
             fix_overlapping_2_sided_surface = true;
+            fix_poly_with_kids = true;
             fix_rgb_texture = true;
             fix_surface_2_sided_opaque = true;
             combineTexture = true;
@@ -527,6 +532,9 @@ int main(int argc, char *argv[])
             break;
         case OPT_FIX_OVERLAPPING_2_SIDED_SURFACE:
             fix_overlapping_2_sided_surface = true;
+            break;
+        case OPT_FIX_POLY_WITH_KIDS:
+            fix_poly_with_kids = true;
             break;
         case OPT_FIX_RGB_TEXTURE:
             fix_rgb_texture = true;
@@ -1470,6 +1478,12 @@ int main(int argc, char *argv[])
         // depends on what is being written, and they are made well before
         // then.
         ac3d.outputFile(out_file);
+
+        // First, so everything after sees the object as the group it is
+        // used as. splitPolygons and the surface cleanup take a poly for a
+        // leaf and never reach the kids of one.
+        if (fix_poly_with_kids)
+            ac3d.fixPolyWithKids();
 
         if (flatten)
             ac3d.flatten();

@@ -270,6 +270,7 @@ public:
     bool combineObjects(double size);
     void fixBackToBackMirror();
     bool fixMultipleWorlds();
+    bool fixPolyWithKids();
     void fixOverlapping2SidedSurface();
     void fixRgbTexture();
     void fixSurface2SidedOpaque();
@@ -1425,6 +1426,7 @@ private:
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
     void fixRgbTexture(Object &object);
+    static bool fixPolyWithKids(Object &object);
     static void fixBackToBackMirror(Object &object);
     static void getObjects(std::vector<Object *> &polys, Object *object);
 
@@ -1436,6 +1438,7 @@ private:
     static Point3 unnormalizedNormal(const Point3 &p0, const Point3 &p1, const Point3 &p2);
     static bool degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2);
     static bool degenerate(const std::array<Point3, 3> &vertices);
+    static std::vector<std::array<size_t, 3>> triangulatePolygon(const Object &object, const Surface &surface);
     static bool coplanar(const Triangle &triangle1, const Triangle &triangle2);
     static bool boundingBoxesOverlap(const Triangle &triangle1, const Triangle &triangle2);
     static bool boundingBoxesOverlap(const Point3 &min1, const Point3 &max1,

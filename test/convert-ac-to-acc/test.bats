@@ -221,3 +221,51 @@ setup_file() {
 }
 
 ################################################################################
+# Concave polygons. The fan from the first vertex used for a convex polygon
+# covers ground outside a concave one, and the conversion had nothing else:
+# every concave polygon was dropped, its vertices with it, and an object made
+# of nothing else was left unconverted -- a raw polygon with no normals in a
+# file that promises them. triangulatePolygon cuts a concave polygon into
+# triangles by ear clipping, every one inside it and wound the way it is.
+################################################################################
+
+# test10: an 86 ref silhouette, concave all the way round. Being concave is
+# the only thing wrong with it, so that is the only warning turned off: any
+# other fails the test. It comes out as the 84 triangles an 86 corner polygon
+# needs, strung into strips, with every normal facing the way the polygon
+# does.
+@test "test10" {
+  $RUN_TEST acclint -Wno-surface-not-convex test10.ac -o test10.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test10.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test10.output.acc)"
+  expected_file="$(tr -d '\r' < test10.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test10.output.acc test10.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test10.output.acc
+}
+
+# test11: an L, small enough to check by hand. Written as loose triangles so
+# each can be read off: four, none of them reaching across the notch.
+@test "test11" {
+  $RUN_TEST acclint -Wno-surface-not-convex test11.ac --noTriangleStrips -o test11.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test11.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test11.output.acc)"
+  expected_file="$(tr -d '\r' < test11.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test11.output.acc test11.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test11.output.acc
+}
+
+################################################################################

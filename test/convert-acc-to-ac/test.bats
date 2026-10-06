@@ -120,4 +120,26 @@ setup_file() {
 }
 
 ################################################################################
+# test8: a polygon whose refs carry a uv pair for each of two textures, base
+# and tiled. A .ac ref carries one, and the conversion cuts the textures to
+# one, but only triangle strip refs had their extra pairs dropped: a polygon
+# was copied as it was, so every ref came out as "index u v u v" and the .ac
+# written warned about trailing text on every one of them.
+@test "test8" {
+  $RUN_TEST acclint test8.acc -o test8.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test8.output.ac)"
+  expected_file="$(tr -d '\r' < test8.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test8.output.ac test8.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.output.ac
+}
+
+################################################################################
 

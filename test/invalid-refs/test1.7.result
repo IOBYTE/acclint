@@ -1,2 +1,4 @@
-2 errors
+1 warning
+invalid ref count: 1
+1 error
 invalid refs: 1

@@ -414,13 +414,20 @@ bool AC3D::getLine(std::istream &in)
     if (m_too_deep)
         return false;
 
-    m_line_pos = in.tellg();
-
     bool empty = false;
 
     do
     {
         empty = false;
+
+        // Taken for each line rather than once before the blank ones are
+        // skipped, so it is the start of the line actually returned. Taken
+        // once, it pointed at the first blank line: every excerpt of the
+        // line showed a blank one instead, and ungetLine seeked back over
+        // all the blanks while taking only one off m_line_number, so the
+        // blanks were counted again when read again and every line number
+        // after that was too high by the number of them.
+        m_line_pos = in.tellg();
 
         std::getline(in, m_line);
 
@@ -861,12 +868,19 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
             }
             else
             {
+                // Both reports below are warnings, as the check is declared
+                // and as checkCollinearSurfaceVertices reports its own invalid
+                // ref count. Reported as errors they counted toward the error
+                // total with no line in the error summary, -Wno-errors could not
+                // silence them while -Wno-warnings could, and they gave the line
+                // after the refs, where the ref loop had stopped, instead of the
+                // refs line they show.
                 if (surface.refs.invalid)
                 {
                     surface.refs.number = j;
                     if (m_invalid_ref_count)
                     {
-                        errorWithCount(m_invalid_ref_count_count) << "invalid ref count: unknown actual: " << surface.refs.number << std::endl;
+                        warningWithCount(m_invalid_ref_count_count, surface.refs.line_number) << "invalid ref count: unknown actual: " << surface.refs.number << std::endl;
                         showLine(iss, surface.refs.number_offset);
                     }
                     ungetLine(in);
@@ -876,7 +890,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                 {
                     if (m_invalid_ref_count)
                     {
-                        errorWithCount(m_invalid_ref_count_count) << "invalid ref count: " << surface.refs.number << " actual: " << j << std::endl;
+                        warningWithCount(m_invalid_ref_count_count, surface.refs.line_number) << "invalid ref count: " << surface.refs.number << " actual: " << j << std::endl;
                         showLine(iss, surface.refs.number_offset);
                     }
                     ungetLine(in);
@@ -1045,7 +1059,20 @@ void AC3D::convertObjectToAc(Object &object)
     {
         if (!object.surfaces[i].isTriangleStrip())
         {
-            surfaces.push_back(object.surfaces[i]);
+            // A .ac ref carries one texture coordinate. An .acc ref carries
+            // one per texture, and the textures are cut to one below, so
+            // the pairs past the first have nothing left to map and were
+            // written out as trailing text on every ref. Strips go through
+            // makeRef, which already keeps only the first.
+            Surface surface = object.surfaces[i];
+
+            for (auto &ref : surface.refs)
+            {
+                if (ref.coordinates.size() > 1)
+                    ref.coordinates.resize(1);
+            }
+
+            surfaces.push_back(std::move(surface));
             continue;
         }
 
@@ -1311,12 +1338,37 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
 
             if (surface.refs.size() > 3)
             {
+                // A fan from the first vertex covers ground outside a
+                // concave polygon, so one is cut into triangles that stay
+                // inside it instead; every concave polygon used to be
+                // dropped here, its vertices with it. One that crosses
+                // itself has no inside to keep to, and is fanned like a
+                // convex one rather than lost.
                 if (surface.concave)
                 {
-                    // TODO
-                    continue;
+                    const std::vector<std::array<size_t, 3>> pieces = triangulatePolygon(object, surface);
+
+                    for (const auto &piece : pieces)
+                    {
+                        const Ref &r0 = surface.refs[piece[0]];
+                        const Ref &r1 = surface.refs[piece[1]];
+                        const Ref &r2 = surface.refs[piece[2]];
+
+                        const Triangle triangle(surface.flags, surface.mats[0].mat,
+                            r0.index, r1.index, r2.index,
+                            object.vertices[r0.index].vertex,
+                            object.vertices[r1.index].vertex,
+                            object.vertices[r2.index].vertex,
+                            r0.coordinates, r1.coordinates, r2.coordinates);
+                        if (triangle.good())
+                            triangles.emplace_back(triangle);
+                    }
+
+                    if (!pieces.empty())
+                        continue;
                 }
-                else // triangle fan
+
+                // triangle fan
                 {
                     if (surface.refs[0].index >= object.vertices.size())
                         continue;
@@ -1885,6 +1937,21 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string_vi
                     warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << value << " range: "
                               << min << " to " << max << std::endl;
                     showLine(in, pos);
+                }
+            }
+
+            // The token is a whole word, so whatever is left of it after the
+            // number belongs to the same word. A decimal comma is the usual
+            // cause: "trans 0,75" read as 0 and turned a 75% transparent
+            // material opaque without a word. readColor reports the same
+            // thing the same way.
+            if (iss.peek() != std::istringstream::traits_type::eof())
+            {
+                if (m_invalid_material)
+                {
+                    const std::streampos bad_pos = pos + static_cast<std::streamoff>(iss.tellg());
+                    warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": missing separator" << std::endl;
+                    showLine(in, bad_pos);
                 }
             }
         }
@@ -6528,6 +6595,205 @@ bool AC3D::degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2)
     return p0.equals(p1) || p0.equals(p2) || p1.equals(p2);
 }
 
+// Cuts a polygon into triangles by ear clipping. Unlike the fan from the first
+// vertex, which is only right for a convex polygon, every triangle it makes
+// stays inside the polygon, concave or not.
+//
+// The polygon is projected onto the axis plane its normal is closest to, so
+// one that is not quite flat still comes apart. The normal is Newell's,
+// summed over every edge, so it points the way the polygon winds even where
+// its first three corners make a reflex one. The triangles come back as
+// positions in surface.refs, each wound the way the polygon is, so the normals
+// built from them face the way it does.
+//
+// A corner in line with its neighbours encloses nothing: it is clipped without
+// a triangle of its own. Nothing comes back for a polygon with fewer than
+// three refs, an out of range vertex index or no area, or for one that crosses
+// itself and so has no inside to keep to: it runs out of ears, or the
+// triangles it gives up do not add up to its area.
+std::vector<std::array<size_t, 3>> AC3D::triangulatePolygon(const Object &object, const Surface &surface)
+{
+    std::vector<std::array<size_t, 3>> triangles;
+    const size_t size = surface.refs.size();
+
+    if (size < 3)
+        return triangles;
+
+    std::vector<Point3> points;
+    points.reserve(size);
+
+    for (const auto &ref : surface.refs)
+    {
+        if (ref.index >= object.vertices.size())
+            return triangles;
+
+        points.push_back(object.vertices[ref.index].vertex);
+    }
+
+    // Worked relative to the first corner. A track is placed kilometres from
+    // the origin and a polygon on it can be centimetres across; summed in
+    // absolute coordinates, the area cancelled away to rounding.
+    const Point3 origin = points[0];
+
+    for (auto &point : points)
+        point = point - origin;
+
+    Point3 normal{ 0.0, 0.0, 0.0 };
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        const Point3 &a = points[i];
+        const Point3 &b = points[(i + 1) % size];
+
+        normal += Point3{ (a.y() - b.y()) * (a.z() + b.z()),
+                          (a.z() - b.z()) * (a.x() + b.x()),
+                          (a.x() - b.x()) * (a.y() + b.y()) };
+    }
+
+    // Each component of the Newell normal is twice the polygon's signed area
+    // projected onto the plane of the other two axes, taken in the order
+    // (y, z), (z, x), (x, y). Dropping the largest gives the projection with
+    // the most area, and swapping the two that remain when that area is
+    // negative makes the projected polygon wind counterclockwise.
+    size_t u = 0;
+    size_t v = 1;
+    double area = normal.z();
+
+    if (std::abs(normal.x()) >= std::abs(normal.y()) && std::abs(normal.x()) >= std::abs(normal.z()))
+    {
+        u = 1;
+        v = 2;
+        area = normal.x();
+    }
+    else if (std::abs(normal.y()) >= std::abs(normal.z()))
+    {
+        u = 2;
+        v = 0;
+        area = normal.y();
+    }
+
+    if (area == 0.0)
+        return triangles;
+
+    if (area < 0.0)
+        std::swap(u, v);
+
+    std::vector<Point2> projected(size);
+    double min_u = std::numeric_limits<double>::max();
+    double max_u = std::numeric_limits<double>::lowest();
+    double min_v = std::numeric_limits<double>::max();
+    double max_v = std::numeric_limits<double>::lowest();
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        projected[i] = Point2{ points[i][u], points[i][v] };
+        min_u = std::min(min_u, projected[i].x());
+        max_u = std::max(max_u, projected[i].x());
+        min_v = std::min(min_v, projected[i].y());
+        max_v = std::max(max_v, projected[i].y());
+    }
+
+    // Twice the area of a triangle below which it counts as none, scaled to
+    // the polygon so a millimetre detail is judged the same as a kilometre
+    // one.
+    const double extent = std::max(max_u - min_u, max_v - min_v);
+    const double epsilon = extent * extent * 1e-12;
+
+    const auto turn = [&projected](size_t a, size_t b, size_t c) {
+        return (projected[b] - projected[a]).cross(projected[c] - projected[b]);
+    };
+
+    // inside or on the edge of the counterclockwise triangle a, b, c
+    const auto within = [&projected, epsilon](size_t q, size_t a, size_t b, size_t c) {
+        const Point2 &p = projected[q];
+        return (projected[b] - projected[a]).cross(p - projected[a]) >= -epsilon &&
+               (projected[c] - projected[b]).cross(p - projected[b]) >= -epsilon &&
+               (projected[a] - projected[c]).cross(p - projected[c]) >= -epsilon;
+    };
+
+    // Two corners standing on one spot, judged the way the rest of the
+    // program judges vertices the same: on where they are in the model,
+    // not relative to the first corner.
+    const auto sameCorner = [&object, &surface](size_t a, size_t b) {
+        return object.vertices[surface.refs[a].index].vertex.equals(object.vertices[surface.refs[b].index].vertex);
+    };
+
+    std::vector<size_t> ring(size);
+    std::iota(ring.begin(), ring.end(), 0);
+
+    while (ring.size() > 3)
+    {
+        bool clipped = false;
+
+        for (size_t k = 0; k < ring.size() && !clipped; ++k)
+        {
+            const size_t a = ring[(k + ring.size() - 1) % ring.size()];
+            const size_t b = ring[k];
+            const size_t c = ring[(k + 1) % ring.size()];
+            const double corner = turn(a, b, c);
+
+            if (std::abs(corner) <= epsilon)
+            {
+                // in line with its neighbours: nothing to fill
+                ring.erase(ring.begin() + static_cast<std::ptrdiff_t>(k));
+                clipped = true;
+            }
+            else if (corner > 0.0)
+            {
+                // A convex corner is an ear when no other corner reaches into
+                // it. One standing where a corner of the ear stands -- a
+                // polygon touching itself at a vertex -- does not count.
+                bool ear = true;
+
+                for (const size_t q : ring)
+                {
+                    if (q == a || q == b || q == c || sameCorner(q, a) || sameCorner(q, b) || sameCorner(q, c))
+                        continue;
+
+                    if (within(q, a, b, c))
+                    {
+                        ear = false;
+                        break;
+                    }
+                }
+
+                if (ear)
+                {
+                    triangles.push_back({ a, b, c });
+                    ring.erase(ring.begin() + static_cast<std::ptrdiff_t>(k));
+                    clipped = true;
+                }
+            }
+        }
+
+        if (!clipped)
+        {
+            triangles.clear();
+            return triangles;
+        }
+    }
+
+    const double last = turn(ring[0], ring[1], ring[2]);
+
+    if (last > epsilon)
+        triangles.push_back({ ring[0], ring[1], ring[2] });
+
+    // A polygon that crosses itself can still give up ears until the last
+    // three corners wind the wrong way, having left one of its lobes out.
+    // The triangles of a simple polygon add up to exactly its area, so
+    // anything else is taken as the failure it is rather than handed back
+    // as a polygon with part of it missing.
+    double covered = 0.0;
+
+    for (const auto &triangle : triangles)
+        covered += turn(triangle[0], triangle[1], triangle[2]);
+
+    if (last < -epsilon || std::abs(covered - std::abs(area)) > 1e-9 * std::abs(area) + static_cast<double>(size) * epsilon)
+        triangles.clear();
+
+    return triangles;
+}
+
 bool AC3D::coplanar(const Triangle &triangle1, const Triangle &triangle2)
 {
     const Plane p1(triangle1.vertices[0].vertex, triangle1.vertices[1].vertex, triangle1.vertices[2].vertex);
@@ -7495,6 +7761,48 @@ void AC3D::fixRgbTexture(Object &object)
         fixRgbTexture(kid);
 }
 
+// A poly with kids and nothing of its own to draw is a group given the wrong
+// type. Every TORCS speedway keeps its terrain under an empty poly "TERR", and
+// the kc- cars hang their parts off an empty poly at the root. Typed as the
+// group it is used as, it stops being something grloadac.cpp leaves its strips
+// unbuilt for -- it builds a poly's strip table only when the poly has no
+// kids -- and the walks here that stop at a poly reach its kids again.
+//
+// With no surfaces there is nothing to use the vertices, if it has any, so
+// they go with the type rather than leave a group with geometry behind.
+//
+// A poly with surfaces of its own as well as kids is left as it is. Articulated
+// models -- a lever and its knob, a figure's arm and hand -- hang the moving
+// parts off the part they move with, and taking them out of it would mean
+// carrying the poly's loc and rot into each of them.
+bool AC3D::fixPolyWithKids()
+{
+    bool fixed = false;
+
+    for (auto &object : m_objects)
+        fixed |= fixPolyWithKids(object);
+
+    return fixed;
+}
+
+bool AC3D::fixPolyWithKids(Object &object)
+{
+    bool fixed = false;
+
+    if (object.type.type == "poly" && !object.kids.empty() && object.surfaces.empty())
+    {
+        object.type.type = "group";
+        object.vertices.clear();
+        object.numvert.number = 0;
+        fixed = true;
+    }
+
+    for (auto &kid : object.kids)
+        fixed |= fixPolyWithKids(kid);
+
+    return fixed;
+}
+
 bool AC3D::cleanMaterials()
 {
     bool cleaned = false;
@@ -8063,7 +8371,14 @@ bool AC3D::cleanSurfaces(Object &object)
                 ++it;
         }
 
-        if (surface.refs.size() < 3)
+        // A polygon or a triangle strip needs three refs to cover any
+        // ground, and a closed line three to enclose any, but an open line
+        // is drawn from two. The reader accepts a 2 ref line without
+        // complaint, and testing every type against three dropped it from
+        // every file written, without a word.
+        const size_t minimum = surface.isLine() ? 2 : 3;
+
+        if (surface.refs.size() < minimum)
         {
             // delete surface
             object.surfaces.erase(object.surfaces.begin() + i);
@@ -8964,8 +9279,11 @@ bool AC3D::Object::splitPolygons()
                 surfaces[i].coplanar = true;
                 surfaces[i].concave = false;
 
-                // skip inserted surface
-                i += (size - 2);
+                // Skip the size - 3 triangles inserted after this one. The
+                // loop's own ++i then lands on the next original surface;
+                // skipping size - 2 stepped one past it, so the surface after
+                // every split polygon was never split itself.
+                i += size - 3;
 
                 changed = true;
             }

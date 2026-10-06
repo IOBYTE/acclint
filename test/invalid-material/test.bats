@@ -439,3 +439,37 @@ setup_file() {
 }
 
 ################################################################################
+
+# test14: single-line MATERIAL with a decimal comma in shi and trans
+# ("shi 64,5  trans 0,75"). The value is read from the whole word, and the
+# ",5" and ",75" left over after the number were ignored without a word:
+# trans came out as 0, turning a 75% transparent material opaque. Each must
+# now be reported as a missing separator, pointing at the comma, the way
+# readColor already reports it for rgb/amb/emis/spec.
+@test "test14" {
+  $RUN_TEST acclint test14.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test14.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test14.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test15: the same decimal commas in a MAT/ENDMAT block, which reads shi and
+# trans through readValue directly rather than through readTypeAndValue.
+@test "test15" {
+  $RUN_TEST acclint test15.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test15.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test15.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
