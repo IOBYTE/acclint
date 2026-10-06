@@ -15,15 +15,21 @@ setup_file() {
 }
 
 ################################################################################
-# --fixPolyWithKids: a poly with kids and no surfaces of its own is a group
-# given the wrong type. Every TORCS speedway keeps its terrain under an empty
-# poly "TERR", and the kc- cars hang their parts off an empty poly at the
-# root. The fix types it as the group it is used as, keeping its name, loc,
-# rot and crease, and drops any vertices it lists, which with no surfaces
-# nothing uses.
+# --fixPolyWithKids: a poly with kids becomes a group, and its kids stay
+# under it.
 #
-# A poly with surfaces and kids is a different thing: articulated models hang
-# a moving part off the part it moves with, and it is left alone.
+# A poly with no surfaces of its own is a group given the wrong type. Every
+# TORCS speedway keeps its terrain under an empty poly "TERR", and the kc- cars
+# hang their parts off an empty poly at the root. The fix types it as the group
+# it is used as, keeping its name, loc, rot and crease, and drops any vertices
+# it lists, which with no surfaces nothing uses.
+#
+# A poly with surfaces and kids is an articulated part: a lever with its knob
+# hung off it, so that the knob moves with the lever. The group keeps the name,
+# loc and rot, so whatever animates it by name still finds it and its kids are
+# under the same transform as before. Its geometry moves to a new poly named
+# "<name>-geometry", the group's first kid, with no loc or rot of its own, so
+# it draws where it did.
 #
 # The written file is linted again in each test: the fix must leave nothing
 # behind to warn about -- no poly with kids, no missing surfaces, no group
@@ -73,9 +79,8 @@ setup_file() {
   rm test2.output.ac
 }
 
-# test3: a lever with surfaces of its own and a knob hung off it. Not the
-# mistake this fixes, so it is written exactly as it would be without the
-# option, and still warned about.
+# test3: a lever with surfaces of its own and a knob hung off it. The lever
+# becomes a group holding its loc, with "lever-geometry" and the knob under it.
 @test "test3" {
   $RUN_TEST acclint -Wno-warnings test3.ac --fixPolyWithKids -o test3.output.ac
   [ "$status" -eq 0 ]
@@ -89,10 +94,36 @@ setup_file() {
     cp test3.output.ac test3.actual.output
   fi
   [ "$actual_file" = "$expected_file" ]
-  $RUN_TEST acclint -Wno-warnings -Wpoly-with-kids test3.output.ac
+  $RUN_TEST acclint test3.output.ac
   [ "$status" -eq 0 ]
-  [[ "$(echo "${lines[0]}" | tr -d '\r')" == *"warning: poly with kids" ]]
+  [ "$output" = "" ]
   rm test3.output.ac
+}
+
+# test4: an arm with a hand hung off it and a finger off the hand, each a poly
+# with surfaces and a loc, the arm also with a rot. The arm carries everything
+# an object can, so each part can be seen to land on the right side: name,
+# url, loc, rot, folded and data stay with the group; texture, texrep, texoff,
+# crease, vertices and surfaces go to "arm-geometry". The hand under it is
+# split the same way, the finger, with no kids, is left alone. The second poly
+# at the root has no name, and neither does its geometry.
+@test "test4" {
+  $RUN_TEST acclint -Wno-warnings test4.ac --fixPolyWithKids -o test4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.output.ac)"
+  expected_file="$(tr -d '\r' < test4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.output.ac test4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  $RUN_TEST acclint -Wno-missing-texture test4.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  rm test4.output.ac
 }
 
 ################################################################################

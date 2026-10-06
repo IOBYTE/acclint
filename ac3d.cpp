@@ -7761,20 +7761,33 @@ void AC3D::fixRgbTexture(Object &object)
         fixRgbTexture(kid);
 }
 
-// A poly with kids and nothing of its own to draw is a group given the wrong
-// type. Every TORCS speedway keeps its terrain under an empty poly "TERR", and
-// the kc- cars hang their parts off an empty poly at the root. Typed as the
-// group it is used as, it stops being something grloadac.cpp leaves its strips
-// unbuilt for -- it builds a poly's strip table only when the poly has no
-// kids -- and the walks here that stop at a poly reach its kids again.
+// A poly with kids is a group given the wrong type, or a part with its moving
+// parts hung off it. Either way it becomes a group, and its kids stay where
+// they are under it.
 //
-// With no surfaces there is nothing to use the vertices, if it has any, so
-// they go with the type rather than leave a group with geometry behind.
+// With nothing of its own to draw it is the first: every TORCS speedway keeps
+// its terrain under an empty poly "TERR", and the kc- cars hang their parts
+// off an empty poly at the root. It is typed as the group it is used as. With
+// no surfaces there is nothing to use the vertices, if it has any, so they go
+// with the type rather than leave a group with geometry behind.
 //
-// A poly with surfaces of its own as well as kids is left as it is. Articulated
-// models -- a lever and its knob, a figure's arm and hand -- hang the moving
-// parts off the part they move with, and taking them out of it would mean
-// carrying the poly's loc and rot into each of them.
+// With surfaces of its own it is the second. Articulated models -- a lever
+// and its knob, a figure's arm and hand -- hang the moving parts off the part
+// they move with, so that turning the lever turns the knob with it. That is
+// what a group with a transform does, so the poly becomes one: the group keeps
+// what belongs to the object as a whole -- its name, so whatever animates it
+// by name still finds it, its loc and rot, url, data and its hidden, locked
+// and folded state -- and its geometry moves to a new poly, the group's first
+// kid, ahead of the kids it already had. The new poly has no loc or rot of its
+// own and draws under the group's, so it lands exactly where it did, and the
+// kids are still under the same transform as before. It takes what is needed
+// to draw: vertices, surfaces, textures, texrep, texoff, crease, subdiv and
+// shader. It is named for the group with "-geometry" on the end -- not the
+// group's own name, which an animation that matches by name would then find
+// twice, and not left unnamed, since Speed Dreams' car loader decides what is
+// transparent by the start of the name.
+//
+// The walks here that stop at a poly reach its kids again either way.
 bool AC3D::fixPolyWithKids()
 {
     bool fixed = false;
@@ -7789,11 +7802,47 @@ bool AC3D::fixPolyWithKids(Object &object)
 {
     bool fixed = false;
 
-    if (object.type.type == "poly" && !object.kids.empty() && object.surfaces.empty())
+    if (object.type.type == "poly" && !object.kids.empty())
     {
-        object.type.type = "group";
-        object.vertices.clear();
-        object.numvert.number = 0;
+        if (object.surfaces.empty())
+        {
+            object.type.type = "group";
+            object.vertices.clear();
+            object.numvert.number = 0;
+        }
+        else
+        {
+            Object geometry;
+
+            // Messages about the geometry still point at where it was read.
+            static_cast<LineInfo &>(geometry) = object;
+            geometry.type = object.type;
+
+            if (!object.names.empty())
+            {
+                Name name = object.names.back();
+                name.name = quoted_string(object.names.back().name + "-geometry");
+                geometry.names.push_back(name);
+            }
+
+            geometry.shaders.swap(object.shaders);
+            geometry.textures.swap(object.textures);
+            geometry.texreps.swap(object.texreps);
+            geometry.texoffs.swap(object.texoffs);
+            geometry.subdivs.swap(object.subdivs);
+            geometry.creases.swap(object.creases);
+            geometry.numvert = object.numvert;
+            geometry.vertices.swap(object.vertices);
+            geometry.numsurf = object.numsurf;
+            geometry.surfaces.swap(object.surfaces);
+
+            object.type.type = "group";
+            object.numvert.number = 0;
+            object.numsurf.number = 0;
+            object.kids.insert(object.kids.begin(), std::move(geometry));
+            object.numkids.number = static_cast<int>(object.kids.size());
+        }
+
         fixed = true;
     }
 

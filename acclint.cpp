@@ -161,7 +161,8 @@ void usage()
     std::cerr << "                                         rebuild the object tree from them." << std::endl;
     std::cerr << "  --fixMultipleWorlds                    Removes extra worlds." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
-    std::cerr << "  --fixPolyWithKids                      Convert a poly with kids and no surfaces to a group." << std::endl;
+    std::cerr << "  --fixPolyWithKids                      Convert a poly with kids to a group and" << std::endl;
+    std::cerr << "                                         make its geometry the group's first kid." << std::endl;
     std::cerr << "  --fixRgbTexture                        Rename texture to use png texture." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;

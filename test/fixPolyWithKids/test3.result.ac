@@ -2,9 +2,12 @@ AC3Db
 MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
 OBJECT world
 kids 1
-OBJECT poly
+OBJECT group
 name "lever"
 loc 1 0 0
+kids 2
+OBJECT poly
+name "lever-geometry"
 numvert 3
 0 0 0
 1 0 0
@@ -16,7 +19,7 @@ refs 3
 0 0 0
 1 0 0
 2 0 0
-kids 1
+kids 0
 OBJECT poly
 name "knob"
 numvert 3
