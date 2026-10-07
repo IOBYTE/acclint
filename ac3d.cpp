@@ -5302,11 +5302,6 @@ void AC3D::reportOverlappingGeometry(std::istream &in, const Object &object1, co
         {
             if (trianglesOverlap(triangle1, triangle2))
             {
-                // Triangle::normal is the object space normal: transform()
-                // moves the vertices and leaves it alone, so the normals the
-                // two surfaces are actually drawn with have to be taken from
-                // the transformed vertices instead of read off the triangle.
-                //
                 // The pair is coplanar (trianglesOverlap reports nothing
                 // else unless all three vertices are shared, which is
                 // coplanar too), so the two normals are parallel and their
@@ -5314,13 +5309,7 @@ void AC3D::reportOverlappingGeometry(std::istream &in, const Object &object1, co
                 // either face the same way, which is what z fights, or they
                 // are back to back, which is how a one sided wall is given a
                 // second face and usually deliberate.
-                const Point3 normal1 = normalizedNormal(triangle1.vertices[0].vertex,
-                                                        triangle1.vertices[1].vertex,
-                                                        triangle1.vertices[2].vertex);
-                const Point3 normal2 = normalizedNormal(triangle2.vertices[0].vertex,
-                                                        triangle2.vertices[1].vertex,
-                                                        triangle2.vertices[2].vertex);
-                const bool same_facing = normal1.dot(normal2) > 0.0;
+                const bool same_facing = triangle1.normal.dot(triangle2.normal) > 0.0;
 
                 // Two triangles covering the same area are the deliberate
                 // constructions: wound the same way it is one triangle drawn

@@ -210,3 +210,32 @@ setup_file() {
 }
 
 ################################################################################
+# A normal is not moved like a point. "stretched" is scaled 2 in x, and its
+# normals, half way between x and z, were scaled with it: written 1.414 0
+# 0.707, too long and tipped towards x, where the stretched surface tips them
+# towards z. They go through the inverse transpose now and keep their length:
+# 0.447 0 0.894. "turned" is only rotated, and its normals come out exactly as
+# they did -- a rot is written to 6 figures, and taken the long way round its
+# rounding would have shown in every normal.
+################################################################################
+
+@test "test5" {
+  $RUN_TEST acclint test5.acc --flatten -o test5.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.output.acc)"
+  expected_file="$(tr -d '\r' < test5.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.output.acc test5.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  $RUN_TEST acclint -Wno-warnings -Winvalid-normal-length test5.output.acc
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  rm test5.output.acc
+}
+
+################################################################################

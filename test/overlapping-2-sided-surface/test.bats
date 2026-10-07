@@ -299,3 +299,22 @@ setup_file() {
 }
 
 ################################################################################
+# test14: a 2 sided triangle with a smaller one inside it, each in a poly
+# rotated 90 degrees about x. The overlap test measured the rotated vertices
+# against the triangle's normal from before the rotation, which by then lay in
+# the triangle's own plane: every point read as outside and the overlap went
+# unreported. Rotated 60 degrees it was found, by luck.
+################################################################################
+
+@test "test14" {
+  $RUN_TEST acclint test14.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test14.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test14.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

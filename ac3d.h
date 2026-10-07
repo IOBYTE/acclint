@@ -509,15 +509,87 @@ private:
 
             return result;
         }
+        // Whether the 3x3 part keeps lengths and angles -- a rotation, or a
+        // rotation and a mirror -- to the 6 figures a rot is written with.
+        bool rotation() const
+        {
+            const Matrix &m = *this;
+
+            for (size_t i = 0; i < 3; ++i)
+            {
+                for (size_t j = i; j < 3; ++j)
+                {
+                    const double dot = m[i][0] * m[j][0] + m[i][1] * m[j][1] + m[i][2] * m[j][2];
+
+                    if (std::fabs(dot - (i == j ? 1.0 : 0.0)) > 1e-5)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        // A normal is not carried along like a point: it has to stay square
+        // to the surface, and a scale or a shear that stretches the surface
+        // one way tips its normal the other. It goes through the inverse of
+        // the transpose -- which for a rotation is the rotation itself -- and
+        // keeps the length it had. Taken through the matrix like a point, a
+        // rot with a scale of 2 in x wrote 0.707 0 0.707 as 1.414 0 0.707:
+        // too long, and pointing the wrong way.
+        //
+        // The cofactors are the inverse transpose times the determinant, so
+        // only the determinant's sign is needed: a mirroring matrix turns the
+        // surface over, and its normal with it. A flattening one, determinant
+        // 0, leaves every normal square to the plane it was flattened into.
+        //
+        // A rotation, mirrored or not, is its own inverse transpose, and goes
+        // straight through as it always did. Its cofactors would be the same
+        // matrix but for rounding: a rot is written to 6 figures, so it is
+        // only nearly orthonormal, and every rotated normal would have come
+        // out with 12 figures of noise in it.
         void transformNormal(Point3 &normal) const
         {
+            const Matrix &m = *this;
             const double t0 = normal[0];
             const double t1 = normal[1];
             const double t2 = normal[2];
 
-            normal = { t0 * (*this)[0][0] + t1 * (*this)[1][0] + t2 * (*this)[2][0],
-                       t0 * (*this)[0][1] + t1 * (*this)[1][1] + t2 * (*this)[2][1],
-                       t0 * (*this)[0][2] + t1 * (*this)[1][2] + t2 * (*this)[2][2] };
+            if (rotation())
+            {
+                normal = { t0 * m[0][0] + t1 * m[1][0] + t2 * m[2][0],
+                           t0 * m[0][1] + t1 * m[1][1] + t2 * m[2][1],
+                           t0 * m[0][2] + t1 * m[1][2] + t2 * m[2][2] };
+                return;
+            }
+
+            const double c00 = m[1][1] * m[2][2] - m[1][2] * m[2][1];
+            const double c01 = m[1][2] * m[2][0] - m[1][0] * m[2][2];
+            const double c02 = m[1][0] * m[2][1] - m[1][1] * m[2][0];
+            const double c10 = m[0][2] * m[2][1] - m[0][1] * m[2][2];
+            const double c11 = m[0][0] * m[2][2] - m[0][2] * m[2][0];
+            const double c12 = m[0][1] * m[2][0] - m[0][0] * m[2][1];
+            const double c20 = m[0][1] * m[1][2] - m[0][2] * m[1][1];
+            const double c21 = m[0][2] * m[1][0] - m[0][0] * m[1][2];
+            const double c22 = m[0][0] * m[1][1] - m[0][1] * m[1][0];
+
+            const double determinant = m[0][0] * c00 + m[0][1] * c01 + m[0][2] * c02;
+            const double sign = determinant < 0.0 ? -1.0 : 1.0;
+
+            const double length = normal.length();
+
+            const Point3 transformed{ sign * (t0 * c00 + t1 * c10 + t2 * c20),
+                                sign * (t0 * c01 + t1 * c11 + t2 * c21),
+                                sign * (t0 * c02 + t1 * c12 + t2 * c22) };
+
+            const double transformed_length = transformed.length();
+
+            if (transformed_length > Point3::SMALL_NUM)
+                normal = transformed * (length / transformed_length);
+            else
+                normal = transformed;
+
+            // A mirror's sign makes a 0 of -0, which would be written as -0.
+            normal += Point3{ 0.0, 0.0, 0.0 };
         }
     };
 
@@ -689,6 +761,17 @@ private:
                 if (vertex.has_normal)
                     matrix.transformNormal(vertex.normal);
             }
+
+            // The normal goes where the vertices went. Left in object space,
+            // it no longer stood square to the triangle once the object was
+            // rotated, and pointInCoplanarTriangle measures against it: at
+            // 90 degrees every point read as outside, and an overlap was
+            // missed. Taken from the moved vertices, as the constructor takes
+            // it, so a mirroring matrix turns it round with the winding.
+            degenerate = AC3D::degenerate(vertices[0].vertex, vertices[1].vertex, vertices[2].vertex);
+            normal = degenerate ? Point3{ 0.0, 0.0, 0.0 } :
+                     AC3D::normalizedNormal(vertices[0].vertex, vertices[1].vertex, vertices[2].vertex);
+
             recalculateBounds();
         }
     };
