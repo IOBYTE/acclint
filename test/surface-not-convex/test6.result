@@ -1,0 +1,10 @@
+test6.ac:15 warning: surface not coplanar
+SURF 0x10
+^
+test6.ac:15 warning: surface not convex
+SURF 0x10
+^
+test6.ac:20 note: concave vertex
+3 0 0
+^
+2 warnings

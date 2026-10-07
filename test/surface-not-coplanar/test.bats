@@ -113,3 +113,23 @@ setup_file() {
 }
 
 ################################################################################
+# The plane is Newell's -- the normal summed over every edge, through the
+# centroid -- not the plane of the first three refs not quite in a line. When
+# those were nearly in a line anyway, noise far below the tolerance decided
+# which way the plane faced, and the corners far from them measured as off it.
+################################################################################
+
+# test3: a flat 10 by 10 quad, tilted, with a fifth point 2e-5 off the middle
+# of its first side and its height 1e-6 off from rounding. Flat, and not
+# reported. Measured from the plane of its first three refs it was "not
+# coplanar".
+@test "test3" {
+  $RUN_TEST acclint test3.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################

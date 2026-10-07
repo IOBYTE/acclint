@@ -71,8 +71,10 @@ setup_file() {
 #                        and a polyline the same way.
 #   a concave polygon -- fans into triangles covering ground outside it.
 #
-# Each is now left exactly as it was found, so each expected file is its own
-# input written back out.
+# The strip and the lines are now left exactly as they were found, so their
+# expected files are their own inputs written back out. The concave polygon,
+# an L (test2.3), is cut by ear clipping instead, into four triangles that all
+# lie inside it.
 ################################################################################
 
 @test "test2.1" {
@@ -192,14 +194,15 @@ setup_file() {
 }
 
 ################################################################################
-# What is concave is left alone, and what is convex is split into triangles
-# with area. A concave polygon taken for convex -- at millimetre scale, or with
-# its notch point doubled -- was fanned into a triangle that covered the
-# notch. A ref that repeats the point before it is left out of the fan, and so
-# is a triangle of three points on one line, which covers nothing.
+# What is concave is cut by ear clipping, and what is convex is fanned, into
+# triangles with area. A concave polygon taken for convex -- at millimetre
+# scale, or with its notch point doubled -- was fanned into a triangle that
+# covered the notch. A ref that repeats the point before it is left out, and
+# so is a triangle of three points on one line, which covers nothing.
 ################################################################################
 
-# test4.1: the 1 mm arrowhead. Concave, so it is written back as it is.
+# test4.1: the 1 mm arrowhead. Concave, so it is cut along the diagonal
+# through its notch, into two triangles inside it.
 @test "test4.1" {
   $RUN_TEST acclint -Wno-warnings test4.1.ac --splitPolygon -o test4.1.output.ac
   [ "$status" -eq 0 ]
@@ -216,8 +219,8 @@ setup_file() {
   rm test4.1.output.ac
 }
 
-# test4.2: the arrowhead with its notch point doubled 1e-7 away. Concave, so
-# it is written back with only the doubled ref gone.
+# test4.2: the arrowhead with its notch point doubled 1e-7 away. The doubled
+# ref is left out, and the rest is cut the same way as test4.1.
 @test "test4.2" {
   $RUN_TEST acclint -Wno-warnings test4.2.ac --splitPolygon -o test4.2.output.ac
   [ "$status" -eq 0 ]
@@ -250,6 +253,28 @@ setup_file() {
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test4.3.output.ac
+}
+
+################################################################################
+# The same goes for a concave polygon that is not quite flat.
+################################################################################
+
+# test4.4: an L with one corner lifted 1 mm. Concave, so it is cut into four
+# triangles inside it, where it was fanned into triangles covering the notch.
+@test "test4.4" {
+  $RUN_TEST acclint -Wno-warnings test4.4.ac --splitPolygon -o test4.4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.4.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.4.output.ac)"
+  expected_file="$(tr -d '\r' < test4.4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.4.output.ac test4.4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.4.output.ac
 }
 
 ################################################################################

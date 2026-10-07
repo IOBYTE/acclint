@@ -156,3 +156,22 @@ setup_file() {
 }
 
 ################################################################################
+# Polygons that are not quite flat are looked at too, projected onto their
+# plane. Only coplanar ones were, so a concave polygon with any noise in it was
+# never flagged concave, and everything that splits a polygon trusts the flag.
+################################################################################
+
+# test6: an L with one corner lifted 1 mm. Reported as not coplanar and as not
+# convex, at the corner of the notch.
+@test "test6" {
+  $RUN_TEST acclint test6.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

@@ -1133,7 +1133,7 @@ private:
             return none;
         }
 
-        bool hasTransparentTexture() const;
+        bool hasTransparentTexture(bool report) const;
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         bool mirroredSurface(size_t index1, size_t index2) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
@@ -1431,6 +1431,7 @@ private:
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
     void fixRgbTexture(Object &object);
+    std::string findTexture(const std::string &name) const;
     static bool fixPolyWithKids(Object &object);
     static void fixBackToBackMirror(Object &object);
     static void getObjects(std::vector<Object *> &polys, Object *object);

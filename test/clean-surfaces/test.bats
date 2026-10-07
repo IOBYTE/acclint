@@ -87,3 +87,29 @@ setup_file() {
 }
 
 ################################################################################
+# A quad that is not flat is split into two triangles on the way out. Along
+# 0-2, unless it is concave: then 0-2 can run outside it, and it is split along
+# the diagonal through the reflex corner.
+################################################################################
+
+# test4: a dart, with its reflex corner at ref 3 and ref 1 lifted 1 mm. Split
+# 1-3, into two triangles with the dart's own area of 1.5, wound the way it is.
+# Split 0-2 it came out with 2.5: one triangle covering the notch, wound the
+# other way.
+@test "test4" {
+  $RUN_TEST acclint -Wno-warnings test4.ac -o test4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.output.ac)"
+  expected_file="$(tr -d '\r' < test4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.output.ac test4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.output.ac
+}
+
+################################################################################

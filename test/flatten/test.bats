@@ -147,3 +147,66 @@ setup_file() {
 }
 
 ################################################################################
+# A kid's own placement comes first, then its parents'. They were composed the
+# other way round, which put a parent's rot before the kid's loc, so a kid with
+# a loc under a rotated group was baked somewhere else -- and so was a light.
+# The tests above only ever moved things, and a move commutes with a move.
+################################################################################
+
+# test4.1: a group at x=10 turned 90 degrees, holding two triangles that are
+# the same triangle in the group's frame: A written where it is, B written one
+# unit back and given loc 1 0 0. They come out as the same triangle.
+@test "test4.1" {
+  $RUN_TEST acclint test4.1.ac --flatten -o test4.1.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.1.output.ac)"
+  expected_file="$(tr -d '\r' < test4.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.1.output.ac test4.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.1.output.ac
+}
+
+# test4.2: a light and a triangle's first corner at the same point in the
+# frame of the same rotated group. They come out at the same point.
+@test "test4.2" {
+  $RUN_TEST acclint test4.2.ac --flatten -o test4.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.2.output.ac)"
+  expected_file="$(tr -d '\r' < test4.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.2.output.ac test4.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.2.output.ac
+}
+
+# test4.3: a group with geometry of its own. Its loc is baked into its kid, and
+# into its own vertices too: they were left where they were while the loc
+# that placed them was thrown away.
+@test "test4.3" {
+  $RUN_TEST acclint -Wno-group-with-geometry test4.3.ac --flatten -o test4.3.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.3.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.3.output.ac)"
+  expected_file="$(tr -d '\r' < test4.3.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.3.output.ac test4.3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.3.output.ac
+}
+
+################################################################################

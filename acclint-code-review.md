@@ -33,13 +33,13 @@ Repro inputs are in `acclint-review-2-repros/<NN>-name/`, numbered to match the 
 
 ## 2. Silent wrong output (written file is wrong, exit 0)
 
-**3. `--flatten` applies parent and child transforms in the wrong order** — `ac3d.cpp:9524` (`Object::transform`) ✔ — **high** — found by two reviewers
+**3. `--flatten` applies parent and child transforms in the wrong order** — `ac3d.cpp:9524` (`Object::transform`) ✔ — **high** — found by two reviewers — **fixed**
 - `thisMatrix.multiply(currentMatrix)` applies the parent before the child. `addPoly` (`ac3d.cpp:4919`, `5012`) uses the right order, so the checks and the output disagree.
 - Reached by `--flatten`, `--fixAll`, `--combineTexture` and `--fixOverlapping2SidedSurface`, whenever a parent has a `rot` and a child has a `loc` or `rot`. Lights under a rotated parent are misplaced too.
 - `03/flatten-order.ac`: kids A and B are the same triangle in the parent frame; after `--flatten` they are written in different places, and re-linting says nothing.
 - Fix: `currentMatrix.multiply(thisMatrix)`; one reviewer's patched build passes the flatten, fixAll and combineTexture suites. Add a test with a parent `rot` and a child `loc`.
 
-**4. A concave polygon that isn't exactly flat is fanned into triangles outside it** — `ac3d.cpp:6735`, `6441–6480`, `8752–8774` ✔ — **high**
+**4. A concave polygon that isn't exactly flat is fanned into triangles outside it** — `ac3d.cpp:6735`, `6441–6480`, `8752–8774` ✔ — **high** — **fixed**
 - `checkSurfacePolygonType` only runs on coplanar polygons, so a concave polygon with any noise never gets `concave` set, and everything that trusts the flag fans it from ref 0.
 - The coplanar test itself is fragile: the plane comes from the first three refs that are not quite in a line, so a near-collinear start makes a flat polygon "not coplanar" (`04/coplanar_fp_concave.ac`, with one ref 9e-6 off the plane, inside tolerance; the same file exactly flat is reported "not convex").
 - Effects:
@@ -62,7 +62,7 @@ Repro inputs are in `acclint-review-2-repros/<NN>-name/`, numbered to match the 
 - `07/merge_other_loc.ac`: the merged world's `loc 100 0 0` is dropped, so its geometry moves 100 units.
 - Fix: shift `mat` on every object with surfaces, give mat-less surfaces an explicit shifted `mat`, and bake the merged world's transform into its kids.
 
-**8. `--fixRgbTexture` renames the texture, but transparency is still read from the old file** — `ac3d.cpp:8040–8041` vs `10706`, `10747`, `10775` ✔ — **high**
+**8. `--fixRgbTexture` renames the texture, but transparency is still read from the old file** — `ac3d.cpp:8040–8041` vs `10706`, `10747`, `10775` ✔ — **high** — **fixed**
 - Only `texture.name` changes; `texture.path` still points at the `.rgba`, which reads as "invalid png header" and so counts as opaque.
 - `08/rgbleaf.ac` with `--fixAll`: foliage with an alpha `.png` is put in OPAQUE and made single-sided. The same model naming `leaf.png` directly stays two-sided under TRANSPARENT.
 - Fix: re-resolve `texture.path` on rename. Also, "invalid png header" and "guessing texture type" ignore `--quiet` and `-Wno-warnings`.

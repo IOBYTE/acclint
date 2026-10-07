@@ -295,3 +295,26 @@ setup_file() {
 }
 
 ################################################################################
+# A concave polygon that is not quite flat is still concave.
+################################################################################
+
+# test13: an L of area 3 with one corner lifted 1 mm. It is triangulated by ear
+# clipping like any concave polygon, into triangles with a total area of 3.
+# Taken for convex, it was fanned into 4.
+@test "test13" {
+  $RUN_TEST acclint -Wno-warnings test13.ac -o test13.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test13.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test13.output.acc)"
+  expected_file="$(tr -d '\r' < test13.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test13.output.acc test13.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test13.output.acc
+}
+
+################################################################################

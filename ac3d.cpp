@@ -6505,90 +6505,84 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
     }
 }
 
+// The plane is the one Newell's method gives: the normal summed over every
+// edge, through the centroid of the refs. It used to be the plane of the first
+// three refs not quite in a line, and when those were nearly in a line anyway,
+// noise far below the tolerance decided which way it faced -- a polygon flat
+// to 9e-6 came out "not coplanar", and since only coplanar polygons were
+// looked at for convexity, a concave one taken for bent was then split as if
+// it were convex. Summed over every edge, the normal also faces the way the
+// polygon winds even where its first corners make a reflex one.
 void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface &surface)
 {
     // only check polygon
     if (!surface.isPolygon())
         return;
 
-    if (surface.refs.size() > 2)
+    const size_t size = surface.refs.size();
+
+    if (size < 3)
+        return;
+
+    std::vector<Point3> points(size);
+
+    for (size_t i = 0; i < size; ++i)
     {
-        size_t next = 0;
-        Point3 p0;
-        Point3 p1;
-        Point3 p2;
-
-        if (!object.getSurfaceVertex(surface, next++, p0))
+        if (!object.getSurfaceVertex(surface, i, points[i]))
             return;
+    }
 
-        if (!object.getSurfaceVertex(surface, next++, p1))
-            return;
+    Point3 normal{ 0.0, 0.0, 0.0 };
+    Point3 centroid{ 0.0, 0.0, 0.0 };
 
-        // find the next unique vertex, unique as equals() has it: a vertex
-        // doubled to within rounding is the same vertex, and taking it for a
-        // second one left the plane to be measured from a pair of points and
-        // anything at all, so the check never ran
-        while (p0.equals(p1))
+    for (size_t i = 0; i < size; ++i)
+    {
+        const Point3 &a = points[i];
+        const Point3 &b = points[(i + 1) % size];
+
+        normal.x(normal.x() + (a.y() - b.y()) * (a.z() + b.z()));
+        normal.y(normal.y() + (a.z() - b.z()) * (a.x() + b.x()));
+        normal.z(normal.z() + (a.x() - b.x()) * (a.y() + b.y()));
+
+        centroid += a;
+    }
+
+    centroid = centroid * (1.0 / static_cast<double>(size));
+
+    // No area: every ref on one line, or in one place. There is no plane to
+    // measure from.
+    if (normal.length() == 0.0)
+        return;
+
+    normal.normalize();
+    surface.normal = normal;
+
+    // must have 4 or more vertices
+    if (size < 4)
+        return;
+
+    for (const Point3 &p : points)
+    {
+        // A true distance from the plane, in the model's units, so the
+        // tolerance scales with the size of the coordinates the way
+        // Point3::equals() does.
+        const double e = normal.dot(p - centroid);
+
+        constexpr double k = 4.0;
+        const double epsilon = k * static_cast<double>(std::numeric_limits<float>::epsilon()) *
+                               std::max({ centroid.length(), p.length(), 1.0 });
+
+        if (std::fabs(e) > epsilon)
         {
-            if (!object.getSurfaceVertex(surface, next++, p1))
-                return;
-        }
+            surface.coplanar = false;
 
-        if (!object.getSurfaceVertex(surface, next++, p2))
-            return;
-
-        // find the next unique vertex
-        while (p1.equals(p2) || collinear(p0, p1, p2))
-        {
-            if (!object.getSurfaceVertex(surface, next++, p2))
-                return;
-        }
-
-        Point3 v = Point3{p1 - p0}.cross(p2 - p0);
-        surface.normal = v;
-
-        surface.normal.normalize();
-
-        // must have 4 or more vertices
-        if (surface.refs.size() < 4)
-            return;
-
-        // Normalize v (the local copy, not surface.normal) so that `e`
-        // below is a true perpendicular distance from the plane in the
-        // model's raw coordinate units, instead of being scaled by the
-        // arbitrary magnitude of the un-normalized cross product above.
-        v.normalize();
-
-        const double d = -v.x() * p1.x() - v.y() * p1.y() - v.z() * p1.z();
-
-        for (size_t i = next; i < surface.refs.size(); ++i)
-        {
-            Point3 p;
-            if (!object.getSurfaceVertex(surface, i, p))
-                return;
-
-            const double e = v.x() * p.x() + v.y() * p.y() + v.z() * p.z() + d;
-
-            // `e` is now a true raw-coordinate-scale distance from the
-            // plane, so the coplanarity tolerance needs to scale with
-            // the magnitude of the points defining/tested against the
-            // plane, the same way Point3::equals() does, rather than
-            // use a fixed absolute threshold.
-            constexpr double k = 4.0;
-            const double epsilon = k * static_cast<double>(std::numeric_limits<float>::epsilon()) *
-                                    std::max({p0.length(), p1.length(), p2.length(), p.length(), 1.0});
-            if (std::fabs(e) > epsilon)
+            if (m_surface_not_coplanar)
             {
-                surface.coplanar = false;
-
-                if (m_surface_not_coplanar)
-                {
-                    warningWithCount(m_surface_not_coplanar_count, surface.line_number) << "surface not coplanar" << std::endl;
-                    showLine(in, surface.line_pos);
-                }
-
-                break;
+                warningWithCount(m_surface_not_coplanar_count, surface.line_number) << "surface not coplanar" << std::endl;
+                showLine(in, surface.line_pos);
             }
+
+            break;
         }
     }
 }
@@ -6829,10 +6823,16 @@ void AC3D::checkSurface2SidedOpaque(std::istream &in, const Object &object, cons
     }
 }
 
+// Polygons that are not quite flat are looked at too, projected onto the plane
+// checkSurfaceCoplanar found for them. Everything that splits a polygon trusts
+// the concave flag set here, and when only coplanar polygons were looked at, a
+// concave one with any noise in it -- which on a track 1 km from the origin is
+// any concave one -- was never flagged and was fanned into triangles that
+// covered the ground outside it.
 void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surface &surface)
 {
-    // only check coplanar polygon
-    if (!(surface.isPolygon() && surface.coplanar))
+    // only check polygon
+    if (!surface.isPolygon())
         return;
 
     // must have 3 or more vertices
@@ -8123,12 +8123,51 @@ bool AC3D::fixMultipleWorlds()
     return true;
 }
 
+// Where a texture's file is, looked for the way read() looks for it: beside the
+// model unless the name is absolute, then in each of the texture paths given.
+// The name itself if it is found nowhere.
+std::string AC3D::findTexture(const std::string &name) const
+{
+    const std::filesystem::path texture_path(name);
+    const bool absolute = texture_path.is_absolute() ||
+        (name.size() >= 2 && std::isalpha(static_cast<unsigned char>(name[0])) != 0 && name[1] == ':');
+
+    if (absolute)
+        return name;
+
+    const std::filesystem::path file_path(m_file);
+
+    if (!file_path.parent_path().empty())
+    {
+        const std::filesystem::path beside = file_path.parent_path() / name;
+
+        if (isRegularFile(beside))
+            return beside.generic_string();
+    }
+    else if (isRegularFile(texture_path))
+        return name;
+
+    for (const auto &path : m_texture_paths)
+    {
+        const std::filesystem::path other = std::filesystem::path(path) / name;
+
+        if (isRegularFile(other))
+            return other.generic_string();
+    }
+
+    return name;
+}
+
 void AC3D::fixRgbTexture()
 {
     for (auto &object : m_objects)
         fixRgbTexture(object);
 }
 
+// The file the name is looked for in changes with the name. Only the name used
+// to change, and the path still pointed at the .rgba: it reads as an invalid
+// png, which counts as opaque, so foliage renamed to its .png alpha texture was
+// put with the opaque objects and made single sided by the fixes that follow.
 void AC3D::fixRgbTexture(Object &object)
 {
     if (object.type.type == "poly")
@@ -8138,7 +8177,10 @@ void AC3D::fixRgbTexture(Object &object)
             // isRgbTexture only says yes when there is an extension to
             // find, so the dot is there to be found.
             if (isRgbTexture(texture.name))
+            {
                 texture.name.replace(texture.name.rfind('.'), std::string::npos, ".png");
+                texture.path = findTexture(texture.name);
+            }
         }
     }
 
@@ -8850,23 +8892,47 @@ bool AC3D::cleanSurfaces(Object &object)
     }
 
     // split non-coplanar quads into 2 triangles
+    //
+    // Along 0-2, unless the quad is concave: then 0-2 may run outside it, and
+    // the split is the one triangulatePolygon finds, along the diagonal through
+    // the reflex corner. A dart lifted 1 mm at one corner came out with a
+    // triangle covering its notch, wound the wrong way.
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         if (!object.surfaces[i].coplanar && object.surfaces[i].refs.size() == 4)
         {
+            std::array<size_t, 3> first{ 0, 1, 2 };
+            std::array<size_t, 3> second{ 2, 3, 0 };
+
+            if (object.surfaces[i].concave)
+            {
+                const std::vector<std::array<size_t, 3>> triangles = triangulatePolygon(object, object.surfaces[i]);
+
+                // Crossing itself: no inside to keep to, so it is left whole.
+                if (triangles.size() != 2)
+                    continue;
+
+                first = triangles[0];
+                second = triangles[1];
+            }
+
             Surface surface;
 
             surface.flags = object.surfaces[i].flags;
             if (!object.surfaces[i].mats.empty())
                 surface.mats.push_back(object.surfaces[i].mats.back());
-            surface.refs.push_back(object.surfaces[i].refs[2]);
-            surface.refs.push_back(object.surfaces[i].refs[3]);
-            surface.refs.push_back(object.surfaces[i].refs[0]);
+            surface.refs.push_back(object.surfaces[i].refs[second[0]]);
+            surface.refs.push_back(object.surfaces[i].refs[second[1]]);
+            surface.refs.push_back(object.surfaces[i].refs[second[2]]);
 
             object.surfaces.insert(object.surfaces.begin() + i + 1, surface);
 
-            // remove last vertex of quad
-            object.surfaces[i].refs.pop_back();
+            // the first triangle
+            const Surface quad = object.surfaces[i];
+
+            object.surfaces[i].refs.clear();
+            for (const size_t ref : first)
+                object.surfaces[i].refs.push_back(quad.refs[ref]);
 
             // skip inserted surface
             i++;
@@ -9621,9 +9687,19 @@ void AC3D::Object::transform(const Matrix &currentMatrix)
         matrix.setRotation({1, 0, 0, 0, 1, 0, 0, 0, 1});
     }
 
-    const Matrix newMatrix = thisMatrix.multiply(currentMatrix);
+    // The object's own transform first, then its parents'. a.multiply(b) is
+    // b times a, and points are row vectors, so this is thisMatrix times
+    // currentMatrix: a point is placed in its parent's frame, and that frame
+    // in the world. It was the other way round, which put the parents' rot
+    // before this object's loc: a kid with a loc under a rotated group was
+    // baked somewhere else, and so was a light. addPoly has always composed
+    // them in this order, so what the checks saw and what was written
+    // disagreed.
+    const Matrix newMatrix = currentMatrix.multiply(thisMatrix);
 
-    if (type.type == "poly")
+    // A poly's vertices, and a group's if it has some: its loc and rot are
+    // cleared above, so geometry left untransformed would move.
+    if (type.type == "poly" || !vertices.empty())
     {
         for (auto &vertex : vertices)
         {
@@ -9706,18 +9782,23 @@ bool AC3D::Object::splitPolygons()
                 // out as three separate 3 ref closed lines.
                 //
                 // A concave polygon fans into triangles that cover ground
-                // outside it. checkSurfacePolygonType sets concave for every
-                // coplanar polygon whether or not -Wsurface-not-convex is
-                // enabled, so the flag can be relied on here.
-                if (!surfaces[i].isPolygon() || surfaces[i].concave)
+                // outside it, so it is cut by ear clipping instead, which
+                // keeps every triangle inside it -- the same as the .acc
+                // conversion does. It used to be left whole, so what
+                // --splitPolygon wrote was not all triangles. One that crosses
+                // itself has no inside to keep to, and is still left whole.
+                // checkSurfacePolygonType sets concave for every polygon
+                // whether or not -Wsurface-not-convex is enabled, so the flag
+                // can be relied on here.
+                if (!surfaces[i].isPolygon())
                     continue;
 
-                // A ref that repeats the point before it is not a corner, and
-                // fanned it is one corner of a triangle with no area: A B B C
-                // gave A B B along with the triangles that cover the shape.
-                // It is what the clean on the way out takes out of a polygon
-                // that is not split, so it is taken out here, as long as a
-                // triangle is left.
+                // A ref that repeats the point before it is not a corner,
+                // and fanned it is one corner of a triangle with no area:
+                // A B B C gave A B B along with the triangles that cover
+                // the shape. It is what the clean on the way out takes out
+                // of a polygon that is not split, so it is taken out here,
+                // as long as a triangle is left.
                 size_t distinct = 0;
 
                 for (const auto &ref : surfaces[i].refs)
@@ -9743,44 +9824,60 @@ bool AC3D::Object::splitPolygons()
                     changed = true;
                 }
 
-                // clear flags
-                for (auto &ref : surfaces[i].refs)
-                {
-                    ref.collinear = false;
-                    ref.duplicate = false;
-                }
-
-                if (size <= 3)
-                    continue;
-
-                // A ref in line with its neighbours is kept -- another
-                // surface may share it -- but where it is in line with the
-                // first ref too the fan makes a triangle of three points on
-                // one line, which covers nothing, and that triangle is left
-                // out. The rest still cover the polygon: the one left out had
-                // no area to cover.
-                const auto flat = [this, &surface = surfaces[i]](size_t r0, size_t r1, size_t r2)
-                {
-                    Point3 p0;
-                    Point3 p1;
-                    Point3 p2;
-
-                    if (!getSurfaceVertex(surface, r0, p0) || !getSurfaceVertex(surface, r1, p1) ||
-                        !getSurfaceVertex(surface, r2, p2))
-                        return false;
-
-                    return collinear(p0, p1, p2);
-                };
-
                 std::vector<std::array<size_t, 3>> triangles;
 
-                if (!flat(0, 1, 2))
-                    triangles.push_back({ 0, 1, 2 });
-
-                for (size_t j = 2; j < size - 1; j++)
+                if (surfaces[i].concave)
                 {
-                    if (!flat(j, j + 1, 0))
-                        triangles.push_back({ j, j + 1, 0 });
+                    triangles = triangulatePolygon(*this, surfaces[i]);
+
+                    if (triangles.empty())
+                        continue;
+
+                    for (auto &ref : surfaces[i].refs)
+                    {
+                        ref.collinear = false;
+                        ref.duplicate = false;
+                    }
+                }
+                else
+                {
+                    // clear flags
+                    for (auto &ref : surfaces[i].refs)
+                    {
+                        ref.collinear = false;
+                        ref.duplicate = false;
+                    }
+
+                    if (size <= 3)
+                        continue;
+
+                    // A ref in line with its neighbours is kept -- another
+                    // surface may share it -- but where it is in line with the
+                    // first ref too the fan makes a triangle of three points
+                    // on one line, which covers nothing, and that triangle is
+                    // left out. The rest still cover the polygon: the one left
+                    // out had no area to cover.
+                    const auto flat = [this, &surface = surfaces[i]](size_t r0, size_t r1, size_t r2)
+                    {
+                        Point3 p0;
+                        Point3 p1;
+                        Point3 p2;
+
+                        if (!getSurfaceVertex(surface, r0, p0) || !getSurfaceVertex(surface, r1, p1) ||
+                            !getSurfaceVertex(surface, r2, p2))
+                            return false;
+
+                        return collinear(p0, p1, p2);
+                    };
+
+                    if (!flat(0, 1, 2))
+                        triangles.push_back({ 0, 1, 2 });
+
+                    for (size_t j = 2; j < size - 1; j++)
+                    {
+                        if (!flat(j, j + 1, 0))
+                            triangles.push_back({ j, j + 1, 0 });
+                    }
                 }
 
                 // Nothing but lines: nothing to fan.
@@ -10808,7 +10905,7 @@ bool AC3D::hasOpaqueTexture(const Object &object)
     if (it != m_transparent_textures.end())
         return !it->second;
 
-    const bool transparent = object.hasTransparentTexture();
+    const bool transparent = object.hasTransparentTexture(!m_quiet && m_missing_texture);
 
     m_transparent_textures[object.textures[0].path] = transparent;
 
@@ -10849,14 +10946,14 @@ bool AC3D::hasTransparentTexture(const Object &object)
     if (it != m_transparent_textures.end())
         return it->second;
 
-    const bool transparent = object.hasTransparentTexture();
+    const bool transparent = object.hasTransparentTexture(!m_quiet && m_missing_texture);
 
     m_transparent_textures[object.textures[0].path] = transparent;
 
     return transparent;
 }
 
-bool AC3D::Object::hasTransparentTexture() const
+bool AC3D::Object::hasTransparentTexture(bool report) const
 {
     if (textures.empty() || textures[0].name.empty())
         return false;
@@ -10875,8 +10972,11 @@ bool AC3D::Object::hasTransparentTexture() const
     std::unique_ptr<FILE, FileCloser> fp(std::fopen(textures[0].path.c_str(), "rb"));
     if (!fp)
     {
-        // FIXME get quiet?
-        std::cout << "guessing texture type: " << textures[0].path.c_str() << std::endl;
+        // Said only when warnings are: a texture that cannot be opened has
+        // been reported as missing already, and these used to come out with
+        // --quiet and -Wno-warnings too.
+        if (report)
+            std::cout << "guessing texture type: " << textures[0].path.c_str() << std::endl;
 
         // Fallback name parsing guessing heuristics
         return (textures[0].name.find("_n.") != std::string::npos ||
@@ -10890,14 +10990,16 @@ bool AC3D::Object::hasTransparentTexture() const
 
     if (fread(header, 1, number, fp.get()) != number)
     {
-        std::cerr << "error reading png header: " << textures[0].path.c_str() << std::endl;
+        if (report)
+            std::cerr << "error reading png header: " << textures[0].path.c_str() << std::endl;
         return false;
     }
 
     const bool is_png = !png_sig_cmp(header, 0, number);
     if (!is_png)
     {
-        std::cerr << "invalid png header " << textures[0].path.c_str() << std::endl;
+        if (report)
+            std::cerr << "invalid png header " << textures[0].path.c_str() << std::endl;
         return false;
     }
 

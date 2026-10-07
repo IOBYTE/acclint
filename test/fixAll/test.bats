@@ -132,3 +132,31 @@ setup_file() {
 }
 
 ################################################################################
+# --fixRgbTexture renames an .rgb or .rgba texture to its .png, and the file
+# that is read for transparency has to change with the name. Only the name
+# changed: the .rgba was still the file looked at, it reads as no png at all,
+# and that counts as opaque. So the leaf below, whose .png has alpha, was put
+# with the opaque objects and made single sided -- and "guessing texture type"
+# was printed even with -Wno-warnings.
+#
+# test3.ac: a leaf naming alpha.rgba, which is not there but alpha.png is, and
+# a trunk on an opaque texture, both 2 sided. The leaf stays 2 sided and goes
+# with the transparent objects; the trunk is made single sided and opaque.
+################################################################################
+
+@test "test3.1" {
+  $RUN_TEST acclint -Wno-warnings test3.ac --fixAll -o test3.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.summary.result)"
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test3.output.ac)"
+  expected_file="$(tr -d '\r' < test3.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.output.ac test3.1.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.output.ac
+}
+
+################################################################################
