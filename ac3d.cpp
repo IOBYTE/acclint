@@ -3687,7 +3687,24 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == SURF_token)
         {
-            if (m_more_surf_than_specified)
+            // No numsurf line at all is not more surfaces than it says. The
+            // surfaces are there to be read and counted, and the file is
+            // written with the count put in, so it is a warning, given once,
+            // at the first SURF. It was "more SURF than specified", with a
+            // note pointing at the numsurf line the object does not have --
+            // line 0, the top of the file -- and the file was not written.
+            // The OSG reader takes surfaces only after a numsurf line, so
+            // these are skipped, one unknown token at a time, and the object
+            // is drawn with nothing.
+            if (object.numsurf.line_number == 0)
+            {
+                if (object.surfaces.empty() && m_missing_numsurf)
+                {
+                    warningWithCount(m_missing_numsurf_count) << "missing numsurf" << std::endl;
+                    showLine(iss1, 0);
+                }
+            }
+            else if (m_more_surf_than_specified)
             {
                 errorWithCount(m_more_surf_than_specified_count) << "more SURF than specified" << std::endl;
                 showLine(iss1, 0);
@@ -3965,7 +3982,10 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
     }
     else
     {
-        if (type.type == "group")
+        // A light is part of the hierarchy the way a group is, and shown in
+        // every mode the same way. It used to match none of these and was
+        // never shown, though its kids were, under the light's parent.
+        if (type.type == "group" || type.type == "light")
         {
             std::cout << indent << (count + 1) << " " << type.type;
 

@@ -75,6 +75,7 @@ private:                                               \
     CHECK(materialAfterObject, m_material_after_object, true)
     CHECK(missingKids, m_missing_kids, true)
     CHECK(missingMat, m_missing_mat, true)
+    CHECK(missingNumsurf, m_missing_numsurf, true)
     CHECK(missingNormal, m_missing_normal, true)
     CHECK(missingSurfaces, m_missing_surfaces, true)
     CHECK(missingTexture, m_missing_texture, true)

@@ -1,0 +1,4 @@
+test2.ac:12 warning: missing numsurf
+SURF 0x10
+^
+1 warning

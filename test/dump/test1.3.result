@@ -1,0 +1,5 @@
+1 world 2 kids
+    1 light "sun" 0 kids
+    2 poly "body" 3 vertices 1 surface
+        1 surface flags 0x10 mat 0 3 refs
+        1 group "wheels" 0 kids
