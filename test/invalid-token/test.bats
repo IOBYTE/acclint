@@ -81,3 +81,59 @@ setup_file() {
 }
 
 ################################################################################
+# test2: an object with a second numvert block, and a second numsurf block
+# after it -- most likely a second object pasted in without its OBJECT, name
+# and kids lines. An object has one vertex table and one list of surfaces, and
+# what reads it decides what a second one means: the old SSG loader starts a
+# new vertex table, the OSG loader adds to the one there is. Each is an
+# invalid token, with the first instance noted, and the block is passed over
+# rather than every line of it reported. They used to be taken without a
+# word: the vertices added to the table and the refs after them pointing into
+# the first part of it, so the triangle at z=5 was written as a copy of the
+# one at z=0.
+#
+# The file is not written (test2.2). With -Wno-invalid-token it is, without
+# the second block, as any invalid token is left out (test2.3).
+################################################################################
+
+@test "test2.1" {
+  $RUN_TEST acclint test2.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test2.2" {
+  rm -f test2.2.output.ac
+  $RUN_TEST acclint test2.ac -o test2.2.output.ac
+  [ "$status" -eq 1 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.2.output
+  fi
+  [ "$actual" = "$expected" ]
+  [ ! -e test2.2.output.ac ]
+}
+
+@test "test2.3" {
+  $RUN_TEST acclint -Wno-invalid-token test2.ac -o test2.3.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test2.3.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test2.3.output.ac)"
+  expected_file="$(tr -d '\r' < test2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test2.3.output.ac test2.3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test2.3.output.ac
+}
+
+################################################################################

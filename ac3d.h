@@ -1335,6 +1335,9 @@ private:
     bool readMaterialAfterObject(std::istringstream &iss, std::istream &in, const std::string &token);
     void writeMaterial(std::ostream &out, const Material &material) const;
     bool readSurface(std::istream &in, Surface &surface, Object &object, bool get_line);
+    bool secondCount(std::istringstream &iss, std::istream &in, const std::string &token, const LineInfo &first);
+    void skipVertices(std::istream &in, std::istringstream &iss);
+    void skipSurfaces(std::istream &in, std::istringstream &iss);
     void writeSurface(std::ostream &out, const Surface &surface) const;
     void writeSurfaces(std::ostream &out, const Object &object) const;
     void writeVertices(std::ostream &out, const Object &object) const;

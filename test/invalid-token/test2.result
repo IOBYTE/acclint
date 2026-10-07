@@ -1,0 +1,13 @@
+test2.ac:18 error: invalid token: numvert
+numvert 3
+^
+test2.ac:7 note: first instance
+numvert 3
+^
+test2.ac:22 error: invalid token: numsurf
+numsurf 1
+^
+test2.ac:11 note: first instance
+numsurf 1
+^
+2 errors

@@ -710,6 +710,120 @@ void AC3D::writeRef(std::ostream &out, const AC3D::Ref &ref) const
     out << newline(m_crlf);
 }
 
+// An object has one vertex table and one list of surfaces. A second numvert
+// or numsurf is not part of the format, and how it is read depends on what
+// reads it: the old SSG loader starts a new vertex table, so the refs after it
+// index the second one, and the OSG loader adds to the one table, so they
+// index the first. A second block is most likely a second object pasted in
+// without its OBJECT, name and kids lines. There is no one right reading, so
+// it is an invalid token, with the first one noted, and the file is not
+// written. It used to be taken without a word: the vertices added to the
+// table, the refs after them pointing into the first part of it, and the
+// triangle they were meant for drawn as a copy of another one.
+bool AC3D::secondCount(std::istringstream &iss, std::istream &in, const std::string &token, const LineInfo &first)
+{
+    if (first.line_number == 0)
+        return false;
+
+    if (m_invalid_token)
+    {
+        errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
+        showLine(iss, 0);
+        note(first.line_number) << "first instance" << std::endl;
+        showLine(in, first.line_pos);
+    }
+
+    return true;
+}
+
+// The lines of a second numvert block, passed over rather than each reported
+// as an invalid token of its own. As many as it says, while they read as
+// vertices; whatever comes first that does not is left to be read.
+void AC3D::skipVertices(std::istream &in, std::istringstream &iss)
+{
+    int count = 0;
+
+    iss >> count;
+
+    for (int i = 0; i < count && getLine(in); ++i)
+    {
+        std::istringstream line(m_line);
+        Point3 point;
+
+        line >> point;
+
+        if (!line)
+        {
+            ungetLine(in);
+            break;
+        }
+    }
+}
+
+// The surfaces of a second numsurf block, passed over the same way: a SURF
+// line, a mat line if there is one, and a refs line with its refs. They are
+// not read as surfaces, because their refs index a vertex table this object
+// does not have.
+void AC3D::skipSurfaces(std::istream &in, std::istringstream &iss)
+{
+    int count = 0;
+
+    iss >> count;
+
+    for (int i = 0; i < count; ++i)
+    {
+        if (!getLine(in))
+            return;
+
+        std::istringstream surf(m_line);
+        std::string token;
+
+        surf >> token;
+
+        if (token != SURF_token)
+        {
+            ungetLine(in);
+            return;
+        }
+
+        while (getLine(in))
+        {
+            std::istringstream line(m_line);
+
+            line >> token;
+
+            if (token == mat_token)
+                continue;
+
+            if (token != refs_token)
+            {
+                ungetLine(in);
+                break;
+            }
+
+            int refs = 0;
+
+            line >> refs;
+
+            for (int j = 0; j < refs && getLine(in); ++j)
+            {
+                std::istringstream ref(m_line);
+                size_t index = 0;
+
+                ref >> index;
+
+                if (!ref)
+                {
+                    ungetLine(in);
+                    break;
+                }
+            }
+
+            break;
+        }
+    }
+}
+
 bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool get_line)
 {
     if (get_line)
@@ -2999,6 +3113,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == numvert_token)
         {
+            if (secondCount(iss1, in, token, object.numvert))
+            {
+                skipVertices(in, iss1);
+                continue;
+            }
+
             object.numvert.line_number = m_line_number;
             object.numvert.line_pos = m_line_pos;
 
@@ -3296,6 +3416,12 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
         }
         else if (token == numsurf_token)
         {
+            if (secondCount(iss1, in, token, object.numsurf))
+            {
+                skipSurfaces(in, iss1);
+                continue;
+            }
+
             object.numsurf.line_number = m_line_number;
             object.numsurf.line_pos = m_line_pos;
 
