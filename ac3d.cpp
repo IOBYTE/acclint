@@ -6309,23 +6309,36 @@ bool AC3D::collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3)
     return area <= longest * Point3::tolerance(scale, 0.0);
 }
 
-// Each corner is measured against the nearest refs either side of it that are
-// somewhere else. Measuring it against whatever ref happens to be next hid it
-// whenever a neighbour was doubled: A B B C asks about A B B and B B C, both of
-// which have two points in one place and so were skipped, and B -- in line
-// with A and C -- was never marked. A corner that is never marked is then
-// counted as a corner, one with no turn at all, and that read as concave: a
-// plain rectangle with a doubled point on one side was reported not convex and
-// never split. The refs a doubled point repeats are marked duplicate already,
-// and are passed over here so the point is only spoken for once.
+// A ref flagged here is taken out of the polygon by the cleanup on the way out,
+// so what is flagged has to be safe to take out all at once.
 //
-// Places are compared with equals(), not ==, the same as the duplicate check
-// that runs before this: a point doubled to within rounding is a doubled point,
-// and comparing exactly let one 1e-7 away pass as a corner of its own.
+// Each corner is measured against the last corner kept before it, not against
+// its neighbour as it was read, and only goes if every corner already let go
+// since then still lies on the line it would leave. Measured against its
+// neighbours, each corner of a gentle curve passed on its own -- at 5 km from
+// the origin collinear() allows 2.4 mm, and a 300 m radius curve in 1 m
+// segments bends by 1.7 mm at each corner -- and the cleanup then took every
+// one of them out together: the whole curve went, and the edge moved a metre.
+// Measured against the last corner kept, a run of corners is only let go while
+// all of it stays within that tolerance of the line that replaces it.
+//
+// The walk starts from the corner that turns the most, which is kept, so the
+// corners either side of where the polygon closes are measured like any other.
+//
+// The nearest refs that are somewhere else are what is measured: a doubled
+// point (A B B C) is one point, and its repeats are marked duplicate already
+// and passed over, so the point is only spoken for once. Places are compared
+// with equals(), the same as the duplicate check that runs before this.
+//
+// A corner whose line runs back to the point it came from -- the tip of a
+// spike, A B A -- goes too, and so does the repeat of the point it came back
+// to.
+//
+// The warnings come out in the order the refs are in, each naming the corner
+// it was measured from, the corner itself, and the next one.
 void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface)
 {
     const size_t size = surface.refs.size();
-    size_t found = 0;
 
     // must be a polygon with at least 3 sides
     if (!surface.isPolygon())
@@ -6350,58 +6363,145 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
             return;
     }
 
-    const auto point = [&](size_t i) -> const Point3 &
+    const auto point = [&](size_t ref) -> const Point3 &
     {
-        return object.vertices[surface.refs[i % size].index].vertex;
+        return object.vertices[surface.refs[ref].index].vertex;
     };
+
+    // The corners: one ref for each place the polygon goes, in order.
+    std::vector<size_t> corners;
+
+    corners.reserve(size);
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        if (surface.refs[i].duplicate)
+            continue;
+
+        if (!corners.empty() && point(corners.back()).equals(point(i)))
+            continue;
+
+        corners.push_back(i);
+    }
+
+    while (corners.size() > 1 && point(corners.back()).equals(point(corners.front())))
+        corners.pop_back();
+
+    const size_t count = corners.size();
+
+    if (count < 3)
+        return;
+
+    // The corner that turns the most: the sine of its turn, which is 0 for a
+    // corner in line with its neighbours and for the tip of a spike alike.
+    size_t anchor = 0;
+    double sharpest = -1.0;
+
+    for (size_t k = 0; k < count; ++k)
+    {
+        const Point3 &p0 = point(corners[(k + count - 1) % count]);
+        const Point3 &p1 = point(corners[k]);
+        const Point3 &p2 = point(corners[(k + 1) % count]);
+        const Point3 a = p1 - p0;
+        const Point3 b = p2 - p1;
+        const double lengths = a.length() * b.length();
+        const double turn = lengths > 0.0 ? a.cross(b).length() / lengths : 0.0;
+
+        if (turn > sharpest)
+        {
+            sharpest = turn;
+            anchor = k;
+        }
+    }
+
+    // What each flagged ref was measured against: the corner kept before it
+    // and the corner after it.
+    struct Chord
+    {
+        bool   flagged = false;
+        size_t from = 0;
+        size_t to = 0;
+    };
+
+    std::vector<Chord> chords(size);
+    std::vector<size_t> run;
+    size_t kept = corners[anchor];
+
+    for (size_t t = 1; t < count; ++t)
+    {
+        const size_t middle = corners[(anchor + t) % count];
+        const size_t next = corners[(anchor + t + 1) % count];
+
+        const Point3 &v0 = point(kept);
+        const Point3 &v1 = point(middle);
+        const Point3 &v2 = point(next);
+
+        bool straight = false;
+
+        if (v0.equals(v2))
+        {
+            // The tip of a spike.
+            straight = true;
+        }
+        else if (v0.equals(v1) || collinear(v0, v1, v2))
+        {
+            straight = true;
+
+            for (const size_t earlier : run)
+            {
+                if (!collinear(v0, point(earlier), v2))
+                {
+                    straight = false;
+                    break;
+                }
+            }
+
+            if (straight)
+                run.push_back(middle);
+        }
+
+        if (straight)
+        {
+            chords[middle] = { true, kept, next };
+            surface.refs[middle].collinear = true;
+        }
+        else
+        {
+            kept = middle;
+            run.clear();
+        }
+    }
+
+    if (!m_collinear_surface_vertices)
+        return;
+
+    size_t found = 0;
 
     // In the order the old sliding window visited them: the corner at ref 1
     // first and the one at ref 0 last.
     for (size_t step = 1; step <= size; ++step)
     {
         const size_t middle = step % size;
+        const Chord &chord = chords[middle];
 
-        if (surface.refs[middle].duplicate)
+        if (!chord.flagged)
             continue;
 
-        const Point3 &v1 = point(middle);
-
-        size_t previous = middle + size - 1;
-
-        while (previous > middle && point(previous).equals(v1))
-            --previous;
-
-        size_t next = middle + 1;
-
-        while (next < middle + size && point(next).equals(v1))
-            ++next;
-
-        // Every ref in one place: nothing to measure.
-        if (previous == middle || next == middle + size)
-            continue;
-
-        const Point3 &v0 = point(previous);
-        const Point3 &v2 = point(next);
-
-        if (v0.equals(v2) || collinear(v0, v1, v2))
+        // don't show all combinations when all vertices are collinear
+        if (found < (size - 2))
         {
-            // don't show all combinations when all vertices are collinear
-            if (found < (size - 2) && m_collinear_surface_vertices)
-            {
-                warningWithCount(m_collinear_surface_vertices_count, surface.refs[next % size].line_number) << "collinear vertices" << std::endl;
-                showLine(in, surface.refs[next % size].line_pos);
+            warningWithCount(m_collinear_surface_vertices_count, surface.refs[chord.to].line_number) << "collinear vertices" << std::endl;
+            showLine(in, surface.refs[chord.to].line_pos);
 
-                note(object.vertices[surface.refs[previous % size].index].line_number) << "first vertex" << std::endl;
-                showLine(in, object.vertices[surface.refs[previous % size].index].line_pos);
-                note(object.vertices[surface.refs[middle].index].line_number) << "second vertex" << std::endl;
-                showLine(in, object.vertices[surface.refs[middle].index].line_pos);
-                note(object.vertices[surface.refs[next % size].index].line_number) << "third vertex" << std::endl;
-                showLine(in, object.vertices[surface.refs[next % size].index].line_pos);
-            }
-
-            found++;
-            surface.refs[middle].collinear = true;
+            note(object.vertices[surface.refs[chord.from].index].line_number) << "first vertex" << std::endl;
+            showLine(in, object.vertices[surface.refs[chord.from].index].line_pos);
+            note(object.vertices[surface.refs[middle].index].line_number) << "second vertex" << std::endl;
+            showLine(in, object.vertices[surface.refs[middle].index].line_pos);
+            note(object.vertices[surface.refs[chord.to].index].line_number) << "third vertex" << std::endl;
+            showLine(in, object.vertices[surface.refs[chord.to].index].line_pos);
         }
+
+        found++;
     }
 }
 
@@ -6761,7 +6861,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
 
         for (size_t i = 0; i < size; ++i)
         {
-            Point2 p;
+            Point2 p{};
             if (!object.getSurfaceVertex(surface, i, p, planeType))
                 return;
 

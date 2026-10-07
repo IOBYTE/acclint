@@ -378,4 +378,34 @@ setup_file() {
 }
 
 ################################################################################
+# A flagged ref is taken out by the cleanup on the way out, so a run of them
+# goes all at once. Each corner of test15's curve -- a 300 m radius in 1 m
+# segments, 5 km from the origin -- bends by 1.7 mm, inside the 2.4 mm
+# collinear() allows at that distance. Measured against its neighbours each
+# one passed on its own, all 49 were taken out together, and the curve was
+# written as a straight edge a metre away from where it was.
+#
+# Each corner is now measured against the last corner kept, and only goes if
+# every corner let go since then still lies on the line that replaces them, so
+# no ref that is taken out is more than that tolerance from where the edge now
+# runs. Every other corner of the curve is kept.
+################################################################################
+
+@test "test15" {
+  $RUN_TEST acclint -Wno-warnings test15.ac -o test15.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test15.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test15.output.ac)"
+  expected="$(tr -d '\r' < test15.result.ac)"
+  if [ "$actual" != "$expected" ]; then
+    cp test15.output.ac test15.actual.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test15.output.ac
+}
+
+################################################################################
 
