@@ -4097,6 +4097,35 @@ AC3D::Object AC3D::buildObjects(std::vector<Object> &flat, size_t &index)
     return object;
 }
 
+// Whether building the tree from these counts finds a place for every object.
+// buildObjects stops at the root once the root has the children it asks for,
+// so whatever is still to come then is not in the tree at all: counts that ask
+// for too little lose the objects after them, with nothing to say so. Walked
+// the same way buildObjects walks, without the recursion.
+bool AC3D::placesEveryObject(const std::vector<int> &counts)
+{
+    if (counts.empty())
+        return true;
+
+    size_t           index = 1;
+    std::vector<int> wanted{ counts[0] };
+
+    while (!wanted.empty() && index < counts.size())
+    {
+        if (wanted.back() <= 0)
+        {
+            wanted.pop_back();
+            continue;
+        }
+
+        --wanted.back();
+        wanted.push_back(counts[index]);
+        ++index;
+    }
+
+    return index == counts.size();
+}
+
 // A group that says it holds more objects than the file has left takes the
 // ones that follow it, and those belong to whatever comes after. Nothing is
 // lost that way, but everything past the mistake ends up inside the group
@@ -4174,9 +4203,39 @@ bool trackSegment(const std::string &name, std::string &segment, bool &level)
 // that has already taken every child it asked for is left alone: that this
 // object has nowhere to go says its count is too small, but not by how much,
 // nor whether the fault is its own or an earlier sibling's.
+//
+// And nothing is put right unless the counts it leaves still have a place for
+// every object. Lowering a count hands what followed the object it moved to
+// the groups further out, and those may have no room left: a level of detail
+// that held its segment's other level and two objects after it gives up all
+// three, its segment group has room for the one it was owed, and the other two
+// belonged nowhere -- left out of the tree and so out of the file. The names
+// are the weaker evidence, and a reading of them that loses objects is not one
+// the file supports, so the counts are left as they were read and the rest is
+// left to the counting in fixKids.
 bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
 {
     bool fixed = false;
+
+    // Worked out here and only written back once they are known to place
+    // every object, and the same for what is said about them.
+    std::vector<int> counts;
+
+    counts.reserve(flat.size());
+
+    for (const auto &object : flat)
+        counts.push_back(object.numkids.number);
+
+    struct Correction
+    {
+        size_t      object = 0;
+        int         was = 0;
+        int         now = 0;
+        std::string placed;
+        std::string owner;
+    };
+
+    std::vector<Correction> corrections;
 
     // The objects still taking children, outermost first, with how many each
     // is still waiting for and how many it has taken. Every object is pushed,
@@ -4234,28 +4293,16 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
 
             for (size_t k = open.size(); owner != open.size() && k-- > owner + 1;)
             {
-                Object    &object = flat[open[k]];
-                const int  was    = object.numkids.number;
-                const int  now    = taken[k];
+                Correction correction;
 
-                object.numkids.number = now;
-                fixed = true;
+                correction.object = open[k];
+                correction.was    = counts[open[k]];
+                correction.now    = taken[k];
+                correction.placed = flat[i].getName();
+                correction.owner  = flat[open[owner]].getName();
 
-                if (m_fixable_kids_count)
-                {
-                    const std::string name  = object.getName();
-                    const std::string owner_name = flat[open[owner]].getName();
-
-                    warningWithCount(m_fixable_kids_count_count, object.numkids.line_number)
-                        << "kids count of " << was << " is " << (was - now)
-                        << " more than this group can hold"
-                        << (name.empty() ? std::string() : (" (object: " + name + ")"))
-                        << ": reading it as " << now << " puts " << flat[i].getName()
-                        << " under " << (owner_name.empty() ? "the world" : owner_name)
-                        << ", where it belongs"
-                        << std::endl;
-                    showLine(in, object.numkids.line_pos, object.numkids.number_offset);
-                }
+                counts[open[k]] = taken[k];
+                corrections.push_back(correction);
 
                 open.pop_back();
                 wanted.pop_back();
@@ -4270,8 +4317,34 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
         }
 
         open.push_back(i);
-        wanted.push_back(flat[i].numkids.number);
+        wanted.push_back(counts[i]);
         taken.push_back(0);
+    }
+
+    if (corrections.empty() || !placesEveryObject(counts))
+        return false;
+
+    for (const auto &correction : corrections)
+    {
+        Object &object = flat[correction.object];
+
+        object.numkids.number = correction.now;
+        fixed = true;
+
+        if (m_fixable_kids_count)
+        {
+            const std::string name = object.getName();
+
+            warningWithCount(m_fixable_kids_count_count, object.numkids.line_number)
+                << "kids count of " << correction.was << " is " << (correction.was - correction.now)
+                << " more than this group can hold"
+                << (name.empty() ? std::string() : (" (object: " + name + ")"))
+                << ": reading it as " << correction.now << " puts " << correction.placed
+                << " under " << (correction.owner.empty() ? "the world" : correction.owner)
+                << ", where it belongs"
+                << std::endl;
+            showLine(in, object.numkids.line_pos, object.numkids.number_offset);
+        }
     }
 
     return fixed;
@@ -4299,6 +4372,24 @@ bool AC3D::fixKids(Object &root, std::istream &in)
     const auto rebuild = [this, &root, &flat, &as_read]()
     {
         if (!m_fix_kids)
+        {
+            for (size_t i = 0; i < flat.size(); ++i)
+                flat[i].numkids.number = as_read[i];
+        }
+
+        // Every count changed above was checked to leave a place for every
+        // object, so the tree built from them holds them all. Should one ever
+        // not, the counts as read are what the tree is built from instead:
+        // they are the counts the reader built it from, so they place every
+        // object it read.
+        std::vector<int> counts;
+
+        counts.reserve(flat.size());
+
+        for (const auto &object : flat)
+            counts.push_back(object.numkids.number);
+
+        if (!placesEveryObject(counts))
         {
             for (size_t i = 0; i < flat.size(); ++i)
                 flat[i].numkids.number = as_read[i];
@@ -4372,8 +4463,24 @@ bool AC3D::fixKids(Object &root, std::istream &in)
                 }
             }
 
+            // Nor if what the count leaves behind has nowhere to go. Taking
+            // the surplus off it hands the objects it gave up to the groups
+            // further out, and when they have no room for all of them the
+            // rest fall out of the tree.
             if (starved)
             {
+                std::vector<int> counts;
+
+                counts.reserve(flat.size());
+
+                for (const auto &object : flat)
+                    counts.push_back(object.numkids.number);
+
+                counts[open[i]] -= static_cast<int>(surplus);
+
+                if (!placesEveryObject(counts))
+                    continue;
+
                 blame = open[i];
                 break;
             }

@@ -1,0 +1,7 @@
+test9.ac:7 warning: missing kids: only 1 out of 2 kids found
+kids 2
+     ^
+test9.ac:10 warning: kids count of 4 is 1 more than the file holds (object: ___TKMN1_gl1): reading it as 3 gives every object above it the kids it asks for
+kids 4
+     ^
+2 warnings

@@ -1396,6 +1396,7 @@ private:
     bool fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in);
     static void flattenObjects(Object &object, std::vector<Object> &flat);
     static Object buildObjects(std::vector<Object> &flat, size_t &index);
+    static bool placesEveryObject(const std::vector<int> &counts);
     static void convertObjectsToAcc(std::vector<Object> &objects, bool strips, bool swaps);
     static void convertObjectToAcc(Object &object, bool strips, bool swaps);
     static void splitTriangleStrips(std::vector<Object> &objects);

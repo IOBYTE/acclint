@@ -288,3 +288,73 @@ setup_file() {
   [ "$actual_file" = "$expected_file" ]
   rm test8.output.ac
 }
+
+################################################################################
+# Putting a count right hands whatever followed the object it moves to the
+# groups further out, and a reading that leaves them nowhere to go loses them:
+# buildObjects stops at the root once the root is full, and whatever is still
+# to come is left out of the tree and out of the file, with nothing to say so.
+# So a count is only put right if every object still has a place afterwards.
+# Both files here lost objects that way, and every object now comes through.
+################################################################################
+
+# test9: ___TKMN1_gl1 asks for 4 and takes a, ___TKMN1_gl0 (with b), c and d.
+# The names say ___TKMN1_gl0 belongs to TKMN1_g, but reading ___TKMN1_gl1 as 1
+# to put it there leaves c and d after it with nowhere to go: TKMN1_g has room
+# for one more and the world for none. The names are left aside and the counts
+# decide, as they do in a file without track names: ___TKMN1_gl1 keeps a,
+# ___TKMN1_gl0 and c, and d goes to TKMN1_g.
+@test "test9.1" {
+  $RUN_TEST acclint test9.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test9.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test9.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test9.2" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test9.ac -o test9.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test9.output.ac)"
+  expected_file="$(tr -d '\r' < test9.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test9.output.ac test9.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test9.output.ac
+}
+
+# test10: the world asks for 2 and "track" holds both segment groups. The
+# names say a segment group belongs to the world, but reading "track" as 0 to
+# put TKMN1_g there leaves TKMN2_g with nowhere to go. The counts decide
+# instead: one of the two is a count too many, and the innermost that can
+# carry it is "track", so TKMN2_g goes to the world and nothing is lost.
+@test "test10.1" {
+  $RUN_TEST acclint test10.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test10.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test10.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test10.2" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test10.ac -o test10.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test10.output.ac)"
+  expected_file="$(tr -d '\r' < test10.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test10.output.ac test10.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test10.output.ac
+}
+
+################################################################################
