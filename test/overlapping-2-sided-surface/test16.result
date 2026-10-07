@@ -1,0 +1,25 @@
+test16.ac:32 warning: overlapping 2 sided surface (object: on_the_body texture:  sides: 2)
+SURF 0x30
+^
+test16.ac:35 note: ref
+0 0 0
+^
+test16.ac:36 note: ref
+1 0 0
+^
+test16.ac:37 note: ref
+2 0 0
+^
+test16.ac:15 note: first instance (object: notched texture:  sides: 2)
+SURF 0x30
+^
+test16.ac:23 note: ref
+5 0 0
+^
+test16.ac:18 note: ref
+0 0 0
+^
+test16.ac:19 note: ref
+1 0 0
+^
+1 warning

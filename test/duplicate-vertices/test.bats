@@ -244,3 +244,52 @@ setup_file() {
 }
 
 ################################################################################
+
+# The pair at 2 2 0 is used by two smooth shaded faces meeting at 30 degrees,
+# inside the 45 degree crease, so the split holds an edge open, as in test5.
+# The first face starts along a straight edge: its first three refs are in a
+# line. Its normal was taken from them anyway and came out 0 0 0, the angle to
+# it was NaN, NaN is not less than any crease, and the pair was reported and
+# merged -- where the same face started at another corner kept them apart.
+# The face's plane is taken from the first three refs not in a line.
+@test "test8" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test8.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.output
+  fi
+  [ "$output" = "" ]
+}
+
+# And it is not merged away either, so the edge survives being written.
+@test "test8.1" {
+  $RUN_TEST acclint -Wno-warnings test8.ac -o test8.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test8.output.ac)"
+  expected_file="$(tr -d '\r' < test8.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test8.output.ac test8.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.output.ac
+}
+
+# The other side of test8. The second face here is a sliver: its refs all lie
+# in one line, so it has no plane to be found, and what it does to the shading
+# of the vertex at 2 2 0 cannot be worked out. A face whose refs fall on top
+# of each other never could be either, and a pair touching one is not merged,
+# so neither is this pair. It was, by way of the same 0 0 0 normal and NaN.
+@test "test9" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test9.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test9.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################

@@ -164,3 +164,37 @@ setup_file() {
 }
 
 ################################################################################
+# test7: a polygon with a notch in it, wound counterclockwise and every
+# normal 0 0 1, so the two agree everywhere. It was fanned from its first ref,
+# and the fan laid a triangle across the notch, wound backwards: 1 of 3
+# triangles read as opposed, and the surface as mixed. A concave polygon is
+# ear clipped instead, and every triangle stays inside it.
+################################################################################
+
+@test "test7.1" {
+  $RUN_TEST acclint -Wno-warnings -Wsurface-winding-mixed -Wsurface-winding-opposed test7.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################
+# test8: the same polygon with every normal turned over, 0 0 -1. Ear clipped,
+# all of it opposes them, and that is what is said -- where the backwards
+# triangle across the notch made it read as mixed.
+################################################################################
+
+@test "test8.1" {
+  $RUN_TEST acclint -Wno-warnings -Wsurface-winding-mixed -Wsurface-winding-opposed test8.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test8.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test8.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

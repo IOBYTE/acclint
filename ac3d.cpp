@@ -5026,20 +5026,24 @@ void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matri
 
             if (surface.isPolygon() && surface.refs.size() >= 3)
             {
-                for (size_t i = 1; i < (surface.refs.size() - 1); i++)
+                for (const auto &corners : polygonTriangles(object, surface))
                 {
+                    const Ref &ref0 = surface.refs[corners[0]];
+                    const Ref &ref1 = surface.refs[corners[1]];
+                    const Ref &ref2 = surface.refs[corners[2]];
+
                     // check for invalid vertex index and skip triangle if any index is invalid
-                    if (surface.refs[0].index >= object.vertices.size() ||
-                        surface.refs[i].index >= object.vertices.size() ||
-                        surface.refs[i + 1].index >= object.vertices.size())
+                    if (ref0.index >= object.vertices.size() ||
+                        ref1.index >= object.vertices.size() ||
+                        ref2.index >= object.vertices.size())
                         continue;
 
-                    Triangle triangle(object.vertices[surface.refs[0].index],
-                                      object.vertices[surface.refs[i].index],
-                                      object.vertices[surface.refs[i + 1].index],
-                                      surface.refs[0],
-                                      surface.refs[i],
-                                      surface.refs[i + 1]);
+                    Triangle triangle(object.vertices[ref0.index],
+                                      object.vertices[ref1.index],
+                                      object.vertices[ref2.index],
+                                      ref0,
+                                      ref1,
+                                      ref2);
 
                     if (triangle.degenerate)
                         continue;
@@ -6220,9 +6224,20 @@ void AC3D::SameVertex::build(const Object &object, bool consider_topology, bool 
 
         if (shading_from_topology && surface.isSmoothShaded())
         {
-            // The first three refs that are not a sliver. A surface that
+            // The first three refs that are not in a line. A surface that
             // never offers three leaves normal_known false, and pairs
             // touching it are refused rather than guessed at.
+            //
+            // In a line, not only on top of each other: three distinct refs
+            // along one edge passed, their normal came out 0 0 0, and the
+            // angle to it was NaN, which is not less than any crease. So a
+            // polygon starting along a straight edge let a vertex merge
+            // across a 30 degree crease that the same polygon started at
+            // another corner held open.
+            //
+            // A surface with every ref in one line has no plane, and is not
+            // known, the same as one whose refs all fall on top of each other
+            // always was. Its zero normal used to let merges past it.
             for (size_t i = 0; i + 2 < surface.refs.size(); ++i)
             {
                 const size_t index0 = surface.refs[i].index;
@@ -6237,7 +6252,7 @@ void AC3D::SameVertex::build(const Object &object, bool consider_topology, bool 
                 const Point3 &point1 = object.vertices[index1].vertex;
                 const Point3 &point2 = object.vertices[index2].vertex;
 
-                if (degenerate(point0, point1, point2))
+                if (collinear(point0, point1, point2))
                     continue;
 
                 normals[index] = normalizedNormal(point0, point1, point2);
@@ -6814,7 +6829,8 @@ void AC3D::checkSurfaceWinding(std::istream &in, const Object &object, const Sur
     if (m_is_ac) // no per vertex normals to compare against
         return;
 
-    // A strip arrives already split into triangles; a polygon is fanned here.
+    // A strip arrives already split into triangles; a polygon is cut up here,
+    // ear clipped where it is concave (see polygonTriangles).
     std::vector<Triangle> fan;
 
     if (!surface.isTriangleStrip())
@@ -6822,17 +6838,21 @@ void AC3D::checkSurfaceWinding(std::istream &in, const Object &object, const Sur
         if (!surface.isPolygon() || surface.refs.size() < 3)
             return;
 
-        for (size_t i = 1; i + 1 < surface.refs.size(); ++i)
+        for (const auto &corners : polygonTriangles(object, surface))
         {
-            if (surface.refs[0].index >= object.vertices.size() ||
-                surface.refs[i].index >= object.vertices.size() ||
-                surface.refs[i + 1].index >= object.vertices.size())
+            const Ref &ref0 = surface.refs[corners[0]];
+            const Ref &ref1 = surface.refs[corners[1]];
+            const Ref &ref2 = surface.refs[corners[2]];
+
+            if (ref0.index >= object.vertices.size() ||
+                ref1.index >= object.vertices.size() ||
+                ref2.index >= object.vertices.size())
                 continue;
 
-            fan.emplace_back(object.vertices[surface.refs[0].index],
-                             object.vertices[surface.refs[i].index],
-                             object.vertices[surface.refs[i + 1].index],
-                             surface.refs[0], surface.refs[i], surface.refs[i + 1]);
+            fan.emplace_back(object.vertices[ref0.index],
+                             object.vertices[ref1.index],
+                             object.vertices[ref2.index],
+                             ref0, ref1, ref2);
         }
     }
 
@@ -7075,6 +7095,31 @@ bool AC3D::degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2)
 // three refs, an out of range vertex index or no area, or for one that crosses
 // itself and so has no inside to keep to: it runs out of ears, or the
 // triangles it gives up do not add up to its area.
+// The triangles a polygon covers, as positions in surface.refs: the fan from
+// the first ref where that stays inside it, and ear clipping where the polygon
+// is concave and a fan would not. A fan of a notched polygon lays a triangle
+// across the notch, so whatever sat in the notch was found overlapping it, and
+// a triangle wound backwards there was read as facing the other way from its
+// normals. A polygon crossing itself has no inside for ear clipping to keep
+// to, and is fanned as it always was.
+std::vector<std::array<size_t, 3>> AC3D::polygonTriangles(const Object &object, const Surface &surface)
+{
+    std::vector<std::array<size_t, 3>> triangles;
+
+    if (surface.concave)
+    {
+        triangles = triangulatePolygon(object, surface);
+
+        if (!triangles.empty())
+            return triangles;
+    }
+
+    for (size_t i = 1; i + 1 < surface.refs.size(); ++i)
+        triangles.push_back({ 0, i, i + 1 });
+
+    return triangles;
+}
+
 std::vector<std::array<size_t, 3>> AC3D::triangulatePolygon(const Object &object, const Surface &surface)
 {
     std::vector<std::array<size_t, 3>> triangles;

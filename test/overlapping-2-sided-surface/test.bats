@@ -318,3 +318,53 @@ setup_file() {
 }
 
 ################################################################################
+# test15: a 2 sided polygon with a notch in it, and a small 2 sided triangle
+# sitting in the notch, clear of the polygon. The polygon was fanned from its
+# first ref, the fan laid a triangle across the notch, and the small one was
+# found overlapping it twice; --fixOverlapping2SidedSurface then made both
+# single sided (test15.2). A concave polygon is ear clipped instead, and every
+# triangle stays inside it.
+#
+# test16 is the other side of it: the small triangle moved onto the body of
+# the polygon is overlapping it, and is still found -- once, against the one
+# triangle of the polygon it lies in. The fan found it three times, against
+# triangles that ran out across the notch.
+################################################################################
+
+@test "test15.1" {
+  $RUN_TEST acclint -Wno-warnings -Woverlapping-2-sided-surface test15.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test15.1.output
+  fi
+  [ "$output" = "" ]
+}
+
+@test "test15.2" {
+  $RUN_TEST acclint -Wno-warnings test15.ac --fixOverlapping2SidedSurface -o test15.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test15.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test15.output.ac)"
+  expected_file="$(tr -d '\r' < test15.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test15.output.ac test15.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test15.output.ac
+}
+
+@test "test16" {
+  $RUN_TEST acclint -Wno-warnings -Woverlapping-2-sided-surface test16.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test16.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test16.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
