@@ -31,6 +31,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <iterator>
 #include <map>
 #include <numeric>
 #include <unordered_map>
@@ -8169,20 +8170,28 @@ bool AC3D::splitMultipleSURF()
     return splitMultipleSURF(m_objects);
 }
 
+// Each object's pieces go in right after it, not after the last of its
+// siblings: objects are drawn in the order they are written, and a piece put
+// at the end was drawn after any transparent sibling that used to come after
+// the object it was split from.
 bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
 {
-    std::vector<Object> newKids;
+    std::vector<Object> ordered;
+    size_t pieces = 0;
     bool split = false;
 
-    auto kid = kids.begin();
-    while (kid != kids.end())
+    ordered.reserve(kids.size());
+
+    for (auto kid = kids.begin(); kid != kids.end(); ++kid)
     {
         if (!kid->kids.empty())
             split |= splitMultipleSURF(kid->kids);
 
+        std::vector<Object> newKids;
+
         if (kid->surfaces.empty())
         {
-            ++kid;
+            ordered.push_back(std::move(*kid));
             continue;
         }
 
@@ -8213,7 +8222,7 @@ bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
                     newKids.back().kids.clear();
 
                     if (!newKids.back().names.empty())
-                        newKids.back().names[0].name += ("-split" + std::to_string(newKids.size()));
+                        newKids.back().names[0].name += ("-split" + std::to_string(pieces + newKids.size()));
 
                     const unsigned int wanted = kid->surfaces[i].state();
                     auto it = newKids.back().surfaces.begin();
@@ -8239,15 +8248,14 @@ bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
                 ++it;
         }
 
-        ++kid;
+        pieces += newKids.size();
+        ordered.push_back(std::move(*kid));
+        ordered.insert(ordered.end(), std::make_move_iterator(newKids.begin()), std::make_move_iterator(newKids.end()));
     }
 
-    if (newKids.empty())
-        return split;
+    kids = std::move(ordered);
 
-    kids.insert(kids.end(), newKids.begin(), newKids.end());
-
-    return true;
+    return split || pieces != 0;
 }
 
 bool AC3D::splitMultipleMat()
@@ -8255,26 +8263,25 @@ bool AC3D::splitMultipleMat()
     return splitMultipleMat(m_objects);
 }
 
+// Each object's pieces go in right after it, as in splitMultipleSURF.
 bool AC3D::splitMultipleMat(std::vector<Object> &kids)
 {
-    std::vector<Object> newKids;
+    std::vector<Object> ordered;
+    size_t pieces = 0;
     bool split = false;
 
-    auto kid = kids.begin();
-    while (kid != kids.end())
+    ordered.reserve(kids.size());
+
+    for (auto kid = kids.begin(); kid != kids.end(); ++kid)
     {
         if (!kid->kids.empty())
             split |= splitMultipleMat(kid->kids);
 
-        if (kid->surfaces.empty())
-        {
-            ++kid;
-            continue;
-        }
+        std::vector<Object> newKids;
 
-        if (kid->surfaces[0].mats.empty())
+        if (kid->surfaces.empty() || kid->surfaces[0].mats.empty())
         {
-            ++kid;
+            ordered.push_back(std::move(*kid));
             continue;
         }
 
@@ -8297,7 +8304,7 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
                     newKids.back().kids.clear();
 
                     if (!newKids.back().names.empty())
-                        newKids.back().names[0].name += ("-split" + std::to_string(newKids.size()));
+                        newKids.back().names[0].name += ("-split" + std::to_string(pieces + newKids.size()));
 
                     auto it = newKids.back().surfaces.begin();
                     while (it != newKids.back().surfaces.end())
@@ -8330,15 +8337,14 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
                 ++it;
         }
 
-        ++kid;
+        pieces += newKids.size();
+        ordered.push_back(std::move(*kid));
+        ordered.insert(ordered.end(), std::make_move_iterator(newKids.begin()), std::make_move_iterator(newKids.end()));
     }
 
-    if (newKids.empty())
-        return split;
+    kids = std::move(ordered);
 
-    kids.insert(kids.end(), newKids.begin(), newKids.end());
-
-    return true;
+    return split || pieces != 0;
 }
 
 bool AC3D::fixMultipleWorlds()

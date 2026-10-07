@@ -140,8 +140,9 @@ setup_file() {
 # that differ in both SURF and mat, so either split has something to split.
 ################################################################################
 
-# test5.1: --splitSURF. The lever becomes a group; "lever-geometry", the knob
-# and "lever-geometry-split1" are all under it.
+# test5.1: --splitSURF. The lever becomes a group; "lever-geometry",
+# "lever-geometry-split1" and the knob are all under it, the piece split off
+# right after the object it came from.
 @test "test5.1" {
   $RUN_TEST acclint -Wno-warnings test5.ac --splitSURF -o test5.1.output.ac
   [ "$status" -eq 0 ]

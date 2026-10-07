@@ -103,7 +103,7 @@ setup_file() {
 # subtree in the file, drawn on top of the first. "c" must appear exactly once.
 #
 # --splitMat implies --fixPolyWithKids, so "p" is made a group first and its
-# geometry split under it: "p-geometry", "c" and "p-geometry-split1", all kids
+# geometry split under it: "p-geometry", "p-geometry-split1" and "c", all kids
 # of "p" and all moving with it.
 @test "test2" {
   $RUN_TEST acclint test2.ac --splitMat -Wno-different-mat -Wno-poly-with-kids -o test2.output.ac
@@ -119,6 +119,29 @@ setup_file() {
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test2.output.ac
+}
+
+################################################################################
+
+# A piece split off goes in right after the object it came from. Objects are
+# drawn in the order they are written, and "A" (one surface on "m" and one on
+# "red") is followed by "B_glass", which is transparent. The piece was put after
+# the last of A's siblings, so half of A was drawn after the glass -- behind it,
+# and seen through it, where the other half was not. A, A-split1, B_glass.
+@test "test3" {
+  $RUN_TEST acclint -Wno-warnings test3.ac --splitMat -o test3.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test3.output.ac)"
+  expected_file="$(tr -d '\r' < test3.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.output.ac test3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.output.ac
 }
 
 ################################################################################
