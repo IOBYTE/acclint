@@ -1823,6 +1823,34 @@ bool AC3D::readColor(std::istringstream &in, Color &color, const std::string_vie
     return status;
 }
 
+// A word where a keyword or a number was expected. Either it is something
+// extra in front of the keyword -- the second word of a material name written
+// without quotes, "MATERIAL red paint rgb ..." -- and the keyword follows it,
+// or it is the keyword misspelt and the numbers follow it. The keyword is
+// passed over if it is next, and left alone if it is not, so the numbers are
+// read either way.
+//
+// What happened used to depend on whether the word was being reported. With
+// -Winvalid-material the keyword was never looked for, and taken for the first
+// number: "red paint rgb 1 0.5 0.25" came out as rgb 0 1 0.5. Without it the
+// next word was always taken, keyword or not, and with it the first number of
+// a misspelt keyword. Reporting is the only thing the flag decides.
+void AC3D::skipWord(std::istringstream &in, const std::string_view &word)
+{
+    in >> std::ws;
+
+    const std::streampos pos = in.tellg();
+    std::string following;
+
+    in >> following;
+
+    if (!in || following != word)
+    {
+        in.clear(in.rdstate() & ~std::ios_base::failbit);
+        in.seekg(pos);
+    }
+}
+
 bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next, const std::string_view &last)
 {
     in >> std::ws;
@@ -1876,9 +1904,11 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
                 if (m_invalid_material) {
                     warningWithCount(m_invalid_material_count) << "invalid material " << last << ": " << actual << std::endl;
                     showLine(in, pos);
-                    return readColor(in, color, expected, next);
                 }
-                is_number = false;
+
+                skipWord(in, expected);
+
+                return readColor(in, color, expected, next);
             }
             in >> std::ws;
             pos = in.tellg();
@@ -2035,9 +2065,11 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
                 if (m_invalid_material) {
                     warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << actual << std::endl;
                     showLine(in, pos);
-                    return readValue(in, value, expected, min, max, is_float);
                 }
-                is_number = false;
+
+                skipWord(in, expected);
+
+                return readValue(in, value, expected, min, max, is_float);
             }
             in >> std::ws;
             pos = in.tellg();
@@ -2268,6 +2300,41 @@ void AC3D::writeMaterial(std::ostream &out, const Material &material) const
             writeData(out, data.data);
         out << "ENDMAT" << newline(m_crlf);
     }
+}
+
+// A MATERIAL line -- or MAT, in a version 12 file -- after the first OBJECT,
+// taken where it falls and added to the materials like any other, with the
+// warning that says it is out of place. False for any other line, which is
+// left for the caller.
+bool AC3D::readMaterialAfterObject(std::istringstream &iss, std::istream &in, const std::string &token)
+{
+    if (token == MATERIAL_token)
+    {
+        if (m_material_after_object)
+        {
+            warningWithCount(m_material_after_object_count) << "MATERIAL after OBJECT" << std::endl;
+            showLine(iss, 0);
+        }
+        Material material;
+        readMaterial(iss, material);
+        m_materials.push_back(material);
+        return true;
+    }
+
+    if (token == MAT_token && m_header.getVersion() == 12)
+    {
+        if (m_material_after_object)
+        {
+            warningWithCount(m_material_after_object_count) << "MAT after OBJECT" << std::endl;
+            showLine(iss, 0);
+        }
+        Material material;
+        readMaterial(iss, in, material);
+        m_materials.push_back(material);
+        return true;
+    }
+
+    return false;
 }
 
 bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
@@ -3210,6 +3277,10 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                         readObject(iss2, in, kid);
                         object.kids.push_back(kid);
                     }
+                    else if (readMaterialAfterObject(iss2, in, token1))
+                    {
+                        // Not a kid, and not the end of them either.
+                    }
                     else
                     {
                         if (m_invalid_token)
@@ -3241,61 +3312,50 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                         iss2 >> token1;
 
-                        if (token1 == OBJECT_token)
+                        // Lines before the kid's OBJECT. A MATERIAL between
+                        // two kids is not a kid, nor anything wrong: the body
+                        // of an object and the top of the file both take one
+                        // where it falls, and so does this. Taken for an
+                        // invalid token, it was thrown away, and every
+                        // surface after it that used it was left pointing at
+                        // a material the file no longer had. Anything else is
+                        // reported and passed over until an OBJECT turns up.
+                        //
+                        // Running out of lines first is reported the same way
+                        // as running out of kids below. The loop used to call
+                        // getLine() without checking it and spun forever at
+                        // the end of a file whose kids block ended on a line
+                        // that was not an OBJECT.
+                        while (token1 != OBJECT_token)
                         {
-                            Object kid;
-                            readObject(iss2, in, kid);
-                            object.kids.push_back(kid);
-                        }
-                        else
-                        {
-                            // Recover by skipping non-OBJECT lines until an
-                            // OBJECT token is found. If getLine() fails
-                            // (EOF reached before this kid's OBJECT line
-                            // ever appeared), this used to fall through the
-                            // `if` with nothing to break the loop, so it
-                            // looped back to `while (true)` and called
-                            // getLine() again forever -- an unconditional
-                            // hang on any file where a `kids` block ends
-                            // with a non-OBJECT line and no further input.
-                            // Report it the same way the sibling
-                            // "ran out of kids" case just below does.
-                            do
+                            if (!readMaterialAfterObject(iss2, in, token1) && m_invalid_token)
                             {
-                                if (m_invalid_token)
-                                {
-                                    errorWithCount(m_invalid_token_count) << "invalid token: " << token1 << std::endl;
-                                    showLine(iss2, 0);
-                                }
+                                errorWithCount(m_invalid_token_count) << "invalid token: " << token1 << std::endl;
+                                showLine(iss2, 0);
+                            }
 
-                                if (getLine(in))
+                            if (!getLine(in))
+                            {
+                                if (m_missing_kids)
                                 {
-                                    iss2.str(m_line);
-                                    iss2.clear();
-
-                                    iss2 >> token1;
-
-                                    if (token1 == OBJECT_token)
-                                    {
-                                        Object kid;
-                                        readObject(iss2, in, kid);
-                                        object.kids.push_back(kid);
-                                        break;
-                                    }
+                                    warningWithCount(m_missing_kids_count, kids_line)
+                                        << "missing kids: only " << i << " out of " << kids
+                                        << " kids found" << std::endl;
+                                    showLine(in, object.numkids.line_pos, object.numkids.number_offset);
                                 }
-                                else
-                                {
-                                    if (m_missing_kids)
-                                    {
-                                        warningWithCount(m_missing_kids_count, kids_line)
-                                            << "missing kids: only " << i << " out of " << kids
-                                            << " kids found" << std::endl;
-                                        showLine(in, object.numkids.line_pos, object.numkids.number_offset);
-                                    }
-                                    return false;
-                                }
-                            } while (true);
+                                return false;
+                            }
+
+                            iss2.str(m_line);
+                            iss2.clear();
+                            token1.clear();
+
+                            iss2 >> token1;
                         }
+
+                        Object kid;
+                        readObject(iss2, in, kid);
+                        object.kids.push_back(kid);
                     }
                     else
                     {
@@ -3343,27 +3403,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 showLine(iss1);
             }
         }
-        else if (token == MATERIAL_token)
+        else if (readMaterialAfterObject(iss1, in, token))
         {
-            if (m_material_after_object)
-            {
-                warningWithCount(m_material_after_object_count) << "MATERIAL after OBJECT" << std::endl;
-                showLine(iss1, 0);
-            }
-            Material material;
-            readMaterial(iss1, material);
-            m_materials.push_back(material);
-        }
-        else if (token == MAT_token && m_header.getVersion() == 12)
-        {
-            if (m_material_after_object)
-            {
-                warningWithCount(m_material_after_object_count) << "MAT after OBJECT" << std::endl;
-                showLine(iss1, 0);
-            }
-            Material material;
-            readMaterial(iss1, in, material);
-            m_materials.push_back(material);
         }
         else if (token == SURF_token)
         {
@@ -3379,6 +3420,28 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
             if (readSurface(in, surface, object, false))
                 object.surfaces.push_back(surface);
+        }
+        else if (token == OBJECT_token)
+        {
+            // Every object ends with its kids line, so an OBJECT here means
+            // this one's is missing and the next object has begun. Taken for
+            // an invalid token, the next object's lines were read as this
+            // one's -- its name as a second name, its vertices and surfaces
+            // in place of these -- and the object itself never appeared: two
+            // objects became one, named for the second and drawn with a mix
+            // of both. It is this object that is missing something, and what
+            // is missing says it has no kids, so it ends here with none and
+            // the next object is read as the one it is.
+            if (m_missing_kids)
+            {
+                warningWithCount(m_missing_kids_count) << "missing kids line" << std::endl;
+                showLine(iss1, 0);
+                note(object.line_number) << "object" << std::endl;
+                showLine(in, object.line_pos);
+            }
+
+            ungetLine(in);
+            break;
         }
         else if (m_invalid_token)
         {

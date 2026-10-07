@@ -1242,12 +1242,14 @@ private:
     void writeHeader(std::ostream &out, const Header &header) const;
     bool readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next, const std::string_view & last);
     bool readColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next);
+    static void skipWord(std::istringstream &in, const std::string_view &word);
     bool readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float);
     bool readValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float);
     bool readData(std::istringstream &iss, std::istream &in, std::string &data);
     void writeData(std::ostream &out, const std::string &data) const;
     bool readMaterial(std::istringstream &in, Material &material);
     bool readMaterial(std::istringstream &first, std::istream &in, Material &material);
+    bool readMaterialAfterObject(std::istringstream &iss, std::istream &in, const std::string &token);
     void writeMaterial(std::ostream &out, const Material &material) const;
     bool readSurface(std::istream &in, Surface &surface, Object &object, bool get_line);
     void writeSurface(std::ostream &out, const Surface &surface) const;

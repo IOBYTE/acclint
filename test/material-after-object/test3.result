@@ -1,0 +1,8 @@
+test3.ac:4 error: invalid kids count
+kids x
+     ^
+test3.ac:19 warning: MATERIAL after OBJECT
+MATERIAL "red" rgb 1 0 0  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+1 warning
+1 error

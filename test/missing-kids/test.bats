@@ -357,3 +357,46 @@ setup_file() {
   [ "$actual_file" = "$expected_file" ]
   rm test7.output.ac
 }
+
+################################################################################
+# test8: "a" has no kids line, and the line where it should be is "b" starting.
+# Every object ends with its kids line, so an OBJECT there says the line is
+# missing, not that the OBJECT is out of place. Taken for an invalid token, it
+# made b's lines part of a -- a second name, b's vertices in place of a's,
+# a's own left unused -- and a and b came out as one object named "b". Now a
+# ends there with no kids, which is what a missing kids line says, and b is
+# read as the world's second kid.
+################################################################################
+
+@test "test8.1" {
+  $RUN_TEST acclint test8.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test8.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test8.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test8.2" {
+  $RUN_TEST acclint -Wno-warnings test8.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.2.output
+  fi
+  [ "$output" = "" ]
+}
+
+@test "test8.3" {
+  $RUN_TEST acclint -Wno-warnings test8.ac -o test8.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test8.output.ac)"
+  expected_file="$(tr -d '\r' < test8.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test8.output.ac test8.3.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.output.ac
+}

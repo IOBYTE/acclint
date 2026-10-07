@@ -1,0 +1,4 @@
+test16.ac:2 warning: invalid material rgb: paint
+MATERIAL red paint rgb 1 0.5 0.25  amb 1 1 1  emis 0 0 0  spec 0 0 0  shi 0  trans 0
+             ^
+1 warning

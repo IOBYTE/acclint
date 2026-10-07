@@ -1,0 +1,7 @@
+test8.ac:18 warning: missing kids line
+OBJECT poly
+^
+test8.ac:5 note: object
+OBJECT poly
+^
+1 warning

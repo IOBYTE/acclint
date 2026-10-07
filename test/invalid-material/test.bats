@@ -473,3 +473,91 @@ setup_file() {
 }
 
 ################################################################################
+# A word where a keyword or a number was expected: either something in front
+# of the keyword, which then follows it, or the keyword misspelt, with the
+# numbers following it. Which of the two it was used to be decided by whether
+# the word was being reported: with -Winvalid-material the keyword was never
+# looked for and taken for the first number, and without it the next word was
+# always taken, keyword or not. The same file was written two different ways,
+# and only the warning should depend on the flag. Each test here writes the
+# file with the warning on (.2) and off (.3), and both must be the same.
+################################################################################
+
+# test16: a material name of two words without quotes, "red paint". The name
+# is "red", "paint" is reported, and rgb is 1 0.5 0.25 -- it was written as
+# rgb 0 1 0.5 with the warning on, with two more warnings that were not true.
+@test "test16.1" {
+  $RUN_TEST acclint test16.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test16.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test16.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test16.2" {
+  $RUN_TEST acclint test16.ac -o test16.2.output.ac
+  [ "$status" -eq 0 ]
+  actual_file="$(tr -d '\r' < test16.2.output.ac)"
+  expected_file="$(tr -d '\r' < test16.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test16.2.output.ac test16.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test16.2.output.ac
+}
+
+@test "test16.3" {
+  $RUN_TEST acclint -Wno-invalid-material test16.ac -o test16.3.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test16.3.output.ac)"
+  expected_file="$(tr -d '\r' < test16.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test16.3.output.ac test16.3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test16.3.output.ac
+}
+
+# test17: rgb and shi misspelt as rbg and shu. Each is reported, and the
+# numbers after it are read as its value.
+@test "test17.1" {
+  $RUN_TEST acclint test17.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test17.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test17.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test17.2" {
+  $RUN_TEST acclint test17.ac -o test17.2.output.ac
+  [ "$status" -eq 0 ]
+  actual_file="$(tr -d '\r' < test17.2.output.ac)"
+  expected_file="$(tr -d '\r' < test17.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test17.2.output.ac test17.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test17.2.output.ac
+}
+
+@test "test17.3" {
+  $RUN_TEST acclint -Wno-invalid-material test17.ac -o test17.3.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test17.3.output.ac)"
+  expected_file="$(tr -d '\r' < test17.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test17.3.output.ac test17.3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test17.3.output.ac
+}
+
+################################################################################
