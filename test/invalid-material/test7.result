@@ -1,7 +1,19 @@
-test7.ac:2 warning: invalid material: amb
+test7.ac:2 warning: invalid material: missing amb
+MATERIAL "" rgb 1 1 1  
+                       ^
+test7.ac:2 warning: invalid material: missing emis
+MATERIAL "" rgb 1 1 1  
+                       ^
+test7.ac:2 warning: invalid material: missing spec
+MATERIAL "" rgb 1 1 1  
+                       ^
+test7.ac:2 warning: invalid material: missing shi
+MATERIAL "" rgb 1 1 1  
+                       ^
+test7.ac:2 warning: invalid material: missing trans
 MATERIAL "" rgb 1 1 1  
                        ^
 test7.ac:2 warning: unused material
 MATERIAL "" rgb 1 1 1  
 ^
-2 warnings
+6 warnings

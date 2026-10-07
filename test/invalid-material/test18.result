@@ -1,0 +1,7 @@
+test18.ac:2 warning: invalid material: missing shi
+MATERIAL "a" rgb 1 0.5 0.25  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  trans 0.5
+                                                                      ^
+test18.ac:3 warning: invalid material: missing emis
+MATERIAL "b" rgb 0 0.5 1  amb 0.2 0.2 0.2  spec 0.5 0.5 0.5  shi 5  trans 0.25
+                                           ^
+2 warnings

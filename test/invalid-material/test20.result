@@ -1,0 +1,11 @@
+test20.ac:2 error: missing ENDMAT
+MAT "a"
+^
+test20.ac:9 error: missing ENDMAT
+MAT "b"
+^
+test20.ac:38 warning: unused vertex
+5 5 5
+^
+1 warning
+2 errors

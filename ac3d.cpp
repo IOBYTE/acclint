@@ -88,6 +88,18 @@ constexpr std::string_view poly_token("poly");
 constexpr std::string_view group_token("group");
 constexpr std::string_view light_token("light");
 
+namespace
+{
+
+// The keywords of a MATERIAL line's fields.
+bool materialKeyword(const std::string &word)
+{
+    return word == rgb_token || word == amb_token || word == emis_token ||
+           word == spec_token || word == shi_token || word == trans_token;
+}
+
+} // namespace
+
 // readObject recurses once per level of OBJECT nesting and the depth comes
 // straight from the file, so a small file of deeply nested groups could
 // exhaust the stack and kill the process before any diagnostic was produced.
@@ -1907,6 +1919,24 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
             }
             catch (const std::exception &)
             {
+                // Another field's keyword where this one's was expected: this
+                // field is missing, and the word is where the next one starts.
+                // It used to be read past like any other stray word, and the
+                // numbers after it read into this field: "spec 0 0 0 trans
+                // 0.5" with no shi was written shi 1 trans 0, opaque, and a
+                // missing emis put spec's numbers into emis and lost shi and
+                // trans. It is left for the field it belongs to.
+                if (materialKeyword(actual))
+                {
+                    if (m_invalid_material)
+                    {
+                        warningWithCount(m_invalid_material_count) << "invalid material: missing " << expected << std::endl;
+                        showLine(in, pos);
+                    }
+                    in.seekg(pos);
+                    return false;
+                }
+
                 if (m_invalid_material) {
                     warningWithCount(m_invalid_material_count) << "invalid material " << last << ": " << actual << std::endl;
                     showLine(in, pos);
@@ -2068,6 +2098,24 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
             }
             catch (const std::exception &)
             {
+                // Another field's keyword where this one's was expected: this
+                // field is missing, and the word is where the next one starts.
+                // It used to be read past like any other stray word, and the
+                // numbers after it read into this field: "spec 0 0 0 trans
+                // 0.5" with no shi was written shi 1 trans 0, opaque, and a
+                // missing emis put spec's numbers into emis and lost shi and
+                // trans. It is left for the field it belongs to.
+                if (materialKeyword(actual))
+                {
+                    if (m_invalid_material)
+                    {
+                        warningWithCount(m_invalid_material_count) << "invalid material: missing " << expected << std::endl;
+                        showLine(in, pos);
+                    }
+                    in.seekg(pos);
+                    return false;
+                }
+
                 if (m_invalid_material) {
                     warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << actual << std::endl;
                     showLine(in, pos);
@@ -2120,21 +2168,45 @@ bool AC3D::readMaterial(std::istringstream &in, Material &material)
         return false;
     }
 
-    bool failed = readTypeAndColor(in, material.rgb, rgb_token, amb_token, rgb_token);
+    // A field the line ends before is missing, and said to be, as the version
+    // 12 reader says it. The fields after the end of the line used to be
+    // passed over without a word: MATERIAL "m" rgb 1 1 1 was written with amb
+    // 0 0 0 ... trans 0 and no warning, and with a space after it only amb
+    // was reported.
+    const auto missing = [this, &in](const std::string_view &field)
+    {
+        in >> std::ws;
 
-    if (!in.eof())
+        if (!in.eof())
+            return false;
+
+        if (m_invalid_material)
+        {
+            warningWithCount(m_invalid_material_count) << "invalid material: missing " << field << std::endl;
+            showLine(in);
+        }
+
+        return true;
+    };
+
+    bool failed = false;
+
+    if (!missing(rgb_token))
+        failed |= readTypeAndColor(in, material.rgb, rgb_token, amb_token, rgb_token);
+
+    if (!missing(amb_token))
         failed |= readTypeAndColor(in, material.amb, amb_token, emis_token, amb_token);
 
-    if (!in.eof())
+    if (!missing(emis_token))
         failed |= readTypeAndColor(in, material.emis, emis_token, spec_token, emis_token);
 
-    if (!in.eof())
+    if (!missing(spec_token))
         failed |= readTypeAndColor(in, material.spec, spec_token, shi_token, spec_token);
 
-    if (!in.eof())
+    if (!missing(shi_token))
         failed |= readTypeAndValue(in, material.shi, shi_token, 0, 128, false);
 
-    if (!in.eof())
+    if (!missing(trans_token))
         failed |= readTypeAndValue(in, material.trans, trans_token, 0, 1, true);
 
     checkTrailing(in);
@@ -2255,14 +2327,29 @@ bool AC3D::readMaterial(std::istringstream &first, std::istream &in, Material &m
 
             return true;
         }
+        else if (token == OBJECT_token || token == MAT_token || token == MATERIAL_token)
+        {
+            // The next thing in the file has begun, so this block's ENDMAT is
+            // missing. Said here, at the MAT it belongs to, and the line is
+            // left for whatever reads next: it used to be taken for an
+            // invalid token and thrown away, so a missing ENDMAT lost the
+            // OBJECT world after it -- and with -Wno-invalid-token, silently.
+            error(material.line_number) << "missing ENDMAT" << std::endl;
+            showLine(in, material.line_pos);
+            ungetLine(in);
+            return false;
+        }
         else
         {
+            // Anything else is reported and passed over. One unknown line
+            // used to end the block, and the fields after it were then
+            // reported as stray tokens and their values lost.
             if (m_invalid_token)
             {
                 errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
                 showLine(iss, 0);
             }
-            return false;
+            continue;
         }
 
         if (iss)

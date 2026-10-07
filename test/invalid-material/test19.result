@@ -1,0 +1,16 @@
+test19.ac:2 warning: invalid material: missing amb
+MATERIAL "a" rgb 1 0.5 0.25
+                           ^
+test19.ac:2 warning: invalid material: missing emis
+MATERIAL "a" rgb 1 0.5 0.25
+                           ^
+test19.ac:2 warning: invalid material: missing spec
+MATERIAL "a" rgb 1 0.5 0.25
+                           ^
+test19.ac:2 warning: invalid material: missing shi
+MATERIAL "a" rgb 1 0.5 0.25
+                           ^
+test19.ac:2 warning: invalid material: missing trans
+MATERIAL "a" rgb 1 0.5 0.25
+                           ^
+5 warnings

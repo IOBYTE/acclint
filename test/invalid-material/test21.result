@@ -1,0 +1,6 @@
+test21.ac:7 error: invalid token: shine
+shine 5
+^
+test21.ac:9 warning: invalid material: missing shi
+1 warning
+1 error
