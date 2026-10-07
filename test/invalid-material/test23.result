@@ -1,0 +1,7 @@
+test23.ac:2 warning: invalid material name: extra number
+MATERIAL "a" 5 rgb 1 0 0  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 5  trans 0
+             ^
+test23.ac:3 warning: invalid material rgb: extra number
+MATERIAL "b" rgb 0 1 0 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 5  trans 0
+                       ^
+2 warnings

@@ -1,0 +1,13 @@
+test22.ac:2 warning: invalid material rgb: 2tone
+MATERIAL a 2tone rgb 1 0 0  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 5  trans 0
+           ^
+test22.ac:3 warning: invalid material rgb: information
+MATERIAL b information rgb 0 1 0  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 5  trans 0
+           ^
+test22.ac:4 warning: invalid material rgb: infinity
+MATERIAL c infinity rgb 0 0 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 5  trans 0
+           ^
+test22.ac:5 warning: invalid material rgb: nano
+MATERIAL d nano rgb 1 1 0  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 5  trans 0
+           ^
+4 warnings

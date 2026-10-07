@@ -1332,7 +1332,7 @@ private:
     bool readTypeAndColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next, const std::string_view & last);
     bool readColor(std::istringstream &in, Color &color, const std::string_view &expected, const std::string_view &next);
     static void skipWord(std::istringstream &in, const std::string_view &word);
-    bool readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float);
+    bool readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, const std::string_view &last, double min, double max, bool is_float);
     bool readValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float);
     bool readData(std::istringstream &iss, std::istream &in, std::string &data);
     void writeData(std::ostream &out, const std::string &data) const;

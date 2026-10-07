@@ -34,6 +34,7 @@
 #include <iterator>
 #include <map>
 #include <numeric>
+#include <stdexcept>
 #include <unordered_map>
 #include <omp.h>
 #include <png.h>
@@ -97,6 +98,46 @@ bool materialKeyword(const std::string &word)
 {
     return word == rgb_token || word == amb_token || word == emis_token ||
            word == spec_token || word == shi_token || word == trans_token;
+}
+
+// The length of the decimal number a word starts with, or 0 if it does not
+// start with one. Stricter than std::stod, which also reads "inf", "nan" and
+// hexadecimal: by it "information" and "nano" started with a number and
+// "infinity" was one.
+size_t numberLength(const std::string &word)
+{
+    const auto digit = [&word](size_t i) { return i < word.size() && std::isdigit(static_cast<unsigned char>(word[i])) != 0; };
+    size_t i = 0;
+    size_t digits = 0;
+
+    if (i < word.size() && (word[i] == '+' || word[i] == '-'))
+        ++i;
+
+    for (; digit(i); ++i)
+        ++digits;
+
+    if (i < word.size() && word[i] == '.')
+        for (++i; digit(i); ++i)
+            ++digits;
+
+    if (digits == 0)
+        return 0;
+
+    if (i < word.size() && (word[i] == 'e' || word[i] == 'E'))
+    {
+        size_t j = i + 1;
+
+        if (j < word.size() && (word[j] == '+' || word[j] == '-'))
+            ++j;
+
+        if (digit(j))
+        {
+            for (i = j; digit(i); ++i)
+                ;
+        }
+    }
+
+    return i;
 }
 
 } // namespace
@@ -2016,15 +2057,21 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
         bool is_number = true;
         do {
             try {
-                std::size_t idx;
-                std::ignore = std::stod(actual, &idx);
+                // A number glued to this field's keyword is an error, the
+                // space between them missing. Anything else that is not
+                // wholly a number is a word, and taken as one below: a name
+                // of two words, "red 2tone" or "red information", used to be
+                // reported as an error that nothing could turn off and the
+                // file was not written, where "red paint" was a warning.
+                const std::size_t idx = numberLength(actual);
                 is_number = true;
                 if (idx != actual.size()) {
+                    if (idx == 0 || actual.substr(idx) != expected)
+                        throw std::invalid_argument(actual);
+
                     error() << "reading " << expected << std::endl;
                     showLine(in, pos);
-                    is_number = false;
-                    if (actual.substr(idx) == expected)
-                        return readColor(in, color, expected, next);
+                    return readColor(in, color, expected, next);
                 }
                 if (m_invalid_material)
                 {
@@ -2053,7 +2100,7 @@ bool AC3D::readTypeAndColor(std::istringstream &in, Color &color, const std::str
                 }
 
                 if (m_invalid_material) {
-                    warningWithCount(m_invalid_material_count) << "invalid material " << last << ": " << actual << std::endl;
+                    warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": " << actual << std::endl;
                     showLine(in, pos);
                 }
 
@@ -2163,7 +2210,7 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string_vi
     return true;
 }
 
-bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, double min, double max, bool is_float)
+bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::string_view &expected, const std::string_view &last, double min, double max, bool is_float)
 {
     in >> std::ws;
 
@@ -2195,19 +2242,25 @@ bool AC3D::readTypeAndValue(std::istringstream &in, double &value, const std::st
         bool is_number = true;
         do {
             try {
-                std::size_t idx;
-                std::ignore = std::stod(actual, &idx);
+                // A number glued to this field's keyword is an error, the
+                // space between them missing. Anything else that is not
+                // wholly a number is a word, and taken as one below: a name
+                // of two words, "red 2tone" or "red information", used to be
+                // reported as an error that nothing could turn off and the
+                // file was not written, where "red paint" was a warning.
+                const std::size_t idx = numberLength(actual);
                 is_number = true;
                 if (idx != actual.size()) {
+                    if (idx == 0 || actual.substr(idx) != expected)
+                        throw std::invalid_argument(actual);
+
                     error() << "reading " << expected << std::endl;
                     showLine(in, pos);
-                    is_number = false;
-                    if (actual.substr(idx) == expected)
-                        return readValue(in, value, expected, min, max, is_float);
+                    return readValue(in, value, expected, min, max, is_float);
                 }
                 if (m_invalid_material)
                 {
-                    warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": extra number" << std::endl;
+                    warningWithCount(m_invalid_material_count) << "invalid material " << last << ": extra number" << std::endl;
                     showLine(in, pos);
                 }
             }
@@ -2283,6 +2336,12 @@ bool AC3D::readMaterial(std::istringstream &in, Material &material)
         return false;
     }
 
+    // Each field is read with the one before it, which an extra number found
+    // in front of the field's keyword is reported against: it is that field's
+    // fourth number, or the name's second word. It was reported against the
+    // field being looked for -- "rgb 1 1 1 1 amb" as amb's extra number.
+    constexpr std::string_view name_field("name");
+
     // A field the line ends before is missing, and said to be, as the version
     // 12 reader says it. The fields after the end of the line used to be
     // passed over without a word: MATERIAL "m" rgb 1 1 1 was written with amb
@@ -2307,22 +2366,22 @@ bool AC3D::readMaterial(std::istringstream &in, Material &material)
     bool failed = false;
 
     if (!missing(rgb_token))
-        failed |= readTypeAndColor(in, material.rgb, rgb_token, amb_token, rgb_token);
+        failed |= readTypeAndColor(in, material.rgb, rgb_token, amb_token, name_field);
 
     if (!missing(amb_token))
-        failed |= readTypeAndColor(in, material.amb, amb_token, emis_token, amb_token);
+        failed |= readTypeAndColor(in, material.amb, amb_token, emis_token, rgb_token);
 
     if (!missing(emis_token))
-        failed |= readTypeAndColor(in, material.emis, emis_token, spec_token, emis_token);
+        failed |= readTypeAndColor(in, material.emis, emis_token, spec_token, amb_token);
 
     if (!missing(spec_token))
-        failed |= readTypeAndColor(in, material.spec, spec_token, shi_token, spec_token);
+        failed |= readTypeAndColor(in, material.spec, spec_token, shi_token, emis_token);
 
     if (!missing(shi_token))
-        failed |= readTypeAndValue(in, material.shi, shi_token, 0, 128, false);
+        failed |= readTypeAndValue(in, material.shi, shi_token, spec_token, 0, 128, false);
 
     if (!missing(trans_token))
-        failed |= readTypeAndValue(in, material.trans, trans_token, 0, 1, true);
+        failed |= readTypeAndValue(in, material.trans, trans_token, shi_token, 0, 1, true);
 
     checkTrailing(in);
 

@@ -395,10 +395,11 @@ setup_file() {
 ################################################################################
 
 # test12: single-line MATERIAL with a stray full number ("5") appearing
-# where "shi" is expected. Must produce a soft "invalid material shi: extra
-# number" warning (not a hard error), and that warning must be suppressed
-# by -Wno-invalid-material. Exercises readTypeAndValue's stod-based
-# extra-number handling and its m_invalid_material gating.
+# where "shi" is expected. Must produce a soft "invalid material spec: extra
+# number" warning (not a hard error) -- spec's, the field it follows, not
+# shi's -- and that warning must be suppressed by -Wno-invalid-material.
+# Exercises readTypeAndValue's extra-number handling and its
+# m_invalid_material gating.
 
 @test "test12.1" {
   $RUN_TEST acclint test12.ac
@@ -706,6 +707,58 @@ setup_file() {
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test21.2.output.ac
+}
+
+################################################################################
+
+# test22: material names of two words without quotes, where the second word
+# starts the way a number does: "2tone", "information" ("inf"), "infinity"
+# and "nano" ("nan"). Each is a word, the same as "red paint" in test16: the
+# name is the first word, the second is reported, and the numbers after the
+# keyword are read. Taken for numbers by std::stod, all but "infinity" were an
+# error that -Wno-invalid-material could not turn off, and the file was not
+# written; "infinity", read whole, was reported as an extra number.
+@test "test22.1" {
+  $RUN_TEST acclint -Wno-warnings -Winvalid-material test22.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test22.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test22.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test22.2" {
+  $RUN_TEST acclint -Wno-warnings test22.ac -o test22.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test22.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test22.2.output.ac)"
+  expected_file="$(tr -d '\r' < test22.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test22.2.output.ac test22.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test22.2.output.ac
+}
+
+################################################################################
+
+# test23: an extra number is reported against the field it follows. "a" has
+# a number after its name, "b" a fourth number on rgb. They were reported
+# against the field being looked for when they turned up -- rgb and amb.
+@test "test23" {
+  $RUN_TEST acclint -Wno-warnings -Winvalid-material test23.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test23.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test23.output
+  fi
+  [ "$actual" = "$expected" ]
 }
 
 ################################################################################
