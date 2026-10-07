@@ -172,3 +172,28 @@ setup_file() {
 }
 
 ################################################################################
+# test9: one object with two 2 sided surfaces that differ in their other flags,
+# 0x30 and 0x20, on an opaque texture. Both are made single sided and still
+# differ, so the object is split again into one piece each -- and each piece
+# keeps only the three vertices it uses. The split hands every piece a copy of
+# all six, and nothing after it took out the ones a piece does not use, so the
+# file was written with three unused vertices in each.
+################################################################################
+
+@test "test9.1" {
+  $RUN_TEST acclint -Wno-warnings test9.ac --fixSurface2SidedOpaque -o test9.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test9.output.ac)"
+  expected_file="$(tr -d '\r' < test9.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test9.output.ac test9.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  $RUN_TEST acclint -Wno-warnings -Wunused-vertex test9.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  rm test9.output.ac
+}
+
+################################################################################

@@ -180,3 +180,43 @@ setup_file() {
 }
 
 ################################################################################
+# Vertices in one place are one cluster to clusterVertices, and separateVertices
+# then turns away any whose uv differs from the leader's -- in a .acc each
+# vertex carries one uv. What it turns away can still be the same as something
+# else it turned away, and each used to be left on its own regardless.
+#
+# test7.acc has three vertices at the origin with the same normal: the first
+# used with uv 0 0, the other two with uv 0.5 0.5. The first stays, the second
+# is turned away, and the third is the same as the second, so 8 vertices come
+# out, not 9.
+################################################################################
+
+@test "test7.1" {
+  $RUN_TEST acclint -Wno-warnings test7.acc -o test7.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test7.output.acc)"
+  expected="$(tr -d '\r' < test7.1.result.acc)"
+  if [ "$actual" != "$expected" ]; then
+    cp test7.output.acc test7.1.actual.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test7.output.acc
+}
+
+# test7.2: and what is written has no duplicate vertices left to report.
+@test "test7.2" {
+  acclint -Wno-warnings test7.acc -o test7.2.output.acc
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test7.2.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.2.output
+  fi
+  [ "$output" = "" ]
+  rm test7.2.output.acc
+}
+
+################################################################################

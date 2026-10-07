@@ -87,6 +87,9 @@ setup_file() {
 # test5.1: front has two two sided surfaces and back overlaps only the first of
 # them. That one and back are fixed; the second stays two sided and leaves in
 # an object of its own rather than sitting in a mixed one.
+# Each piece keeps only the vertices it uses: the split hands every piece a
+# copy of all of them, and the written file used to carry the ones it did not
+# as unused vertices.
 @test "test5.1" {
   $RUN_TEST acclint -Wno-overlapping-2-sided-surface test5.ac --fixOverlapping2SidedSurface -o test5.output.ac
   [ "$status" -eq 0 ]
@@ -100,6 +103,9 @@ setup_file() {
     cp test5.output.ac test5.1.actual.output
   fi
   [ "$actual_file" = "$expected_file" ]
+  $RUN_TEST acclint -Wno-warnings -Wunused-vertex test5.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
   rm test5.output.ac
 }
 

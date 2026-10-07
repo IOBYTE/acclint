@@ -1563,8 +1563,17 @@ int main(int argc, char *argv[])
         // setup_vertex_table_states -- so the surfaces that disagree are drawn
         // with the wrong sidedness. Splitting again restores what --splitSURF
         // established before these ran.
+        //
+        // A split gives each piece a copy of every vertex of the object it
+        // came from, and leaves it to the clean that follows --splitSURF to
+        // take out the ones a piece does not use. Nothing followed this one,
+        // so the pieces were written with all of them, and each that went
+        // unused was an "unused vertex" in the file.
         if (fix_surface_2_sided_opaque || fix_overlapping_2_sided_surface)
-            ac3d.splitMultipleSURF();
+        {
+            if (ac3d.splitMultipleSURF())
+                ac3d.clean();
+        }
 
         if (combineTexture)
         {

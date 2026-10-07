@@ -8483,6 +8483,19 @@ void AC3D::separateVertices(const Object &object, std::vector<size_t> &represent
     SameVertex same;
     same.build(object, consider_topology, single_uv);
 
+    // What a cluster's leader turns away can still be the same as something
+    // else it turned away: three vertices in one place, the first with one uv
+    // and the other two sharing another, are one cluster to clusterVertices
+    // and two vertices here. Each one turned away is matched against those
+    // already turned away from the same leader, earliest first, and only
+    // stands on its own if none of them is the same. Left on its own every
+    // time, the second of the pair survived beside the first, and acclint's
+    // own "duplicate vertices" warning found it in what acclint wrote.
+    //
+    // Only a vertex that stands on its own is matched against, so every
+    // duplicate still names a survivor.
+    std::unordered_map<size_t, std::vector<size_t>> turned_away;
+
     for (size_t i = 0; i < representative.size(); ++i)
     {
         const size_t leader = representative[i];
@@ -8490,8 +8503,24 @@ void AC3D::separateVertices(const Object &object, std::vector<size_t> &represent
         if (leader == i)
             continue;
 
-        if (!same(object, i, leader))
-            representative[i] = i;
+        if (same(object, i, leader))
+            continue;
+
+        std::vector<size_t> &others = turned_away[leader];
+
+        representative[i] = i;
+
+        for (const size_t other : others)
+        {
+            if (same(object, i, other))
+            {
+                representative[i] = other;
+                break;
+            }
+        }
+
+        if (representative[i] == i)
+            others.push_back(i);
     }
 }
 
