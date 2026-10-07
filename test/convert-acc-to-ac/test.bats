@@ -142,4 +142,32 @@ setup_file() {
 }
 
 ################################################################################
+# A shader line is .acc only, and a .ac has no place for it: written into the
+# .ac it was "invalid token: shader", so acclint refused the file it had just
+# written. It is dropped in the conversion, like the normals and the textures
+# past the first.
+################################################################################
+
+# test9: a poly with a shader. The .ac has no shader line, and is written with
+# the rest of the object as it was. It is then read again, and lints clean.
+@test "test9" {
+  $RUN_TEST acclint test9.acc -o test9.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test9.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test9.output.ac)"
+  expected_file="$(tr -d '\r' < test9.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test9.output.ac test9.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  $RUN_TEST acclint test9.output.ac
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  rm test9.output.ac
+}
+
+################################################################################
 

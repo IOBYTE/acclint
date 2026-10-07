@@ -1136,6 +1136,12 @@ void AC3D::convertObjectToAc(Object &object)
     if (!object.textures.empty())
         object.textures[0].type.clear();
 
+    // remove shaders
+    //
+    // A shader line is .acc only: a .ac reader takes it for an invalid token,
+    // and acclint itself refused the .ac it had just written.
+    object.shaders.clear();
+
     // remove normals
     for (auto &vertex : object.vertices)
         vertex.has_normal = false;
