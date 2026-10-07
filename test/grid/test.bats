@@ -229,3 +229,32 @@ setup_file() {
 }
 
 ################################################################################
+
+################################################################################
+# --grid implies --flatten.
+#
+# The cells are worked out from the vertices, and an object's loc and rot move
+# it away from where its vertices say it is. Without the transforms baked in,
+# the grid partitioned objects as they would be drawn at the origin.
+################################################################################
+
+# test8.1: four objects with the same vertices, 500 m apart by loc alone. They
+# went into one 100 m cell, all of them; flattened, each has a cell of its own.
+
+@test "test8.1" {
+  $RUN_TEST acclint -Wno-warnings test8.ac --grid 100 -o test8.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$(echo "$output" | tr -d '\r')" != "gridPartition: 4 cells" ]; then
+    echo "$output" > test8.1.output
+  fi
+  [ "$(echo "$output" | tr -d '\r')" = "gridPartition: 4 cells" ]
+  actual_file="$(tr -d '\r' < test8.output.ac)"
+  expected_file="$(tr -d '\r' < test8.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test8.output.ac test8.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.output.ac
+}
+
+################################################################################

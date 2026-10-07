@@ -176,7 +176,8 @@ setup_file() {
   rm test5.2.output.ac
 }
 
-# test5.3: --grid. The lever's geometry goes into the cell with the knob.
+# test5.3: --grid. The lever's geometry goes into the cell with the knob,
+# and the lever's loc is baked into both: --grid implies --flatten.
 @test "test5.3" {
   $RUN_TEST acclint -Wno-warnings test5.ac --grid 10 -o test5.3.output.ac
   [ "$status" -eq 0 ]

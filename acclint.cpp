@@ -144,7 +144,7 @@ void usage()
     std::cerr << "  --noTriangleStrips                     Write triangles instead of triangle strips in a .acc file." << std::endl;
     std::cerr << "  --splitSURF                            Split objects with multiple surface types into separate objects." << std::endl;
     std::cerr << "  --splitMat                             Split objects with multiple materials into separate objects." << std::endl;
-    std::cerr << "  --flatten                              Flatten objects." << std::endl;
+    std::cerr << "  --flatten                              Flatten objects. Implied by --grid." << std::endl;
     std::cerr << "  --merge filename                       Merge filename with inputfile." << std::endl;
     std::cerr << "  --removeObjects group|poly|light regex Remove objects that match type and regex." << std::endl;
     std::cerr << "  --combineTexture                       Combine objects by texture." << std::endl;
@@ -156,6 +156,7 @@ void usage()
     std::cerr << "  --stitchStrips                         Join neighbouring triangle strips into one surface." << std::endl;
     std::cerr << "  --stripSwaps                           Let a triangle strip turn the same way twice by repeating refs." << std::endl;
     std::cerr << "  --grid size                            Partition objects into square cells of size in meters for culling." << std::endl;
+    std::cerr << "                                         Implies --flatten." << std::endl;
     std::cerr << "  --fixAll                               Fix everything." << std::endl;
     std::cerr << "  --fixBackToBackMirror                  Convert 2 single sided back to back mirror surfaces to 1 double sided." << std::endl;
     std::cerr << "  --fixKids                              Put right kids counts the file cannot honour and" << std::endl;
@@ -1503,6 +1504,13 @@ int main(int argc, char *argv[])
         if (splitSURF || splitMat || grid_size > 0.0 ||
             fix_surface_2_sided_opaque || fix_overlapping_2_sided_surface)
             fix_poly_with_kids = true;
+
+        // The grid places an object by its vertices, and an object's loc and
+        // rot move it from where its vertices say it is: four objects 500 m
+        // apart by loc alone went into one 100 m cell. Flattened, the
+        // vertices are where the object is drawn.
+        if (grid_size > 0.0)
+            flatten = true;
 
         // First, so everything after sees the object as the group it is
         // used as.

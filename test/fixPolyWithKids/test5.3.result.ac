@@ -5,7 +5,6 @@ OBJECT world
 kids 1
 OBJECT group
 name "lever"
-loc 1 0 0
 kids 1
 OBJECT group
 name "cell_0_0"
@@ -13,12 +12,12 @@ kids 2
 OBJECT poly
 name "lever-geometry"
 numvert 6
-0 0 0
 1 0 0
-1 1 0
-0 0 1
+2 0 0
+2 1 0
 1 0 1
-1 1 1
+2 0 1
+2 1 1
 numsurf 2
 SURF 0x10
 mat 0
@@ -36,9 +35,9 @@ kids 0
 OBJECT poly
 name "knob"
 numvert 3
-3 0 0
 4 0 0
-4 1 0
+5 0 0
+5 1 0
 numsurf 1
 SURF 0x10
 mat 0
