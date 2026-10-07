@@ -1,0 +1,13 @@
+test3.ac:26 warning: different mat
+mat 1
+^
+test3.ac:14 note: mat
+SURF 0x10
+^
+test3.ac:46 warning: different mat
+SURF 0x10
+^
+test3.ac:41 note: mat
+mat 1
+^
+2 warnings

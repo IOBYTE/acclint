@@ -145,3 +145,29 @@ setup_file() {
 }
 
 ################################################################################
+
+# A SURF with no mat line is drawn with material 0. "A" starts with one, then
+# has a surface on mat 0 and one on mat 1; "B" has mat 1, then one with no
+# mat line, then mat 1 again. Both are drawn with two materials. A surface
+# with no mat line is split with the others on material 0: "A" keeps its
+# first two surfaces and "A-split1" takes the one on mat 1; "B" keeps its two
+# on mat 1 and "B-split2" takes the one with no mat line. "A" was left whole,
+# its first surface having no mat line, and "B" kept the surface without one
+# with the surfaces on mat 1.
+@test "test4" {
+  $RUN_TEST acclint -Wno-warnings test4.ac --splitMat -o test4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.output.ac)"
+  expected_file="$(tr -d '\r' < test4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.output.ac test4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.output.ac
+}
+
+################################################################################

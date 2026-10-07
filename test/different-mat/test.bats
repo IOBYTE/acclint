@@ -97,3 +97,21 @@ setup_file() {
 }
 
 ################################################################################
+
+# A SURF with no mat line is drawn with material 0. "A" starts with one, then
+# has a surface on mat 0 and one on mat 1; "B" has mat 1, then one with no
+# mat line, then mat 1 again. Both are drawn with two materials. The check
+# used to stop before it began when the first surface had no mat line, and to
+# pass over any later one without, so neither was reported.
+@test "test3" {
+  $RUN_TEST acclint -Wno-warnings -Wdifferent-mat test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

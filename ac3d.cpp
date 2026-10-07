@@ -6009,19 +6009,29 @@ void AC3D::checkDifferentMat(std::istream &in, const Object &object)
     if (object.surfaces.empty())
         return;
 
-    if (object.surfaces[0].mats.empty())
-        return;
+    // A SURF with no mat line is drawn with material 0, so it is compared as
+    // material 0, and pointed at by its SURF line, having no mat line to
+    // point at. It used to be left out: a first surface without one ended the
+    // check before it began, and an object drawn with two materials was not
+    // reported.
+    const auto line = [](const Surface &surface) -> const LineInfo &
+    {
+        if (surface.mats.empty())
+            return surface;
 
-    const size_t mat = object.surfaces[0].mats[0].mat;
+        return surface.mats[0];
+    };
+
+    const size_t mat = object.surfaces[0].material();
 
     for (size_t i = 1; i < object.surfaces.size(); ++i)
     {
-        if (!object.surfaces[i].mats.empty() && object.surfaces[i].mats[0].mat != mat)
+        if (object.surfaces[i].material() != mat)
         {
-            warningWithCount(m_different_mat_count, object.surfaces[i].mats[0].line_number) << "different mat" << std::endl;
-            showLine(in, object.surfaces[i].mats[0].line_pos);
-            note(object.surfaces[0].mats[0].line_number) << "mat" << std::endl;
-            showLine(in, object.surfaces[0].mats[0].line_pos);
+            warningWithCount(m_different_mat_count, line(object.surfaces[i]).line_number) << "different mat" << std::endl;
+            showLine(in, line(object.surfaces[i]).line_pos);
+            note(line(object.surfaces[0]).line_number) << "mat" << std::endl;
+            showLine(in, line(object.surfaces[0]).line_pos);
         }
     }
 }
@@ -8279,22 +8289,26 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
 
         std::vector<Object> newKids;
 
-        if (kid->surfaces.empty() || kid->surfaces[0].mats.empty())
+        if (kid->surfaces.empty())
         {
             ordered.push_back(std::move(*kid));
             continue;
         }
 
-        const size_t mat = kid->surfaces[0].mats[0].mat;
+        // A SURF with no mat line is drawn with material 0, and is split with
+        // the other surfaces drawn with it. It used to be passed over: one
+        // that came first left the object whole, whatever materials the rest
+        // were drawn with.
+        const size_t mat = kid->surfaces[0].material();
         std::set<size_t> newMat;
 
         for (size_t i = 1; i < kid->surfaces.size(); ++i)
         {
-            if (!kid->surfaces[i].mats.empty() && kid->surfaces[i].mats[0].mat != mat)
+            if (kid->surfaces[i].material() != mat)
             {
-                if (!newMat.contains(kid->surfaces[i].mats[0].mat))
+                if (!newMat.contains(kid->surfaces[i].material()))
                 {
-                    newMat.insert(kid->surfaces[i].mats[0].mat);
+                    newMat.insert(kid->surfaces[i].material());
                     newKids.push_back(*kid);
 
                     // The object is being split, not copied. Its children
@@ -8306,14 +8320,12 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
                     if (!newKids.back().names.empty())
                         newKids.back().names[0].name += ("-split" + std::to_string(pieces + newKids.size()));
 
+                    const size_t wanted = kid->surfaces[i].material();
                     auto it = newKids.back().surfaces.begin();
                     while (it != newKids.back().surfaces.end())
                     {
-                        // remove surfaces that don't match; a surface with
-                        // no "mat" line names no material to split on, so it
-                        // stays with the original object rather than being
-                        // copied into every split off object
-                        if (it->mats.empty() || it->mats[0].mat != kid->surfaces[i].mats[0].mat)
+                        // remove surfaces that don't match
+                        if (it->material() != wanted)
                             it = newKids.back().surfaces.erase(it);
                         else
                             ++it;
@@ -8325,13 +8337,8 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
         auto it = kid->surfaces.begin();
         while (it != kid->surfaces.end())
         {
-            // remove surfaces that don't match; keep the ones with no "mat"
-            // line here, matching the loop above. Only surfaces[0] was known
-            // to have a material, so indexing mats[0] unconditionally read
-            // past the end of an empty vector for any later surface without
-            // one -- which checkMissingMat already warns about, so such
-            // files reach here routinely.
-            if (!it->mats.empty() && it->mats[0].mat != mat)
+            // remove surfaces that don't match
+            if (it->material() != mat)
                 it = kid->surfaces.erase(it);
             else
                 ++it;

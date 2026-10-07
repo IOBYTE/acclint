@@ -971,6 +971,12 @@ private:
 
             return keep | (flags & (ShadeMask | SideMask));
         }
+        // The material the surface is drawn with. A SURF with no mat line
+        // is drawn with material 0.
+        size_t material() const
+        {
+            return mats.empty() ? 0 : mats[0].mat;
+        }
         bool isFlatShaded() const
         {
             return (flags & ShadeMask) == 0;
