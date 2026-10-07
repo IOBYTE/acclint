@@ -1207,14 +1207,17 @@ void AC3D::splitTriangleStrips(std::vector<Object> &objects)
     }
 }
 
+// A poly's kids are walked as well as a group's. The format has no place for
+// them, but articulated models hang moving parts off the part they move with,
+// and --fixPolyWithKids is what changes that, not this.
 void AC3D::convertObjectsToAcc(std::vector<Object> &objects, bool strips, bool swaps)
 {
     for (auto &object : objects)
     {
         if (object.type.type == "poly")
             convertObjectToAcc(object, strips, swaps);
-        else
-            convertObjectsToAcc(object.kids, strips, swaps);
+
+        convertObjectsToAcc(object.kids, strips, swaps);
     }
 }
 
@@ -3403,6 +3406,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     checkDifferentUV(in, object);
     checkGroupWithGeometry(in, object);
     checkPolyWithKids(in, object);
+    checkPolyUsedAsGroup(in, object);
     checkDifferentSURF(in, object);
     checkMixedSurfaceTypes(in, object);
     checkDifferentMat(in, object);
@@ -4829,7 +4833,11 @@ void AC3D::addPoly(std::vector<Poly> &polys, Object &object, const Matrix &matri
 
         polys.push_back(std::move(poly));
     }
-    else if (object.type.type == "group" || object.type.type == "world")
+
+    // A poly's kids as well as a group's: an articulated part hangs off the
+    // part it moves with, under that part's transform, and is as much in the
+    // scene as anything under a group.
+    if (object.type.type == "poly" || object.type.type == "group" || object.type.type == "world")
     {
         Matrix newMatrix = matrix.multiply(object.matrix);
         for (auto &kid : object.kids)
@@ -5753,25 +5761,51 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
     }
 }
 
-// A poly holds geometry and nothing else. Children belong to a group, which
-// is what a group is for, and the two are not interchangeable. AC3D writes a
-// group for any object that has children, and Speed Dreams' loader takes the
-// kids count as the sign that an object is finished: do_kids in
-// grloadac.cpp builds the object's strip vertex table only for
-// "last_num_kids == 0", so a poly that claims children has its triangle
-// strips left unbuilt.
+// A poly holds geometry and children belong to a group. AC3D writes a group
+// for any object that has children, so a poly with kids is something only
+// another tool writes, and it comes in two kinds that call for different
+// answers.
 //
-// The complement of "group with geometry", and as much a contradiction: one
-// says the object is a container and then fills it with surfaces, the other
-// says it is geometry and then hangs a tree off it.
+// A poly with surfaces of its own as well as kids is an articulated part: a
+// lever with its knob hung off it, so the knob moves with the lever. The
+// format has no place for it, but it is drawn: Speed Dreams' OSG loader and
+// the OpenSceneGraph one make every object a group whatever its type, put its
+// own geometry and its kids under it, and bake each transform into the
+// vertices. The old ssg loader does not -- do_kids in grloadac.cpp builds a
+// poly's strip vertex table only for "last_num_kids == 0", so a poly that
+// claims children has its triangle strips left unbuilt. --fixPolyWithKids
+// turns it into a group holding its geometry and its kids.
+//
+// The complement of "group with geometry": one says the object is a container
+// and then fills it with surfaces, the other says it is geometry and then
+// hangs a tree off it.
 void AC3D::checkPolyWithKids(std::istream &in, const Object &object)
 {
     if (!m_poly_with_kids)
         return;
 
-    if (object.type.type == "poly" && !object.kids.empty())
+    if (object.type.type == "poly" && !object.kids.empty() && !object.surfaces.empty())
     {
         warningWithCount(m_poly_with_kids_count, object.type.line_number) << "poly with kids" << std::endl;
+        showLine(in, object.type.line_pos, object.type.type_offset);
+        note(object.numkids.line_number) << "kids" << std::endl;
+        showLine(in, object.numkids.line_pos, object.numkids.number_offset);
+    }
+}
+
+// A poly with kids and no surfaces of its own is a group given the wrong
+// type: nothing of its own to draw, only kids to hold. Every TORCS speedway
+// keeps its terrain under an empty poly "TERR", and the kc- cars hang their
+// parts off an empty poly at the root. --fixPolyWithKids types it as the group
+// it is used as.
+void AC3D::checkPolyUsedAsGroup(std::istream &in, const Object &object)
+{
+    if (!m_poly_used_as_group)
+        return;
+
+    if (object.type.type == "poly" && !object.kids.empty() && object.surfaces.empty())
+    {
+        warningWithCount(m_poly_used_as_group_count, object.type.line_number) << "poly used as group" << std::endl;
         showLine(in, object.type.line_pos, object.type.type_offset);
         note(object.numkids.line_number) << "kids" << std::endl;
         showLine(in, object.numkids.line_pos, object.numkids.number_offset);
@@ -7787,7 +7821,8 @@ void AC3D::fixRgbTexture(Object &object)
 // twice, and not left unnamed, since Speed Dreams' car loader decides what is
 // transparent by the start of the name.
 //
-// The walks here that stop at a poly reach its kids again either way.
+// Without this option the hierarchy is written as it was read. The walks here
+// reach a poly's kids either way.
 bool AC3D::fixPolyWithKids()
 {
     bool fixed = false;
@@ -8330,12 +8365,10 @@ bool AC3D::cleanVertices(Object &object, bool consider_topology, bool single_uv)
 void AC3D::getObjects(std::vector<Object *> &polys, Object *object)
 {
     if (object->type.type == "poly")
-    {
         polys.push_back(object);
-        return;
-    }
 
-    if (object->type.type == "group" || object->type.type == "world")
+    // A poly's kids as well as a group's -- see addPoly.
+    if (object->type.type == "poly" || object->type.type == "group" || object->type.type == "world")
     {
         for (auto &kid : object->kids)
             getObjects(polys, &kid);
@@ -9183,11 +9216,11 @@ void AC3D::Object::incrementMaterialIndex(size_t num_materials)
                 surface.mats[0].mat += num_materials;
         }
     }
-    else
-    {
-        for (auto &kid : kids)
-            kid.incrementMaterialIndex(num_materials);
-    }
+
+    // A poly's kids as well: left out, they would point at the first file's
+    // materials instead of their own.
+    for (auto &kid : kids)
+        kid.incrementMaterialIndex(num_materials);
 }
 
 void AC3D::Object::transform(const Matrix &currentMatrix)
@@ -9341,11 +9374,10 @@ bool AC3D::Object::splitPolygons()
         if (changed)
             numsurf.number = static_cast<int>(surfaces.size());
     }
-    else
-    {
-        for (auto &kid : kids)
-            changed |= kid.splitPolygons();
-    }
+
+    // A poly's kids as well as a group's.
+    for (auto &kid : kids)
+        changed |= kid.splitPolygons();
 
     return changed;
 }
@@ -10306,7 +10338,9 @@ void AC3D::fixSurface2SidedOpaque(Object &object)
             }
         }
     }
-    else if (object.type.type == "group" || object.type.type == "world")
+
+    // A poly's kids as well as a group's.
+    if (object.type.type == "poly" || object.type.type == "group" || object.type.type == "world")
     {
         for (auto &kid : object.kids)
             fixSurface2SidedOpaque(kid);

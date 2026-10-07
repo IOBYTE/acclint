@@ -90,6 +90,7 @@ void usage()
     std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-geometry              Don't show overlapping geometry warnings." << std::endl;
+    std::cerr << "  -Wno-poly-used-as-group                Don't show poly used as group warnings." << std::endl;
     std::cerr << "  -Wno-poly-with-kids                    Don't show poly with kids warnings." << std::endl;
     std::cerr << "  -Wno-rgb-texture                       Don't show rgb and rgba texture warnings." << std::endl;
     std::cerr << "  -Wno-surface-2-sided-opaque            Don't show surface 2 sided opaque warnings." << std::endl;
@@ -163,6 +164,9 @@ void usage()
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
     std::cerr << "  --fixPolyWithKids                      Convert a poly with kids to a group and" << std::endl;
     std::cerr << "                                         make its geometry the group's first kid." << std::endl;
+    std::cerr << "                                         Implied by --splitSURF, --splitMat, --grid," << std::endl;
+    std::cerr << "                                         --fixSurface2SidedOpaque and" << std::endl;
+    std::cerr << "                                         --fixOverlapping2SidedSurface." << std::endl;
     std::cerr << "  --fixRgbTexture                        Rename texture to use png texture." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
@@ -267,6 +271,7 @@ int main(int argc, char *argv[])
     bool mixed_surface_types = true;
     bool overlapping_2_sided_surface = true;
     bool overlapping_geometry = false;
+    bool poly_used_as_group = true;
     bool poly_with_kids = true;
     bool rgb_texture = true;
     bool surface_2_sided_opaque = false;
@@ -687,6 +692,7 @@ int main(int argc, char *argv[])
                 mixed_surface_types = value;
                 overlapping_2_sided_surface = value;
                 overlapping_geometry = value;
+                poly_used_as_group = value;
                 poly_with_kids = value;
                 rgb_texture = value;
                 fixable_kids_count = value;
@@ -900,6 +906,10 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-overlapping-geometry" || arg == "-Woverlapping-geometry")
             {
                 overlapping_geometry = isEnabled(arg);
+            }
+            else if (arg == "-Wno-poly-used-as-group" || arg == "-Wpoly-used-as-group")
+            {
+                poly_used_as_group = isEnabled(arg);
             }
             else if (arg == "-Wno-poly-with-kids" || arg == "-Wpoly-with-kids")
             {
@@ -1229,6 +1239,7 @@ int main(int argc, char *argv[])
     ac3d.mixedSurfaceTypes(mixed_surface_types);
     ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
     ac3d.overlappingGeometry(overlapping_geometry);
+    ac3d.polyUsedAsGroup(poly_used_as_group);
     ac3d.polyWithKids(poly_with_kids);
     ac3d.rgbTexture(rgb_texture);
     ac3d.surface2SidedOpaque(surface_2_sided_opaque);
@@ -1362,6 +1373,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.mixedSurfaceTypesCount(), "mixed surface types: ");
             showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
             showCount(ac3d.overlappingGeometryCount(), "overlapping geometry: ");
+            showCount(ac3d.polyUsedAsGroupCount(), "poly used as group: ");
             showCount(ac3d.polyWithKidsCount(), "poly with kids: ");
             showCount(ac3d.rgbTextureCount(), "rgb texture: ");
             showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
@@ -1480,9 +1492,20 @@ int main(int argc, char *argv[])
         // then.
         ac3d.outputFile(out_file);
 
+        // Left to the user otherwise, but these take a poly with kids apart
+        // in ways the hierarchy does not survive. --splitSURF and --splitMat
+        // put the pieces beside the poly rather than under it, so a piece no
+        // longer moves with the part it came from -- and the two sided fixes
+        // end with the same split. --grid partitions what is under the poly
+        // and leaves the poly's own surfaces out of every cell. Made a group
+        // first, the poly's geometry is a kid like any other and goes where
+        // its siblings go.
+        if (splitSURF || splitMat || grid_size > 0.0 ||
+            fix_surface_2_sided_opaque || fix_overlapping_2_sided_surface)
+            fix_poly_with_kids = true;
+
         // First, so everything after sees the object as the group it is
-        // used as. splitPolygons and the surface cleanup take a poly for a
-        // leaf and never reach the kids of one.
+        // used as.
         if (fix_poly_with_kids)
             ac3d.fixPolyWithKids();
 

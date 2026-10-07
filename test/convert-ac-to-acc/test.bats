@@ -269,3 +269,29 @@ setup_file() {
 }
 
 ################################################################################
+# A poly with kids is outside the format, but articulated models are built
+# that way -- a lever with its knob hung off it, so the knob moves with the
+# lever -- and the hierarchy is left as it was read unless --fixPolyWithKids
+# is given. The knob is as much a part of the model as the lever, so it gets
+# the same treatment as any other object.
+################################################################################
+
+# test12: the knob holds a quad. It is converted like the lever: normals on
+# its vertices and its quad as a strip.
+@test "test12" {
+  $RUN_TEST acclint -Wno-poly-with-kids test12.ac -o test12.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test12.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test12.output.acc)"
+  expected_file="$(tr -d '\r' < test12.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test12.output.acc test12.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test12.output.acc
+}
+
+################################################################################

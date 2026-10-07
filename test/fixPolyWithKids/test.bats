@@ -127,3 +127,87 @@ setup_file() {
 }
 
 ################################################################################
+
+################################################################################
+# Some options take a poly with kids apart in ways the hierarchy does not
+# survive, so they imply --fixPolyWithKids. --splitSURF and --splitMat put the
+# pieces they split off beside the object rather than under it, so a piece of
+# a lever would no longer move with the lever; --fixSurface2SidedOpaque and
+# --fixOverlapping2SidedSurface end with the same split. --grid partitions
+# what is under a poly and leaves the poly's own surfaces out of every cell.
+#
+# test5.ac is a lever with a knob hung off it, the lever holding two surfaces
+# that differ in both SURF and mat, so either split has something to split.
+################################################################################
+
+# test5.1: --splitSURF. The lever becomes a group; "lever-geometry", the knob
+# and "lever-geometry-split1" are all under it.
+@test "test5.1" {
+  $RUN_TEST acclint -Wno-warnings test5.ac --splitSURF -o test5.1.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.1.output.ac)"
+  expected_file="$(tr -d '\r' < test5.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.1.output.ac test5.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.1.output.ac
+}
+
+# test5.2: --splitMat, the same.
+@test "test5.2" {
+  $RUN_TEST acclint -Wno-warnings test5.ac --splitMat -o test5.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.2.output.ac)"
+  expected_file="$(tr -d '\r' < test5.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.2.output.ac test5.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.2.output.ac
+}
+
+# test5.3: --grid. The lever's geometry goes into the cell with the knob.
+@test "test5.3" {
+  $RUN_TEST acclint -Wno-warnings test5.ac --grid 10 -o test5.3.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$(echo "$output" | tr -d '\r')" != "gridPartition: 1 cell" ]; then
+    echo "$output" > test5.3.output
+  fi
+  [ "$(echo "$output" | tr -d '\r')" = "gridPartition: 1 cell" ]
+  actual_file="$(tr -d '\r' < test5.3.output.ac)"
+  expected_file="$(tr -d '\r' < test5.3.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.3.output.ac test5.3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.3.output.ac
+}
+
+# test5.4: --flatten bakes the transforms into the vertices and does not take
+# the poly apart, so it is left to the user: the lever keeps its knob.
+@test "test5.4" {
+  $RUN_TEST acclint -Wno-warnings test5.ac --flatten -o test5.4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.4.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.4.output.ac)"
+  expected_file="$(tr -d '\r' < test5.4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.4.output.ac test5.4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.4.output.ac
+}
+
+################################################################################

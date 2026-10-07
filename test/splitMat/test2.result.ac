@@ -2,9 +2,12 @@ AC3Db
 MATERIAL "red" rgb 1 0 0  amb 1 1 1  emis 0 0 0  spec 0 0 0  shi 0  trans 0
 MATERIAL "green" rgb 0 1 0  amb 1 1 1  emis 0 0 0  spec 0 0 0  shi 0  trans 0
 OBJECT world
-kids 2
-OBJECT poly
+kids 1
+OBJECT group
 name "p"
+kids 3
+OBJECT poly
+name "p-geometry"
 numvert 3
 0 0 0
 1 0 0
@@ -16,7 +19,7 @@ refs 3
 0 0 0
 1 0 0
 2 0 0
-kids 1
+kids 0
 OBJECT poly
 name "c"
 numvert 3
@@ -32,7 +35,7 @@ refs 3
 2 0 0
 kids 0
 OBJECT poly
-name "p-split1"
+name "p-geometry-split1"
 numvert 3
 10 0 0
 11 0 0

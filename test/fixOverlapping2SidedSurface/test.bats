@@ -104,3 +104,29 @@ setup_file() {
 }
 
 ################################################################################
+# A poly with kids -- a lever with its knob hung off it, so the knob moves with
+# the lever -- is made a group first: --fixOverlapping2SidedSurface implies
+# --fixPolyWithKids, because the split it ends with would otherwise put pieces
+# of the lever beside it instead of under it.
+################################################################################
+
+# test6.1: the lever and its knob each hold the same 2 sided triangle on an
+# opaque texture. The lever becomes a group holding "lever-geometry" and the
+# knob, and both are made single sided.
+@test "test6.1" {
+  $RUN_TEST acclint -Wno-poly-with-kids -Wno-overlapping-2-sided-surface test6.ac --fixOverlapping2SidedSurface -o test6.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test6.output.ac)"
+  expected_file="$(tr -d '\r' < test6.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.output.ac test6.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.output.ac
+}
+
+################################################################################

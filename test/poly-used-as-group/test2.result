@@ -1,0 +1,10 @@
+test2.acc:5 warning: missing surfaces
+OBJECT poly
+^
+test2.acc:5 warning: poly used as group
+OBJECT poly
+       ^
+test2.acc:7 note: kids
+kids 2
+     ^
+2 warnings

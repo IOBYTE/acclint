@@ -145,3 +145,30 @@ setup_file() {
   [ "$actual_file" = "$expected_file" ]
   rm test7.output.acc
 }
+
+################################################################################
+# A poly with kids -- a lever with its knob hung off it, so the knob moves with
+# the lever -- is made a group first: --fixSurface2SidedOpaque implies
+# --fixPolyWithKids, because the split it ends with would otherwise put pieces
+# of the lever beside it instead of under it.
+################################################################################
+
+# test8.1: the knob is 2 sided on an opaque texture. The lever becomes a group
+# holding "lever-geometry" and the knob, and the knob is made single sided.
+@test "test8.1" {
+  $RUN_TEST acclint -Wno-poly-with-kids test8.ac --fixSurface2SidedOpaque -o test8.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test8.output.ac)"
+  expected_file="$(tr -d '\r' < test8.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test8.output.ac test8.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.output.ac
+}
+
+################################################################################

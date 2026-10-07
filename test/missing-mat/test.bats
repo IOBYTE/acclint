@@ -123,3 +123,23 @@ setup_file() {
 }
 
 ################################################################################
+# A poly with kids is outside the format, but articulated models are built
+# that way -- a lever with its knob hung off it, so the knob moves with the
+# lever -- and the hierarchy is left as it was read unless --fixPolyWithKids
+# is given. The knob is as much a part of the model as the lever, so it gets
+# the same treatment as any other object.
+################################################################################
+
+# test4: the knob's surface has no mat. It is reported like any other.
+@test "test4" {
+  $RUN_TEST acclint -Wno-poly-with-kids test4.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

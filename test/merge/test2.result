@@ -1,0 +1,9 @@
+Reading: test2b.ac
+test2b.ac:5 warning: poly with kids
+OBJECT poly
+       ^
+test2b.ac:19 note: kids
+kids 1
+     ^
+1 warning
+Merging: test2b.ac

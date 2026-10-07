@@ -1,0 +1,7 @@
+test1.ac:5 warning: poly used as group
+OBJECT poly
+       ^
+test1.ac:7 note: kids
+kids 2
+     ^
+1 warning

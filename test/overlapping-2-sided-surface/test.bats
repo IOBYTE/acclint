@@ -276,3 +276,26 @@ setup_file() {
   fi
   [ "$actual" = "$expected" ]
 }
+
+################################################################################
+# A poly with kids is outside the format, but articulated models are built
+# that way -- a lever with its knob hung off it, so the knob moves with the
+# lever -- and the hierarchy is left as it was read unless --fixPolyWithKids
+# is given. The knob is as much a part of the model as the lever, so it gets
+# the same treatment as any other object.
+################################################################################
+
+# test13: the lever and its knob each hold the same 2 sided triangle. The
+# knob is placed by the lever's loc, the same as the lever, so they overlap.
+@test "test13" {
+  $RUN_TEST acclint -Wno-poly-with-kids test13.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test13.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test13.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

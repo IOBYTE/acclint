@@ -100,8 +100,11 @@ setup_file() {
 
 # An object being split is being split, not copied: its children belong to it
 # once. Carrying them into each split off object put a second copy of the whole
-# subtree in the file, drawn on top of the first. "c" must appear
-# exactly once, under the original.
+# subtree in the file, drawn on top of the first. "c" must appear exactly once.
+#
+# --splitMat implies --fixPolyWithKids, so "p" is made a group first and its
+# geometry split under it: "p-geometry", "c" and "p-geometry-split1", all kids
+# of "p" and all moving with it.
 @test "test2" {
   $RUN_TEST acclint test2.ac --splitMat -Wno-different-mat -Wno-poly-with-kids -o test2.output.ac
   [ "$status" -eq 0 ]

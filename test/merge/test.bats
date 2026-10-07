@@ -47,3 +47,31 @@ setup_file() {
 }
 
 ################################################################################
+# A poly with kids is outside the format, but articulated models are built
+# that way -- a lever with its knob hung off it, so the knob moves with the
+# lever -- and the hierarchy is left as it was read unless --fixPolyWithKids
+# is given. The knob is as much a part of the model as the lever, so it gets
+# the same treatment as any other object.
+################################################################################
+
+# test2: the merged file's lever and knob both use its only material, which
+# follows test2a's in the output. Both are renumbered to point at it.
+@test "test2" {
+  $RUN_TEST acclint test2a.ac --merge test2b.ac -o test2.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test2.output.ac)"
+  expected_file="$(tr -d '\r' < test2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test2.output.ac test2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test2.output.ac
+}
+
+################################################################################

@@ -15,18 +15,14 @@ setup_file() {
 }
 
 ################################################################################
-# A poly with surfaces of its own as well as kids is an articulated part: a
-# lever with its knob hung off it, so the knob moves with the lever. AC3D
-# writes a group for any object with children, so the format has no place for
-# it, though it is drawn: Speed Dreams' OSG loader and the OpenSceneGraph one
-# make every object a group whatever its type. The old ssg loader does not --
-# do_kids in grloadac.cpp builds the strip vertex table only for
-# "last_num_kids == 0", so a poly claiming children has its strips left
-# unbuilt.
+# A poly with kids and no surfaces of its own is a group given the wrong type:
+# nothing of its own to draw, only kids to hold. Every TORCS speedway keeps its
+# terrain under an empty poly "TERR", and the kc- cars hang their parts off an
+# empty poly at the root. --fixPolyWithKids types it as the group it is used
+# as; without it the hierarchy is written back as it was read.
 #
-# Both formats are asked the same question, because the answer is the same in
-# both. A poly with kids and no surfaces is the other kind, a group given the
-# wrong type, and is reported as "poly used as group" instead.
+# A poly with surfaces as well as kids is the other kind, an articulated part,
+# and is reported as "poly with kids" instead.
 ################################################################################
 
 @test "test1.1" {
@@ -50,10 +46,10 @@ setup_file() {
 }
 
 @test "test1.3" {
-  $RUN_TEST acclint -Wno-warnings -Wpoly-with-kids test1.ac
+  $RUN_TEST acclint -Wno-warnings -Wpoly-used-as-group test1.ac
   [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
-  expected="$(tr -d '\r' < test1.result)"
+  expected="$(tr -d '\r' < test1.isolated.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test1.3.output
   fi
@@ -108,8 +104,7 @@ setup_file() {
 
 ################################################################################
 
-# The same object written as a .acc. The loader Speed Dreams uses is the one
-# that skips the strip table, so the .acc is where it costs the most.
+# The same object written as a .acc.
 @test "test2.1" {
   $RUN_TEST acclint test2.acc
   [ "$status" -eq 0 ]
@@ -123,10 +118,10 @@ setup_file() {
 
 ################################################################################
 
-# test3: a poly with kids and no surfaces is not this; it is a "poly used as
-# group".
+# test3: a poly with surfaces of its own and a kid is not this; it is a
+# "poly with kids".
 @test "test3" {
-  $RUN_TEST acclint -Wno-warnings -Wpoly-with-kids test3.ac
+  $RUN_TEST acclint -Wno-warnings -Wpoly-used-as-group test3.ac
   [ "$status" -eq 0 ]
   if [ "$output" != "" ]; then
     echo "$output" > test3.output

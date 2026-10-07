@@ -97,6 +97,7 @@ private:                                               \
     CHECK(multipleWorld, m_multiple_world, true)
     CHECK(overlapping2SidedSurface, m_overlapping_2_sided_surface, true)
     CHECK(overlappingGeometry, m_overlapping_geometry, false)
+    CHECK(polyUsedAsGroup, m_poly_used_as_group, true)
     CHECK(polyWithKids, m_poly_with_kids, true)
     CHECK(rgbTexture, m_rgb_texture, true)
     CHECK(surface2SidedOpaque, m_surface_2_sided_opaque, false)
@@ -1377,6 +1378,7 @@ private:
     static Point3 surfaceRefNormal(const Surface &surface, size_t refIndex, const std::vector<Triangle> &triangles);
     void checkGroupWithGeometry(std::istream &in, const Object &object);
     void checkPolyWithKids(std::istream &in, const Object &object);
+    void checkPolyUsedAsGroup(std::istream &in, const Object &object);
     static bool cleanObjects(std::vector<Object> &objects);
     static std::vector<size_t> clusterVertices(const std::vector<Vertex> &vertices);
     static void separateVertices(const Object &object, std::vector<size_t> &representative,
