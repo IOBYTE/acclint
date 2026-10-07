@@ -8946,9 +8946,66 @@ bool AC3D::cleanSurfaces(Object &object)
 
     bool cleaned = false;
 
+    // A collinear ref is a corner its own surface does not need, but another
+    // surface may: there it is a real corner, and taking it out of this one
+    // leaves it in the middle of this one's edge, a T-junction that renders
+    // as a crack. So it goes only where no surface keeps that point as a
+    // corner. Where every surface it is in has it collinear, it goes from
+    // all of them together and no edge is left with a point in it.
+    //
+    // A point is its place, not its index: vertices at the same place with
+    // different normals, or kept apart across a crease by separateVertices,
+    // are still the one corner. Exact comparisons are right for that: they
+    // are copies, and anything merely close was merged by cleanVertices.
+    std::vector<size_t> place(object.vertices.size());
+    {
+        std::vector<size_t> order(object.vertices.size());
+        std::iota(order.begin(), order.end(), static_cast<size_t>(0));
+        std::sort(order.begin(), order.end(),
+            [&object](size_t a, size_t b)
+            {
+                return object.vertices[a].vertex < object.vertices[b].vertex;
+            });
+
+        for (size_t k = 0; k < order.size(); ++k)
+        {
+            if (k > 0 && object.vertices[order[k]].vertex == object.vertices[order[k - 1]].vertex)
+                place[order[k]] = place[order[k - 1]];
+            else
+                place[order[k]] = order[k];
+        }
+    }
+
+    //
+    // A surface with too few corners left to be anything -- a triangle with a
+    // point on its long edge -- has no area to fill a crack with, and goes as
+    // it always did. It keeps no point for anyone else either.
+    const auto degenerate = [](const Surface &surface)
+    {
+        const size_t corners = static_cast<size_t>(std::count_if(surface.refs.begin(), surface.refs.end(),
+            [](const Ref &ref) { return !ref.collinear && !ref.duplicate; }));
+
+        return corners < (surface.isLine() ? 2 : 3);
+    };
+
+    std::vector<bool> corner(object.vertices.size(), false);
+
+    for (const auto &surface : object.surfaces)
+    {
+        if (degenerate(surface))
+            continue;
+
+        for (const auto &ref : surface.refs)
+        {
+            if (!ref.collinear && !ref.duplicate && ref.index < place.size())
+                corner[place[ref.index]] = true;
+        }
+    }
+
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         Surface &surface = object.surfaces[i];
+        const bool keep_corners = !degenerate(surface);
         auto it = surface.refs.begin();
         while (it != surface.refs.end())
         {
@@ -8958,7 +9015,7 @@ bool AC3D::cleanSurfaces(Object &object)
                 it = surface.refs.erase(it);
                 cleaned = true;
             }
-            else if (it->collinear) // TODO: check if shared by other surfaces
+            else if (it->collinear && !(keep_corners && it->index < place.size() && corner[place[it->index]]))
             {
                 // delete vertex
                 it = surface.refs.erase(it);

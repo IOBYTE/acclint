@@ -408,4 +408,97 @@ setup_file() {
 }
 
 ################################################################################
+# A collinear ref is a corner its own surface does not need, but another
+# surface may. In test16 vertex 3 lies on the edge from 2 to 4 of the first
+# surface, and is a corner of both of the others. Taking it out of the first
+# one, as the cleanup on the way out did, left it in the middle of that
+# surface's edge: a T-junction, which renders as a crack. It is kept, so the
+# warning (test16.1) is still true of the file written (test16.2).
+#
+# The rest are the other side of that. Where the point is collinear in every
+# surface it is in, it goes from all of them together, and no edge is left
+# with a point in it (test17). A triangle with a point on its long edge has no
+# area to fill a crack with: it goes as it did, and keeps no point for anyone
+# else (test18). Both of these were already right, and are here so they stay
+# right. Vertices at the same place are the same corner whatever their index:
+# in test19 the other surfaces use a copy of vertex 3 with its own normal, and
+# vertex 3 is kept just the same.
+################################################################################
+
+@test "test16.1" {
+  $RUN_TEST acclint test16.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test16.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test16.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test16.2" {
+  $RUN_TEST acclint -Wno-warnings test16.ac -o test16.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test16.2.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test16.2.output.ac)"
+  expected="$(tr -d '\r' < test16.result.ac)"
+  if [ "$actual" != "$expected" ]; then
+    cp test16.2.output.ac test16.2.actual.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test16.2.output.ac
+}
+
+@test "test17" {
+  $RUN_TEST acclint -Wno-warnings test17.ac -o test17.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test17.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test17.output.ac)"
+  expected="$(tr -d '\r' < test17.result.ac)"
+  if [ "$actual" != "$expected" ]; then
+    cp test17.output.ac test17.actual.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test17.output.ac
+}
+
+@test "test18" {
+  $RUN_TEST acclint -Wno-warnings test18.ac -o test18.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test18.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test18.output.ac)"
+  expected="$(tr -d '\r' < test18.result.ac)"
+  if [ "$actual" != "$expected" ]; then
+    cp test18.output.ac test18.actual.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test18.output.ac
+}
+
+@test "test19" {
+  $RUN_TEST acclint -Wno-warnings test19.acc -o test19.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test19.output
+  fi
+  [ "$output" = "" ]
+  actual="$(tr -d '\r' < test19.output.acc)"
+  expected="$(tr -d '\r' < test19.result.acc)"
+  if [ "$actual" != "$expected" ]; then
+    cp test19.output.acc test19.actual.output
+  fi
+  [ "$actual" = "$expected" ]
+  rm test19.output.acc
+}
+
+################################################################################
 
