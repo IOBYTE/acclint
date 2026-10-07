@@ -1,0 +1,19 @@
+test14.ac:19 warning: duplicate surface vertices
+1 0 0
+^
+test14.ac:18 note: first instance
+1 0 0
+^
+test14.ac:20 warning: collinear vertices
+2 0 0
+^
+test14.ac:8 note: first vertex
+0 0 0
+^
+test14.ac:9 note: second vertex
+1 0 0
+^
+test14.ac:10 note: third vertex
+2 0 0
+^
+2 warnings

@@ -94,3 +94,22 @@ setup_file() {
 }
 
 ################################################################################
+# The plane is measured from the first three refs that are three different
+# points, different as equals() has it.
+################################################################################
+
+# test2: a quad bent out of its plane, whose first point is doubled 1e-7 away.
+# Compared exactly, the doubled point counted as a second point, and the plane
+# was never found, so the bend went unreported.
+@test "test2" {
+  $RUN_TEST acclint test2.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

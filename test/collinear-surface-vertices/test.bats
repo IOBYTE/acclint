@@ -357,4 +357,25 @@ setup_file() {
 }
 
 ################################################################################
+# A corner is measured against the nearest refs either side of it that are
+# somewhere else. Measured against whatever ref was next, A B B C asked only
+# about A B B and B B C, both of which have two points in one place, and B was
+# never found to be in line with A and C.
+################################################################################
+
+# test14: a rectangle with a point doubled half way along one side. The
+# doubled ref is a duplicate, and the point is in line with the corners either
+# side of it. The rectangle is not reported as not convex.
+@test "test14" {
+  $RUN_TEST acclint test14.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test14.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test14.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
 

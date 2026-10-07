@@ -192,4 +192,65 @@ setup_file() {
 }
 
 ################################################################################
+# What is concave is left alone, and what is convex is split into triangles
+# with area. A concave polygon taken for convex -- at millimetre scale, or with
+# its notch point doubled -- was fanned into a triangle that covered the
+# notch. A ref that repeats the point before it is left out of the fan, and so
+# is a triangle of three points on one line, which covers nothing.
+################################################################################
+
+# test4.1: the 1 mm arrowhead. Concave, so it is written back as it is.
+@test "test4.1" {
+  $RUN_TEST acclint -Wno-warnings test4.1.ac --splitPolygon -o test4.1.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.1.output.ac)"
+  expected_file="$(tr -d '\r' < test4.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.1.output.ac test4.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.1.output.ac
+}
+
+# test4.2: the arrowhead with its notch point doubled 1e-7 away. Concave, so
+# it is written back with only the doubled ref gone.
+@test "test4.2" {
+  $RUN_TEST acclint -Wno-warnings test4.2.ac --splitPolygon -o test4.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.2.output.ac)"
+  expected_file="$(tr -d '\r' < test4.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.2.output.ac test4.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.2.output.ac
+}
+
+# test4.3: a rectangle with a point doubled half way along one side. It comes
+# out as the two triangles that cover it, and nothing with no area.
+@test "test4.3" {
+  $RUN_TEST acclint -Wno-warnings test4.3.ac --splitPolygon -o test4.3.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.3.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.3.output.ac)"
+  expected_file="$(tr -d '\r' < test4.3.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.3.output.ac test4.3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.3.output.ac
+}
+
+################################################################################
 

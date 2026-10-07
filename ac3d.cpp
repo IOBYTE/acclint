@@ -6206,28 +6206,59 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
     }
 }
 
+// Whether three points lie on one line, as far as this program can tell them
+// apart. Either of two things makes them so:
+//
+//   the angle between the two edges from p1 is too small to be anything but
+//   rounding -- a sine test, |e1 x e2| against |e1| |e2|, which holds at any
+//   size;
+//
+//   the triangle they make is too thin to be told from a line at the
+//   resolution the points themselves are known to -- its height over its
+//   longest side is within the tolerance Point3::equals() allows coordinates
+//   of this size, so moving one point by no more than equals() ignores would
+//   put it on the line.
+//
+// There used to be an absolute floor here instead: the threshold was scaled by
+// |e1| |e2| but never allowed below 1.0. Below a metre that turned the test
+// into an absolute one on |e1 x e2|, which is an area, so at millimetre scale
+// every real corner passed as straight: a 1 mm arrowhead lost both of the
+// corners either side of its notch, was never seen to be concave, and
+// --splitPolygon fanned it into a triangle that covered the notch.
 bool AC3D::collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3)
 {
     const Point3 e1 = p2 - p1;
     const Point3 e2 = p3 - p1;
-    const Point3 v = e1.cross(e2);
+    const Point3 e3 = p3 - p2;
+    const double area = e1.cross(e2).length();
 
-    // The cross product's magnitude scales with the product of the two
-    // edge lengths (it is exactly zero for perfectly collinear points),
-    // so a fixed absolute epsilon is either far too loose for long
-    // edges or far too tight for short ones. Scale the threshold by the
-    // edge lengths instead, floored at 1.0 so it doesn't collapse to
-    // (near) zero for very short edges. k is a small safety margin for
-    // rounding compounded across this program's double-precision
-    // arithmetic.
     constexpr double k = 4.0;
-    const double epsilon = k * static_cast<double>(std::numeric_limits<float>::epsilon()) *
-                            std::max(e1.length() * e2.length(), 1.0);
-    return std::fabs(v.x()) < epsilon &&
-           std::fabs(v.y()) < epsilon &&
-           std::fabs(v.z()) < epsilon;
+    const double sine = k * static_cast<double>(std::numeric_limits<float>::epsilon());
+
+    if (area <= sine * e1.length() * e2.length())
+        return true;
+
+    const double scale = std::max({ std::abs(p1.x()), std::abs(p1.y()), std::abs(p1.z()),
+                                    std::abs(p2.x()), std::abs(p2.y()), std::abs(p2.z()),
+                                    std::abs(p3.x()), std::abs(p3.y()), std::abs(p3.z()) });
+    const double longest = std::max({ e1.length(), e2.length(), e3.length() });
+
+    return area <= longest * Point3::tolerance(scale, 0.0);
 }
 
+// Each corner is measured against the nearest refs either side of it that are
+// somewhere else. Measuring it against whatever ref happens to be next hid it
+// whenever a neighbour was doubled: A B B C asks about A B B and B B C, both of
+// which have two points in one place and so were skipped, and B -- in line
+// with A and C -- was never marked. A corner that is never marked is then
+// counted as a corner, one with no turn at all, and that read as concave: a
+// plain rectangle with a doubled point on one side was reported not convex and
+// never split. The refs a doubled point repeats are marked duplicate already,
+// and are passed over here so the point is only spoken for once.
+//
+// Places are compared with equals(), not ==, the same as the duplicate check
+// that runs before this: a point doubled to within rounding is a doubled point,
+// and comparing exactly let one 1e-7 away pass as a corner of its own.
 void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object, Surface &surface)
 {
     const size_t size = surface.refs.size();
@@ -6249,36 +6280,64 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
     }
 
     const size_t vertices = object.vertices.size();
-    if (surface.refs[0].index >= vertices || surface.refs[1].index >= vertices)
-        return;
 
-    for (size_t i = 2; i < size + 2; ++i)
+    for (const auto &ref : surface.refs)
     {
-        if (i < size && surface.refs[i].index >= vertices)
+        if (ref.index >= vertices)
             return;
+    }
 
-        const Point3 &v0 = object.vertices[surface.refs[i - 2].index].vertex;
-        const Point3 &v1 = object.vertices[surface.refs[(i - 1) % size].index].vertex;
-        const Point3 &v2 = object.vertices[surface.refs[i % size].index].vertex;
+    const auto point = [&](size_t i) -> const Point3 &
+    {
+        return object.vertices[surface.refs[i % size].index].vertex;
+    };
 
-        if (v0 != v1 && v1 != v2 && (v0 == v2 || collinear(v0, v1, v2)))
+    // In the order the old sliding window visited them: the corner at ref 1
+    // first and the one at ref 0 last.
+    for (size_t step = 1; step <= size; ++step)
+    {
+        const size_t middle = step % size;
+
+        if (surface.refs[middle].duplicate)
+            continue;
+
+        const Point3 &v1 = point(middle);
+
+        size_t previous = middle + size - 1;
+
+        while (previous > middle && point(previous).equals(v1))
+            --previous;
+
+        size_t next = middle + 1;
+
+        while (next < middle + size && point(next).equals(v1))
+            ++next;
+
+        // Every ref in one place: nothing to measure.
+        if (previous == middle || next == middle + size)
+            continue;
+
+        const Point3 &v0 = point(previous);
+        const Point3 &v2 = point(next);
+
+        if (v0.equals(v2) || collinear(v0, v1, v2))
         {
             // don't show all combinations when all vertices are collinear
             if (found < (size - 2) && m_collinear_surface_vertices)
             {
-                warningWithCount(m_collinear_surface_vertices_count, surface.refs[i % size].line_number) << "collinear vertices" << std::endl;
-                showLine(in, surface.refs[i % size].line_pos);
+                warningWithCount(m_collinear_surface_vertices_count, surface.refs[next % size].line_number) << "collinear vertices" << std::endl;
+                showLine(in, surface.refs[next % size].line_pos);
 
-                note(object.vertices[surface.refs[i - 2].index].line_number) << "first vertex" << std::endl;
-                showLine(in, object.vertices[surface.refs[i - 2].index].line_pos);
-                note(object.vertices[surface.refs[(i - 1) % size].index].line_number) << "second vertex" << std::endl;
-                showLine(in, object.vertices[surface.refs[(i - 1) % size].index].line_pos);
-                note(object.vertices[surface.refs[i % size].index].line_number) << "third vertex" << std::endl;
-                showLine(in, object.vertices[surface.refs[i % size].index].line_pos);
+                note(object.vertices[surface.refs[previous % size].index].line_number) << "first vertex" << std::endl;
+                showLine(in, object.vertices[surface.refs[previous % size].index].line_pos);
+                note(object.vertices[surface.refs[middle].index].line_number) << "second vertex" << std::endl;
+                showLine(in, object.vertices[surface.refs[middle].index].line_pos);
+                note(object.vertices[surface.refs[next % size].index].line_number) << "third vertex" << std::endl;
+                showLine(in, object.vertices[surface.refs[next % size].index].line_pos);
             }
 
             found++;
-            surface.refs[(i - 1) % size].collinear = true;
+            surface.refs[middle].collinear = true;
         }
     }
 }
@@ -6302,8 +6361,11 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
         if (!object.getSurfaceVertex(surface, next++, p1))
             return;
 
-        // find the next unique vertex
-        while (p0 == p1)
+        // find the next unique vertex, unique as equals() has it: a vertex
+        // doubled to within rounding is the same vertex, and taking it for a
+        // second one left the plane to be measured from a pair of points and
+        // anything at all, so the check never ran
+        while (p0.equals(p1))
         {
             if (!object.getSurfaceVertex(surface, next++, p1))
                 return;
@@ -6313,7 +6375,7 @@ void AC3D::checkSurfaceCoplanar(std::istream &in, const Object &object, Surface 
             return;
 
         // find the next unique vertex
-        while (p1 == p2 || collinear(p0, p1, p2))
+        while (p1.equals(p2) || collinear(p0, p1, p2))
         {
             if (!object.getSurfaceVertex(surface, next++, p2))
                 return;
@@ -6628,6 +6690,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
         struct Corner
         {
             Point2 point;
+            Point3 position;
             size_t ref = 0;
         };
         std::vector<Corner> corners;
@@ -6639,6 +6702,10 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
             if (!object.getSurfaceVertex(surface, i, p, planeType))
                 return;
 
+            Point3 position;
+            if (!object.getSurfaceVertex(surface, i, position))
+                return;
+
             // A collinear-flagged ref is redundant regardless of its
             // position -- including ref 0. Gating this on !corners.empty()
             // would let ref 0 through unconditionally (nothing kept yet
@@ -6648,10 +6715,14 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
             if (surface.refs[i].collinear)
                 continue;
 
-            if (!corners.empty() && p == corners.back().point)
+            // The same point to within rounding, as the duplicate check has
+            // it -- compared exactly, a point doubled 1e-7 away was a corner
+            // of its own, and the zero length edge to it turned whichever
+            // way rounding sent it, which could hide a reflex corner.
+            if (!corners.empty() && position.equals(corners.back().position))
                 continue;
 
-            corners.push_back({p, i});
+            corners.push_back({p, position, i});
         }
 
         // The scan above only collapses a duplicate against the point
@@ -6659,7 +6730,7 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
         // boundary (last corner found equals the first) survives as two
         // separate corners. Drop the repeat so the cyclic list below
         // doesn't measure a zero-length edge at the wrap point.
-        if (corners.size() > 1 && corners.front().point == corners.back().point)
+        if (corners.size() > 1 && corners.front().position.equals(corners.back().position))
             corners.pop_back();
 
         // fewer than 3 real corners: nothing to classify
@@ -6695,6 +6766,13 @@ void AC3D::checkSurfacePolygonType(std::istream &in, const Object &object, Surfa
             const Point2 &p0 = corners[(i + count - 1) % count].point;
             const Point2 &p1 = corners[i].point;
             const Point2 &p2 = corners[(i + 1) % count].point;
+
+            // A corner that does not turn is neither convex nor concave. ccw
+            // calls a turn of exactly zero clockwise, so one that reached
+            // here unmarked was counted as turning the wrong way.
+            if (collinear(corners[(i + count - 1) % count].position, corners[i].position,
+                          corners[(i + 1) % count].position))
+                continue;
 
             if (ccw(p0, p1, p2) != counterclockwise && !surface.concave)
             {
@@ -7428,7 +7506,10 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
             if (!object.getSurfaceVertex(surface, next % size, p2))
                 return;
 
-            // skip duplicate and collinear vertices
+            // skip duplicate and collinear vertices -- duplicate as equals()
+            // has it, the same as the duplicate check: compared exactly, a
+            // point doubled to within rounding made a segment of next to no
+            // length that touched both of its neighbours
             //
             // next isn't wrapped mod size on its own (only at each fetch
             // site, like the equivalent second-line-segment loop below),
@@ -7443,7 +7524,7 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
             // has traveled a full lap (size vertices) without finding a
             // non-degenerate triple, every possible one has already been
             // tried, so there is nothing left to test.
-            while (p0 == p1 || p1 == p2 || surface.refs[(next - 1) % size].collinear)
+            while (p0.equals(p1) || p1.equals(p2) || surface.refs[(next - 1) % size].collinear)
             {
                 if (next - j >= size)
                     return;
@@ -7481,7 +7562,7 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
                 // as the loop reaches a genuinely-crossing segment,
                 // silently skipping the very check this function exists
                 // to make.
-                while (p2 == p3 || p3 == p4 || surface.refs[next % size].collinear)
+                while (p2.equals(p3) || p3.equals(p4) || surface.refs[next % size].collinear)
                 {
                     // Same runaway risk as the first-segment skip loop
                     // above: these fetches already wrapped mod size
@@ -9413,7 +9494,7 @@ bool AC3D::Object::splitPolygons()
     {
         for (size_t i = 0; i < surfaces.size(); ++i)
         {
-            const size_t size = surfaces[i].refs.size();
+            size_t size = surfaces[i].refs.size();
 
             if (size > 3)
             {
@@ -9439,6 +9520,37 @@ bool AC3D::Object::splitPolygons()
                 if (!surfaces[i].isPolygon() || surfaces[i].concave)
                     continue;
 
+                // A ref that repeats the point before it is not a corner, and
+                // fanned it is one corner of a triangle with no area: A B B C
+                // gave A B B along with the triangles that cover the shape.
+                // It is what the clean on the way out takes out of a polygon
+                // that is not split, so it is taken out here, as long as a
+                // triangle is left.
+                size_t distinct = 0;
+
+                for (const auto &ref : surfaces[i].refs)
+                {
+                    if (!ref.duplicate)
+                        ++distinct;
+                }
+
+                if (distinct >= 3 && distinct < size)
+                {
+                    auto it = surfaces[i].refs.begin();
+
+                    while (it != surfaces[i].refs.end())
+                    {
+                        if (it->duplicate)
+                            it = surfaces[i].refs.erase(it);
+                        else
+                            ++it;
+                    }
+
+                    size = surfaces[i].refs.size();
+                    surfaces[i].refs.number = static_cast<int>(size);
+                    changed = true;
+                }
+
                 // clear flags
                 for (auto &ref : surfaces[i].refs)
                 {
@@ -9446,33 +9558,73 @@ bool AC3D::Object::splitPolygons()
                     ref.duplicate = false;
                 }
 
+                if (size <= 3)
+                    continue;
+
+                // A ref in line with its neighbours is kept -- another
+                // surface may share it -- but where it is in line with the
+                // first ref too the fan makes a triangle of three points on
+                // one line, which covers nothing, and that triangle is left
+                // out. The rest still cover the polygon: the one left out had
+                // no area to cover.
+                const auto flat = [this, &surface = surfaces[i]](size_t r0, size_t r1, size_t r2)
+                {
+                    Point3 p0;
+                    Point3 p1;
+                    Point3 p2;
+
+                    if (!getSurfaceVertex(surface, r0, p0) || !getSurfaceVertex(surface, r1, p1) ||
+                        !getSurfaceVertex(surface, r2, p2))
+                        return false;
+
+                    return collinear(p0, p1, p2);
+                };
+
+                std::vector<std::array<size_t, 3>> triangles;
+
+                if (!flat(0, 1, 2))
+                    triangles.push_back({ 0, 1, 2 });
+
                 for (size_t j = 2; j < size - 1; j++)
+                {
+                    if (!flat(j, j + 1, 0))
+                        triangles.push_back({ j, j + 1, 0 });
+                }
+
+                // Nothing but lines: nothing to fan.
+                if (triangles.empty())
+                    continue;
+
+                const Surface original = surfaces[i];
+
+                for (size_t t = 1; t < triangles.size(); ++t)
                 {
                     Surface surface;
 
-                    surface.flags = surfaces[i].flags;
-                    if (!surfaces[i].mats.empty())
-                        surface.mats.push_back(surfaces[i].mats.back());
-                    surface.refs.push_back(surfaces[i].refs[j]);
-                    surface.refs.push_back(surfaces[i].refs[j + 1]);
-                    surface.refs.push_back(surfaces[i].refs[0]);
+                    surface.flags = original.flags;
+                    if (!original.mats.empty())
+                        surface.mats.push_back(original.mats.back());
+                    for (const size_t ref : triangles[t])
+                        surface.refs.push_back(original.refs[ref]);
 
-                    const size_t index = i + j - 1;
+                    const size_t index = i + t;
                     if (index < surfaces.size())
                         surfaces.insert(surfaces.begin() + index, surface);
                     else
                         surfaces.push_back(surface);
                 }
 
-                surfaces[i].refs.resize(3);
+                surfaces[i].refs.clear();
+                for (const size_t ref : triangles[0])
+                    surfaces[i].refs.push_back(original.refs[ref]);
                 surfaces[i].coplanar = true;
                 surfaces[i].concave = false;
 
-                // Skip the size - 3 triangles inserted after this one. The
-                // loop's own ++i then lands on the next original surface;
-                // skipping size - 2 stepped one past it, so the surface after
-                // every split polygon was never split itself.
-                i += size - 3;
+                // Skip the triangles inserted after this one. The loop's own
+                // ++i then lands on the next original surface; skipping one
+                // more stepped past it, so the surface after every split
+                // polygon was never split itself.
+                i += triangles.size() - 1;
 
                 changed = true;
             }

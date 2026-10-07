@@ -122,3 +122,37 @@ setup_file() {
 }
 
 ################################################################################
+# Whether a corner turns is decided at the size of the model, not of a metre.
+# collinear() used to floor its threshold at 1.0, which below a metre made it
+# an absolute test of an area, so at millimetre scale every real corner passed
+# as straight and was never measured. And a point doubled to within rounding
+# is one point, as the duplicate check has it, not a corner of its own.
+################################################################################
+
+# test4: an arrowhead 1 mm long. Its notch is a reflex corner, so it is not
+# convex -- and none of its corners are in line with their neighbours.
+@test "test4" {
+  $RUN_TEST acclint test4.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test5: the same arrowhead at a metre, with the point of the notch doubled
+# 1e-7 away. The doubled point is reported, and the notch is still concave.
+@test "test5" {
+  $RUN_TEST acclint test5.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

@@ -1,0 +1,22 @@
+test2.ac:18 warning: duplicate surface vertices
+1 0 0
+^
+test2.ac:9 note: vertex
+0.0000001 0 0
+^
+test2.ac:17 note: first instance
+0 0 0
+^
+test2.ac:8 note: vertex
+0 0 0
+^
+test2.ac:14 warning: surface not coplanar
+SURF 0x10
+^
+test2.ac:9 warning: duplicate vertices
+0.0000001 0 0
+^
+test2.ac:8 note: first instance
+0 0 0
+^
+3 warnings

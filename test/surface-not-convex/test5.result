@@ -1,0 +1,25 @@
+test5.ac:21 warning: duplicate surface vertices
+4 0 0
+^
+test5.ac:12 note: vertex
+0.4000001 0.3 0
+^
+test5.ac:20 note: first instance
+3 0 0
+^
+test5.ac:11 note: vertex
+0.4 0.3 0
+^
+test5.ac:14 warning: surface not convex
+SURF 0x10
+^
+test5.ac:20 note: concave vertex
+3 0 0
+^
+test5.ac:12 warning: duplicate vertices
+0.4000001 0.3 0
+^
+test5.ac:11 note: first instance
+0.4 0.3 0
+^
+3 warnings
