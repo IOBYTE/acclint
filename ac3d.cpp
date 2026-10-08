@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <iomanip>
 #include <iterator>
@@ -4678,6 +4679,39 @@ bool AC3D::placesEveryObject(const std::vector<int> &counts)
     return index == counts.size();
 }
 
+// The object each one is a kid of when the tree is built from these counts,
+// or flat.size() for the root and for anything left out. Walked the way
+// placesEveryObject walks.
+static std::vector<size_t> parentsOf(const std::vector<int> &counts)
+{
+    std::vector<size_t> parents(counts.size(), counts.size());
+
+    if (counts.empty())
+        return parents;
+
+    size_t              index = 1;
+    std::vector<int>    wanted{ counts[0] };
+    std::vector<size_t> open{ 0 };
+
+    while (!wanted.empty() && index < counts.size())
+    {
+        if (wanted.back() <= 0)
+        {
+            wanted.pop_back();
+            open.pop_back();
+            continue;
+        }
+
+        --wanted.back();
+        parents[index] = open.back();
+        wanted.push_back(counts[index]);
+        open.push_back(index);
+        ++index;
+    }
+
+    return parents;
+}
+
 // A group that says it holds more objects than the file has left takes the
 // ones that follow it, and those belong to whatever comes after. Nothing is
 // lost that way, but everything past the mistake ends up inside the group
@@ -4910,6 +4944,39 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
     return fixed;
 }
 
+// Whether building the tree from these counts takes a level of detail out of
+// its own segment's group, where it is as the counts were read.
+bool AC3D::movesTrackLevel(const std::vector<Object> &flat, const std::vector<int> &counts)
+{
+    std::vector<int> as_read;
+
+    as_read.reserve(flat.size());
+
+    for (const auto &object : flat)
+        as_read.push_back(object.numkids.number);
+
+    const std::vector<size_t> before = parentsOf(as_read);
+    const std::vector<size_t> after = parentsOf(counts);
+
+    for (size_t i = 0; i < flat.size(); ++i)
+    {
+        std::string segment;
+        bool        level = false;
+
+        if (before[i] == after[i] || before[i] >= flat.size() ||
+            !trackSegment(flat[i].getName(), segment, level) || !level)
+            continue;
+
+        std::string owner;
+        bool        owner_level = false;
+
+        if (trackSegment(flat[before[i]].getName(), owner, owner_level) && !owner_level && owner == segment)
+            return true;
+    }
+
+    return false;
+}
+
 bool AC3D::fixKids(Object &root, std::istream &in)
 {
     std::vector<Object> flat;
@@ -5039,6 +5106,13 @@ bool AC3D::fixKids(Object &root, std::istream &in)
                 counts[open[i]] -= static_cast<int>(surplus);
 
                 if (!placesEveryObject(counts))
+                    continue;
+
+                // Nor if it takes a level of detail out of its segment's
+                // group, which is where the names say it belongs whatever
+                // the counts say. Only the world was left waiting, and the
+                // last level of detail of the last segment was handed to it.
+                if (movesTrackLevel(flat, counts))
                     continue;
 
                 blame = open[i];
@@ -7280,7 +7354,8 @@ void AC3D::checkSurface2SidedOpaque(std::istream &in, const Object &object, cons
     if (!surface.isDoubleSided())
         return;
 
-    if (!hasTransparentTexture(object))
+    // See-through by its material is see-through whatever the texture says.
+    if (!hasTransparentTexture(object) && !hasTransparentMaterial(surface))
     {
         warningWithCount(m_surface_2_sided_opaque_count, surface.line_number) << "2 sided surface with opaque texture (object: "
             << object.getName() << " texture: " << object.getTexture() << ")" << std::endl;
@@ -8406,11 +8481,19 @@ bool AC3D::clean()
 
     bool cleaned = false;
 
-    cleaned |= cleanMaterials();
+    // First as well as last: a group with vertices is made a poly here, and
+    // made one only at the end it missed everything below that looks only
+    // at polys -- its collinear refs and duplicate surfaces were written
+    // as they were read.
+    cleaned |= cleanObjects();
     cleaned |= cleanVertices();
     cleaned |= cleanSurfaces();
     cleaned |= cleanVertices(); // cleanSurfaces may create unused vertices
     cleaned |= cleanObjects();
+    // Last, once everything that can take a surface away has: what a
+    // material is used by is what is left. It ran first, and a material
+    // whose last surface went after it was written out unused.
+    cleaned |= cleanMaterials();
 
     if (m_show_times)
     {
@@ -8743,6 +8826,41 @@ bool AC3D::fixPolyWithKids(Object &object)
 {
     bool fixed = false;
 
+    // The geometry goes to a new poly, the object's first kid, and the object
+    // keeps the rest.
+    const auto moveGeometry = [](Object &owner)
+    {
+        Object geometry;
+
+        // Messages about the geometry still point at where it was read.
+        static_cast<LineInfo &>(geometry) = owner;
+        geometry.type = owner.type;
+        geometry.type.type = "poly";
+
+        if (!owner.names.empty())
+        {
+            Name name = owner.names.back();
+            name.name = quoted_string(owner.names.back().name + "-geometry");
+            geometry.names.push_back(name);
+        }
+
+        geometry.shaders.swap(owner.shaders);
+        geometry.textures.swap(owner.textures);
+        geometry.texreps.swap(owner.texreps);
+        geometry.texoffs.swap(owner.texoffs);
+        geometry.subdivs.swap(owner.subdivs);
+        geometry.creases.swap(owner.creases);
+        geometry.numvert = owner.numvert;
+        geometry.vertices.swap(owner.vertices);
+        geometry.numsurf = owner.numsurf;
+        geometry.surfaces.swap(owner.surfaces);
+
+        owner.numvert.number = 0;
+        owner.numsurf.number = 0;
+        owner.kids.insert(owner.kids.begin(), std::move(geometry));
+        owner.numkids.number = static_cast<int>(owner.kids.size());
+    };
+
     if (object.type.type == "poly" && !object.kids.empty())
     {
         if (object.surfaces.empty())
@@ -8753,36 +8871,25 @@ bool AC3D::fixPolyWithKids(Object &object)
         }
         else
         {
-            Object geometry;
-
-            // Messages about the geometry still point at where it was read.
-            static_cast<LineInfo &>(geometry) = object;
-            geometry.type = object.type;
-
-            if (!object.names.empty())
-            {
-                Name name = object.names.back();
-                name.name = quoted_string(object.names.back().name + "-geometry");
-                geometry.names.push_back(name);
-            }
-
-            geometry.shaders.swap(object.shaders);
-            geometry.textures.swap(object.textures);
-            geometry.texreps.swap(object.texreps);
-            geometry.texoffs.swap(object.texoffs);
-            geometry.subdivs.swap(object.subdivs);
-            geometry.creases.swap(object.creases);
-            geometry.numvert = object.numvert;
-            geometry.vertices.swap(object.vertices);
-            geometry.numsurf = object.numsurf;
-            geometry.surfaces.swap(object.surfaces);
-
+            moveGeometry(object);
             object.type.type = "group";
-            object.numvert.number = 0;
-            object.numsurf.number = 0;
-            object.kids.insert(object.kids.begin(), std::move(geometry));
-            object.numkids.number = static_cast<int>(object.kids.size());
         }
+
+        fixed = true;
+    }
+    // A group or the world with geometry of its own is the same thing the
+    // other way round. Only a poly was looked at, so a group's surfaces stayed
+    // with its kids -- and the clean at the end made it a poly with kids --
+    // and the world's were split by --splitSURF and --splitMat into worlds of
+    // their own, which no loader reads past the first of, and placed in no
+    // cell by --grid. A group with no kids is a poly by another name, and
+    // becomes one.
+    else if ((object.type.type == "group" || object.type.type == "world") && !object.surfaces.empty())
+    {
+        if (object.type.type == "group" && object.kids.empty())
+            object.type.type = "poly";
+        else
+            moveGeometry(object);
 
         fixed = true;
     }
@@ -8834,6 +8941,30 @@ bool AC3D::cleanMaterials()
             cleaned = true;
         }
     }
+
+    // Used is what the surfaces left say, not what they said when the file
+    // was read: removed objects and surfaces took their materials' last
+    // users with them. A surface with no mat line uses material 0.
+    for (auto &material : m_materials)
+        material.used = false;
+
+    std::function<void(const std::vector<Object> &)> markUsed = [this, &markUsed](const std::vector<Object> &objects)
+    {
+        for (const auto &object : objects)
+        {
+            for (const auto &surface : object.surfaces)
+            {
+                const size_t mat = surface.material();
+
+                if (mat < m_materials.size())
+                    m_materials[mat].used = true;
+            }
+
+            markUsed(object.kids);
+        }
+    };
+
+    markUsed(m_objects);
 
     std::vector<bool> duplicates(m_materials.size(), false);
     std::vector<size_t> newIndex;
@@ -8892,7 +9023,10 @@ bool AC3D::cleanMaterials()
 
         // remove unused materials
         if (!m_materials[index].used)
+        {
             m_materials.erase(m_materials.begin() + index);
+            cleaned = true;
+        }
     }
 
     cleaned |= cleanMaterials(m_objects, newIndex);
@@ -11571,6 +11705,13 @@ void AC3D::fixSurface2SidedOpaque(Object &object)
                 if (!(surface.isPolygon() || surface.isTriangleStrip()) || !surface.isDoubleSided())
                     continue;
 
+                // An opaque texture does not make a surface opaque when its
+                // material is not: only the texture was looked at, and glass
+                // -- a material with trans 0.6 over an opaque texture -- was
+                // made single sided and disappeared from behind.
+                if (hasTransparentMaterial(surface))
+                    continue;
+
                 if (surface.isTriangleStrip())
                 {
                     // A polygon is a single face and is consistent by
@@ -11640,14 +11781,20 @@ bool AC3D::isTransparent(const Object &object)
 
     for (const auto &surface : object.surfaces)
     {
-        for (const auto &mat : surface.mats)
-        {
-            if (mat.mat < m_materials.size() && m_materials[mat.mat].trans > 0.0)
-                return true;
-        }
+        if (hasTransparentMaterial(surface))
+            return true;
     }
 
     return false;
+}
+
+// Whether the material a surface is drawn with lets light through. A surface
+// with no mat line is drawn with material 0.
+bool AC3D::hasTransparentMaterial(const Surface &surface) const
+{
+    const size_t mat = surface.material();
+
+    return mat < m_materials.size() && m_materials[mat].trans > 0.0;
 }
 
 bool AC3D::hasTransparentTexture(const Object &object)

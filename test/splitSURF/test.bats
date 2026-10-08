@@ -88,3 +88,25 @@ setup_file() {
 }
 
 ################################################################################
+# A world with surfaces of its own. Split like any object, its pieces were
+# written as more worlds, which no loader reads past the first of. The
+# geometry is moved to a poly under the world first, and that is split.
+################################################################################
+
+@test "test4" {
+  $RUN_TEST acclint -Wno-warnings test4.ac --splitSURF -o test4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.output.ac)"
+  expected_file="$(tr -d '\r' < test4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.output.ac test4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.output.ac
+}
+
+################################################################################

@@ -391,3 +391,38 @@ setup_file() {
 }
 
 ################################################################################
+
+# test12: two segments, each holding its two levels of detail, in a world that
+# asks for three. Only the world is left waiting, and the counts alone would
+# take the surplus off TKMN1_g and hand its second level of detail to the
+# world. The names say where a level of detail belongs, and a count is not
+# corrected into a tree that takes one out of its segment: it is read as the
+# file stopping short, which the missing kids warning says.
+@test "test12.1" {
+  $RUN_TEST acclint test12.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test12.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test12.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test12.2" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test12.ac -o test12.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test12.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test12.output.ac)"
+  expected_file="$(tr -d '\r' < test12.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test12.output.ac test12.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test12.output.ac
+}
+
+################################################################################

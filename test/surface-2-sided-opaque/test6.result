@@ -1,0 +1,4 @@
+test6.ac:15 warning: 2 sided surface with opaque texture (object: wall texture: test.png)
+SURF 0x30
+^
+1 warning

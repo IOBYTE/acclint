@@ -171,3 +171,24 @@ setup_file() {
 }
 
 ################################################################################
+# A world with surfaces of its own, split by material. Its pieces were written
+# as more worlds. The geometry is moved to a poly under the world first.
+################################################################################
+
+@test "test5" {
+  $RUN_TEST acclint -Wno-warnings test5.ac --splitMat -o test5.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.output.ac)"
+  expected_file="$(tr -d '\r' < test5.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.output.ac test5.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.output.ac
+}
+
+################################################################################

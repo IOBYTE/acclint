@@ -213,3 +213,26 @@ setup_file() {
 }
 
 ################################################################################
+# A group with geometry of its own and a kid: a poly with kids the other way
+# round. Only polys were looked at, so its surfaces stayed with the kid and
+# the clean at the end made it a poly with kids. The geometry goes to a new
+# poly, the group's first kid, the way a poly's does.
+################################################################################
+
+@test "test6" {
+  $RUN_TEST acclint -Wno-warnings test6.ac --fixPolyWithKids -o test6.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test6.output.ac)"
+  expected_file="$(tr -d '\r' < test6.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.output.ac test6.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.output.ac
+}
+
+################################################################################

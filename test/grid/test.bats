@@ -295,3 +295,27 @@ setup_file() {
 }
 
 ################################################################################
+# A group with geometry of its own and a kid. Its own surfaces were in no
+# cell, and the clean at the end made it a poly with kids. The geometry is
+# moved to a poly under the group first, and is placed like any other.
+################################################################################
+
+@test "test10" {
+  $RUN_TEST acclint -Wno-warnings test10.ac --grid 10 -o test10.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test10.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test10.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test10.output.ac)"
+  expected_file="$(tr -d '\r' < test10.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test10.output.ac test10.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test10.output.ac
+}
+
+################################################################################

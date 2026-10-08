@@ -113,3 +113,26 @@ setup_file() {
 }
 
 ################################################################################
+# A group with vertices, made a poly by the clean -- but only at its end, so
+# everything before it that looks only at polys passed it over: a collinear
+# ref and a duplicate surface were written as they were read. It is made a
+# poly first.
+################################################################################
+
+@test "test5" {
+  $RUN_TEST acclint -Wno-warnings test5.ac -o test5.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.output.ac)"
+  expected_file="$(tr -d '\r' < test5.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.output.ac test5.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.output.ac
+}
+
+################################################################################

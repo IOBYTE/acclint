@@ -309,3 +309,49 @@ setup_file() {
 }
 
 ################################################################################
+# Not only a second world: any object after the world is at the top level as
+# well, and was gathered with the rest and then written again where it was.
+# --fixMultipleWorlds, part of --fixAll, joins worlds and leaves such an object
+# alone, so --fixAll wrote it twice too.
+################################################################################
+
+# test8.1: a poly after the world, both on the same material. It is merged into
+# the world's poly and written once: 2 triangles, not 3.
+@test "test8.1" {
+  $RUN_TEST acclint -Wno-warnings test8.ac --combineTexture -o test8.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test8.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test8.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test8.1.output.ac)"
+  expected_file="$(tr -d '\r' < test8.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test8.1.output.ac test8.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.1.output.ac
+}
+
+# test8.2: the same with --fixAll.
+@test "test8.2" {
+  $RUN_TEST acclint -Wno-warnings test8.ac --fixAll -o test8.2.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test8.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test8.2.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test8.2.output.ac)"
+  expected_file="$(tr -d '\r' < test8.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test8.2.output.ac test8.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.2.output.ac
+}
+
+################################################################################

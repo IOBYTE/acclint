@@ -130,3 +130,28 @@ setup_file() {
 }
 
 ################################################################################
+# Materials were cleaned first, from what used them when the file was read,
+# and everything after that can take a surface away. A material whose last
+# user went was written out unused. What uses a material is now worked out
+# from what is left, at the end.
+################################################################################
+
+# test5: "red" is used only by a surface with no area, which the clean takes
+# out. It goes with it.
+@test "test5" {
+  $RUN_TEST acclint -Wno-warnings test5.ac -o test5.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.output.ac)"
+  expected_file="$(tr -d '\r' < test5.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.output.ac test5.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.output.ac
+}
+
+################################################################################

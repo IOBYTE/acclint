@@ -197,3 +197,29 @@ setup_file() {
 }
 
 ################################################################################
+# Only the texture was looked at, and an opaque texture does not make a surface
+# opaque when its material lets light through. Glass -- a material with trans
+# 0.6 over an opaque texture -- was made single sided and disappeared when seen
+# from behind.
+################################################################################
+
+# test10: a wall and a window on the same opaque texture, both 2 sided, the
+# window's material trans 0.6. The wall is made single sided; the window stays
+# 2 sided. Both were made single sided.
+@test "test10" {
+  $RUN_TEST acclint test10.ac --fixSurface2SidedOpaque -o test10.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test10.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test10.output.ac)"
+  expected_file="$(tr -d '\r' < test10.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test10.output.ac test10.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test10.output.ac
+}
+
+################################################################################

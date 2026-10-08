@@ -1496,6 +1496,7 @@ private:
     static void flattenObjects(Object &object, std::vector<Object> &flat);
     static Object buildObjects(std::vector<Object> &flat, size_t &index);
     static bool placesEveryObject(const std::vector<int> &counts);
+    static bool movesTrackLevel(const std::vector<Object> &flat, const std::vector<int> &counts);
     static void convertObjectsToAcc(std::vector<Object> &objects, bool strips, bool swaps);
     static void convertObjectToAcc(Object &object, bool strips, bool swaps);
     static void splitTriangleStrips(std::vector<Object> &objects);
@@ -1525,6 +1526,7 @@ private:
     static StripFacing stripFacing(const Object &object, const Surface &surface);
     bool hasOpaqueTexture(const Object &object);
     bool isTransparent(const Object &object);
+    bool hasTransparentMaterial(const Surface &surface) const;
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
     void fixRgbTexture(Object &object);

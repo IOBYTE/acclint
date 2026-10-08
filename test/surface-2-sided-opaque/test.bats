@@ -211,3 +211,24 @@ setup_file() {
   [ "$actual_file" = "$expected_file" ]
   rm test5.2.output.ac
 }
+
+################################################################################
+# The warning looked only at the texture, so a 2 sided surface whose material
+# lets light through was reported as 2 sided and opaque whenever its texture
+# had no alpha.
+################################################################################
+
+# test6: a wall and a window on the same opaque texture, both 2 sided, the
+# window's material trans 0.6. Only the wall is reported.
+@test "test6" {
+  $RUN_TEST acclint -Wsurface-2-sided-opaque test6.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
