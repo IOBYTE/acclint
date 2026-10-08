@@ -210,3 +210,40 @@ setup_file() {
 }
 
 ################################################################################
+# More ref lines than the count. The lines past it were left for the surface
+# loop, which took the first for a surface of its own: "invalid surface" at a
+# ref line, then "more SURF than specified" at the real next surface, and
+# different SURF and missing mat warnings about the surface that was never
+# there. They are read as refs, and the count is reported as wrong.
+################################################################################
+
+# test5: refs 3 followed by four ref lines, then the second surface.
+@test "test5" {
+  $RUN_TEST acclint test5.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test5.1: written with the count the refs make.
+@test "test5.1" {
+  $RUN_TEST acclint -Wno-warnings test5.ac -o test5.1.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.1.output.ac)"
+  expected_file="$(tr -d '\r' < test5.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.1.output.ac test5.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.1.output.ac
+}
+
+################################################################################

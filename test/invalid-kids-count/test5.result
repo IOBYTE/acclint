@@ -1,0 +1,7 @@
+test5.ac:4 error: invalid kids count
+kids x
+     ^
+test5.ac:19 error: invalid token: kids
+kids 0
+^
+2 errors

@@ -166,3 +166,21 @@ setup_file() {
 }
 
 ################################################################################
+# A SURF line with nothing after the keyword. The caret was put under the
+# keyword, tellg() having said -1 at the end of the line, and the message ended
+# in ": " and nothing. The caret goes where the type would have been, and the
+# message stops at what it is.
+################################################################################
+
+@test "test4" {
+  $RUN_TEST acclint test4.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

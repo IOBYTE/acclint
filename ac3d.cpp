@@ -100,6 +100,23 @@ bool materialKeyword(const std::string &word)
            word == spec_token || word == shi_token || word == trans_token;
 }
 
+// Where the field after the keyword just read starts. When the line ends
+// there, tellg() is -1, and showLine put the caret at the start of the line,
+// under the keyword. It goes where the field would have been instead: one
+// past the keyword, as for a numsurf or numvert line with no number.
+std::streampos fieldPos(std::istringstream &iss)
+{
+    iss >> std::ws;
+
+    if (!iss.eof())
+        return iss.tellg();
+
+    const std::string &line = iss.str();
+    const bool space = !line.empty() && std::isspace(static_cast<unsigned char>(line.back())) != 0;
+
+    return static_cast<std::streampos>(line.size() + (space ? 0 : 1));
+}
+
 // The length of the decimal number a word starts with, or 0 if it does not
 // start with one. Stricter than std::stod, which also reads "inf", "nan" and
 // hexadecimal: by it "information" and "nano" started with a number and
@@ -607,6 +624,11 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
             errorWithCount(m_invalid_ref_vertex_index_count) << "invalid ref vertex index" << std::endl;
             showLine(in);
         }
+        // Out of range, as an index that names no vertex is: everything
+        // that walks the refs passes over those. The failed read left it 0,
+        // a vertex that exists, and the ref was then compared as vertex 0 --
+        // "duplicate surface vertices" beside a ref that names vertex 0.
+        ref.index = std::numeric_limits<size_t>::max();
         ref.invalid_index = true;
         return false;
     }
@@ -884,8 +906,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
     if (token == SURF_token)
     {
-        iss >> std::ws;
-        const std::streampos pos = iss.tellg();
+        const std::streampos pos = fieldPos(iss);
         iss >> std::hex >> surface.flags >> std::dec;
 
         if (iss)
@@ -906,7 +927,8 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                 iss.clear();
                 iss.seekg(pos);
                 iss >> junk;
-                errorWithCount(m_invalid_surface_type_count) << "invalid surface type: " << junk << std::endl;
+                errorWithCount(m_invalid_surface_type_count) << "invalid surface type"
+                                                             << (junk.empty() ? "" : ": " + junk) << std::endl;
                 showLine(iss, pos);
             }
         }
@@ -940,8 +962,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
     {
         size_t mat = 0;
 
-        iss >> std::ws;
-        const std::streampos pos = iss.tellg();
+        const std::streampos pos = fieldPos(iss);
         iss >> mat;
 
         if (iss)
@@ -985,8 +1006,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
     if (token == refs_token)
     {
-        iss >> std::ws;
-        const std::streampos pos = iss.tellg();
+        const std::streampos pos = fieldPos(iss);
 
         surface.refs.line_number = m_line_number;
         surface.refs.line_pos = m_line_pos;
@@ -1009,6 +1029,52 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
             surface.refs.number = std::numeric_limits<int>::max();
         }
 
+        // What every ref line read below is put through.
+        const auto useRef = [this, &object](const Ref &ref, std::istringstream &iss1)
+        {
+            if (ref.index >= object.vertices.size())
+            {
+                if (m_invalid_ref_vertex_index)
+                {
+                    iss1.clear();
+                    iss1.seekg(0);
+                    errorWithCount(m_invalid_ref_vertex_index_count) << "invalid ref vertex index: " << ref.index << " of "
+                            << object.vertices.size() << std::endl;
+                    showLine(iss1);
+                }
+            }
+            else
+                object.vertices[ref.index].used = true;
+        };
+
+        const auto checkCoordinates = [this, &object](const Ref &ref, std::istringstream &iss1)
+        {
+            if (!ref.invalid_coordinates) // skip when invalid
+            {
+                const size_t valid_textures = object.getTexturesSize();
+                if (ref.coordinates.size() < valid_textures)
+                {
+                    if (!m_is_ac && m_missing_uv_coordinates)
+                    {
+                        warningWithCount(m_missing_uv_coordinates_count) << "missing uv coordinates: "
+                            << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
+                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                        showLine(iss1, iss1.str().size() + 1);
+                    }
+                }
+                if (ref.coordinates.size() > 1 && ref.coordinates.size() > valid_textures)
+                {
+                    if (m_extra_uv_coordinates)
+                    {
+                        warningWithCount(m_extra_uv_coordinates_count) << "extra uv coordinates: "
+                            << ref.coordinates.size() << " coordinates "
+                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
+                        showLine(iss1, offsetOfToken(iss1, valid_textures * 2 + 1));
+                    }
+                }
+            }
+        };
+
         for (int j = 0; j < surface.refs.number; ++j)
         {
             if (!getLine(in))
@@ -1019,21 +1085,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
             std::istringstream iss1(m_line);
 
             if (readRef(iss1, ref))
-            {
-                if (ref.index >= object.vertices.size())
-                {
-                    if (m_invalid_ref_vertex_index)
-                    {
-                        iss1.clear();
-                        iss1.seekg(0);
-                        errorWithCount(m_invalid_ref_vertex_index_count) << "invalid ref vertex index: " << ref.index << " of "
-                                << object.vertices.size() << std::endl;
-                        showLine(iss1);
-                    }
-                }
-                else
-                    object.vertices[ref.index].used = true;
-            }
+                useRef(ref, iss1);
             else
             {
                 // Both reports below are warnings, as the check is declared
@@ -1065,32 +1117,59 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
                     break;
                 }
             }
-            if (!ref.invalid_coordinates) // skip when invalid
-            {
-                const size_t valid_textures = object.getTexturesSize();
-                if (ref.coordinates.size() < valid_textures)
-                {
-                    if (!m_is_ac && m_missing_uv_coordinates)
-                    {
-                        warningWithCount(m_missing_uv_coordinates_count) << "missing uv coordinates: "
-                            << ref.coordinates.size() << " coordinate" << (ref.coordinates.size() != 1 ? "s" : "") << " "
-                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
-                        showLine(iss1, iss1.str().size() + 1);
-                    }
-                }
-                if (ref.coordinates.size() > 1 && ref.coordinates.size() > valid_textures)
-                {
-                    if (m_extra_uv_coordinates)
-                    {
-                        warningWithCount(m_extra_uv_coordinates_count) << "extra uv coordinates: "
-                            << ref.coordinates.size() << " coordinates "
-                            << valid_textures << " texture" << (valid_textures != 1 ? "s" : "") << std::endl;
-                        showLine(iss1, offsetOfToken(iss1, valid_textures * 2 + 1));
-                    }
-                }
-            }
+            checkCoordinates(ref, iss1);
 
             surface.refs.push_back(ref);
+        }
+
+        // Ref lines past the count. They were left for the surface loop,
+        // which took the first for a surface of its own: "invalid surface" at
+        // a ref line, then "more SURF than specified" at the real next
+        // surface, and different SURF and missing mat warnings about the one
+        // that was never there. They are read as the refs they are, and the
+        // count is reported as wrong, the way one with too few refs is.
+        if (!surface.refs.invalid && surface.refs.size() == static_cast<size_t>(surface.refs.number))
+        {
+            while (getLine(in))
+            {
+                std::istringstream iss1(m_line);
+                std::string first;
+
+                iss1 >> first;
+
+                if (first.empty() || !std::all_of(first.begin(), first.end(),
+                                                  [](char c) { return c >= '0' && c <= '9'; }))
+                {
+                    ungetLine(in);
+                    break;
+                }
+
+                iss1.clear();
+                iss1.seekg(0);
+
+                Ref ref;
+
+                if (!readRef(iss1, ref))
+                {
+                    ungetLine(in);
+                    break;
+                }
+
+                useRef(ref, iss1);
+                checkCoordinates(ref, iss1);
+                surface.refs.push_back(ref);
+            }
+
+            if (surface.refs.size() != static_cast<size_t>(surface.refs.number))
+            {
+                if (m_invalid_ref_count)
+                {
+                    warningWithCount(m_invalid_ref_count_count, surface.refs.line_number) << "invalid ref count: " << surface.refs.number
+                                                                                          << " actual: " << surface.refs.size() << std::endl;
+                    showLine(iss, surface.refs.number_offset);
+                }
+                surface.refs.number = static_cast<int>(surface.refs.size());
+            }
         }
 
         const std::vector<Triangle> triangles = getTriangleStrip(object, surface);
@@ -2697,8 +2776,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     object.type.line_number = m_line_number;
     object.type.line_pos = m_line_pos;
 
-    iss >> std::ws;
-    object.type.type_offset = static_cast<int>(iss.tellg());
+    object.type.type_offset = static_cast<int>(fieldPos(iss));
     iss >> object.type.type;
 
     if (!iss)
@@ -2932,6 +3010,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                             {
                                 if (texture.path.empty())
                                     texture.path = other.generic_string();
+
+                                // A texture path that leads back to the
+                                // directory the model is in finds the same
+                                // file, which is not a duplicate of itself.
+                                std::error_code same_ec;
+                                if (std::filesystem::equivalent(texture_path, other, same_ec))
+                                    continue;
 
                                 std::error_code other_ec;
                                 const std::uintmax_t other_size = std::filesystem::file_size(other, other_ec);
@@ -3258,7 +3343,10 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 object.numvert.number_offset = static_cast<int>(iss1.tellg());
             iss1 >> object.numvert.number;
 
-            if (iss1 && object.numvert.number > 0)
+            // 0 is a count like any other, as it is for numsurf: an object
+            // that says it has no vertices is empty, which is said on its
+            // own, not invalid, which kept the file from being written.
+            if (iss1 && object.numvert.number >= 0)
                 checkTrailing(iss1);
             else
             {
@@ -3625,6 +3713,15 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     showLine(iss1, number_offset);
                 }
 
+                // The kids line, where the count would have been, is what
+                // anything said about the count points at. Taken after the
+                // kids had been read, it was the line the last of them
+                // ended on, or past the end of the file, with nothing to show.
+                object.numkids.line_number = m_line_number;
+                object.numkids.line_pos = m_line_pos;
+                object.numkids.number_offset = number_offset;
+                object.numkids.inferred = true;
+
                 // try to recover by looking for OBJECT tokens
                 while (getLine(in))
                 {
@@ -3645,20 +3742,20 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     }
                     else
                     {
-                        if (m_invalid_token)
-                        {
-                            errorWithCount(m_invalid_token_count) << "invalid token: " << token1 << std::endl;
-                            showLine(iss2, 0);
-                        }
+                        // The end of the kids. The line is put back for this
+                        // object to read as its own, and whatever is said
+                        // about it is said there: said here as well, an
+                        // invalid token was reported twice.
                         ungetLine(in);
                         break;
                     }
                 }
 
+                // The kids end the object, here as when there is a count:
+                // going on to read its lines took whatever came next as more
+                // of this object, and a second kids line went unremarked.
                 object.numkids.number = static_cast<int>(object.kids.size());
-                object.numkids.line_number = m_line_number;
-                object.numkids.line_pos = m_line_pos;
-                continue;
+                break;
             }
 
             if (kids > 0)
@@ -4748,16 +4845,23 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
 
             for (size_t k = open.size(); owner != open.size() && k-- > owner + 1;)
             {
-                Correction correction;
+                // A group that has taken every child it asked for is only
+                // still open because its last child is: its count is right,
+                // and it is closed with nothing said. It was reported as a
+                // count "0 more than this group can hold".
+                if (wanted[k] > 0)
+                {
+                    Correction correction;
 
-                correction.object = open[k];
-                correction.was    = counts[open[k]];
-                correction.now    = taken[k];
-                correction.placed = flat[i].getName();
-                correction.owner  = flat[open[owner]].getName();
+                    correction.object = open[k];
+                    correction.was    = counts[open[k]];
+                    correction.now    = taken[k];
+                    correction.placed = flat[i].getName();
+                    correction.owner  = flat[open[owner]].getName();
 
-                counts[open[k]] = taken[k];
-                corrections.push_back(correction);
+                    counts[open[k]] = taken[k];
+                    corrections.push_back(correction);
+                }
 
                 open.pop_back();
                 wanted.pop_back();
@@ -4791,7 +4895,8 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
             const std::string name = object.getName();
 
             warningWithCount(m_fixable_kids_count_count, object.numkids.line_number)
-                << "kids count of " << correction.was << " is " << (correction.was - correction.now)
+                << (object.numkids.inferred ? "kids count taken as " : "kids count of ")
+                << correction.was << " is " << (correction.was - correction.now)
                 << " more than this group can hold"
                 << (name.empty() ? std::string() : (" (object: " + name + ")"))
                 << ": reading it as " << correction.now << " puts " << correction.placed
@@ -5051,7 +5156,8 @@ bool AC3D::fixKids(Object &root, std::istream &in)
     if (m_fixable_kids_count)
     {
         warningWithCount(m_fixable_kids_count_count, info.line_number)
-            << "kids count of " << was << " is " << surplus << " more than the file holds"
+            << (info.inferred ? "kids count taken as " : "kids count of ")
+            << was << " is " << surplus << " more than the file holds"
             << (name.empty() ? std::string() : (" (object: " + name + ")"))
             << ": reading it as " << now << " gives every object above it the kids it asks for"
             << std::endl;

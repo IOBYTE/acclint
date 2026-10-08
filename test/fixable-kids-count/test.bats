@@ -358,3 +358,36 @@ setup_file() {
 }
 
 ################################################################################
+
+# test11: a level of detail read inside its sibling, three groups deep: "bar"
+# asks for one child too many, and "foo" and ___TKMN1_gl1 above it have each
+# taken the one child they asked for. Only "bar" is put right. The two full
+# groups were reported as well, each a count "0 more than this group can hold".
+@test "test11.1" {
+  $RUN_TEST acclint test11.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test11.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test11.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test11.2" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test11.ac -o test11.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test11.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test11.output.ac)"
+  expected_file="$(tr -d '\r' < test11.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test11.output.ac test11.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test11.output.ac
+}
+
+################################################################################

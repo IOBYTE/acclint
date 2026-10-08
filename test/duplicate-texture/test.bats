@@ -81,4 +81,31 @@ setup_file() {
 }
 
 ################################################################################
+# A texture path can lead back to the directory the model is in, and the
+# texture found there is the file the model already uses. It was compared with
+# itself and reported as a duplicate of itself.
+################################################################################
 
+# test1.7: -T . next to -T textures. Only the copy in textures is reported.
+@test "test1.7" {
+  $RUN_TEST acclint test1.ac -T textures -T .
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test1.7.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test1.8: -T . alone. Nothing is reported.
+@test "test1.8" {
+  $RUN_TEST acclint test1.ac -T .
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test1.8.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################

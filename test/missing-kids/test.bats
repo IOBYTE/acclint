@@ -400,3 +400,16 @@ setup_file() {
   [ "$actual_file" = "$expected_file" ]
   rm test8.output.ac
 }
+
+# test9: test8 with a vertex "a" does not use. The object ends where its kids
+# line is missing, and is checked like any other: the vertex is reported.
+@test "test9" {
+  $RUN_TEST acclint test9.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test9.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test9.output
+  fi
+  [ "$actual" = "$expected" ]
+}

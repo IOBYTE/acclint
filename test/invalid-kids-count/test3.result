@@ -1,0 +1,11 @@
+test3.ac:7 error: invalid kids count
+kids x
+     ^
+test3.ac:4 warning: missing kids: only 1 out of 2 kids found
+kids 2
+     ^
+test3.ac:7 warning: kids count taken as 2 is 1 more than the file holds (object: misc): reading it as 1 gives every object above it the kids it asks for
+kids x
+     ^
+2 warnings
+1 error

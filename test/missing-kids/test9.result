@@ -1,0 +1,10 @@
+test9.ac:19 warning: missing kids line
+OBJECT poly
+^
+test9.ac:5 note: object
+OBJECT poly
+^
+test9.ac:11 warning: unused vertex
+3 3 3
+^
+2 warnings

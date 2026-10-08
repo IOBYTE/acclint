@@ -1091,6 +1091,9 @@ private:
     {
         int number = 0;
         int number_offset = 0;
+        // Counted from the objects that followed a kids line with no number
+        // on it, rather than read from it.
+        bool inferred = false;
     };
 
     struct Object : public LineInfo

@@ -1,0 +1,7 @@
+test11.ac:7 warning: missing kids: only 1 out of 2 kids found
+kids 2
+     ^
+test11.ac:16 warning: kids count of 2 is 1 more than this group can hold (object: bar): reading it as 1 puts ___TKMN1_gl2 under TKMN1_g, where it belongs
+kids 2
+     ^
+2 warnings

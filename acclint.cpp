@@ -1634,10 +1634,17 @@ int main(int argc, char *argv[])
         if (combineTexture)
         {
             ac3d.combineTexture();
+
+            // Counted before the clean, which takes out a group left empty:
+            // with nothing opaque, TRANSPARENT became the world's first kid
+            // and its textures were counted as opaque ones.
+            const size_t opaque = ac3d.getWorldKidCount(0);
+            const size_t transparent = ac3d.getWorldKidCount(1);
+
             ac3d.clean();
 
-            std::cout << "combineTexture: " << ac3d.getWorldKidCount(0)
-                      << " opaque textures "  << ac3d.getWorldKidCount(1)
+            std::cout << "combineTexture: " << opaque
+                      << " opaque textures "  << transparent
                       << " transparent textures" << std::endl;
         }
 

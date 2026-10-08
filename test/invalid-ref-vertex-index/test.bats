@@ -160,3 +160,20 @@ setup_file() {
 }
 
 ################################################################################
+
+# test4: a quad whose second ref has no number where its index should be, next
+# to a ref that names vertex 0. The failed read left the index 0, so the ref
+# was compared as vertex 0, and "duplicate surface vertices" was reported with
+# the error. It names no vertex now, and only the error is reported.
+@test "test4" {
+  $RUN_TEST acclint test4.ac -Wno-unused-vertex
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

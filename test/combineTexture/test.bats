@@ -282,3 +282,30 @@ setup_file() {
 }
 
 ################################################################################
+# The summary counts the textures in OPAQUE and TRANSPARENT, the world's first
+# and second kids. It was taken after the clean that follows, which takes out a
+# group left empty: with nothing opaque, TRANSPARENT was the first kid by then,
+# and its textures were reported as opaque ones.
+################################################################################
+
+# test7.1: the test1.1 model with a material of trans 0.5, so everything is
+# transparent: 0 opaque textures, 2 transparent ones. It was 2 and 0.
+@test "test7.1" {
+  $RUN_TEST acclint test7.1.ac -T textures --combineTexture -o test7.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test7.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test7.1.output.ac)"
+  expected_file="$(tr -d '\r' < test7.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test7.1.output.ac test7.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.1.output.ac
+}
+
+################################################################################

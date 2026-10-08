@@ -116,3 +116,20 @@ setup_file() {
 }
 
 ################################################################################
+# A refs line with nothing after the keyword. The caret was put under the
+# keyword, tellg() having said -1 at the end of the line. It goes where the
+# number would have been.
+################################################################################
+
+@test "test3" {
+  $RUN_TEST acclint test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

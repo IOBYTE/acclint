@@ -1,0 +1,10 @@
+test4.ac:5 warning: empty object: a
+OBJECT poly
+^
+test4.ac:5 warning: missing surfaces
+OBJECT poly
+^
+test4.ac:2 warning: unused material
+MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+3 warnings

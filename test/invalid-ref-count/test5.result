@@ -1,0 +1,4 @@
+test5.ac:15 warning: invalid ref count: 3 actual: 4
+refs 3
+     ^
+1 warning
