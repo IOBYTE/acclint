@@ -1,1 +1,3 @@
-combineTexture: 0 opaque textures 0 transparent textures
+test1.2.ac:2 error: no OBJECT: the file ends before its world
+1 error
+Can't write output file because input file has fatal errors

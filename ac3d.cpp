@@ -3509,7 +3509,21 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 Surface surface;
 
                 if (!readSurface(in, surface, object, true))
+                {
+                    // The file ends before the surfaces numsurf promised: it
+                    // was cut short. Said the way kids turning up early is,
+                    // and an error the same way, so a file missing its end is
+                    // not written out as if that was all there was to it. It
+                    // used to stop without a word, and -o wrote the surfaces
+                    // that were there with the count made to fit.
+                    if (in.eof())
+                    {
+                        error(object.numsurf.line_number) << "less surfaces than specified: " << i << " of "
+                                                          << object.numsurf.number << " before the end of the file" << std::endl;
+                        showLine(in, object.numsurf.line_pos, object.numsurf.number_offset);
+                    }
                     break;
+                }
 
                 object.surfaces.push_back(surface);
             }
@@ -3744,6 +3758,16 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
             showLine(iss1, 0);
         }
+    }
+
+    // The file ended before this object's kids line, which every object ends
+    // with. What was missing says it has no kids, as an OBJECT where the kids
+    // line should be does, and it is said the same way. A file cut short
+    // ends like this, and passed without a word.
+    if (object.numkids.line_number == 0 && !m_too_deep && in.eof() && m_missing_kids)
+    {
+        warningWithCount(m_missing_kids_count, object.line_number) << "missing kids line at the end of the file" << std::endl;
+        showLine(in, object.line_pos);
     }
 
     if (object.empty() && m_empty_object)
@@ -5089,6 +5113,12 @@ bool AC3D::read(const std::string &file)
     }
 
     in.clear(); // clear eof so we can seek in file
+
+    // A file with no object in it at all is a file that ends before its world:
+    // nothing to draw, and nothing to write but the header. It was taken
+    // without a word, and -o wrote a file of one line.
+    if (m_objects.empty())
+        error() << "no OBJECT: the file ends before its world" << std::endl;
 
     // Before any check looks at the tree: what was read is only the tree the
     // file describes if every kids count could be honoured.

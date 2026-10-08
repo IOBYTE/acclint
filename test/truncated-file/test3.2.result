@@ -1,0 +1,7 @@
+test3.ac:2 error: no OBJECT: the file ends before its world
+test3.ac:2 warning: unused material
+MATERIAL "" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+1 warning
+1 error
+Can't write output file because input file has fatal errors

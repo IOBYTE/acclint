@@ -1,0 +1,11 @@
+test1.ac:12 error: less surfaces than specified: 1 of 3 before the end of the file
+numsurf 3
+        ^
+test1.ac:5 warning: missing kids line at the end of the file
+OBJECT poly
+^
+test1.ac:11 warning: unused vertex
+0 1 0
+^
+2 warnings
+1 error

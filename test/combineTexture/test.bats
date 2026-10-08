@@ -19,8 +19,10 @@ setup_file() {
 # then rebuilds the world as an OPAQUE group and a TRANSPARENT group.
 #
 # It reorganises the world in place through m_objects[0], which assumes there
-# is a world to reorganise. A file with no OBJECT parses with no errors at
-# all, so nothing stops it reaching this transform through -o.
+# is a world to reorganise. A file with no OBJECT used to parse with no errors
+# at all, so nothing stopped it reaching this transform through -o. It is an
+# error now -- the file ends before its world -- and the file is not written,
+# so the transform is never reached; test1.2 and test1.3 check it stops there.
 ################################################################################
 
 # test1.1: the ordinary case. p0 and p2 share red.png and merge into one
@@ -46,41 +48,31 @@ setup_file() {
 # test1.2: materials but no OBJECT. Indexing m_objects[0] on the empty
 # object list read past the end of the vector.
 @test "test1.2" {
+  rm -f test1.2.output.ac
   $RUN_TEST acclint test1.2.ac --combineTexture -Wno-unused-material -o test1.2.output.ac
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.2.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test1.2.output
   fi
   [ "$actual" = "$expected" ]
-  actual_file="$(tr -d '\r' < test1.2.output.ac)"
-  expected_file="$(tr -d '\r' < test1.2.result.ac)"
-  if [ "$actual_file" != "$expected_file" ]; then
-    cp test1.2.output.ac test1.2.actual.output
-  fi
-  [ "$actual_file" = "$expected_file" ]
-  rm test1.2.output.ac
+  [ ! -e test1.2.output.ac ]
 }
 
 # test1.3: nothing but the header. Same empty object list, reached by a
 # different route, and the smallest input that can get here.
 @test "test1.3" {
+  rm -f test1.3.output.ac
   $RUN_TEST acclint test1.3.ac --combineTexture -o test1.3.output.ac
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test1.3.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test1.3.output
   fi
   [ "$actual" = "$expected" ]
-  actual_file="$(tr -d '\r' < test1.3.output.ac)"
-  expected_file="$(tr -d '\r' < test1.3.result.ac)"
-  if [ "$actual_file" != "$expected_file" ]; then
-    cp test1.3.output.ac test1.3.actual.output
-  fi
-  [ "$actual_file" = "$expected_file" ]
-  rm test1.3.output.ac
+  [ ! -e test1.3.output.ac ]
 }
 
 ################################################################################

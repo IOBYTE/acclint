@@ -1,8 +1,9 @@
 test13.ac:2 error: missing ENDMAT
 MAT "test"
 ^
+test13.ac:8 error: no OBJECT: the file ends before its world
 test13.ac:2 warning: unused material
 MAT "test"
 ^
 1 warning
-1 error
+2 errors
