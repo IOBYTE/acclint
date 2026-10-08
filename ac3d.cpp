@@ -1502,16 +1502,25 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
     };
 
     std::vector<Triangle> triangles;
+    std::vector<Surface> lines;
 
     for (auto &surface : object.surfaces)
     {
+        // Lines have no triangles to make and are drawn as they are, apart
+        // from the triangles, so they are kept as they are. They used to be
+        // dropped, and the vertices only they used with them.
+        if (surface.isLine() || surface.isClosedLine())
+        {
+            if (std::all_of(surface.refs.begin(), surface.refs.end(),
+                            [&object](const Ref &ref) { return ref.index < object.vertices.size(); }))
+                lines.push_back(surface);
+            continue;
+        }
+
         if (surface.isPolygon())
         {
-            // surfaces without an assigned material, or with out of range
-            // vertex indexes, can't be converted; skip them rather than
-            // reading out of bounds
-            if (surface.mats.empty())
-                continue;
+            // surfaces with out of range vertex indexes can't be converted;
+            // skip them rather than reading out of bounds
 
             if (surface.refs.size() > 3)
             {
@@ -1531,7 +1540,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
                         const Ref &r1 = surface.refs[piece[1]];
                         const Ref &r2 = surface.refs[piece[2]];
 
-                        const Triangle triangle(surface.flags, surface.mats[0].mat,
+                        const Triangle triangle(surface.flags, surface.material(),
                             r0.index, r1.index, r2.index,
                             object.vertices[r0.index].vertex,
                             object.vertices[r1.index].vertex,
@@ -1556,7 +1565,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
                             surface.refs[i].index >= object.vertices.size())
                             continue;
 
-                        const Triangle triangle(surface.flags, surface.mats[0].mat,
+                        const Triangle triangle(surface.flags, surface.material(),
                             surface.refs[0].index,
                             surface.refs[i - 1].index,
                             surface.refs[i].index,
@@ -1578,7 +1587,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
                     surface.refs[2].index >= object.vertices.size())
                     continue;
 
-                const Triangle triangle(surface.flags, surface.mats[0].mat,
+                const Triangle triangle(surface.flags, surface.material(),
                     surface.refs[0].index,
                     surface.refs[1].index,
                     surface.refs[2].index,
@@ -1596,11 +1605,11 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
         }
     }
 
-    if (triangles.empty())
+    if (triangles.empty() && lines.empty())
         return;
 
     const size_t size = triangles.size();
-    for (size_t i = 0, end = size - 1; i < end; i++)
+    for (size_t i = 0; i + 1 < size; i++)
     {
         for (size_t j = i + 1; j < size; j++)
         {
@@ -1631,6 +1640,47 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
                 triangle.m_vertex_index[i] = vertices.size();
                 vertices.emplace_back(vertex);
             }
+        }
+    }
+
+    // A line's vertex goes to the vertex a triangle made of it, where there
+    // is one, so the two do not end up as two vertices in the same place.
+    // One only a line uses gets the normal a vertex without one is read with.
+    for (auto &line : lines)
+    {
+        for (auto &ref : line.refs)
+        {
+            const size_t source = ref.index;
+            bool found = false;
+
+            for (const auto &triangle : triangles)
+            {
+                for (size_t i = 0; i < 3 && !found; i++)
+                {
+                    if (triangle.m_source[i] == source)
+                    {
+                        ref.index = triangle.m_vertex_index[i];
+                        found = true;
+                    }
+                }
+                if (found)
+                    break;
+            }
+
+            if (found)
+                continue;
+
+            Vertex vertex;
+            vertex.has_normal = true;
+            vertex.vertex = object.vertices[source].vertex;
+            vertex.normal = Point3{ { 0, 1, 0 } };
+
+            const auto it = std::find(vertices.begin(), vertices.end(), vertex);
+
+            ref.index = static_cast<size_t>(std::distance(vertices.begin(), it));
+
+            if (it == vertices.end())
+                vertices.emplace_back(vertex);
         }
     }
 
@@ -1756,6 +1806,9 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
                 surface.flags = (surface.flags & ~Surface::TypeMask) | Surface::TriangleStrip;
         }
     }
+
+    // The lines go last, after the strips they take no part in.
+    object.surfaces.insert(object.surfaces.end(), lines.begin(), lines.end());
 }
 
 bool AC3D::readHeader(std::istream &in)

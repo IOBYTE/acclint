@@ -318,3 +318,65 @@ setup_file() {
 }
 
 ################################################################################
+# Lines, closed lines, and polygons with no mat line. All three were dropped
+# by the conversion, each with the vertices only it used.
+################################################################################
+
+# test14: a closed line ahead of a quad, sharing two of its corners. The quad
+# becomes a strip, the line is kept as it was and written after it, and its
+# two shared corners go to the vertices the strip made of them. Its third
+# vertex, which only the line uses, gets a normal of 0 1 0.
+@test "test14" {
+  $RUN_TEST acclint -Wno-different-surf test14.ac -o test14.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test14.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test14.output.acc)"
+  expected_file="$(tr -d '\r' < test14.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test14.output.acc test14.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test14.output.acc
+}
+
+# test15: a quad with no mat line next to a triangle of material 1. The quad
+# is drawn with material 0 and is converted with it, and written with the mat
+# line it was missing.
+@test "test15" {
+  $RUN_TEST acclint -Wno-different-mat -Wno-missing-mat test15.ac -o test15.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test15.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test15.output.acc)"
+  expected_file="$(tr -d '\r' < test15.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test15.output.acc test15.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test15.output.acc
+}
+
+# test16: an object of nothing but a line. It is kept, and its vertices get
+# the normal 0 1 0 every vertex of a .acc needs.
+@test "test16" {
+  $RUN_TEST acclint test16.ac -o test16.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test16.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test16.output.acc)"
+  expected_file="$(tr -d '\r' < test16.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test16.output.acc test16.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test16.output.acc
+}
+
+################################################################################
