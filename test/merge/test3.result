@@ -1,0 +1,10 @@
+Reading: test3b.ac
+test3b.ac:17 error: invalid ref vertex index: 5 of 3
+5 0 0
+^
+test3b.ac:10 warning: unused vertex
+1 1 1
+^
+1 warning
+1 error
+Can't write output file because merge file has fatal errors

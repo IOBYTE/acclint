@@ -1195,111 +1195,120 @@ int main(int argc, char *argv[])
         std::cout << "acclint started at " << AC3D::getTime(start) << std::endl;
     }
 
+    // Every option that decides how a file is read and checked, for the input
+    // file and each --merge file alike. A merge file used to be read with
+    // the defaults: -W, -Wno-, --quiet, -T, --fixKids and -j had no say in
+    // how it was read.
+    const auto configure = [&](AC3D &target)
+    {
+        // warnings with tests
+        target.ambiguousTexture(ambiguous_texture);
+        target.blankLine(blank_line);
+        target.collinearSurfaceVertices(collinear_surface_vertices);
+        target.differentMat(different_mat);
+        target.differentSURF(different_surf);
+        target.differentUV(different_uv);
+        target.duplicateMaterials(duplicate_materials);
+        target.duplicateSurfaces(duplicate_surfaces);
+        target.duplicateSurfacesOrder(duplicate_surfaces_order);
+        target.duplicateSurfacesWinding(duplicate_surfaces_winding);
+        target.duplicateSurfaceVertices(duplicate_surface_vertices);
+        target.duplicateTriangles(duplicate_triangles);
+        target.duplicateTexture(duplicate_texture);
+        target.duplicateVertices(duplicate_vertices);
+        target.emptyObject(empty_object);
+        target.extraObject(extra_object);
+        target.extraUVCoordinates(extra_uv_coordinates);
+        target.fixableKidsCount(fixable_kids_count);
+        target.floatingPoint(floating_point);
+        target.groupWithGeometry(group_with_geometry);
+        target.invalidMaterial(invalid_material);
+        target.invalidNormalLength(invalid_normal_length);
+        target.invalidObjectType(invalid_object_type);
+        target.invalidRefCount(invalid_ref_count);
+        target.materialAfterObject(material_after_object);
+        target.missingKids(missing_kids);
+        target.missingMat(missing_mat);
+        target.missingNumsurf(missing_numsurf);
+        target.missingNormal(missing_normal);
+        target.missingSurfaces(missing_surfaces);
+        target.missingTexture(missing_texture);
+        target.missingUVCoordinates(missing_uv_coordinates);
+        target.multipleCrease(multiple_crease);
+        target.multipleData(multiple_data);
+        target.multipleFolded(multiple_folded);
+        target.multipleHidden(multiple_hidden);
+        target.multipleLoc(multiple_loc);
+        target.multipleLocked(multiple_locked);
+        target.multipleName(multiple_name);
+        target.multipleRot(multiple_rot);
+        target.multipleShader(multiple_shader);
+        target.multipleSubdiv(multiple_subdiv);
+        target.multipleTexoff(multiple_texoff);
+        target.multipleTexrep(multiple_texrep);
+        target.multipleTexture(multiple_texture);
+        target.multipleUrl(multiple_url);
+        target.multipleWorld(multiple_world);
+        target.mixedSurfaceTypes(mixed_surface_types);
+        target.overlapping2SidedSurface(overlapping_2_sided_surface);
+        target.overlappingGeometry(overlapping_geometry);
+        target.polyUsedAsGroup(poly_used_as_group);
+        target.polyWithKids(poly_with_kids);
+        target.rgbTexture(rgb_texture);
+        target.surface2SidedOpaque(surface_2_sided_opaque);
+        target.surfaceNotConvex(surface_not_convex);
+        target.surfaceNotCoplanar(surface_not_coplanar);
+        target.surfaceNoTexture(surface_no_texture);
+        target.surfaceSelfIntersecting(surface_self_intersecting);
+        target.surfaceStripDegenerate(surface_strip_degenerate);
+        target.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
+        target.surfaceStripHole(surface_strip_hole);
+        target.surfaceStripSize(surface_strip_size);
+        target.surfaceWindingMixed(surface_winding_mixed);
+        target.surfaceWindingOpposed(surface_winding_opposed);
+        target.surfaceZeroAreaUV(surface_zero_area_uv);
+        target.trailingText(trailing_text);
+        target.unsupportedVersion(unsupported_version);
+        target.unusedMaterial(unused_material);
+        target.unusedVertex(unused_vertex);
+        target.utf8Bom(utf8_bom);
+
+        // warnings without tests
+        target.multiplePolygonSurface(multiple_polygon_surface);
+
+        // errors with tests
+        target.invalidKidsCount(invalid_kids_count);
+        target.invalidMaterialIndex(invalid_material_index);
+        target.invalidNormal(invalid_normal);
+        target.invalidNumsurf(invalid_numsurf);
+        target.invalidNumvert(invalid_numvert);
+        target.invalidRefs(invalid_refs);
+        target.invalidSurfaceType(invalid_surface_type);
+        target.invalidToken(invalid_token);
+        target.invalidTextureCoordinate(invalid_texture_coordinate);
+        target.invalidVertex(invalid_vertex);
+        target.invalidRefVertexIndex(invalid_ref_vertex_index);
+        target.missingVertex(missing_vertex);
+        target.moreSURFThanSpecified(more_surf_than_specified);
+        target.notAC3DFile(not_ac3d_file);
+
+        // errors without tests
+        target.unfixableKidsCount(unfixable_kids_count);
+
+        target.texturePaths(texture_paths);
+        target.showTimes(show_times);
+        // Only when a file is being written. Reading it to be told what is
+        // wrong with it leaves the tree exactly as the file gave it; the
+        // counting still runs either way and still says what it found.
+        target.fixKids(fix_kids && !out_file.empty());
+        target.quiet(quiet);
+        target.summary(summary);
+        target.threads(threads);
+    };
+
     AC3D ac3d;
 
-    // warnings with tests
-    ac3d.ambiguousTexture(ambiguous_texture);
-    ac3d.blankLine(blank_line);
-    ac3d.collinearSurfaceVertices(collinear_surface_vertices);
-    ac3d.differentMat(different_mat);
-    ac3d.differentSURF(different_surf);
-    ac3d.differentUV(different_uv);
-    ac3d.duplicateMaterials(duplicate_materials);
-    ac3d.duplicateSurfaces(duplicate_surfaces);
-    ac3d.duplicateSurfacesOrder(duplicate_surfaces_order);
-    ac3d.duplicateSurfacesWinding(duplicate_surfaces_winding);
-    ac3d.duplicateSurfaceVertices(duplicate_surface_vertices);
-    ac3d.duplicateTriangles(duplicate_triangles);
-    ac3d.duplicateTexture(duplicate_texture);
-    ac3d.duplicateVertices(duplicate_vertices);
-    ac3d.emptyObject(empty_object);
-    ac3d.extraObject(extra_object);
-    ac3d.extraUVCoordinates(extra_uv_coordinates);
-    ac3d.fixableKidsCount(fixable_kids_count);
-    ac3d.floatingPoint(floating_point);
-    ac3d.groupWithGeometry(group_with_geometry);
-    ac3d.invalidMaterial(invalid_material);
-    ac3d.invalidNormalLength(invalid_normal_length);
-    ac3d.invalidObjectType(invalid_object_type);
-    ac3d.invalidRefCount(invalid_ref_count);
-    ac3d.materialAfterObject(material_after_object);
-    ac3d.missingKids(missing_kids);
-    ac3d.missingMat(missing_mat);
-    ac3d.missingNumsurf(missing_numsurf);
-    ac3d.missingNormal(missing_normal);
-    ac3d.missingSurfaces(missing_surfaces);
-    ac3d.missingTexture(missing_texture);
-    ac3d.missingUVCoordinates(missing_uv_coordinates);
-    ac3d.multipleCrease(multiple_crease);
-    ac3d.multipleData(multiple_data);
-    ac3d.multipleFolded(multiple_folded);
-    ac3d.multipleHidden(multiple_hidden);
-    ac3d.multipleLoc(multiple_loc);
-    ac3d.multipleLocked(multiple_locked);
-    ac3d.multipleName(multiple_name);
-    ac3d.multipleRot(multiple_rot);
-    ac3d.multipleShader(multiple_shader);
-    ac3d.multipleSubdiv(multiple_subdiv);
-    ac3d.multipleTexoff(multiple_texoff);
-    ac3d.multipleTexrep(multiple_texrep);
-    ac3d.multipleTexture(multiple_texture);
-    ac3d.multipleUrl(multiple_url);
-    ac3d.multipleWorld(multiple_world);
-    ac3d.mixedSurfaceTypes(mixed_surface_types);
-    ac3d.overlapping2SidedSurface(overlapping_2_sided_surface);
-    ac3d.overlappingGeometry(overlapping_geometry);
-    ac3d.polyUsedAsGroup(poly_used_as_group);
-    ac3d.polyWithKids(poly_with_kids);
-    ac3d.rgbTexture(rgb_texture);
-    ac3d.surface2SidedOpaque(surface_2_sided_opaque);
-    ac3d.surfaceNotConvex(surface_not_convex);
-    ac3d.surfaceNotCoplanar(surface_not_coplanar);
-    ac3d.surfaceNoTexture(surface_no_texture);
-    ac3d.surfaceSelfIntersecting(surface_self_intersecting);
-    ac3d.surfaceStripDegenerate(surface_strip_degenerate);
-    ac3d.surfaceStripDuplicateTriangles(surface_strip_duplicate_triangles);
-    ac3d.surfaceStripHole(surface_strip_hole);
-    ac3d.surfaceStripSize(surface_strip_size);
-    ac3d.surfaceWindingMixed(surface_winding_mixed);
-    ac3d.surfaceWindingOpposed(surface_winding_opposed);
-    ac3d.surfaceZeroAreaUV(surface_zero_area_uv);
-    ac3d.trailingText(trailing_text);
-    ac3d.unsupportedVersion(unsupported_version);
-    ac3d.unusedMaterial(unused_material);
-    ac3d.unusedVertex(unused_vertex);
-    ac3d.utf8Bom(utf8_bom);
-
-    // warnings without tests
-    ac3d.multiplePolygonSurface(multiple_polygon_surface);
-
-    // errors with tests
-    ac3d.invalidKidsCount(invalid_kids_count);
-    ac3d.invalidMaterialIndex(invalid_material_index);
-    ac3d.invalidNormal(invalid_normal);
-    ac3d.invalidNumsurf(invalid_numsurf);
-    ac3d.invalidNumvert(invalid_numvert);
-    ac3d.invalidRefs(invalid_refs);
-    ac3d.invalidSurfaceType(invalid_surface_type);
-    ac3d.invalidToken(invalid_token);
-    ac3d.invalidTextureCoordinate(invalid_texture_coordinate);
-    ac3d.invalidVertex(invalid_vertex);
-    ac3d.invalidRefVertexIndex(invalid_ref_vertex_index);
-    ac3d.missingVertex(missing_vertex);
-    ac3d.moreSURFThanSpecified(more_surf_than_specified);
-    ac3d.notAC3DFile(not_ac3d_file);
-
-    // errors without tests
-    ac3d.unfixableKidsCount(unfixable_kids_count);
-
-    ac3d.texturePaths(texture_paths);
-    ac3d.showTimes(show_times);
-    // Only when a file is being written. Reading it to be told what is wrong
-    // with it leaves the tree exactly as the file gave it; the counting still
-    // runs either way and still says what it found.
-    ac3d.fixKids(fix_kids && !out_file.empty());
-    ac3d.quiet(quiet);
-    ac3d.summary(summary);
-    ac3d.threads(threads);
+    configure(ac3d);
 
     if (listInput)
         std::cerr << in_file << std::endl;
@@ -1446,11 +1455,26 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
 
+        // Set before merging as well as everything after: a merge file in the
+        // other format is converted to the one being written as it is merged,
+        // with the strips that will be written.
+        ac3d.outputFile(out_file);
+        ac3d.stripSwaps(stripSwaps);
+        ac3d.triangleStrips(triangleStrips);
+
+        // Before merging, and in each file merged as well as this one: a merge
+        // takes one world from each, and a file that is two concatenated has
+        // two. It ran after the merge, which had already been refused.
+        if (fix_multiple_worlds)
+            ac3d.fixMultipleWorlds();
+
         for (const auto &filename : merge_files)
         {
             std::cout << "Reading: " << filename << std::endl;
 
             AC3D to_merge;
+
+            configure(to_merge);
 
             if (!to_merge.read(filename))
             {
@@ -1473,13 +1497,21 @@ int main(int argc, char *argv[])
                 std::cerr << std::endl;
             }
 
+            // Refused the way the input file is. Its errors were counted and
+            // then ignored, and a file that could not have been written on its
+            // own was written merged into another.
             if (to_merge.errors() > 0)
             {
                 std::cerr << to_merge.errors() << " error";
                 if (to_merge.errors() > 1)
                     std::cerr << "s";
                 std::cerr << std::endl;
+                std::cerr << "Can't write output file because merge file has fatal errors" << std::endl;
+                return EXIT_FAILURE;
             }
+
+            if (fix_multiple_worlds)
+                to_merge.fixMultipleWorlds();
 
             std::cout << "Merging: " << filename << std::endl;
 
@@ -1537,9 +1569,6 @@ int main(int argc, char *argv[])
 
         if (splitMat)
             ac3d.splitMultipleMat();
-
-        if (fix_multiple_worlds)
-            ac3d.fixMultipleWorlds();
 
         ac3d.clean();
 

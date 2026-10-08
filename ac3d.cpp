@@ -10063,36 +10063,155 @@ void AC3D::dump(DumpType dump_type) const
 
 bool AC3D::merge(const AC3D &ac3d)
 {
-    if (m_objects.size() != 1 || m_objects[0].type.type != "world" ||
-        ac3d.m_objects.size() != 1 || ac3d.m_objects[0].type.type != "world")
+    // Said before the caller's "Couldn't merge", which used to be all there
+    // was to go on.
+    const auto oneWorld = [](const AC3D &file, const char *which)
     {
+        if (file.m_objects.size() == 1 && file.m_objects[0].type.type == "world")
+            return true;
+
+        std::cerr << "The " << which << " file has " << file.m_objects.size() << " top level objects, not one world";
+        if (file.m_objects.size() > 1)
+            std::cerr << " (--fixMultipleWorlds joins two)";
+        std::cerr << std::endl;
+
         return false;
-    }
+    };
+
+    if (!oneWorld(*this, "input") || !oneWorld(ac3d, "merge"))
+        return false;
 
     const size_t num_materials = m_materials.size();
-    const size_t num_kids = m_objects[0].kids.size();
+    const Object &world = m_objects[0];
+    const Object &other_world = ac3d.m_objects[0];
 
-    m_materials.insert(m_materials.end(), ac3d.m_materials.begin(), ac3d.m_materials.end());
-    m_objects[0].kids.insert(m_objects[0].kids.end(), ac3d.m_objects[0].kids.begin(), ac3d.m_objects[0].kids.end());
+    std::vector<Material> materials = ac3d.m_materials;
+    std::vector<Object> kids = other_world.kids;
 
-    // fix up materials
-    for (size_t i = num_kids; i < m_objects[0].kids.size(); i++)
+    // The other world's loc and rot place its kids, and the world itself is
+    // not kept: it is folded into each kid's own transform, along with the
+    // inverse of this world's, so a kid ends up where it was. It used to be
+    // dropped, and a merged world placed 100 units along x came out at the
+    // origin. Folded rather than flattened, so a kid that moves -- a door on
+    // its hinge -- still turns where it did.
+    if (!world.locations.empty() || !world.rotations.empty() ||
+        !other_world.locations.empty() || !other_world.rotations.empty())
     {
-        m_objects[0].kids[i].incrementMaterialIndex(num_materials);
+        // Points are row vectors and a.multiply(b) is b times a: a point goes
+        // through the kid, then the other world, then out of this one.
+        const Matrix &base = world.matrix;
+        const double a00 = base[1][1] * base[2][2] - base[1][2] * base[2][1];
+        const double a01 = base[0][2] * base[2][1] - base[0][1] * base[2][2];
+        const double a02 = base[0][1] * base[1][2] - base[0][2] * base[1][1];
+        const double a10 = base[1][2] * base[2][0] - base[1][0] * base[2][2];
+        const double a11 = base[0][0] * base[2][2] - base[0][2] * base[2][0];
+        const double a12 = base[0][2] * base[1][0] - base[0][0] * base[1][2];
+        const double a20 = base[1][0] * base[2][1] - base[1][1] * base[2][0];
+        const double a21 = base[0][1] * base[2][0] - base[0][0] * base[2][1];
+        const double a22 = base[0][0] * base[1][1] - base[0][1] * base[1][0];
+        const double determinant = base[0][0] * a00 + base[0][1] * a10 + base[0][2] * a20;
+
+        // A world that flattens everything into a plane cannot be undone.
+        if (std::fabs(determinant) < Point3::SMALL_NUM)
+        {
+            std::cerr << "The input file's world is scaled to nothing: its kids cannot be placed under it" << std::endl;
+            return false;
+        }
+
+        Matrix inverse;
+        const double scale = 1.0 / determinant;
+        inverse[0] = { a00 * scale, a01 * scale, a02 * scale, 0.0 };
+        inverse[1] = { a10 * scale, a11 * scale, a12 * scale, 0.0 };
+        inverse[2] = { a20 * scale, a21 * scale, a22 * scale, 0.0 };
+        for (size_t j = 0; j < 3; ++j)
+            inverse[3][j] = -(base[3][0] * inverse[0][j] + base[3][1] * inverse[1][j] + base[3][2] * inverse[2][j]);
+        inverse[3][3] = 1.0;
+
+        const Matrix into_this = inverse.multiply(other_world.matrix);
+
+        for (auto &kid : kids)
+        {
+            const Matrix combined = into_this.multiply(kid.matrix);
+
+            kid.matrix = combined;
+
+            Location location;
+            if (!kid.locations.empty())
+                location = kid.locations.back();
+            location.location = { combined[3][0], combined[3][1], combined[3][2] };
+            kid.locations.clear();
+            if (location.location != Point3{ 0.0, 0.0, 0.0 } || location.line_number != 0)
+                kid.locations.push_back(location);
+
+            Rotation rotation;
+            if (!kid.rotations.empty())
+                rotation = kid.rotations.back();
+            rotation.rotation = { combined[0][0], combined[0][1], combined[0][2],
+                                  combined[1][0], combined[1][1], combined[1][2],
+                                  combined[2][0], combined[2][1], combined[2][2] };
+            kid.rotations.clear();
+            if (rotation.rotation != Rotation().rotation || rotation.line_number != 0)
+                kid.rotations.push_back(rotation);
+        }
     }
+
+    // A file in the other format is converted as it is merged. Its objects
+    // were taken as they were: strips and normals written into a .ac, a .ac's
+    // objects in a .acc with no normals, MAT blocks under an AC3Db header.
+    // Both sides go straight to the format being written, each converted
+    // once, and write() then has nothing left to convert: going through the
+    // other file's format on the way would lose what that format alone
+    // holds -- the normals a .acc was given, the polygons a .ac was made of.
+    if (ac3d.m_is_ac != m_is_ac)
+    {
+        const bool to_ac = !m_acc_output;
+        const auto convert = [this, to_ac](std::vector<Object> &objects)
+        {
+            if (to_ac)
+                convertObjectsToAc(objects);
+            else
+                convertObjectsToAcc(objects, m_triangle_strips, m_strip_swaps);
+        };
+
+        if (m_is_ac != to_ac)
+            convert(m_objects);
+
+        if (ac3d.m_is_ac != to_ac)
+            convert(kids);
+
+        m_is_ac = to_ac;
+    }
+
+    // And the materials take this file's form, MATERIAL or MAT, from its header.
+    for (auto &material : materials)
+        material.version12 = m_header.getVersion() == 12;
+
+    // Each surface is pointed at the material it used, now after this file's.
+    for (auto &kid : kids)
+        kid.incrementMaterialIndex(num_materials);
+
+    m_materials.insert(m_materials.end(), materials.begin(), materials.end());
+    m_objects[0].kids.insert(m_objects[0].kids.end(), kids.begin(), kids.end());
 
     return true;
 }
 
 void AC3D::Object::incrementMaterialIndex(size_t num_materials)
 {
-    if (type.type == "poly")
+    if (num_materials == 0)
+        return;
+
+    // Every object with surfaces, not only a poly: a group or a light with
+    // geometry of its own kept its old index, and was drawn with the first
+    // file's material of that number. A surface with no mat line is drawn
+    // with its own file's material 0, so it is given one, shifted like the
+    // rest, rather than being left to mean this file's.
+    for (auto &surface : surfaces)
     {
-        for (auto &surface : surfaces)
-        {
-            if (!surface.mats.empty())
-                surface.mats[0].mat += num_materials;
-        }
+        if (surface.mats.empty())
+            surface.mats.emplace_back(0);
+
+        surface.mats[0].mat += num_materials;
     }
 
     // A poly's kids as well: left out, they would point at the first file's
