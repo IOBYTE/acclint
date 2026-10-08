@@ -21,6 +21,10 @@ setup_file() {
 #
 # A light is part of the hierarchy the way a group is, and is shown the same
 # way in every mode. It was never shown at all.
+#
+# So is a poly with kids in group mode, where polys are not otherwise shown:
+# the kids hang off it, and without its line "wheels" was shown under the
+# light.
 ################################################################################
 
 @test "test1.1" {

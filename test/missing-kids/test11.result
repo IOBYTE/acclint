@@ -1,0 +1,14 @@
+test11.ac:18 error: less surfaces than specified
+OBJECT poly
+^
+test11.ac:11 note: number specified
+numsurf 2
+        ^
+test11.ac:18 warning: missing kids line
+OBJECT poly
+^
+test11.ac:5 note: object
+OBJECT poly
+^
+1 warning
+1 error

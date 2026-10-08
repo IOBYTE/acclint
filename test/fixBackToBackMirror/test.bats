@@ -128,3 +128,29 @@ setup_file() {
   [ "$actual_file" = "$expected_file" ]
   rm test6.output.ac
 }
+
+################################################################################
+# A merged pair is 2 sided, so with --splitSURF the object it is in can be left
+# holding a mix of states the split had taken apart. It is split again, as
+# after the other two sided fixes; it was written holding both.
+################################################################################
+
+# test7: a quad and its mirror image, merged into one 2 sided quad, beside a
+# single sided triangle in the same object. They come out as two objects.
+@test "test7" {
+  $RUN_TEST acclint -Wno-warnings test7.ac --fixBackToBackMirror --splitSURF -o test7.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test7.output.ac)"
+  expected_file="$(tr -d '\r' < test7.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test7.output.ac test7.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.output.ac
+}
+
+################################################################################

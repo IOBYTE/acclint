@@ -426,3 +426,37 @@ setup_file() {
 }
 
 ################################################################################
+
+# test13: the poly TKMN0 says kids 1 and takes obj0_0_1, which belongs to
+# ___TKMN0_gl0 beside it; the level of detail, short of its second kid, then
+# takes ___TKMN0_gl1. A poly holds no kids in a track model, so it is the poly's
+# count that comes down, and the level of detail keeps the 2 it was right to
+# ask for. Its count was the one lowered.
+@test "test13.1" {
+  $RUN_TEST acclint test13.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test13.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test13.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test13.2" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test13.ac -o test13.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test13.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test13.output.ac)"
+  expected_file="$(tr -d '\r' < test13.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test13.output.ac test13.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test13.output.ac
+}
+
+################################################################################

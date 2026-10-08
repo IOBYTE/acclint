@@ -20,6 +20,8 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <filesystem>
+#include <set>
 
 #ifdef _WIN32
 #pragma warning( disable : 4996)
@@ -166,6 +168,8 @@ void usage()
     std::cerr << "                                         rebuild the object tree from them." << std::endl;
     std::cerr << "  --fixMultipleWorlds                    Removes extra worlds." << std::endl;
     std::cerr << "  --fixOverlapping2SidedSurface          Fix overlapping 2 sided surfaces." << std::endl;
+    std::cerr << "                                         An object left holding both is split" << std::endl;
+    std::cerr << "                                         as by --splitSURF." << std::endl;
     std::cerr << "  --fixPolyWithKids                      Convert a poly with kids to a group and" << std::endl;
     std::cerr << "                                         make its geometry the group's first kid." << std::endl;
     std::cerr << "                                         Implied by --splitSURF, --splitMat, --grid," << std::endl;
@@ -173,6 +177,8 @@ void usage()
     std::cerr << "                                         --fixOverlapping2SidedSurface." << std::endl;
     std::cerr << "  --fixRgbTexture                        Rename texture to use png texture." << std::endl;
     std::cerr << "  --fixSurface2SidedOpaque               Convert opaque 2 sided surfaces to single sided." << std::endl;
+    std::cerr << "                                         An object left holding both is split" << std::endl;
+    std::cerr << "                                         as by --splitSURF." << std::endl;
     std::cerr << "  --showTimes                            Show execution times of some operations." << std::endl;
     std::cerr << "  --quiet                                Don't show warning and error messages." << std::endl;
     std::cerr << "  --summary                              Show summary of warnings and errors." << std::endl;
@@ -434,9 +440,39 @@ int main(int argc, char *argv[])
     // way the previous hand-rolled parser did.
     opterr = 0;
 
+    // The first option given that only changes what -o writes. Without -o
+    // there is nothing for it to change, and it was taken without a word:
+    // the run did what it would have done without it and exited 0.
+    std::string output_option;
+
+    const std::set<int> output_options = {
+        OPT_SPLIT_SURF, OPT_SPLIT_MAT, OPT_FLATTEN, OPT_SPLIT_POLYGON, OPT_REBUILD_STRIPS,
+        OPT_NO_TRIANGLE_STRIPS, OPT_COMBINE_OBJECTS, OPT_COMBINE_TEXTURE, OPT_FIX_ALL,
+        OPT_FIX_BACK_TO_BACK_MIRROR, OPT_FIX_MULTIPLE_WORLDS, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
+        OPT_FIX_POLY_WITH_KIDS, OPT_FIX_RGB_TEXTURE, OPT_FIX_SURFACE_2_SIDED_OPAQUE, OPT_QUAD_TREE,
+        OPT_STITCH_STRIPS, OPT_STRIP_SWAPS, OPT_GRID, OPT_MERGE, OPT_REMOVE_OBJECTS
+    };
+
     int c;
     while ((c = getopt_long(argc, argv, ":o:T:j:v:lW:", long_options, nullptr)) != -1)
     {
+        if (output_option.empty())
+        {
+            if (c == 'v')
+                output_option = "-v";
+            else if (output_options.contains(c))
+            {
+                for (const option *o = long_options; o->name != nullptr; ++o)
+                {
+                    if (o->val == c)
+                    {
+                        output_option = std::string("--") + o->name;
+                        break;
+                    }
+                }
+            }
+        }
+
         switch (c)
         {
         case 'o':
@@ -447,9 +483,10 @@ int main(int argc, char *argv[])
             break;
         case 'j':
         {
+            // All of it a number: "2x" was read as 2 and the rest ignored.
             std::istringstream iss(optarg);
             iss >> threads;
-            if (!iss || threads < 1 || threads > 256)
+            if (!iss || !(iss >> std::ws).eof() || threads < 1 || threads > 256)
             {
                 std::cerr << "Invalid number of threads: " << optarg << std::endl;
                 usage();
@@ -1181,6 +1218,21 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (!output_option.empty() && out_file.empty())
+    {
+        std::cerr << output_option << " needs -o" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // Strips are joined only in a .acc, the one format that has them, so
+    // asked for with a .ac it was passed over.
+    if (stitchStrips && !out_file.empty() &&
+        std::filesystem::path(out_file).extension() != ".acc")
+    {
+        std::cerr << "--stitchStrips needs a .acc output file" << std::endl;
+        return EXIT_FAILURE;
+    }
+
     for (int idx = optind; idx < argc; ++idx)
     {
         const std::string arg = argv[idx];
@@ -1625,7 +1677,12 @@ int main(int argc, char *argv[])
         // take out the ones a piece does not use. Nothing followed this one,
         // so the pieces were written with all of them, and each that went
         // unused was an "unused vertex" in the file.
-        if (fix_surface_2_sided_opaque || fix_overlapping_2_sided_surface)
+        //
+        // --fixBackToBackMirror makes the pair it merges 2 sided, which leaves
+        // the same mix in an object --splitSURF took apart before it ran, and
+        // the object was written with it.
+        if (fix_surface_2_sided_opaque || fix_overlapping_2_sided_surface ||
+            (fix_back_to_back_mirror && splitSURF))
         {
             if (ac3d.splitMultipleSURF())
                 ac3d.clean();

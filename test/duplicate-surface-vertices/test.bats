@@ -177,3 +177,53 @@ setup_file() {
 }
 
 ################################################################################
+# Three equal refs in a row: the last is a duplicate of the one before it,
+# not the polygon coming back to a corner it left, which is what it was
+# reported as -- "multiple polygon surface" -- beside the duplicates.
+################################################################################
+
+@test "test5" {
+  $RUN_TEST acclint test5.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+# Two refs side by side on vertices in one place with different normals. The
+# edge between them has no length whatever the normals say; compared with the
+# normals they were passed over, and the zero length edge was written.
+################################################################################
+
+@test "test6.1" {
+  $RUN_TEST acclint test6.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test6.2" {
+  $RUN_TEST acclint -Wno-warnings test6.acc -o test6.2.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test6.2.output.acc)"
+  expected_file="$(tr -d '\r' < test6.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.2.output.acc test6.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.2.output.acc
+}
+
+################################################################################

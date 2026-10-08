@@ -232,3 +232,19 @@ setup_file() {
 }
 
 ################################################################################
+# The warning is about a texture, and was given for a 2 sided surface with
+# none: "texture: " and nothing after it. --fixSurface2SidedOpaque acts only on
+# a texture it can see is opaque, so the warning survived the fix.
+################################################################################
+
+# test7: a 2 sided panel with no texture. Nothing is reported.
+@test "test7" {
+  $RUN_TEST acclint -Wsurface-2-sided-opaque test7.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################

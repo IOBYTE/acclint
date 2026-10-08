@@ -413,3 +413,80 @@ setup_file() {
   fi
   [ "$actual" = "$expected" ]
 }
+
+
+################################################################################
+# A group with no kids line. It is there to hold objects, and the ones that
+# follow are taken for its kids, as after a kids line with no number on it.
+# Ended with none, as a poly is, it was removed as empty and its kids were
+# written outside the world.
+################################################################################
+
+# test10: the world asks for 2, and "g" has no kids line before a, b and c.
+# "g" takes all three, which is one more than the file can give it: that is
+# reported against the line its kids line would have been on (test10.1). The
+# tree is written as read (test10.2), and with --fixKids "g" holds a and b and
+# the world holds c (test10.3).
+@test "test10.1" {
+  $RUN_TEST acclint test10.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test10.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test10.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test10.2" {
+  $RUN_TEST acclint -Wno-warnings test10.ac -o test10.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test10.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test10.2.output.ac)"
+  expected_file="$(tr -d '\r' < test10.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test10.2.output.ac test10.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test10.2.output.ac
+}
+
+@test "test10.3" {
+  $RUN_TEST acclint -Wno-warnings --fixKids test10.ac -o test10.3.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test10.3.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test10.3.output.ac)"
+  expected_file="$(tr -d '\r' < test10.fixed.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test10.3.output.ac test10.3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test10.3.output.ac
+}
+
+
+################################################################################
+# A poly with fewer surfaces than its numsurf and no kids line: the next
+# OBJECT comes where a SURF was wanted. It was read as a surface, "invalid
+# surface", and the next object's lines as this one's -- one poly with both
+# names, its vertices and surfaces errors. It is less surfaces than specified,
+# as a kids line there is, and the object ends; the missing kids line is
+# reported, and the next object is read as the one it is.
+################################################################################
+
+@test "test11" {
+  $RUN_TEST acclint test11.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test11.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test11.output
+  fi
+  [ "$actual" = "$expected" ]
+}

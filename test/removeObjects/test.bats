@@ -114,3 +114,41 @@ setup_file() {
 }
 
 ################################################################################
+
+# test3: an object with two name lines, "keep" and then "drop". It is written
+# as "drop" -- the last name line is the one that stands -- and it is matched
+# by that name too. It was matched by the first: removing "keep" removed it
+# (test3.1), and removing "drop" left it (test3.2).
+@test "test3.1" {
+  $RUN_TEST acclint -Wno-warnings test3.ac --removeObjects poly keep -o test3.1.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test3.1.output.ac)"
+  expected_file="$(tr -d '\r' < test3.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.1.output.ac test3.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.1.output.ac
+}
+
+@test "test3.2" {
+  $RUN_TEST acclint -Wno-warnings test3.ac --removeObjects poly drop -o test3.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test3.2.output.ac)"
+  expected_file="$(tr -d '\r' < test3.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.2.output.ac test3.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.2.output.ac
+}
+
+################################################################################

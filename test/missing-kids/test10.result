@@ -1,0 +1,13 @@
+test10.ac:7 warning: missing kids line
+OBJECT poly
+^
+test10.ac:5 note: object
+OBJECT group
+^
+test10.ac:4 warning: missing kids: only 1 out of 2 kids found
+kids 2
+     ^
+test10.ac:7 warning: kids count taken as 3 is 1 more than the file holds (object: g): reading it as 2 gives every object above it the kids it asks for
+OBJECT poly
+^
+3 warnings

@@ -943,7 +943,10 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         iss.str(m_line);
         iss >> token;
     }
-    else if (token == kids_token)
+    // The object ends, or the next one begins, before the surfaces numsurf
+    // promised. An OBJECT was read as a surface that was not there -- and
+    // the next object's lines as this one's: one poly with both names.
+    else if (token == kids_token || token == OBJECT_token)
     {
         error() << "less surfaces than specified" << std::endl;
         showLine(iss, 0);
@@ -3917,6 +3920,47 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                 showLine(in, object.line_pos);
             }
 
+            // A group or the world is there to hold objects, and the ones
+            // that follow are taken for its kids, the way they are after a
+            // kids line with no number on it. Ended with none, the group was
+            // removed as empty and its kids were written outside the world.
+            // The count they make is one the reading took, and the line it
+            // would have been on is where anything said about it points.
+            if (object.type.type == "group" || object.type.type == "world")
+            {
+                object.numkids.line_number = m_line_number;
+                object.numkids.line_pos = m_line_pos;
+                object.numkids.number_offset = 0;
+                object.numkids.inferred = true;
+
+                Object first;
+                readObject(iss1, in, first);
+                object.kids.push_back(first);
+
+                while (getLine(in))
+                {
+                    std::istringstream iss2(m_line);
+                    std::string token1;
+
+                    iss2 >> token1;
+
+                    if (token1 == OBJECT_token)
+                    {
+                        Object kid;
+                        readObject(iss2, in, kid);
+                        object.kids.push_back(kid);
+                    }
+                    else if (!readMaterialAfterObject(iss2, in, token1))
+                    {
+                        ungetLine(in);
+                        break;
+                    }
+                }
+
+                object.numkids.number = static_cast<int>(object.kids.size());
+                break;
+            }
+
             ungetLine(in);
             break;
         }
@@ -3973,7 +4017,32 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
     if (surface1.refs.size() != surface2.refs.size() || surface1.refs.empty())
         return false;
 
+    // Only surfaces of one kind can be the same surface. A polygon and the
+    // closed line around it, or a polygon and a strip through the same refs,
+    // are different things drawn from the same vertices, and were reported
+    // as duplicates.
+    if ((surface1.flags & Surface::TypeMask) != (surface2.flags & Surface::TypeMask))
+        return false;
+
     const size_t size = surface1.refs.size();
+
+    // An open line has two ends, not a loop to start anywhere on: it is the
+    // same line only refs for refs, or run backwards from the other end.
+    // Compared as a loop, a line and the same points in another order were
+    // "duplicate surfaces with different vertex order".
+    if (surface1.isLine() && difference != Difference::None)
+    {
+        if (difference != Difference::Winding)
+            return false;
+
+        for (size_t k = 0; k < size; ++k)
+        {
+            if (!sameVertex(surface1.refs[k].index, surface2.refs[size - 1 - k].index))
+                return false;
+        }
+
+        return true;
+    }
 
     if (difference == Difference::None)
     {
@@ -4149,7 +4218,7 @@ void AC3D::Object::removeKids(const RemoveInfo &remove_info)
     auto kid = kids.begin();
     while (kid != kids.end())
     {
-        if (!kid->names.empty() && kid->type.type == remove_info.object_type && remove_info.matches(kid->names[0].name))
+        if (!kid->names.empty() && kid->type.type == remove_info.object_type && remove_info.matches(kid->names.back().name))
             kid = kids.erase(kid);
         else
         {
@@ -4176,7 +4245,11 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
         // A light is part of the hierarchy the way a group is, and shown in
         // every mode the same way. It used to match none of these and was
         // never shown, though its kids were, under the light's parent.
-        if (type.type == "group" || type.type == "light")
+        //
+        // So is a poly with kids when polys are not shown: they hang off it,
+        // and without its line they were shown under whatever came before.
+        if (type.type == "group" || type.type == "light" ||
+            (type.type == "poly" && !kids.empty() && dump_type != DumpType::poly && dump_type != DumpType::surf))
         {
             std::cout << indent << (count + 1) << " " << type.type;
 
@@ -4887,13 +4960,47 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
                 {
                     Correction correction;
 
-                    correction.object = open[k];
-                    correction.was    = counts[open[k]];
-                    correction.now    = taken[k];
                     correction.placed = flat[i].getName();
                     correction.owner  = flat[open[owner]].getName();
 
-                    counts[open[k]] = taken[k];
+                    // A group still waiting may be waiting because a poly
+                    // inside it took what was the group's: a poly holds no
+                    // kids in a track model, so a count on one that leaves
+                    // the group short is the likelier mistake. Taking it off
+                    // the poly gives the group back the objects it was
+                    // owed, and the group's own count is left as the file
+                    // gave it. Only the group's was looked at, and a count
+                    // that was right was lowered in place of the one that
+                    // was wrong.
+                    size_t culprit = flat.size();
+
+                    for (size_t j = open[k] + 1; j < i && culprit == flat.size(); ++j)
+                    {
+                        if (flat[j].type.type != "poly" || counts[j] < wanted[k])
+                            continue;
+
+                        std::vector<int> trial = counts;
+
+                        trial[j] -= wanted[k];
+
+                        if (parentsOf(trial)[i] == open[owner] && placesEveryObject(trial))
+                            culprit = j;
+                    }
+
+                    if (culprit != flat.size())
+                    {
+                        correction.object = culprit;
+                        correction.was    = counts[culprit];
+                        correction.now    = counts[culprit] - wanted[k];
+                    }
+                    else
+                    {
+                        correction.object = open[k];
+                        correction.was    = counts[open[k]];
+                        correction.now    = taken[k];
+                    }
+
+                    counts[correction.object] = correction.now;
                     corrections.push_back(correction);
                 }
 
@@ -4931,7 +5038,7 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
             warningWithCount(m_fixable_kids_count_count, object.numkids.line_number)
                 << (object.numkids.inferred ? "kids count taken as " : "kids count of ")
                 << correction.was << " is " << (correction.was - correction.now)
-                << " more than this group can hold"
+                << " more than this " << object.type.type << " can hold"
                 << (name.empty() ? std::string() : (" (object: " + name + ")"))
                 << ": reading it as " << correction.now << " puts " << correction.placed
                 << " under " << (correction.owner.empty() ? "the world" : correction.owner)
@@ -6135,7 +6242,10 @@ void AC3D::checkMissingSurfaces(std::istream &in, const Object &object)
     if (object.type.type != "poly")
         return;
 
-    if (object.surfaces.empty())
+    // A poly with kids and nothing of its own is a poly used as a group, and
+    // is reported as that. Reported as missing its surfaces too, it was said
+    // twice, and -Wno-poly-used-as-group left the second one standing.
+    if (object.surfaces.empty() && object.kids.empty())
     {
         warningWithCount(m_missing_surfaces_count, object.line_number) << "missing surfaces" << std::endl;
         showLine(in, object.line_pos);
@@ -6533,8 +6643,12 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
                 surface.refs[j].index >= object.vertices.size())
                 continue;
 
+            // The same place, whatever normals a .acc gives the two: an edge
+            // between them has no length either way. Compared with the
+            // normals, two refs at one point with different normals were
+            // passed over, and the zero length edge was written.
             if (surface.refs[i].index == surface.refs[j].index ||
-                object.vertices[surface.refs[i].index] == object.vertices[surface.refs[j].index])
+                object.vertices[surface.refs[i].index].vertex.equals(object.vertices[surface.refs[j].index].vertex))
             {
                 // triangle strips and lines can have duplicates
                 if (surface.isPolygon() || surface.isClosedLine())
@@ -6560,6 +6674,15 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
                                 showLine(in, object.vertices[surface.refs[i].index].line_pos);
                             }
                         }
+                    }
+                    // The far end of a run of one point -- three equal refs
+                    // in a row -- is a duplicate of the ref before it, and
+                    // is reported as that, not as the polygon coming back
+                    // to a corner it left.
+                    else if (surface.refs[j - 1].index < object.vertices.size() &&
+                             (surface.refs[j - 1].index == surface.refs[j].index ||
+                              object.vertices[surface.refs[j - 1].index].vertex.equals(object.vertices[surface.refs[j].index].vertex)))
+                    {
                     }
                     else
                     {
@@ -7185,9 +7308,12 @@ void AC3D::checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const 
         const Point3 e1 = p1 - p0;
         const Point3 e2 = p2 - p0;
         const double area3D = e1.cross(e2).length();
-        const double epsilon3D = k * float_epsilon * std::max(e1.length() * e2.length(), 1.0);
+        // Relative to the edges, as collinear() is: a floor of 1.0 under
+        // them made every triangle smaller than about a millimetre count
+        // as having no area, and so never looked at.
+        const double epsilon3D = k * float_epsilon * e1.length() * e2.length();
 
-        if (area3D < epsilon3D)
+        if (area3D <= epsilon3D)
             return;
 
         const Point2 &uv0 = r0.coordinates[0];
@@ -7198,9 +7324,11 @@ void AC3D::checkSurfaceZeroAreaUV(std::istream &in, const Object &object, const 
         const double areaUV = std::fabs(uve1.cross(uve2));
         const double uve1Length = std::sqrt(uve1.dot(uve1));
         const double uve2Length = std::sqrt(uve2.dot(uve2));
-        const double epsilonUV = k * float_epsilon * std::max(uve1Length * uve2Length, 1.0);
+        // And the same here: with the floor, a small but real patch of the
+        // texture counted as none.
+        const double epsilonUV = k * float_epsilon * uve1Length * uve2Length;
 
-        if (areaUV < epsilonUV)
+        if (areaUV <= epsilonUV)
         {
             warningWithCount(m_surface_zero_area_uv_count, surface.line_number) << "zero area uv mapping" << std::endl;
             showLine(in, surface.line_pos);
@@ -7352,6 +7480,12 @@ void AC3D::checkSurface2SidedOpaque(std::istream &in, const Object &object, cons
         return;
 
     if (!surface.isDoubleSided())
+        return;
+
+    // About a texture, so only where there is one: without, it said
+    // "texture: " and nothing, and --fixSurface2SidedOpaque, which acts only
+    // on a texture it can see is opaque, left the warning standing.
+    if (object.textures.empty() || object.textures[0].name.empty())
         return;
 
     // See-through by its material is see-through whatever the texture says.
@@ -8561,7 +8695,7 @@ bool AC3D::splitMultipleSURF(std::vector<Object> &kids)
                     newKids.back().kids.clear();
 
                     if (!newKids.back().names.empty())
-                        newKids.back().names[0].name += ("-split" + std::to_string(pieces + newKids.size()));
+                        newKids.back().names.back().name += ("-split" + std::to_string(pieces + newKids.size()));
 
                     const unsigned int wanted = kid->surfaces[i].state();
                     auto it = newKids.back().surfaces.begin();
@@ -8647,7 +8781,7 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
                     newKids.back().kids.clear();
 
                     if (!newKids.back().names.empty())
-                        newKids.back().names[0].name += ("-split" + std::to_string(pieces + newKids.size()));
+                        newKids.back().names.back().name += ("-split" + std::to_string(pieces + newKids.size()));
 
                     const size_t wanted = kid->surfaces[i].material();
                     auto it = newKids.back().surfaces.begin();
@@ -9577,6 +9711,39 @@ bool AC3D::cleanSurfaces(Object &object)
             }
             else
                 ++it;
+        }
+
+        // Taking out the tip of a spike -- a polygon that runs out to a point
+        // and back the same way -- brings the refs either side of it
+        // together, and they are one point: a duplicate made here, after
+        // the duplicates were looked for, and written as one.
+        if (surface.isPolygon() || surface.isClosedLine())
+        {
+            const auto same = [&place](const Ref &a, const Ref &b)
+            {
+                return a.index == b.index ||
+                       (a.index < place.size() && b.index < place.size() && place[a.index] == place[b.index]);
+            };
+
+            bool again = true;
+
+            while (again && surface.refs.size() > 1)
+            {
+                again = false;
+
+                for (size_t k = 0; k < surface.refs.size(); ++k)
+                {
+                    const size_t next = (k + 1) % surface.refs.size();
+
+                    if (same(surface.refs[k], surface.refs[next]))
+                    {
+                        surface.refs.erase(surface.refs.begin() + static_cast<std::ptrdiff_t>(next));
+                        cleaned = true;
+                        again = true;
+                        break;
+                    }
+                }
+            }
         }
 
         // A polygon or a triangle strip needs three refs to cover any

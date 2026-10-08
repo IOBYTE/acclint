@@ -1,0 +1,7 @@
+test3.acc:47 warning: duplicate surfaces with different winding
+SURF 0x02
+^
+test3.acc:35 note: first instance
+SURF 0x02
+^
+1 warning

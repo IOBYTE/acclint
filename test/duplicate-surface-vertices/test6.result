@@ -1,0 +1,13 @@
+test6.acc:19 warning: duplicate surface vertices
+2 0 0
+^
+test6.acc:10 note: vertex
+1 0 0 0 0.6 0.8
+^
+test6.acc:18 note: first instance
+1 0 0
+^
+test6.acc:9 note: vertex
+1 0 0 0 0 1
+^
+1 warning

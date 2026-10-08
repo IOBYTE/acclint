@@ -1203,10 +1203,14 @@ private:
             }
             return actual_textures;
         }
+        // The last name line, which is the one the file is written with and
+        // the one a loader is left with. The first was used everywhere else,
+        // so an object with two was removed, reported and split under a name
+        // it would not be written with.
         const std::string &getName() const
         {
             if (!names.empty())
-                return names[0].name;
+                return names.back().name;
 
             static const std::string none;
 

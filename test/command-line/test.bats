@@ -268,3 +268,60 @@ setup_file() {
 }
 
 ################################################################################
+# A thread count is all number: "2x" was taken for 2.
+################################################################################
+
+@test "test28" {
+  run acclint test1.ac -j 2x
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "Invalid number of threads: 2x" ]
+}
+
+################################################################################
+# An option that only changes what -o writes does nothing without -o, and was
+# taken without a word: the run did what it would have done without it and
+# exited 0. It is refused, naming the option.
+################################################################################
+
+@test "test29.1" {
+  run acclint test1.ac --merge test1.ac
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "--merge needs -o" ]
+}
+
+@test "test29.2" {
+  run acclint test1.ac --grid 10
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "--grid needs -o" ]
+}
+
+@test "test29.3" {
+  run acclint test1.ac --fixAll
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "--fixAll needs -o" ]
+}
+
+@test "test29.4" {
+  run acclint test1.ac -v 11
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "-v needs -o" ]
+}
+
+@test "test29.5" {
+  run acclint test1.ac --removeObjects poly x
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "--removeObjects needs -o" ]
+}
+
+################################################################################
+# Strips are joined only in a .acc, the one format that has them; asked for
+# with a .ac output, it was passed over.
+################################################################################
+
+@test "test30" {
+  run acclint test1.ac --stitchStrips -o test30.output.ac
+  [ "$status" -ne 0 ]
+  [ "$(echo "${lines[0]}" | tr -d '\r')" = "--stitchStrips needs a .acc output file" ]
+}
+
+################################################################################

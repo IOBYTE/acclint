@@ -130,3 +130,29 @@ setup_file() {
 }
 
 ################################################################################
+# A poly with kids and nothing of its own was also reported as missing its
+# surfaces, which says the same thing again, and -Wno-poly-used-as-group left
+# that one standing.
+################################################################################
+
+@test "test4.1" {
+  $RUN_TEST acclint test4.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test4.2" {
+  $RUN_TEST acclint -Wno-poly-used-as-group test4.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.2.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################

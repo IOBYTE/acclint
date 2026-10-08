@@ -1,0 +1,13 @@
+test5.ac:18 warning: duplicate surface vertices
+1 0 0
+^
+test5.ac:17 note: first instance
+1 0 0
+^
+test5.ac:19 warning: duplicate surface vertices
+1 0 0
+^
+test5.ac:18 note: first instance
+1 0 0
+^
+2 warnings

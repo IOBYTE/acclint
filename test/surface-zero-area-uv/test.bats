@@ -183,3 +183,24 @@ setup_file() {
 }
 
 ################################################################################
+# The areas were measured against a floor of 1.0 under the edges, which
+# collinear() no longer has: every triangle smaller than about a millimetre
+# counted as having no area and was passed over, and a small but real patch
+# of texture counted as none.
+################################################################################
+
+# test7: a 1 m triangle mapped onto a patch of texture 0.0005 across, which is
+# not reported, and a triangle 0.5 mm across with all three corners on one
+# texel, which is. It was the other way round.
+@test "test7" {
+  $RUN_TEST acclint -Wsurface-zero-area-uv test7.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test7.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

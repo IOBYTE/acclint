@@ -1,3 +1,4 @@
 1 world 2 kids
     1 light "sun" 0 kids
+    2 poly "body" 1 kid
         1 group "wheels" 0 kids

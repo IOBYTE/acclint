@@ -136,3 +136,26 @@ setup_file() {
 }
 
 ################################################################################
+# A polygon that runs out to a point and back the same way. Taking out the
+# point, which is collinear, brings the refs either side of it together, and
+# they are one ref: a duplicate made after the duplicates were looked for. It
+# was written, and the file warned "duplicate surface vertices".
+################################################################################
+
+@test "test6" {
+  $RUN_TEST acclint -Wno-warnings test6.ac -o test6.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test6.output.ac)"
+  expected_file="$(tr -d '\r' < test6.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.output.ac test6.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.output.ac
+}
+
+################################################################################
