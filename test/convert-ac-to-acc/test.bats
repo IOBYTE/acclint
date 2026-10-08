@@ -380,3 +380,63 @@ setup_file() {
 }
 
 ################################################################################
+# Faces meeting at a vertex are smoothed together the way the OSG reader
+# smooths them when it draws the .ac: every face reached through faces within
+# the crease angle of each other, so that the .acc looks as the .ac did. They
+# were held against the normals added up so far, and the answer turned on the
+# order the surfaces came in.
+################################################################################
+
+# test17: three faces at one vertex, crease 50. The middle one is 40 degrees
+# from each of the others, which are 80 degrees from each other: all three are
+# reached through the middle one, and the vertex has one normal. The same faces
+# in three orders gave 1, 3 and 2.
+@test "test17.1" {
+  $RUN_TEST acclint test17.1.ac -o test17.1.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test17.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test17.1.output.acc)"
+  expected_file="$(tr -d '\r' < test17.1.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test17.1.output.acc test17.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test17.1.output.acc
+}
+
+@test "test17.2" {
+  $RUN_TEST acclint test17.2.ac -o test17.2.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test17.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test17.2.output.acc)"
+  expected_file="$(tr -d '\r' < test17.2.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test17.2.output.acc test17.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test17.2.output.acc
+}
+
+@test "test17.3" {
+  $RUN_TEST acclint test17.3.ac -o test17.3.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test17.3.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test17.3.output.acc)"
+  expected_file="$(tr -d '\r' < test17.3.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test17.3.output.acc test17.3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test17.3.output.acc
+}
+
+################################################################################

@@ -1573,14 +1573,48 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
             Vertex  vertex;
             vertex.has_normal = true;
             vertex.vertex = m_vertices[index];
-            vertex.normal = m_normals[index][0];
-            for (size_t i = 1; i < m_normals[index].size(); i++)
+            // The faces this one is smoothed with are the ones the OSG
+            // reader smooths it with when it draws the .ac: every face
+            // reached from it through faces within the crease angle of each
+            // other, so that the .acc looks as the .ac did. Measured against
+            // the normals added up so far instead, the answer turned on the
+            // order the surfaces came in: three faces at a corner, the middle
+            // one within the crease of the other two, came out as 1, 2 or 3
+            // normals.
+            const std::vector<Point3> &normals = m_normals[index];
+            const double crease = object.creases.empty() ? 179.999 : object.creases[0].crease;
+            std::vector<bool> joined(normals.size(), false);
+            bool grew = true;
+
+            joined[0] = true;
+
+            while (grew)
             {
-                const double angle = vertex.normal.angleDegrees(m_normals[index][i]);
-                if (!object.creases.empty() && angle < object.creases[0].crease)
-                    vertex.normal += m_normals[index][i];
-                else if (object.creases.empty() && angle < 179.999)
-                    vertex.normal += m_normals[index][i];
+                grew = false;
+
+                for (size_t i = 1; i < normals.size(); i++)
+                {
+                    if (joined[i])
+                        continue;
+
+                    for (size_t j = 0; j < normals.size(); j++)
+                    {
+                        if (joined[j] && normals[j].angleDegrees(normals[i]) < crease)
+                        {
+                            joined[i] = true;
+                            grew = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            vertex.normal = normals[0];
+
+            for (size_t i = 1; i < normals.size(); i++)
+            {
+                if (joined[i])
+                    vertex.normal += normals[i];
             }
             vertex.normal.normalize();
             return vertex;
