@@ -11595,10 +11595,36 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
     png_uint_32 width, height;
     int bit_depth, color_type, interlace_type, compression_type, filter_method;
     png_get_IHDR(png_ptr, png_bridge.info, &width, &height, &bit_depth, &color_type, &interlace_type, &compression_type, &filter_method);
-    const int channels = png_get_channels(png_ptr, png_bridge.info);
 
-    // Filter processing down strictly to standard 32-bit RGBA maps
-    if (color_type != PNG_COLOR_TYPE_RGB_ALPHA || bit_depth != 8 || channels != 4)
+    // Transparency is an alpha channel or a tRNS chunk, which gives a palette
+    // entry or one grey or RGB value an alpha of its own. With neither, every
+    // pixel is opaque and there is nothing to read. Only 8 bit RGBA used to be
+    // looked at: grey with alpha, a palette with tRNS -- usual for older
+    // foliage and fences -- and 16 bit RGBA were all taken for opaque, so
+    // --fixSurface2SidedOpaque made see-through surfaces single sided and
+    // --combineTexture, --grid and --combineObjects treated them as solid.
+    const bool tRNS = png_get_valid(png_ptr, png_bridge.info, PNG_INFO_tRNS) != 0;
+
+    if ((color_type & PNG_COLOR_MASK_ALPHA) == 0 && !tRNS)
+        return false;
+
+    // Everything else is read as RGBA, 8 or 16 bits a channel: the palette
+    // and grey expanded, and tRNS made the alpha channel.
+    if (color_type == PNG_COLOR_TYPE_PALETTE)
+        png_set_palette_to_rgb(png_ptr);
+    if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+        png_set_expand_gray_1_2_4_to_8(png_ptr);
+    if (tRNS)
+        png_set_tRNS_to_alpha(png_ptr);
+    if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+        png_set_gray_to_rgb(png_ptr);
+    png_set_interlace_handling(png_ptr);
+    png_read_update_info(png_ptr, png_bridge.info);
+
+    const int channels = png_get_channels(png_ptr, png_bridge.info);
+    const int depth = png_get_bit_depth(png_ptr, png_bridge.info);
+
+    if (channels != 4 || (depth != 8 && depth != 16))
         return false;
 
     const size_t rowbytes = png_get_rowbytes(png_ptr, png_bridge.info);
@@ -11609,26 +11635,29 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
     for (png_uint_32 i = 0; i < height; ++i)
         row_pointers[i] = image_data.data() + (i * rowbytes);
 
-    png_set_rows(png_ptr, png_bridge.info, row_pointers.data());
     png_read_image(png_ptr, row_pointers.data());
     png_read_end(png_ptr, nullptr);
 
-    bool has_alpha = false;
-    const png_byte *raw_buffer = image_data.data();
+    // The alpha of each pixel is its last channel: one byte, or two big
+    // endian ones. Anything short of all ones lets something show through.
+    const size_t bytes = static_cast<size_t>(depth / 8);
+    const size_t stride = 4 * bytes;
 
-    // Scan memory explicitly pointing to the 4th element (alpha) block
-    for (png_uint_32 i = 0; i < (width * height); i++)
+    for (png_uint_32 row = 0; row < height; ++row)
     {
-        const png_byte *pixel = raw_buffer + (i * 4);
-        const png_byte alpha = pixel[3]; // Correct channel selection offset via array index
-        if (alpha != 255)
+        const png_byte *pixel = row_pointers[row];
+
+        for (png_uint_32 column = 0; column < width; ++column, pixel += stride)
         {
-            has_alpha = true;
-            break; // Immediately exit parsing tracking once matching a transparent fragment
+            for (size_t i = 0; i < bytes; ++i)
+            {
+                if (pixel[3 * bytes + i] != 255)
+                    return true;
+            }
         }
     }
 
-    return has_alpha;
+    return false;
 }
 
 std::string AC3D::getTime(const std::chrono::time_point<std::chrono::system_clock> &time)

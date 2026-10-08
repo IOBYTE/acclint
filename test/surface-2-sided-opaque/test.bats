@@ -170,3 +170,44 @@ setup_file() {
   fi
   [ "$actual" = "$expected" ]
 }
+
+################################################################################
+# A texture is transparent if any of its pixels is less than opaque, whatever
+# kind of PNG it is. Only 8 bit RGBA used to be read: grey with alpha, a
+# palette with a tRNS chunk -- usual for older foliage and fences -- 16 bit
+# RGBA, and grey or RGB with tRNS were all taken for opaque, and their 2 sided
+# surfaces reported and made single sided.
+#
+# test5.ac has one 2 sided surface for each texture in textures/. The ones
+# named _t have a pixel less than opaque -- rgba16_nearly by one step in 65535
+# -- and the ones named _o have none: pal_trns_o has a tRNS chunk, but its
+# transparent entry is not used. Only the _o ones are opaque.
+################################################################################
+
+@test "test5.1" {
+  $RUN_TEST acclint -Wno-warnings -Wsurface-2-sided-opaque test5.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test5.2: and --fixSurface2SidedOpaque makes only the opaque ones single sided.
+@test "test5.2" {
+  $RUN_TEST acclint -Wno-warnings test5.ac --fixSurface2SidedOpaque -o test5.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.2.output.ac)"
+  expected_file="$(tr -d '\r' < test5.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.2.output.ac test5.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.2.output.ac
+}

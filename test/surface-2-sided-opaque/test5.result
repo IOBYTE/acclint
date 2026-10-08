@@ -1,0 +1,22 @@
+test5.ac:28 warning: 2 sided surface with opaque texture (object: rgba8_o texture: textures/rgba8_o.png)
+SURF 0x30
+^
+test5.ac:58 warning: 2 sided surface with opaque texture (object: ga8_o texture: textures/ga8_o.png)
+SURF 0x30
+^
+test5.ac:88 warning: 2 sided surface with opaque texture (object: pal_trns_o texture: textures/pal_trns_o.png)
+SURF 0x30
+^
+test5.ac:103 warning: 2 sided surface with opaque texture (object: pal_o texture: textures/pal_o.png)
+SURF 0x30
+^
+test5.ac:148 warning: 2 sided surface with opaque texture (object: rgba16_o texture: textures/rgba16_o.png)
+SURF 0x30
+^
+test5.ac:163 warning: 2 sided surface with opaque texture (object: rgb8_o texture: textures/rgb8_o.png)
+SURF 0x30
+^
+test5.ac:178 warning: 2 sided surface with opaque texture (object: grey8_o texture: textures/grey8_o.png)
+SURF 0x30
+^
+7 warnings

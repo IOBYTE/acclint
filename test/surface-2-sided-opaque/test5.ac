@@ -1,0 +1,229 @@
+AC3Db
+MATERIAL "m" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 0  trans 0
+OBJECT world
+kids 15
+OBJECT poly
+name "rgba8_t"
+texture "textures/rgba8_t.png"
+numvert 3
+0 0 0
+1 0 0
+1 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "rgba8_o"
+texture "textures/rgba8_o.png"
+numvert 3
+2 0 0
+3 0 0
+3 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "ga8_t"
+texture "textures/ga8_t.png"
+numvert 3
+4 0 0
+5 0 0
+5 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "ga8_o"
+texture "textures/ga8_o.png"
+numvert 3
+6 0 0
+7 0 0
+7 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "pal_trns_t"
+texture "textures/pal_trns_t.png"
+numvert 3
+8 0 0
+9 0 0
+9 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "pal_trns_o"
+texture "textures/pal_trns_o.png"
+numvert 3
+10 0 0
+11 0 0
+11 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "pal_o"
+texture "textures/pal_o.png"
+numvert 3
+12 0 0
+13 0 0
+13 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "rgba16_t"
+texture "textures/rgba16_t.png"
+numvert 3
+14 0 0
+15 0 0
+15 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "rgba16_nearly"
+texture "textures/rgba16_nearly.png"
+numvert 3
+16 0 0
+17 0 0
+17 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "rgba16_o"
+texture "textures/rgba16_o.png"
+numvert 3
+18 0 0
+19 0 0
+19 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "rgb8_o"
+texture "textures/rgb8_o.png"
+numvert 3
+20 0 0
+21 0 0
+21 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "grey8_o"
+texture "textures/grey8_o.png"
+numvert 3
+22 0 0
+23 0 0
+23 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "grey_trns_t"
+texture "textures/grey_trns_t.png"
+numvert 3
+24 0 0
+25 0 0
+25 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "grey1_trns_t"
+texture "textures/grey1_trns_t.png"
+numvert 3
+26 0 0
+27 0 0
+27 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
+OBJECT poly
+name "rgb_trns_t"
+texture "textures/rgb_trns_t.png"
+numvert 3
+28 0 0
+29 0 0
+29 1 0
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 1 1
+kids 0
