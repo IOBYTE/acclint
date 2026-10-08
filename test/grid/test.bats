@@ -258,3 +258,40 @@ setup_file() {
 }
 
 ################################################################################
+# A cell is numbered along each axis in a long long, and the quad tree doubles
+# its side until it covers the numbers. A size small enough next to the model
+# overflowed both: every cell came out as the same lowest number, so the model
+# was one cell, or with --quadTree the doubling wrapped to 0 and never ended.
+# A size that makes the model more than 2147483648 cells across is rejected,
+# and so is inf, before anything is written.
+################################################################################
+
+# test9.1: 1e-30 on a model 21 across. It was one cell, named
+# cell_-9223372036854775808_-9223372036854775808.
+@test "test9.1" {
+  rm -f test9.1.output.ac
+  run acclint -Wno-warnings test1.ac --grid 1e-30 -o test9.1.output.ac
+  [ "$status" -eq 1 ]
+  [ "$(echo "$output" | tr -d '\r')" = "Invalid grid size: 1e-30: the model is 2.1e+31 cells across, and the most it can be is 2147483648" ]
+  [ ! -e test9.1.output.ac ]
+}
+
+# test9.2: 3.5e-18 with --quadTree, which never finished.
+@test "test9.2" {
+  rm -f test9.2.output.ac
+  run acclint -Wno-warnings test1.ac --grid 3.5e-18 --quadTree -o test9.2.output.ac
+  [ "$status" -eq 1 ]
+  [ "$(echo "$output" | tr -d '\r')" = "Invalid grid size: 3.5e-18: the model is 6e+18 cells across, and the most it can be is 2147483648" ]
+  [ ! -e test9.2.output.ac ]
+}
+
+# test9.3: inf puts the whole model in one cell whatever its size.
+@test "test9.3" {
+  rm -f test9.3.output.ac
+  run acclint -Wno-warnings test1.ac --grid inf -o test9.3.output.ac
+  [ "$status" -eq 1 ]
+  [ "$(echo "$output" | tr -d '\r')" = "Invalid grid size: inf" ]
+  [ ! -e test9.3.output.ac ]
+}
+
+################################################################################

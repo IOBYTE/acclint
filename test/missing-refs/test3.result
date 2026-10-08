@@ -1,0 +1,14 @@
+test3.ac:18 error: missing refs
+SURF 0x10
+^
+test3.ac:19 warning: missing kids line
+OBJECT poly
+^
+test3.ac:5 note: object
+OBJECT poly
+^
+test3.ac:18 warning: missing mat
+SURF 0x10
+^
+2 warnings
+1 error

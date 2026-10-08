@@ -18,6 +18,7 @@
 
 //---------------------------------------------------------------------------
 
+#include <cmath>
 #include <cstdlib>
 
 #ifdef _WIN32
@@ -131,6 +132,7 @@ void usage()
     std::cerr << "  -Wno-invalid-texture-coordinate        Don't show invalid texture coordinate errors." << std::endl;
     std::cerr << "  -Wno-invalid-vertex                    Don't show invalid vertex errors." << std::endl;
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
+    std::cerr << "  -Wno-missing-refs                      Don't show missing refs errors." << std::endl;
     std::cerr << "  -Wno-more-surf-than-specified          Don't show more surf than specified errors." << std::endl;
     std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
 
@@ -311,6 +313,7 @@ int main(int argc, char *argv[])
     bool invalid_texture_coordinate = true;
     bool invalid_vertex = true;
     bool missing_vertex = true;
+    bool missing_refs = true;
     bool more_surf_than_specified = true;
     bool unfixable_kids_count = true;
 
@@ -564,7 +567,7 @@ int main(int argc, char *argv[])
         {
             char *end = nullptr;
             grid_size = std::strtod(optarg, &end);
-            if (end == optarg || *end != '\0' || !(grid_size > 0.0))
+            if (end == optarg || *end != '\0' || !(grid_size > 0.0) || !std::isfinite(grid_size))
             {
                 std::cerr << "Invalid grid size: " << optarg << std::endl;
                 return EXIT_FAILURE;
@@ -1028,6 +1031,7 @@ int main(int argc, char *argv[])
                 invalid_texture_coordinate = value;
                 invalid_vertex = value;
                 missing_vertex = value;
+                missing_refs = value;
                 more_surf_than_specified = value;
                 not_ac3d_file = value;
 
@@ -1088,6 +1092,10 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-missing-vertex" || arg == "-Wmissing-vertex")
             {
                 missing_vertex = isEnabled(arg);
+            }
+            else if (arg == "-Wno-missing-refs" || arg == "-Wmissing-refs")
+            {
+                missing_refs = isEnabled(arg);
             }
             else if (arg == "-Wno-more-surf-than-specified" || arg == "-Wmore-surf-than-specified")
             {
@@ -1289,6 +1297,7 @@ int main(int argc, char *argv[])
         target.invalidVertex(invalid_vertex);
         target.invalidRefVertexIndex(invalid_ref_vertex_index);
         target.missingVertex(missing_vertex);
+        target.missingRefs(missing_refs);
         target.moreSURFThanSpecified(more_surf_than_specified);
         target.notAC3DFile(not_ac3d_file);
 
@@ -1441,6 +1450,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidRefVertexIndexCount(), "invalid ref vertex index: ");
             showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
             showCount(ac3d.missingVertexCount(), "missing vertex: ");
+            showCount(ac3d.missingRefsCount(), "missing refs: ");
 
             // errors without tests
             showCount(ac3d.unfixableKidsCountCount(), "unfixable kids count: ");
@@ -1643,7 +1653,9 @@ int main(int argc, char *argv[])
 
         if (grid_size > 0.0)
         {
-            ac3d.gridPartition(grid_size, quadTree);
+            if (!ac3d.gridPartition(grid_size, quadTree))
+                return EXIT_FAILURE;
+
             ac3d.clean();
         }
 

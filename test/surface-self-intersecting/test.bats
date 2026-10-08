@@ -178,3 +178,50 @@ setup_file() {
 }
 
 ################################################################################
+
+# Each duplicate or collinear vertex skipped took one off the end of the range
+# the second segment is looked for in. That end is the vertex before the first
+# segment's first vertex, which a skip does not move, so every skip cut a
+# segment from the far end that should have been compared. A six sided
+# polygon whose last edge crosses its first was found to cross itself as it
+# was, and not with a vertex doubled (test8) or one put on an edge (test9).
+@test "test8" {
+  $RUN_TEST acclint -Wno-surface-not-convex test8.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test8.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test8.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test9" {
+  $RUN_TEST acclint -Wno-surface-not-convex test9.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test9.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test9.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# Two segments short enough were taken for parallel whatever the angle between
+# them, so a small polygon was never found crossing itself: a bowtie 3 cm
+# across was, and one 1 cm across was not. The tolerances are relative to the
+# segments now.
+@test "test10" {
+  $RUN_TEST acclint test10.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test10.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test10.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

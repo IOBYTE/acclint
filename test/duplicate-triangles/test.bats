@@ -319,3 +319,49 @@ setup_file() {
 }
 
 ################################################################################
+
+# test7: two strips that each end in a degenerate triangle, its last two refs
+# the same. A degenerate triangle covers nothing, and its repeated corner can
+# be read in more than one order, so the two matched "with different vertex
+# order". Nothing is reported.
+@test "test7" {
+  $RUN_TEST acclint -Wno-duplicate-surfaces -Wno-different-surf -Wno-mixed-surface-types -Wduplicate-triangles test7.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test7.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test7.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test8: a strip and a 3 ref line through the strip's first triangle. A line is
+# not a triangle, and is not reported as one.
+@test "test8" {
+  $RUN_TEST acclint -Wno-duplicate-surfaces -Wno-different-surf -Wno-mixed-surface-types -Wduplicate-triangles test8.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test8.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test8.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test9: two strips over the same ground with different normals, and a
+# triangle over the first triangle of both. The triangle was reported against
+# both strips, compared by position, and the strips not against each other,
+# compared with their normals. A triangle is where its corners are, and each of
+# the three is reported against the ones before it.
+@test "test9" {
+  $RUN_TEST acclint -Wno-duplicate-surfaces -Wno-different-surf -Wno-mixed-surface-types -Wduplicate-triangles test9.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test9.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test9.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

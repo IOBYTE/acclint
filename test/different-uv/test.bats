@@ -94,3 +94,37 @@ setup_file() {
 }
 
 ################################################################################
+# Whether two faces meeting at a vertex are smooth enough to need the same uv
+# there is judged by their normals. A polygon's normal was the plane of its
+# first three refs not in a line, and on a concave polygon those can make the
+# reflex corner, which faces the other way: where the polygon's refs began
+# decided the answer. It is Newell's normal now, summed over every edge.
+################################################################################
+
+# test3: a concave quad and a triangle sharing vertex 0 with different uv,
+# lying flat together. test4: the same quad with its refs begun one before
+# its reflex corner, so that the first three make it. Both are reported; test4
+# was not.
+@test "test3" {
+  $RUN_TEST acclint -Wno-surface-not-convex test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test4" {
+  $RUN_TEST acclint -Wno-surface-not-convex test4.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

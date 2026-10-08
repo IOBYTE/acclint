@@ -1109,6 +1109,22 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         checkSurfaceWinding(in, object, surface, triangles);
         checkSurface2SidedOpaque(in, object, surface);
     }
+    else if (token == SURF_token || token == kids_token || token == OBJECT_token)
+    {
+        // The surface ended before its refs line: what came instead begins
+        // the next surface, or ends the object, or begins the next one.
+        // Taken for an invalid token, it was read and lost -- the next SURF
+        // with it, so the surfaces after it were each read as junk, or the
+        // kids line, so the object ran on into the next one. It is put back
+        // to be read as what it is, and the surface is kept with no refs,
+        // being one of the surfaces numsurf counts.
+        if (m_missing_refs)
+        {
+            errorWithCount(m_missing_refs_count, surface.line_number) << "missing refs" << std::endl;
+            showLine(in, surface.line_pos);
+        }
+        ungetLine(in);
+    }
     else
     {
         if (m_invalid_token)
@@ -5754,9 +5770,13 @@ void AC3D::checkOverlappingGeometry(std::istream &in, const std::vector<Poly> &p
     }
 }
 
+// A 3 ref line is not a triangle, and is not compared as one. The surface is
+// made a Triangle to be compared the way two strip triangles are: it used to
+// be compared exactly, where strips were compared with the tolerance -- and
+// with the normals, which say nothing about where a triangle is.
 bool AC3D::Triangle::sameTriangle(const Object &object, const Surface &surface, Difference difference) const
 {
-    if (!surface.isTriangle())
+    if (!surface.isPolygon() || !surface.isTriangle())
         return false;
 
     // guard against invalid file data (out of range vertex index)
@@ -5765,74 +5785,12 @@ bool AC3D::Triangle::sameTriangle(const Object &object, const Surface &surface, 
         surface.refs[2].index >= object.vertices.size())
         return false;
 
-    if (difference == Difference::None)
-    {
-        return (vertices[0].vertex == object.vertices[surface.refs[0].index].vertex) &&
-               (vertices[1].vertex == object.vertices[surface.refs[1].index].vertex) &&
-               (vertices[2].vertex == object.vertices[surface.refs[2].index].vertex);
-    }
+    const Triangle triangle(object.vertices[surface.refs[0].index],
+                            object.vertices[surface.refs[1].index],
+                            object.vertices[surface.refs[2].index],
+                            surface.refs[0], surface.refs[1], surface.refs[2]);
 
-    if (difference == Difference::Order)
-    {
-        for (size_t i = 0; i < 3; i++)
-        {
-            for (size_t j = 0; j < 3; j++)
-            {
-                if (vertices[i].vertex == object.vertices[surface.refs[j].index].vertex)
-                {
-                    bool same = true;
-                    for (size_t k = 1; k < 3; k++)
-                    {
-                        const size_t idx = surface.refs[(j + k) % 3].index;
-                        if (idx >= object.vertices.size())  // guard against invalid file data
-                        {
-                            same = false;
-                            break;
-                        }
-                        if (vertices[(i + k) % 3].vertex != object.vertices[idx].vertex)
-                        {
-                            same = false;
-                            break;
-                        }
-                    }
-                    if (same)
-                        return true;
-                }
-            }
-        }
-    }
-
-    if (difference == Difference::Winding)
-    {
-        for (size_t i = 0; i < 3; i++)
-        {
-            for (size_t j = 0; j < 3; j++)
-            {
-                if (vertices[i].vertex == object.vertices[surface.refs[j].index].vertex)
-                {
-                    bool same = true;
-                    for (size_t k = 1; k < 3; k++)
-                    {
-                        const size_t idx = surface.refs[(j + 3 - k) % 3].index;
-                        if (idx >= object.vertices.size())  // guard against invalid file data
-                        {
-                            same = false;
-                            break;
-                        }
-                        if (vertices[(i + k) % 3].vertex != object.vertices[idx].vertex)
-                        {
-                            same = false;
-                            break;
-                        }
-                    }
-                    if (same)
-                        return true;
-                }
-            }
-        }
-    }
-
-    return false;
+    return sameTriangle(triangle, difference);
 }
 
 void AC3D::checkDuplicateTriangles(std::istream &in, const Object &object)
@@ -7784,6 +7742,14 @@ size_t AC3D::getSharedVertexCount(const Triangle &triangle1, const Triangle &tri
 }
 
 // from http://geomalgorithms.com/a07-_distance.html
+//
+// The tolerances are relative to the segments. D is the squared lengths times
+// the squared sine of the angle between them, and was compared with a fixed
+// epsilon, so segments short enough were all parallel whatever their angle: a
+// bowtie 3 cm across was found crossing itself and one 1 cm across was not.
+// Compared with a times c, it is the angle that decides. The parameters are
+// set to 0 when they are a negligible share of what they are divided by, for
+// the same reason, and when what they are divided by is 0.
 double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3)
 {
     const Point3  u = p1 - p0;
@@ -7800,7 +7766,7 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
     constexpr double  SMALL_NUM = static_cast<double>(std::numeric_limits<float>::epsilon());
 
     // compute the line parameters of the two closest points
-    if (D < SMALL_NUM) { // the lines are almost parallel
+    if (D <= SMALL_NUM * a * c) { // the lines are almost parallel
         sN = 0.0;        // force using point P0 on segment S1
         sD = 1.0;        // to prevent possible division by 0.0 later
         tN = e;
@@ -7846,8 +7812,8 @@ double AC3D::closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const
         }
     }
     // finally do the division to get sc and tc
-    sc = (std::fabs(sN) < SMALL_NUM ? 0.0 : sN / sD);
-    tc = (std::fabs(tN) < SMALL_NUM ? 0.0 : tN / tD);
+    sc = (std::fabs(sN) <= SMALL_NUM * std::fabs(sD) ? 0.0 : sN / sD);
+    tc = (std::fabs(tN) <= SMALL_NUM * std::fabs(tD) ? 0.0 : tN / tD);
 
     // get the difference of the two closest points
     const Point3  dP = w + (u * sc) - (v * tc);  // =  S1(sc) - S2(tc)
@@ -7874,19 +7840,33 @@ void AC3D::checkSurfaceStripSize(std::istream &in, const Surface &surface, const
     }
 }
 
+// Two triangles are the same when their corners are in the same places. The
+// normals the corners carry do not enter into it: two strips over the same
+// ground were not reported because their normals differed, while a polygon
+// over the same ground was. A degenerate triangle -- the joins of a stitched
+// strip are made of them -- covers nothing to be duplicated, and since its
+// repeated corner can be read in more than one order, it matched others of
+// its kind "with different vertex order".
 bool AC3D::Triangle::sameTriangle(const Triangle &triangle, Difference difference) const
 {
+    if (degenerate || triangle.degenerate)
+        return false;
+
+    const auto same = [this, &triangle](size_t a, size_t b, size_t c)
+    {
+        return vertices[0].vertex.equals(triangle.vertices[a].vertex) &&
+               vertices[1].vertex.equals(triangle.vertices[b].vertex) &&
+               vertices[2].vertex.equals(triangle.vertices[c].vertex);
+    };
+
     if (difference == None)
-        return vertices[0] == triangle.vertices[0] && vertices[1] == triangle.vertices[1] && vertices[2] == triangle.vertices[2];
+        return same(0, 1, 2);
 
     if (difference == Order)
-        return (vertices[0] == triangle.vertices[1] && vertices[1] == triangle.vertices[2] && vertices[2] == triangle.vertices[0]) ||
-               (vertices[0] == triangle.vertices[2] && vertices[1] == triangle.vertices[0] && vertices[2] == triangle.vertices[1]);
+        return same(1, 2, 0) || same(2, 0, 1);
 
     if (difference == Winding)
-        return (vertices[0] == triangle.vertices[2] && vertices[1] == triangle.vertices[1] && vertices[2] == triangle.vertices[0]) ||
-               (vertices[0] == triangle.vertices[1] && vertices[1] == triangle.vertices[0] && vertices[2] == triangle.vertices[2]) ||
-               (vertices[0] == triangle.vertices[0] && vertices[1] == triangle.vertices[2] && vertices[2] == triangle.vertices[1]);
+        return same(2, 1, 0) || same(1, 0, 2) || same(0, 2, 1);
 
     return false;
 }
@@ -8117,7 +8097,6 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
             {
                 if (next - j >= size)
                     return;
-                end--;
                 next++;
                 p1 = p2;
                 if (!object.getSurfaceVertex(surface, next % size, p2))
@@ -8162,7 +8141,6 @@ void AC3D::checkSurfaceSelfIntersecting(std::istream &in, const Object &object, 
                     // function.
                     if (next - j >= size)
                         return;
-                    end--;
                     next++;
                     p3 = p4;
                     if (!object.getSurfaceVertex(surface, (next + 1) % size, p4))
@@ -8596,19 +8574,20 @@ void AC3D::fixRgbTexture()
 // to change, and the path still pointed at the .rgba: it reads as an invalid
 // png, which counts as opaque, so foliage renamed to its .png alpha texture was
 // put with the opaque objects and made single sided by the fixes that follow.
+//
+// Every object is renamed, not only a poly: the rgb texture warning is given
+// for a texture on any object, and one on a group was warned about and then
+// left as it was.
 void AC3D::fixRgbTexture(Object &object)
 {
-    if (object.type.type == "poly")
+    for (auto &texture : object.textures)
     {
-        for (auto &texture : object.textures)
+        // isRgbTexture only says yes when there is an extension to
+        // find, so the dot is there to be found.
+        if (isRgbTexture(texture.name))
         {
-            // isRgbTexture only says yes when there is an extension to
-            // find, so the dot is there to be found.
-            if (isRgbTexture(texture.name))
-            {
-                texture.name.replace(texture.name.rfind('.'), std::string::npos, ".png");
-                texture.path = findTexture(texture.name);
-            }
+            texture.name.replace(texture.name.rfind('.'), std::string::npos, ".png");
+            texture.path = findTexture(texture.name);
         }
     }
 
@@ -10025,10 +10004,10 @@ AC3D::Object AC3D::quadTreeNode(GridCells &cells, long long origin1, long long o
     return node;
 }
 
-void AC3D::gridPartition(double size, bool quad_tree)
+bool AC3D::gridPartition(double size, bool quad_tree)
 {
     if (size <= 0.0)
-        return;
+        return true;
 
     std::chrono::system_clock::time_point start;
 
@@ -10063,6 +10042,24 @@ void AC3D::gridPartition(double size, bool quad_tree)
         // x then z for the usual y-up model, rather than z then x.
         const size_t axis1 = std::min((thin + 1) % 3, (thin + 2) % 3);
         const size_t axis2 = std::max((thin + 1) % 3, (thin + 2) % 3);
+
+        // A cell is named and ordered by its number along each axis, held in
+        // a long long, and the quad tree doubles its side until it covers
+        // them all. A size small enough next to the model overflowed both:
+        // the number cast from a double too large for it came out as the
+        // same lowest value for every cell, so the whole model was one cell,
+        // and the doubling wrapped to 0 and never stopped. Two billion cells
+        // across is far more than any model can use and well clear of both.
+        constexpr double most_cells = 2147483648.0;
+        const double cells = std::max(max[axis1] - min[axis1], max[axis2] - min[axis2]) / size;
+
+        if (!(cells <= most_cells))
+        {
+            std::cerr << "Invalid grid size: " << size << ": the model is " << cells
+                      << " cells across, and the most it can be is "
+                      << static_cast<long long>(most_cells) << std::endl;
+            return false;
+        }
 
         GridInfo info;
 
@@ -10104,6 +10101,8 @@ void AC3D::gridPartition(double size, bool quad_tree)
         const std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
         std::cout << "gridPartition done: duration: " << getDuration(start, end) << std::endl;
     }
+
+    return true;
 }
 
 void AC3D::dump(DumpType dump_type) const

@@ -1,0 +1,16 @@
+test9.ac:23 warning: collinear vertices
+4 0 0
+^
+test9.ac:10 note: first vertex
+4 2 0
+^
+test9.ac:11 note: second vertex
+3.5 2.5 0
+^
+test9.ac:12 note: third vertex
+3 3 0
+^
+test9.ac:16 warning: surface self intersecting
+SURF 0x10
+^
+2 warnings

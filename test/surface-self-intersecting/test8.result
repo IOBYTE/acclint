@@ -1,0 +1,10 @@
+test8.ac:22 warning: duplicate surface vertices
+3 0 0
+^
+test8.ac:21 note: first instance
+3 0 0
+^
+test8.ac:15 warning: surface self intersecting
+SURF 0x10
+^
+2 warnings

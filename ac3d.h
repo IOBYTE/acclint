@@ -135,6 +135,7 @@ private:                                               \
     CHECK(invalidTextureCoordinate, m_invalid_texture_coordinate, true)
     CHECK(invalidVertex, m_invalid_vertex, true)
     CHECK(missingVertex, m_missing_vertex, true)
+    CHECK(missingRefs, m_missing_refs, true)
     CHECK(moreSURFThanSpecified, m_more_surf_than_specified, true)
 
     //errors without tests
@@ -268,7 +269,7 @@ public:
     bool stitchTriangleStrips();
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
-    void gridPartition(double size, bool quad_tree);
+    bool gridPartition(double size, bool quad_tree);
     bool combineObjects(double size);
     void fixBackToBackMirror();
     bool fixMultipleWorlds();

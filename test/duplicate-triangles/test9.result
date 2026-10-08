@@ -1,0 +1,49 @@
+test9.acc:24 warning: duplicate triangle
+SURF 0x14
+^
+test9.acc:29 note: ref
+6 0 0
+^
+test9.acc:17 note: first instance
+SURF 0x14
+^
+test9.acc:22 note: ref
+2 0 0
+^
+test9.acc:24 warning: duplicate triangle
+SURF 0x14
+^
+test9.acc:30 note: ref
+7 0 0
+^
+test9.acc:17 note: first instance
+SURF 0x14
+^
+test9.acc:23 note: ref
+3 0 0
+^
+test9.acc:31 warning: duplicate triangle
+SURF 0x10
+^
+test9.acc:36 note: ref
+6 0 0
+^
+test9.acc:17 note: first instance
+SURF 0x14
+^
+test9.acc:22 note: ref
+2 0 0
+^
+test9.acc:31 warning: duplicate triangle
+SURF 0x10
+^
+test9.acc:36 note: ref
+6 0 0
+^
+test9.acc:24 note: first instance
+SURF 0x14
+^
+test9.acc:29 note: ref
+6 0 0
+^
+4 warnings

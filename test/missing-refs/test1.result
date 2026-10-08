@@ -1,0 +1,4 @@
+test1.ac:12 error: missing refs
+SURF 0x10
+^
+1 error
