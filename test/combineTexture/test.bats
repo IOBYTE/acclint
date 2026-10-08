@@ -254,3 +254,31 @@ setup_file() {
 }
 
 ################################################################################
+# A file can hold more than one world. Everything in every world is gathered
+# and put back in the first, and the others were left where they were, so what
+# they held was written twice: once combined into the first world, and again
+# as it was. They are taken out now.
+################################################################################
+
+# test6.1: p0 in the first world, p1 and p2 in a second one placed at 10 0 0.
+# p1 shares red.png with p0 and merges into it, moved by the second world's
+# loc on the way; p2 on blue.png stays its own object. One world comes out.
+@test "test6.1" {
+  $RUN_TEST acclint -Wno-extra-object -Wno-multiple-world test6.1.ac -T textures --combineTexture -o test6.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test6.1.output.ac)"
+  expected_file="$(tr -d '\r' < test6.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.1.output.ac test6.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.1.output.ac
+}
+
+################################################################################

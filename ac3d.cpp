@@ -11149,6 +11149,11 @@ void AC3D::combineTexture()
         combineTexture(object, new_objects, new_transparent_objects, new_other_objects,
                        opaque_index);
 
+    // Everything was collected from every world, and is put back in the
+    // first. Any other world is taken out, or what it held is written twice:
+    // once combined into the first world, and again as it was.
+    m_objects.erase(m_objects.begin() + 1, m_objects.end());
+
     Object &world = m_objects[0];
 
     world.kids.clear();
