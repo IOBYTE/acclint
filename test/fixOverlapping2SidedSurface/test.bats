@@ -136,3 +136,47 @@ setup_file() {
 }
 
 ################################################################################
+
+# test7.1: a pane of glass, a material with trans 0.6, with an opaque label on
+# it, both 2 sided. The glass is seen from behind through itself, so it keeps
+# its second side, as --fixSurface2SidedOpaque leaves it; the label is made
+# single sided. Both were made single sided, and the glass disappeared from
+# behind.
+@test "test7.1" {
+  $RUN_TEST acclint -Wno-overlapping-2-sided-surface test7.ac --fixOverlapping2SidedSurface -o test7.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test7.output.ac)"
+  expected_file="$(tr -d '\r' < test7.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test7.output.ac test7.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.output.ac
+}
+
+################################################################################
+
+# test8.1: a door hung on a loc and a rot, with nothing to fix. It is written
+# as it was read. The whole model was flattened first, so the loc and rot were
+# baked into the vertices and the pivot the door turns about was lost.
+@test "test8.1" {
+  $RUN_TEST acclint test8.ac --fixOverlapping2SidedSurface -o test8.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test8.output.ac)"
+  expected_file="$(tr -d '\r' < test8.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test8.output.ac test8.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.output.ac
+}
+
+################################################################################

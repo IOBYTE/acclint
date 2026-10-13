@@ -5,7 +5,7 @@ kids 1
 OBJECT poly
 name "p"
 numvert 8
-6e-07 0 0
+1.6e-07 0 0
 0 0 0
 0 5 0
 5 5 0

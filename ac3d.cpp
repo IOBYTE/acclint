@@ -94,6 +94,40 @@ constexpr std::string_view light_token("light");
 namespace
 {
 
+// A count or an index, which is digits and nothing else. Read into an
+// unsigned type, "-1" became the largest value the type holds -- an index
+// reported as 18446744073709551615, a data size that swallowed the rest of the
+// file, a subdiv written back that way -- and "2.5" was read as 2 with ".5"
+// left over: a ref to vertex 2 with its uv shifted along, a mat 1.9 that was
+// mat 1. Anything that is not all digits fails the read, the way a word does.
+bool readUnsigned(std::istream &in, size_t &value)
+{
+    in >> std::ws;
+
+    const int first = in.peek();
+
+    if (first == std::char_traits<char>::eof() || std::isdigit(first) == 0)
+    {
+        in.setstate(std::ios_base::failbit);
+        return false;
+    }
+
+    in >> value;
+
+    if (!in)
+        return false;
+
+    const int next = in.peek();
+
+    if (next != std::char_traits<char>::eof() && std::isspace(next) == 0)
+    {
+        in.setstate(std::ios_base::failbit);
+        return false;
+    }
+
+    return true;
+}
+
 // The keywords of a MATERIAL line's fields.
 bool materialKeyword(const std::string &word)
 {
@@ -203,8 +237,11 @@ std::istream & operator >> (std::istream &in, AC3D::quoted_string &s)
 
         while (in.good())
         {
+            // A name with no closing quote runs to the end of the line, and
+            // the get past it reads nothing: c was then appended unset.
             std::istream::char_type c;
-            in.get(c);
+            if (!in.get(c))
+                break;
             if (c == '\"' && (s.empty() || s.back() != '\\'))
                 break;
             s += c;
@@ -604,7 +641,7 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
     ref.line_number = m_line_number;
     ref.line_pos = m_line_pos;
 
-    in >> ref.index;
+    readUnsigned(in, ref.index);
 
     if (!in)
     {
@@ -615,7 +652,11 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
 
         in >> text;
 
-        if (text == kids_token || text == SURF_token)
+        // The next keyword after a refs count that was too high: what
+        // follows is the next surface, the kids line, or the next object.
+        // An OBJECT line was taken for an invalid ref, and the next object
+        // was read into this one.
+        if (text == kids_token || text == SURF_token || text == OBJECT_token)
             return false;
 
         if (m_invalid_ref_vertex_index)
@@ -912,6 +953,21 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
         if (iss)
         {
+            // The flags are hexadecimal and the format writes them with 0x.
+            // Without it they are still read as hex, as they always were,
+            // but a reader that goes by the prefix takes them for decimal:
+            // OSG's reads "SURF 20" as 0x14, smooth and single sided, where
+            // this reads 0x20, flat and two sided. The output always has the
+            // prefix.
+            const size_t start = static_cast<size_t>(pos);
+
+            if (m_missing_hex_prefix && start < m_line.size() &&
+                m_line.compare(start, 2, "0x") != 0 && m_line.compare(start, 2, "0X") != 0)
+            {
+                warningWithCount(m_missing_hex_prefix_count) << "missing hex prefix" << std::endl;
+                showLine(iss, pos);
+            }
+
             if (m_invalid_surface_type && !surface.isValidFlags(m_is_ac))
             {
                 errorWithCount(m_invalid_surface_type_count) << "invalid surface type: " << std::hex << surface.flags << std::dec << std::endl;
@@ -967,9 +1023,8 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         size_t mat = 0;
 
         const std::streampos pos = fieldPos(iss);
-        iss >> mat;
 
-        if (iss)
+        if (readUnsigned(iss, mat))
         {
             setMaterialUsed(mat);
 
@@ -990,7 +1045,7 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         else
         {
             error() << "reading material index" << std::endl;
-            showLine(iss);
+            showLine(iss, pos);
         }
 
         if (!getLine(in))
@@ -1002,9 +1057,12 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
         iss.str(m_line);
         iss >> token;
     }
-    else if (surface.isPolygon() || surface.isTriangleStrip())
+    else
     {
-        // no explicit "mat" line -- a shaded surface implicitly uses material index 0
+        // No mat line: the surface is drawn with material 0, a line as much as
+        // a polygon -- its colour is the material's. Only polygons and strips
+        // marked it, and a file whose only surfaces were lines without one
+        // had its one material reported unused.
         setMaterialUsed(0);
     }
 
@@ -1081,8 +1139,21 @@ bool AC3D::readSurface(std::istream &in, Surface &surface, Object &object, bool 
 
         for (int j = 0; j < surface.refs.number; ++j)
         {
+            // The file ends inside the refs: it was cut short. An error, the
+            // same as for numvert and numsurf, so it is not written out. The
+            // loop used to just stop here, so the end-of-file error further
+            // up was never reached: -o went ahead, and the object being read
+            // was left out of what it wrote.
             if (!getLine(in))
+            {
+                if (!surface.refs.invalid)
+                {
+                    error(surface.refs.line_number) << "less refs than specified: " << j << " of "
+                                                    << surface.refs.number << " before the end of the file" << std::endl;
+                    showLine(iss, surface.refs.number_offset);
+                }
                 break;
+            }
 
             Ref ref;
 
@@ -1416,11 +1487,13 @@ void AC3D::convertObjectToAc(Object &object)
     // removing normals on vertices can create duplicate vertices
     //
     // Neither is asked for. A .ac keeps its coordinates on the ref, so a
-    // shared vertex carrying two sets is no trouble; and the vertices that
-    // have just stopped stating a normal stated one a moment ago, so the
-    // faces meeting at them were never what said how they are shaded. What
-    // that loses is an edge sharper than the crease angle, which the normals
-    // had and the .ac has no way to keep without splitting the vertex again.
+    // shared vertex may carry two sets -- though not on faces closer than the
+    // crease angle, which "different uv" reports, and SameVertex keeps those
+    // apart for a textured object; and the vertices that have just stopped
+    // stating a normal stated one a moment ago, so the faces meeting at them
+    // were never what said how they are shaded. What that loses is an edge
+    // sharper than the crease angle, which the normals had and the .ac has
+    // no way to keep without splitting the vertex again.
     cleanVertices(object, false, false);
     cleanSurfaces(object);
 }
@@ -1582,7 +1655,12 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
             // one within the crease of the other two, came out as 1, 2 or 3
             // normals.
             const std::vector<Point3> &normals = m_normals[index];
-            const double crease = object.creases.empty() ? 179.999 : object.creases[0].crease;
+            //
+            // With no crease line the angle is the format's default, 45
+            // degrees. Everything was smoothed together instead, short of
+            // facing exactly away, so a cube with no crease line came out
+            // with one normal at each corner, a rounded blob.
+            const double crease = object.creaseAngle();
             std::vector<bool> joined(normals.size(), false);
             bool grew = true;
 
@@ -1616,6 +1694,16 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
                 if (joined[i])
                     vertex.normal += normals[i];
             }
+
+            // Faces pointing exactly away from each other cancel out, which
+            // a crease of 180 lets happen. The face's own normal is the one
+            // that still says something, and failing that, the one a vertex
+            // without a normal is read with.
+            if (vertex.normal.length() == 0.0)
+                vertex.normal = normals[0];
+            if (vertex.normal.length() == 0.0)
+                vertex.normal = Point3{ { 0, 1, 0 } };
+
             vertex.normal.normalize();
             return vertex;
         }
@@ -1752,6 +1840,13 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
     }
 
     std::vector<Vertex> vertices;
+    // The coordinates each new vertex was made with. A .acc is read with one
+    // set of coordinates per vertex, so two corners in the same place with
+    // the same normal are still two vertices when their coordinates differ:
+    // a uv seam. They were made one, and the texture on one side of the seam
+    // came out wrong, which the "different uv" warning then found in the
+    // output.
+    std::vector<const std::vector<Point2> *> vertex_coordinates;
 
     for (auto &triangle : triangles)
     {
@@ -1761,7 +1856,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
             const Vertex vertex = triangle.vertex(i, object);
             for (size_t j = 0; j < vertices.size(); j++)
             {
-                if (vertices[j] == vertex)
+                if (vertices[j] == vertex && *vertex_coordinates[j] == triangle.m_coordinates[i])
                 {
                     triangle.m_vertex_index[i] = j;
                     found = true;
@@ -1772,6 +1867,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
             {
                 triangle.m_vertex_index[i] = vertices.size();
                 vertices.emplace_back(vertex);
+                vertex_coordinates.push_back(&triangle.m_coordinates[i]);
             }
         }
     }
@@ -1987,7 +2083,7 @@ bool AC3D::readHeader(std::istream &in)
     {
         if (m_not_ac3d_file)
         {
-            error(1) << "not AC3D file" << std::endl;
+            error(m_line_number) << "not AC3D file" << std::endl;
             showLine(iss, 0);
         }
         return false;
@@ -1995,7 +2091,7 @@ bool AC3D::readHeader(std::istream &in)
 
     if (m_line.size() < 5)
     {
-        error(1) << "missing AC3D version number" << std::endl;
+        error(m_line_number) << "missing AC3D version number" << std::endl;
         showLine(iss, 4);
         return false;
     }
@@ -2004,7 +2100,7 @@ bool AC3D::readHeader(std::istream &in)
     {
         if (m_unsupported_version)
         {
-            warningWithCount(m_unsupported_version_count, 1) << "unsupported version: " << m_line[4] << std::endl;
+            warningWithCount(m_unsupported_version_count, m_line_number) << "unsupported version: " << m_line[4] << std::endl;
             showLine(iss, 4);
         }
     }
@@ -2015,7 +2111,7 @@ bool AC3D::readHeader(std::istream &in)
     {
         if (m_trailing_text)
         {
-            warningWithCount(m_trailing_text_count, 1) << "trailing text: \"" << m_line.substr(5) << "\"" << std::endl;
+            warningWithCount(m_trailing_text_count, m_line_number) << "trailing text: \"" << m_line.substr(5) << "\"" << std::endl;
             showLine(iss, 5);
         }
     }
@@ -2032,9 +2128,7 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
 {
     size_t size = 0;
 
-    iss >> size;
-
-    if (iss)
+    if (readUnsigned(iss, size))
     {
         checkTrailing(iss);
 
@@ -2093,6 +2187,13 @@ bool AC3D::readData(std::istringstream &iss, std::istream &in, std::string &data
 void AC3D::writeData(std::ostream &out, const std::string &data) const
 {
     out << "data " << data.size() << newline(m_crlf);
+
+    // Nothing to end with a newline when there is nothing: "data 0" is
+    // followed by the next line, and the newline written for the empty data
+    // was a blank line acclint then reported in its own output.
+    if (data.empty())
+        return;
+
     for (const char c : data)
     {
         if (c == '\n' && m_crlf)
@@ -2172,11 +2273,25 @@ bool AC3D::readColor(std::istringstream &in, Color &color, const std::string_vie
         }
         else if (!std::isspace(next_char))
         {
+            const std::streampos bad_pos = in.tellg();
+
             if (m_invalid_material) {
-                std::streampos bad_pos = in.tellg();
                 warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": missing separator" << std::endl;
                 showLine(in, bad_pos);
             }
+
+            // The rest of the word goes with the number it is stuck to, so
+            // the next number is read from the next word: "rgb 1.0f 1.0f
+            // 1.0f" was read as 1, then the "f" as a missing number, 0, and
+            // every component after it shifted along, rgb 1 0 1 and amb 1 0
+            // 0. A field's keyword stuck to the last number, "1amb", is left
+            // to be read as the keyword it is.
+            std::string rest;
+
+            in >> rest;
+
+            if (materialKeyword(rest))
+                in.seekg(bad_pos);
         }
     }
 
@@ -2364,12 +2479,21 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string_vi
             // thing the same way.
             if (iss.peek() != std::istringstream::traits_type::eof())
             {
+                const std::streamoff offset = static_cast<std::streamoff>(iss.tellg());
+                const std::streampos bad_pos = pos + offset;
+
                 if (m_invalid_material)
                 {
-                    const std::streampos bad_pos = pos + static_cast<std::streamoff>(iss.tellg());
                     warningWithCount(m_invalid_material_count) << "invalid material " << expected << ": missing separator" << std::endl;
                     showLine(in, bad_pos);
                 }
+
+                // The next field's keyword stuck to the number, "shi
+                // 10trans 0.5", is put back to be read as that keyword. It
+                // went with the number, the 0.5 was then taken for something
+                // extra, and trans came out 0: translucent written opaque.
+                if (materialKeyword(value_string.substr(static_cast<size_t>(offset))))
+                    in.seekg(bad_pos);
             }
         }
         else
@@ -2869,6 +2993,29 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
         iss1 >> token;
 
+        // The format puts an object's attributes before its vertices and
+        // surfaces: one after numvert or numsurf is not where it can be, so
+        // it is an invalid token. It is still read, so what follows is not
+        // reported about for want of it, and as an error nothing is written
+        // that would move it. The writer puts every attribute first, so
+        // writing one that came late moved it: readers that take it as they
+        // come to it, as OSG's does with texture and loc, then drew the
+        // output differently from the input, and nothing was said.
+        if (m_invalid_token && (object.numvert.line_number != 0 || object.numsurf.line_number != 0) &&
+            (token == name_token || token == data_token || token == texture_token ||
+             token == texrep_token || token == texoff_token || token == subdiv_token ||
+             token == crease_token || token == rot_token || token == loc_token ||
+             token == url_token))
+        {
+            const bool after_numsurf = object.numsurf.line_number != 0;
+
+            errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
+            showLine(iss1, 0);
+            note(after_numsurf ? object.numsurf.line_number : object.numvert.line_number)
+                << (after_numsurf ? numsurf_token : numvert_token) << std::endl;
+            showLine(in, after_numsurf ? object.numsurf.line_pos : object.numvert.line_pos);
+        }
+
         if (token == name_token)
         {
             Name name;
@@ -3176,9 +3323,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             subdiv.line_number = m_line_number;
             subdiv.line_pos = m_line_pos;
 
-            iss1 >> subdiv.subdiv;
-
-            if (iss1)
+            if (readUnsigned(iss1, subdiv.subdiv))
             {
                 if (!object.subdivs.empty() && m_multiple_subdiv)
                 {
@@ -3694,6 +3839,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     errorWithCount(m_invalid_numsurf_count) << "invalid numsurf" << std::endl;
                     showLine(iss1, object.numsurf.number_offset);
                 }
+                object.numsurf.invalid = true;
                 continue;
             }
 
@@ -3800,7 +3946,14 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
             {
                 const size_t kids_line = m_line_number;
 
-                for (int i = 0; i < kids; ++i)
+                // Running out of file in the kids block ends the kids, not
+                // the object: the checks at the end still run on what was
+                // read. Returning from here skipped them, so an unused vertex
+                // or a poly with kids in an object whose kids were cut off
+                // went unreported.
+                bool ended = false;
+
+                for (int i = 0; i < kids && !ended; ++i)
                 {
                     if (getLine(in))
                     {
@@ -3840,7 +3993,8 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                         << " kids found" << std::endl;
                                     showLine(in, object.numkids.line_pos, object.numkids.number_offset);
                                 }
-                                return false;
+                                ended = true;
+                                break;
                             }
 
                             iss2.str(m_line);
@@ -3849,6 +4003,9 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
 
                             iss2 >> token1;
                         }
+
+                        if (ended)
+                            break;
 
                         Object kid;
                         readObject(iss2, in, kid);
@@ -3863,7 +4020,7 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                                 << " kids found" << std::endl;
                             showLine(in, object.numkids.line_pos, object.numkids.number_offset);
                         }
-                        return false;
+                        ended = true;
                     }
                 }
             }
@@ -3921,6 +4078,13 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     warningWithCount(m_missing_numsurf_count) << "missing numsurf" << std::endl;
                     showLine(iss1, 0);
                 }
+            }
+            // A numsurf whose number could not be read has been reported
+            // once, and these are read as if there were no count. Each was
+            // "more SURF than specified" as well, with a note at the line
+            // already reported: three errors for one fault.
+            else if (object.numsurf.invalid)
+            {
             }
             else if (m_more_surf_than_specified)
             {
@@ -4282,8 +4446,13 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
         //
         // So is a poly with kids when polys are not shown: they hang off it,
         // and without its line they were shown under whatever came before.
-        if (type.type == "group" || type.type == "light" ||
-            (type.type == "poly" && !kids.empty() && dump_type != DumpType::poly && dump_type != DumpType::surf))
+        //
+        // And so is an object of a type the format does not have: it is
+        // reported as invalid, but it is in the tree and its kids hang off
+        // it. It matched nothing here and was left out, and its kid was
+        // shown with no parent line.
+        if (type.type != "poly" ||
+            (!kids.empty() && dump_type != DumpType::poly && dump_type != DumpType::surf))
         {
             std::cout << indent << (count + 1) << " " << type.type;
 
@@ -5086,7 +5255,11 @@ bool AC3D::fixTrackSegmentKids(std::vector<Object> &flat, std::istream &in)
 }
 
 // Whether building the tree from these counts takes a level of detail out of
-// its own segment's group, where it is as the counts were read.
+// its own segment's group, or a segment's own TKMN<n> poly out of one of that
+// segment's levels of detail, where it is as the counts were read. Only the
+// first was looked at, so a file stopping short inside TKMN1_g had the count
+// of ___TKMN1_gl0, which held exactly its two, called one too many, and TKMN1
+// was handed to TKMN1_g or the world.
 bool AC3D::movesTrackLevel(const std::vector<Object> &flat, const std::vector<int> &counts)
 {
     std::vector<int> as_read;
@@ -5105,13 +5278,20 @@ bool AC3D::movesTrackLevel(const std::vector<Object> &flat, const std::vector<in
         bool        level = false;
 
         if (before[i] == after[i] || before[i] >= flat.size() ||
-            !trackSegment(flat[i].getName(), segment, level) || !level)
+            !trackSegment(flat[i].getName(), segment, level))
+            continue;
+
+        // The segment's own poly is named TKMN<n> and nothing more.
+        const bool own_poly = !level && flat[i].type.type == "poly" && flat[i].getName() == segment;
+
+        if (!level && !own_poly)
             continue;
 
         std::string owner;
         bool        owner_level = false;
 
-        if (trackSegment(flat[before[i]].getName(), owner, owner_level) && !owner_level && owner == segment)
+        if (trackSegment(flat[before[i]].getName(), owner, owner_level) && owner == segment &&
+            owner_level == own_poly)
             return true;
     }
 
@@ -5183,6 +5363,10 @@ bool AC3D::fixKids(Object &root, std::istream &in)
     const long long surplus = declared - static_cast<long long>(flat.size() - 1);
 
     size_t blame = flat.size();
+    // Groups whose count the names say is right: taking the surplus off one
+    // would move a level of detail or a segment's own poly out of where it
+    // belongs.
+    std::set<size_t> pinned;
 
     // Which objects were still waiting when the objects ran out: each one in
     // turn holds the next, down to the last object in the file.
@@ -5217,7 +5401,16 @@ bool AC3D::fixKids(Object &root, std::istream &in)
         // by correcting it.
         for (size_t i = open.size(); i-- > 1; )
         {
-            if (flat[open[i]].numkids.number <= surplus)
+            // A poly's count can come down to 0, as fixTrackSegmentKids lets
+            // it: a poly saying kids 1 with its sibling after it is a poly
+            // that has none, which is what a poly usually has. Only counts
+            // above the surplus were looked at, so it never came down, the
+            // sibling stayed inside it, and only "missing kids" was said. A
+            // group is still never taken to 0: a group with nothing in it is
+            // not something a file means, and it is cleaned away.
+            const long long count = flat[open[i]].numkids.number;
+
+            if (count < surplus || (count == surplus && flat[open[i]].type.type != "poly"))
                 continue;
 
             bool starved = false;
@@ -5254,7 +5447,10 @@ bool AC3D::fixKids(Object &root, std::istream &in)
                 // the counts say. Only the world was left waiting, and the
                 // last level of detail of the last segment was handed to it.
                 if (movesTrackLevel(flat, counts))
+                {
+                    pinned.insert(open[i]);
                     continue;
+                }
 
                 blame = open[i];
                 break;
@@ -5303,7 +5499,9 @@ bool AC3D::fixKids(Object &root, std::istream &in)
                     if (satisfied_inside)
                         unreconciled = true;
                 }
-                else
+                // A group the names say holds what is its own took nothing
+                // that belonged further out.
+                else if (pinned.count(open[i]) == 0)
                     satisfied_inside = true;
             }
 
@@ -5794,14 +5992,25 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, 
             if (!boundingBoxesOverlap(box1.min, box1.max, box2.min, box2.max))
                 continue;
 
+            // Once for the pair of surfaces, naming the first triangles found
+            // to overlap. Every overlapping pair of triangles was a warning of
+            // its own: two overlapping 10 by 10 grids gave 1264 of them, some
+            // 30,000 lines.
             {
+                bool reported = false;
+
                 {
                     for (const auto &triangle1 : surface1.transformedTriangles)
                     {
+                        if (reported)
+                            break;
+
                         for (const auto &triangle2 : surface2.transformedTriangles)
                         {
                             if (trianglesOverlap(triangle1, triangle2))
                             {
+                                reported = true;
+
                                 warningWithCount(m_overlapping_2_sided_surface_count, surface2.line_number) <<
                                     "overlapping 2 sided surface (object: " <<
                                     object2.object->getName() << " texture: " << object2.object->getTexture() <<
@@ -5824,6 +6033,7 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, 
                                 showLine(in, triangle1.refs[1].line_pos);
                                 note(triangle1.refs[2].line_number) << "ref" << std::endl;
                                 showLine(in, triangle1.refs[2].line_pos);
+                                break;
                             }
                         }
                     }
@@ -5898,9 +6108,10 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const std::vector<Pol
     }
 }
 
-// Reports every overlapping triangle pair of two surfaces. The later surface
-// is the warning and the earlier one the note, so this reads the same way
-// checkOverlapping2SidedSurface's output does.
+// Reports two surfaces that overlap, once, naming the first triangles found to
+// overlap. The later surface is the warning and the earlier one the note, so
+// this reads the same way checkOverlapping2SidedSurface's output does. Every
+// overlapping pair of triangles used to be a warning of its own.
 void AC3D::reportOverlappingGeometry(std::istream &in, const Object &object1, const Surface &surface1,
                                      const Object &object2, const Surface &surface2)
 {
@@ -5973,6 +6184,7 @@ void AC3D::reportOverlappingGeometry(std::istream &in, const Object &object1, co
                 showLine(in, triangle1.refs[1].line_pos);
                 note(triangle1.refs[2].line_number) << "ref" << std::endl;
                 showLine(in, triangle1.refs[2].line_pos);
+                return;
             }
         }
     }
@@ -6556,7 +6768,7 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
 
                         const double dot = std::clamp(normal1.dot(normal2) / (length1 * length2), -1.0, 1.0);
                         const double angle = std::acos(dot) * 180.0 / std::numbers::pi;
-                        const double crease = object.creases.empty() ? 45.0 : object.creases[0].crease;
+                        const double crease = object.creaseAngle();
 
                         if (angle < crease)
                         {
@@ -6783,6 +6995,45 @@ void AC3D::checkDuplicateSurfaceVertices(std::istream &in, const Object &object,
 // Coordinates do not come into a .ac: it keeps them on the ref and every
 // reader of one takes a surface at a time, so a vertex serving several is
 // ordinary.
+// Which way a polygon faces: Newell's normal, summed over every edge, the
+// same as checkSurfaceCoplanar finds, measured from the first corner so a
+// polygon far from the origin keeps its digits. False for one with a vertex
+// index out of range, or whose edges cancel out -- no area, or crossing
+// itself -- which has no way it faces.
+bool AC3D::polygonNormal(const Object &object, const Surface &surface, Point3 &normal)
+{
+    const size_t size = surface.refs.size();
+
+    if (size < 3 || surface.refs[0].index >= object.vertices.size())
+        return false;
+
+    const Point3 origin = object.vertices[surface.refs[0].index].vertex;
+    Point3 newell{ 0.0, 0.0, 0.0 };
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        const size_t index0 = surface.refs[i].index;
+        const size_t index1 = surface.refs[(i + 1) % size].index;
+
+        if (index0 >= object.vertices.size() || index1 >= object.vertices.size())
+            return false;
+
+        const Point3 a = object.vertices[index0].vertex - origin;
+        const Point3 b = object.vertices[index1].vertex - origin;
+
+        newell += Point3{ (a.y() - b.y()) * (a.z() + b.z()),
+                          (a.z() - b.z()) * (a.x() + b.x()),
+                          (a.x() - b.x()) * (a.y() + b.y()) };
+    }
+
+    if (!(newell.length() > 0.0))
+        return false;
+
+    newell.normalize();
+    normal = newell;
+    return true;
+}
+
 void AC3D::SameVertex::build(const Object &object, bool consider_topology, bool single_uv)
 {
     // The vertices decide, not the file name.
@@ -6790,12 +7041,14 @@ void AC3D::SameVertex::build(const Object &object, bool consider_topology, bool 
                             std::any_of(object.vertices.begin(), object.vertices.end(),
                                         [](const Vertex &vertex) { return !vertex.has_normal; });
     one_uv_per_vertex = single_uv;
+    uv_by_crease = !single_uv && !object.textures.empty() &&
+                   object.textures[0].name != "empty_texture_no_mapping";
+    crease = object.creaseAngle();
 
     separate.assign(object.vertices.size(), false);
 
     if (shading_from_topology)
     {
-        crease = object.creases.empty() ? 45.0 : object.creases[0].crease;
         surfaces.assign(object.vertices.size(), {});
         normals.assign(object.surfaces.size(), Point3{ 0.0, 0.0, 0.0 });
         normal_known.assign(object.surfaces.size(), false);
@@ -6812,15 +7065,26 @@ void AC3D::SameVertex::build(const Object &object, bool consider_topology, bool 
     else
         coordinates.clear();
 
+    std::vector<std::vector<Triangle>> strips;
+
+    if (uv_by_crease)
+    {
+        corners.assign(object.vertices.size(), {});
+        strips = getTriangleStrips(object);
+    }
+    else
+        corners.clear();
+
     for (size_t index = 0; index < object.surfaces.size(); ++index)
     {
         const Surface &surface = object.surfaces[index];
 
         if (shading_from_topology && surface.isSmoothShaded())
         {
-            // The first three refs that are not in a line. A surface that
-            // never offers three leaves normal_known false, and pairs
-            // touching it are refused rather than guessed at.
+            // Three refs that are not in a line show that the surface has a
+            // plane. A surface that never offers three leaves normal_known
+            // false, and pairs touching it are refused rather than guessed
+            // at.
             //
             // In a line, not only on top of each other: three distinct refs
             // along one edge passed, their normal came out 0 0 0, and the
@@ -6832,7 +7096,10 @@ void AC3D::SameVertex::build(const Object &object, bool consider_topology, bool 
             // A surface with every ref in one line has no plane, and is not
             // known, the same as one whose refs all fall on top of each other
             // always was. Its zero normal used to let merges past it.
-            for (size_t i = 0; i + 2 < surface.refs.size(); ++i)
+            const size_t size = surface.refs.size();
+            bool plane = false;
+
+            for (size_t i = 0; i + 2 < size; ++i)
             {
                 const size_t index0 = surface.refs[i].index;
                 const size_t index1 = surface.refs[i + 1].index;
@@ -6850,15 +7117,74 @@ void AC3D::SameVertex::build(const Object &object, bool consider_topology, bool 
                     continue;
 
                 normals[index] = normalizedNormal(point0, point1, point2);
-                normal_known[index] = true;
+                plane = true;
                 break;
             }
+
+            // Which way a polygon faces is Newell's normal, summed over every
+            // edge, the same as checkSurfaceCoplanar finds. The first three
+            // corners not in a line can be a reflex one on a concave
+            // polygon, and the normal they give then faces the other way, so
+            // whether two vertices merged across a hard edge depended on
+            // which ref the polygon was written starting at. One whose edges
+            // cancel out, crossing itself, has no way it faces and is not
+            // known.
+            if (plane && surface.isPolygon())
+            {
+                Point3 normal;
+
+                if (polygonNormal(object, surface, normal))
+                    normals[index] = normal;
+                else
+                    plane = false;
+            }
+
+            normal_known[index] = plane;
         }
 
-        for (const auto &ref : surface.refs)
+        // The way a polygon faces, for its corners. A line faces no way and
+        // has no corners here, the same as checkDifferentUV passes it by.
+        Point3 face{ 0.0, 0.0, 0.0 };
+        const bool facing = uv_by_crease &&
+                            (surface.isTriangleStrip() ||
+                             (surface.isPolygon() && polygonNormal(object, surface, face)));
+
+        for (size_t k = 0; k < surface.refs.size(); ++k)
         {
+            const Ref &ref = surface.refs[k];
+
             if (ref.index >= object.vertices.size())
                 continue;
+
+            if (facing)
+            {
+                // A ref of a strip is a corner of up to three of its
+                // triangles, and each is a face of its own once the strip is
+                // written as triangles, so each is a corner here. Taking only
+                // the one checkDifferentUV looks at in a strip let a .acc
+                // written as a .ac come out with "different uv" between
+                // triangles the strip had held apart.
+                std::vector<Point3> facings;
+
+                if (surface.isTriangleStrip())
+                {
+                    const std::vector<Triangle> &triangles = strips[index];
+
+                    for (size_t t = (k >= 2 ? k - 2 : 0); t <= k && t < triangles.size(); ++t)
+                        facings.push_back(triangles[t].normal);
+                }
+                else
+                    facings.push_back(face);
+
+                for (Point3 &normal : facings)
+                {
+                    if (normal.length() > Point3::SMALL_NUM)
+                    {
+                        normal.normalize();
+                        corners[ref.index].push_back({ normal, &ref.coordinates });
+                    }
+                }
+            }
 
             if (shading_from_topology && surface.isSmoothShaded())
             {
@@ -6921,6 +7247,19 @@ bool AC3D::SameVertex::operator()(const Object &object, size_t index1, size_t in
             return false;
     }
 
+    if (uv_by_crease)
+    {
+        for (const Corner &corner1 : corners[index1])
+        {
+            for (const Corner &corner2 : corners[index2])
+            {
+                if (*corner1.coordinates != *corner2.coordinates &&
+                    corner1.normal.angleDegrees(corner2.normal) < crease)
+                    return false;
+            }
+        }
+    }
+
     return true;
 }
 
@@ -6939,6 +7278,13 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 
     std::vector<bool> duplicates(object.vertices.size(), false);
 
+    // The vertices reported as duplicates of each first instance, so a vertex
+    // is only reported when it is the same as all of them, the way the
+    // cleanup groups them: two vertices kept apart across a crease are each
+    // the same as a vertex no smooth surface uses in their place, but they
+    // cannot both be merged with it.
+    std::unordered_map<size_t, std::vector<size_t>> group;
+
     for (size_t i = 0; i < object.vertices.size(); i++)
     {
         for (size_t j = i + 1; j < object.vertices.size(); j++)
@@ -6949,6 +7295,13 @@ void AC3D::checkDuplicateVertices(std::istream &in, const Object &object)
 
             if (same(object, i, j))
             {
+                std::vector<size_t> &members = group[i];
+
+                if (!std::all_of(members.begin(), members.end(),
+                                 [&](size_t member) { return same(object, j, member); }))
+                    continue;
+
+                members.push_back(j);
                 duplicates[j] = true;
 
                 warningWithCount(m_duplicate_vertices_count, object.vertices[j].line_number) << "duplicate vertices" << std::endl;
@@ -7006,7 +7359,7 @@ bool AC3D::collinear(const Point3 &p1, const Point3 &p2, const Point3 &p3)
 // Each corner is measured against the last corner kept before it, not against
 // its neighbour as it was read, and only goes if every corner already let go
 // since then still lies on the line it would leave. Measured against its
-// neighbours, each corner of a gentle curve passed on its own -- at 5 km from
+// neighbours, each corner of a gentle curve passed on its own -- at 20 km from
 // the origin collinear() allows 2.4 mm, and a 300 m radius curve in 1 m
 // segments bends by 1.7 mm at each corner -- and the cleanup then took every
 // one of them out together: the whole curve went, and the edge moved a metre.
@@ -7114,6 +7467,60 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
         size_t to = 0;
     };
 
+    // Whether the ref at middle can go without changing what is drawn: a ref
+    // in line with the corners either side of it is redundant only if what
+    // it carries is what the edge between them would give it anyway -- its
+    // texture coordinates, and in a .acc its vertex normal, interpolated
+    // along the edge. On position alone, a midpoint whose u was 0.9 where the
+    // edge gives 0.5 was flagged and the clean took it out, warping the
+    // texture, and a vertex normal that bent the shading along an edge went
+    // with it. Coordinates are compared to 1e-4 of the texture, normals to
+    // half a degree: about as closely as files write them.
+    const auto interpolates = [&object, &surface, &point](size_t from, size_t middle, size_t to)
+    {
+        const Point3 &a = point(from);
+        const Point3 &b = point(to);
+        const Point3 ab = b - a;
+        const double length2 = ab.dot(ab);
+        const double t = length2 > 0.0 ? (point(middle) - a).dot(ab) / length2 : 0.0;
+
+        const std::vector<Point2> &ca = surface.refs[from].coordinates;
+        const std::vector<Point2> &cm = surface.refs[middle].coordinates;
+        const std::vector<Point2> &cb = surface.refs[to].coordinates;
+
+        if (ca.size() != cm.size() || cb.size() != cm.size())
+            return false;
+
+        for (size_t k = 0; k < cm.size(); ++k)
+        {
+            for (size_t c = 0; c < 2; ++c)
+            {
+                const double expected = ca[k][c] + t * (cb[k][c] - ca[k][c]);
+                const double tolerance = 1e-4 * std::max({ 1.0, std::abs(ca[k][c]), std::abs(cb[k][c]) });
+
+                if (std::abs(expected - cm[k][c]) > tolerance)
+                    return false;
+            }
+        }
+
+        const Vertex &va = object.vertices[surface.refs[from].index];
+        const Vertex &vm = object.vertices[surface.refs[middle].index];
+        const Vertex &vb = object.vertices[surface.refs[to].index];
+
+        if (va.has_normal != vm.has_normal || vb.has_normal != vm.has_normal)
+            return false;
+
+        if (vm.has_normal)
+        {
+            const Point3 expected = va.normal + (vb.normal - va.normal) * t;
+
+            if (expected.length() == 0.0 || vm.normal.length() == 0.0 || expected.angleDegrees(vm.normal) > 0.5)
+                return false;
+        }
+
+        return true;
+    };
+
     std::vector<Chord> chords(size);
     std::vector<size_t> run;
     size_t kept = corners[anchor];
@@ -7136,15 +7543,15 @@ void AC3D::checkCollinearSurfaceVertices(std::istream &in, const Object &object,
         }
         else if (v0.equals(v1) || collinear(v0, v1, v2))
         {
-            straight = true;
+            straight = interpolates(kept, middle, next);
 
             for (const size_t earlier : run)
             {
-                if (!collinear(v0, point(earlier), v2))
-                {
-                    straight = false;
+                if (!straight)
                     break;
-                }
+
+                if (!collinear(v0, point(earlier), v2) || !interpolates(kept, earlier, next))
+                    straight = false;
             }
 
             if (straight)
@@ -7909,12 +8316,43 @@ std::vector<std::array<size_t, 3>> AC3D::triangulatePolygon(const Object &object
     return triangles;
 }
 
+// Two triangles are in one plane when each one's vertices lie on the other's
+// plane, as far as equals() can tell a point from another one at their size.
+// Each distance is measured from a vertex of the triangle whose plane it is,
+// so only the distance across the plane is in it. The planes used to be
+// compared by their normals and their distances from the origin, and the
+// rounding in a normal is multiplied by that distance: on sloped ground 300 m
+// out, most pairs lying exactly on top of each other were missed.
 bool AC3D::coplanar(const Triangle &triangle1, const Triangle &triangle2)
 {
-    const Plane p1(triangle1.vertices[0].vertex, triangle1.vertices[1].vertex, triangle1.vertices[2].vertex);
-    const Plane p2(triangle2.vertices[0].vertex, triangle2.vertices[1].vertex, triangle2.vertices[2].vertex);
+    const auto on = [](const Triangle &plane, const Triangle &other)
+    {
+        if (plane.degenerate)
+            return false;
 
-    return p1.equals(p2);
+        const Point3 normal = (plane.vertices[1].vertex - plane.vertices[0].vertex).cross(
+            plane.vertices[2].vertex - plane.vertices[0].vertex);
+        const double length = normal.length();
+
+        if (!(length > 0.0))
+            return false;
+
+        const Point3 &origin = plane.vertices[0].vertex;
+
+        for (const auto &vertex : other.vertices)
+        {
+            const Point3 &point = vertex.vertex;
+            const double size = std::max({ std::abs(point.x()), std::abs(point.y()), std::abs(point.z()),
+                                           std::abs(origin.x()), std::abs(origin.y()), std::abs(origin.z()) });
+
+            if (std::abs(normal.dot(point - origin)) / length > Point3::tolerance(size, 0.0))
+                return false;
+        }
+
+        return true;
+    };
+
+    return on(triangle1, triangle2) && on(triangle2, triangle1);
 }
 
 // Tests whether `point` (which must already lie in the same plane as
@@ -8005,33 +8443,124 @@ bool AC3D::trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2
     if (!coplanar(triangle1, triangle2))
         return false;
 
-    Point3 p1{ 0, 0, 0 }; // not used
-    Point3 p2{ 0, 0, 0 }; // not used
-    bool b = false; // not used
+    return coplanarTrianglesShareArea(triangle1, triangle2);
+}
 
-    if (threeyd::moeller::TriangleIntersects<Point3>::triangle(
-        triangle1.vertices[0].vertex, triangle1.vertices[1].vertex, triangle1.vertices[2].vertex,
-        triangle2.vertices[0].vertex, triangle2.vertices[1].vertex, triangle2.vertices[2].vertex,
-        p1, p2, b))
-        return true;
+// Two triangles in one plane overlap when the area they have in common is
+// more than rounding: a millionth of the smaller one. Triangles that only
+// touch -- at a vertex, along a shared edge, a vertex of one on an edge of
+// the other, or edges lying partly along each other -- have none, and do not
+// overlap.
+//
+// This used to be decided by the Moeller edge test, which counts edges that
+// touch or run along each other as crossing, so a T junction or two edges
+// sharing part of their length was an overlap: the warning fired on surfaces
+// that share no area, and --fixOverlapping2SidedSurface made both single
+// sided.
+//
+// The common area is the second triangle clipped by the first, in the axis
+// plane the first faces most nearly along, measured from the first's first
+// vertex so a model far from the origin keeps its digits.
+bool AC3D::coplanarTrianglesShareArea(const Triangle &triangle1, const Triangle &triangle2)
+{
+    Point3 normal = triangle1.normal;
 
-    // The Moeller coplanar-triangle test (threeyd::moeller, vendored in
-    // triangleintersects.hpp) only checks a single vertex of each
-    // triangle (vertex 0) for point-in-triangle containment, and
-    // deliberately ignores edges that exactly share 1 or 2 vertices so
-    // a shared vertex/edge isn't mistaken for an edge crossing. That
-    // combination misses a genuine overlap where two triangles share
-    // an edge and the *other* (non-shared) vertex of one triangle
-    // lands inside the other: there is no edge crossing to detect, and
-    // the vertex that matters isn't vertex 0. Now that we already know
-    // the two triangles are coplanar, cover that gap by testing every
-    // vertex of each triangle for containment in the other.
-    return pointInCoplanarTriangle(triangle1.vertices[0].vertex, triangle2) ||
-           pointInCoplanarTriangle(triangle1.vertices[1].vertex, triangle2) ||
-           pointInCoplanarTriangle(triangle1.vertices[2].vertex, triangle2) ||
-           pointInCoplanarTriangle(triangle2.vertices[0].vertex, triangle1) ||
-           pointInCoplanarTriangle(triangle2.vertices[1].vertex, triangle1) ||
-           pointInCoplanarTriangle(triangle2.vertices[2].vertex, triangle1);
+    if (normal.length() == 0.0)
+        normal = triangle2.normal;
+    if (normal.length() == 0.0)
+        return false;
+
+    const PlaneType plane = getPlaneType(normal);
+    const Point3 &origin = triangle1.vertices[0].vertex;
+
+    const auto project = [&plane, &origin](const Point3 &point)
+    {
+        const Point3 p = point - origin;
+
+        switch (plane)
+        {
+        case PlaneType::xy:
+            return std::array<double, 2>{ p.x(), p.y() };
+        case PlaneType::xz:
+            return std::array<double, 2>{ p.x(), p.z() };
+        case PlaneType::yz:
+            break;
+        }
+
+        return std::array<double, 2>{ p.y(), p.z() };
+    };
+
+    using Polygon = std::vector<std::array<double, 2>>;
+
+    const auto area = [](const Polygon &polygon)
+    {
+        double sum = 0.0;
+
+        for (size_t i = 0; i < polygon.size(); ++i)
+        {
+            const auto &a = polygon[i];
+            const auto &b = polygon[(i + 1) % polygon.size()];
+
+            sum += a[0] * b[1] - b[0] * a[1];
+        }
+
+        return sum / 2.0;
+    };
+
+    Polygon clip{ project(triangle1.vertices[0].vertex), project(triangle1.vertices[1].vertex),
+                  project(triangle1.vertices[2].vertex) };
+    Polygon subject{ project(triangle2.vertices[0].vertex), project(triangle2.vertices[1].vertex),
+                     project(triangle2.vertices[2].vertex) };
+
+    const double area1 = area(clip);
+    const double area2 = std::abs(area(subject));
+
+    // Wound counterclockwise, so the inside of each edge is to its left.
+    if (area1 < 0.0)
+        std::reverse(clip.begin(), clip.end());
+
+    const double smaller = std::min(std::abs(area1), area2);
+
+    if (!(smaller > 0.0))
+        return false;
+
+    for (size_t i = 0; i < clip.size() && !subject.empty(); ++i)
+    {
+        const auto &a = clip[i];
+        const auto &b = clip[(i + 1) % clip.size()];
+
+        const auto side = [&a, &b](const std::array<double, 2> &p)
+        {
+            return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+        };
+
+        Polygon kept;
+
+        for (size_t j = 0; j < subject.size(); ++j)
+        {
+            const auto &p = subject[j];
+            const auto &q = subject[(j + 1) % subject.size()];
+            const double sp = side(p);
+            const double sq = side(q);
+
+            if (sp >= 0.0)
+                kept.push_back(p);
+
+            if ((sp >= 0.0) != (sq >= 0.0))
+            {
+                const double t = sp / (sp - sq);
+
+                kept.push_back({ p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1]) });
+            }
+        }
+
+        subject = std::move(kept);
+    }
+
+    if (subject.size() < 3)
+        return false;
+
+    return std::abs(area(subject)) > 1e-6 * smaller;
 }
 
 AC3D::PlaneType AC3D::getPlaneType(const Point3 &normal)
@@ -8326,54 +8855,121 @@ void AC3D::checkSurfaceStripHole(std::istream &in, const Surface &surface, const
     if (triangles.size() < 2)
         return;
 
-    bool hasOldNormal = false;
-    Point3 oldNormal{ 0.0, 0.0, 0.0 };
-    size_t oldTriangleIndex = 0;
-    std::vector<size_t> holes;
+    // A strip turns about the edge each triangle shares with the one before
+    // it, so the vertex each adds lies across that edge from the one the
+    // triangle before added. Two refs swapped put it on the same side
+    // instead, folding the strip back over itself: the triangle faces the
+    // other way from its neighbours, and from the front it is a hole. This
+    // used to build a plane from the shared edge and the previous normal, and
+    // the condition it then tested could only be true by rounding: it found
+    // nothing in a strip with a triangle reversed, and a hole at a box corner
+    // where there was none.
+    //
+    // Each fold turns the strip over, and the next one turns it back, so the
+    // triangles from one fold to the next are the reversed ones. Which side
+    // is the front is taken from the most of them: a strip whose first
+    // triangle is the one wound wrongly is not reported as all holes but
+    // one.
+    //
+    // The sides are measured across the edge, square to it, so the test does
+    // not depend on which way either triangle is wound. A degenerate triangle
+    // is how two strips are joined into one surface, and the triangles either
+    // side of it belong to different pieces of the model, so nothing is
+    // compared across it: each piece is looked at on its own.
+    const Triangle *previous = nullptr;
+    bool turned = false;
+    std::vector<std::pair<size_t, size_t>> holes;   // triangle, the ref it adds
+    std::vector<std::pair<size_t, size_t>> piece;   // this piece's triangles
+    std::vector<bool> piece_turned;
+
+    const auto finish = [&holes, &piece, &piece_turned]()
+    {
+        const size_t count = static_cast<size_t>(std::count(piece_turned.begin(), piece_turned.end(), true));
+        const bool reversed = count * 2 <= piece.size();
+
+        for (size_t k = 0; k < piece.size(); ++k)
+        {
+            if (piece_turned[k] == reversed)
+                holes.push_back(piece[k]);
+        }
+
+        piece.clear();
+        piece_turned.clear();
+    };
 
     for (size_t i = 0; i < triangles.size(); i++)
     {
-        if (triangles[i].degenerate)
+        const Triangle &current = triangles[i];
+
+        if (current.degenerate)
         {
-            // A degenerate triangle is how two strips are concatenated into
-            // one surface: it carries no area, so it draws nothing, and the
-            // triangles either side of it belong to different pieces of the
-            // model. Skipping it while keeping the previous normal compared
-            // across that seam and reported the join as a hole.
-            hasOldNormal = false;
+            finish();
+            previous = nullptr;
+            turned = false;
             continue;
         }
 
-        const Point3 &newNormal = triangles[i].normal;
+        size_t added = 2;
 
-        if (hasOldNormal)
+        if (previous != nullptr)
         {
-            // find plane perpendicular to triangle running through shared edge
-            const Plane perpendicular(triangles[i].vertices[0].vertex,
-                                      triangles[i].vertices[1].vertex,
-                                      triangles[i].vertices[0].vertex + triangles[oldTriangleIndex].normal);
-
-            // find out which side of plane third vertex is in
-            const bool above = perpendicular.isAbovePlane(triangles[i].vertices[2].vertex);
-
-            // check normals for different winding
-            const double dot = oldNormal.dot(newNormal);
-            if (above)
+            const auto uses = [](const Triangle &triangle, size_t index)
             {
-                if (dot > 0)
-                    holes.push_back(i);
+                return triangle.refs[0].index == index || triangle.refs[1].index == index ||
+                       triangle.refs[2].index == index;
+            };
+
+            size_t old_third = 3;
+            size_t new_third = 3;
+            size_t shared = 0;
+
+            for (size_t k = 0; k < 3; ++k)
+            {
+                if (!uses(current, previous->refs[k].index))
+                    old_third = k;
+                if (uses(*previous, current.refs[k].index))
+                    ++shared;
+                else
+                    new_third = k;
             }
-            else
+
+            if (shared == 2 && old_third < 3 && new_third < 3)
             {
-                if (dot < 0)
-                    holes.push_back(i);
+                const size_t e0 = new_third == 0 ? 1 : 0;
+                const size_t e1 = new_third == 2 ? 1 : 2;
+                const Point3 &a = current.vertices[e0].vertex;
+                const Point3 edge = current.vertices[e1].vertex - a;
+                const double length = edge.dot(edge);
+
+                const auto across = [&a, &edge, length](const Point3 &point)
+                {
+                    const Point3 offset = point - a;
+
+                    return offset - edge * (offset.dot(edge) / length);
+                };
+
+                // Folded back past 30 degrees of lying flat on the triangle
+                // before: further than any shape a strip is built to make,
+                // and as far as a reversed triangle in a gently curved strip
+                // folds. A box corner is a fold of 90 degrees, and a strip is
+                // still one surface facing one way there.
+                const Point3 before = across(previous->vertices[old_third].vertex);
+                const Point3 after = across(current.vertices[new_third].vertex);
+                const double sizes = before.length() * after.length();
+
+                if (length > 0.0 && sizes > 0.0 && before.dot(after) > std::cos(30.0 * std::numbers::pi / 180.0) * sizes)
+                    turned = !turned;
+
+                added = new_third;
             }
         }
 
-        oldNormal = newNormal;
-        oldTriangleIndex = i;
-        hasOldNormal = true;
+        piece.emplace_back(i, added);
+        piece_turned.push_back(turned);
+        previous = &current;
     }
+
+    finish();
 
     if (!holes.empty())
     {
@@ -8382,10 +8978,12 @@ void AC3D::checkSurfaceStripHole(std::istream &in, const Surface &surface, const
         warningWithCount(m_surface_strip_hole_count, surface.line_number) << "triangle strip with " << holes.size() << " possible hole"
             << s << " (reversed triangle" << s << ")" << std::endl;
         showLine(in, surface.line_pos);
-        for (auto hole : holes)
+        for (const auto &hole : holes)
         {
-            note(triangles[hole].refs[2].line_number) << "ref" << std::endl;
-            showLine(in, triangles[hole].refs[2].line_pos);
+            const Ref &ref = triangles[hole.first].refs[hole.second];
+
+            note(ref.line_number) << "ref" << std::endl;
+            showLine(in, ref.line_pos);
         }
     }
 }
@@ -9252,9 +9850,17 @@ bool AC3D::cleanObjects(std::vector<Object> &objects)
 
     while (it != objects.end())
     {
+        // A group with surfaces is geometry, and is made the poly it is. One
+        // with vertices and nothing that uses them has only unused vertices,
+        // which are dropped: retyped, it was written as a poly with kids,
+        // and the output gained a "poly used as group" warning the input did
+        // not have.
         if (it->type.type == "group" && !it->vertices.empty())
         {
-            it->type.type = "poly";
+            if (it->surfaces.empty())
+                it->vertices.clear();
+            else
+                it->type.type = "poly";
             cleaned = true;
         }
 
@@ -9306,8 +9912,8 @@ bool AC3D::cleanVertices()
 // survivor and anything else marks a duplicate of that survivor.
 //
 // Vertex equality is a tolerance test and tolerance equality is NOT
-// transitive: three vertices at 0, 3e-07 and 6e-07 compared with a threshold
-// of 4.77e-07 give a == b and b == c but a != c. Deciding duplicates by
+// transitive: three vertices at 0, 8e-08 and 1.6e-07 compared with a threshold
+// of 1.19e-07 give a == b and b == c but a != c. Deciding duplicates by
 // walking pairs therefore takes the transitive closure of a relation that is
 // not one -- all three collapse onto a single vertex that was never claimed
 // to be a duplicate of the other two, and which of them survives depends on
@@ -9434,50 +10040,62 @@ bool AC3D::cleanVertices(std::vector<Object> &objects, bool consider_topology, b
 void AC3D::separateVertices(const Object &object, std::vector<size_t> &representative,
                             bool consider_topology, bool single_uv)
 {
-    if (!consider_topology && !single_uv)
-        return;
-
     SameVertex same;
     same.build(object, consider_topology, single_uv);
 
-    // What a cluster's leader turns away can still be the same as something
-    // else it turned away: three vertices in one place, the first with one uv
-    // and the other two sharing another, are one cluster to clusterVertices
-    // and two vertices here. Each one turned away is matched against those
-    // already turned away from the same leader, earliest first, and only
-    // stands on its own if none of them is the same. Left on its own every
-    // time, the second of the pair survived beside the first, and acclint's
-    // own "duplicate vertices" warning found it in what acclint wrote.
+    if (!consider_topology && !single_uv && !same.uv_by_crease)
+        return;
+
+    // A cluster is split into groups whose members are all the same as one
+    // another, not merely the same as the first: SameVertex is not
+    // transitive. A vertex no smooth surface uses, or one with no uv, is the
+    // same as anything in its place, so comparing only with the leader let
+    // two vertices kept apart across a crease, or by their uv, both join a
+    // leader like that and come out as one -- the hard edge was rounded off,
+    // or the texture moved.
     //
-    // Only a vertex that stands on its own is matched against, so every
-    // duplicate still names a survivor.
-    std::unordered_map<size_t, std::vector<size_t>> turned_away;
+    // Each vertex joins the first group, in the order the groups were made,
+    // that it is the same as every member of, or starts a group of its own.
+    // The cluster's leader goes first, so a cluster that needs no splitting
+    // keeps the survivor clusterVertices chose, and every duplicate names a
+    // survivor.
+    std::unordered_map<size_t, std::vector<size_t>> members;
 
     for (size_t i = 0; i < representative.size(); ++i)
     {
-        const size_t leader = representative[i];
+        if (representative[i] != i)
+            members[representative[i]].push_back(i);
+    }
 
-        if (leader == i)
-            continue;
+    for (auto &[leader, cluster] : members)
+    {
+        std::vector<std::vector<size_t>> groups{ { leader } };
 
-        if (same(object, i, leader))
-            continue;
-
-        std::vector<size_t> &others = turned_away[leader];
-
-        representative[i] = i;
-
-        for (const size_t other : others)
+        for (const size_t i : cluster)
         {
-            if (same(object, i, other))
+            std::vector<size_t> *joined = nullptr;
+
+            for (auto &group : groups)
             {
-                representative[i] = other;
-                break;
+                if (std::all_of(group.begin(), group.end(),
+                                [&](size_t member) { return same(object, i, member); }))
+                {
+                    joined = &group;
+                    break;
+                }
+            }
+
+            if (joined == nullptr)
+            {
+                groups.push_back({ i });
+                representative[i] = i;
+            }
+            else
+            {
+                joined->push_back(i);
+                representative[i] = joined->front();
             }
         }
-
-        if (representative[i] == i)
-            others.push_back(i);
     }
 }
 
@@ -9612,13 +10230,95 @@ void AC3D::getObjects(std::vector<Object *> &polys, Object *object)
     }
 }
 
+// A surface with too few corners left to be anything -- a triangle with a
+// point on its long edge -- has no area to fill a crack with. It keeps no
+// point for anyone else.
+bool AC3D::tooFewCorners(const Surface &surface)
+{
+    const size_t corners = static_cast<size_t>(std::count_if(surface.refs.begin(), surface.refs.end(),
+        [](const Ref &ref) { return !ref.collinear && !ref.duplicate; }));
+
+    return corners < (surface.isLine() ? 2 : 3);
+}
+
+// Whether a point is one of the corners, sorted by x, as far as equals() can
+// tell them apart.
+bool AC3D::isCorner(const std::vector<Point3> &corners, const Point3 &point)
+{
+    const double reach = Point3::tolerance(point.x(), point.x());
+    auto it = std::lower_bound(corners.begin(), corners.end(), point.x() - reach,
+        [](const Point3 &corner, double x) { return corner.x() < x; });
+
+    for (; it != corners.end() && it->x() <= point.x() + reach; ++it)
+    {
+        if (it->equals(point))
+            return true;
+    }
+
+    return false;
+}
+
 bool AC3D::cleanSurfaces()
 {
     std::vector<Object *> polys;
+    std::vector<Matrix> matrices;
 
-    // find all the polys
+    // Every poly, with where it is in the world: a poly's kids as well as a
+    // group's, the same as getObjects and addPoly.
+    const std::function<void(Object &, const Matrix &)> find =
+        [&polys, &matrices, &find](Object &object, const Matrix &matrix)
+    {
+        const Matrix world = matrix.multiply(object.matrix);
+
+        if (object.type.type == "poly")
+        {
+            polys.push_back(&object);
+            matrices.push_back(world);
+        }
+
+        if (object.type.type == "poly" || object.type.type == "group" || object.type.type == "world")
+        {
+            for (auto &kid : object.kids)
+                find(kid, world);
+        }
+    };
+
     for (auto &object : m_objects)
-        getObjects(polys, &object);
+        find(object, Matrix());
+
+    // Every corner a surface keeps, in world space. A ref that is collinear
+    // in its own surface stays where a surface of another object has it as a
+    // corner: taken out, it leaves that object's corner in the middle of this
+    // one's edge, a T-junction that renders as a crack. Only the object's
+    // own surfaces were looked at, and a split by --splitMat or --splitSURF,
+    // which runs before this, had already put the neighbours in objects of
+    // their own.
+    std::vector<Point3> corners;
+
+    for (size_t p = 0; p < polys.size(); ++p)
+    {
+        const Object &object = *polys[p];
+
+        for (const auto &surface : object.surfaces)
+        {
+            if (tooFewCorners(surface))
+                continue;
+
+            for (const auto &ref : surface.refs)
+            {
+                if (ref.collinear || ref.duplicate || ref.index >= object.vertices.size())
+                    continue;
+
+                Point3 point = object.vertices[ref.index].vertex;
+
+                matrices[p].transformPoint(point);
+                corners.push_back(point);
+            }
+        }
+    }
+
+    std::sort(corners.begin(), corners.end(),
+        [](const Point3 &a, const Point3 &b) { return a.x() < b.x(); });
 
     bool cleaned = false;
 
@@ -9636,7 +10336,7 @@ bool AC3D::cleanSurfaces()
     #pragma omp parallel for reduction(|:cleaned) num_threads(m_threads)
     for (int i = 0; i < size; i++)
     {
-        cleaned |= cleanSurfaces(*polys[i]);
+        cleaned |= cleanSurfaces(*polys[i], &corners, &matrices[static_cast<size_t>(i)]);
     }
 
     if (m_show_times)
@@ -9661,7 +10361,7 @@ bool AC3D::cleanSurfaces(std::vector<Object> &objects)
     return cleaned;
 }
 
-bool AC3D::cleanSurfaces(Object &object)
+bool AC3D::cleanSurfaces(Object &object, const std::vector<Point3> *corners, const Matrix *matrix)
 {
     if (object.surfaces.empty())
         return false;
@@ -9702,12 +10402,20 @@ bool AC3D::cleanSurfaces(Object &object)
     // A surface with too few corners left to be anything -- a triangle with a
     // point on its long edge -- has no area to fill a crack with, and goes as
     // it always did. It keeps no point for anyone else either.
-    const auto degenerate = [](const Surface &surface)
-    {
-        const size_t corners = static_cast<size_t>(std::count_if(surface.refs.begin(), surface.refs.end(),
-            [](const Ref &ref) { return !ref.collinear && !ref.duplicate; }));
+    const auto degenerate = tooFewCorners;
 
-        return corners < (surface.isLine() ? 2 : 3);
+    // A corner of a surface somewhere else in the world, where the caller
+    // knows the world.
+    const auto elsewhere = [&object, corners, matrix](const Ref &ref)
+    {
+        if (corners == nullptr || matrix == nullptr || ref.index >= object.vertices.size())
+            return false;
+
+        Point3 point = object.vertices[ref.index].vertex;
+
+        matrix->transformPoint(point);
+
+        return isCorner(*corners, point);
     };
 
     std::vector<bool> corner(object.vertices.size(), false);
@@ -9737,7 +10445,8 @@ bool AC3D::cleanSurfaces(Object &object)
                 it = surface.refs.erase(it);
                 cleaned = true;
             }
-            else if (it->collinear && !(keep_corners && it->index < place.size() && corner[place[it->index]]))
+            else if (it->collinear &&
+                     !(keep_corners && ((it->index < place.size() && corner[place[it->index]]) || elsewhere(*it))))
             {
                 // delete vertex
                 it = surface.refs.erase(it);
@@ -10741,34 +11450,33 @@ void AC3D::Object::transform(const Matrix &currentMatrix)
     // disagreed.
     const Matrix newMatrix = currentMatrix.multiply(thisMatrix);
 
-    // A poly's vertices, and a group's if it has some: its loc and rot are
-    // cleared above, so geometry left untransformed would move.
-    if (type.type == "poly" || !vertices.empty())
-    {
-        for (auto &vertex : vertices)
-        {
-            newMatrix.transformPoint(vertex.vertex);
+    // A light, or anything else that is not geometry or a group, keeps a
+    // place of its own: its loc and rot are written back as what the
+    // ancestors and the light together came to, its position and
+    // orientation in the world, said without them. Cleared the way a group's
+    // are, with no geometry to take the transform, every light ended up at
+    // the origin.
+    //
+    // Its own vertices -- the direction a spot points -- stay as they are,
+    // relative to the light, which still carries the transform. Its kids are
+    // baked into the world like everything else and then taken out from
+    // under it, to sit beside it in its parent (hoistKids): left under a
+    // light that still has its loc and rot, they were placed twice. A kid
+    // under a light at loc 10 was written at 10 while the light kept its loc
+    // 10, and drawn at 20; --fixAll flattens three times, and it went to 30.
+    // Written this way a second flatten changes nothing.
+    const bool placed = isPlaced();
 
-            if (vertex.has_normal)
-                newMatrix.transformNormal(vertex.normal);
-        }
-    }
-    else if (type.type != "group" && type.type != "world")
+    if (placed)
     {
-        // A light has no vertices for its placement to be baked into, so
-        // clearing loc and rot the way a group's are cleared does not push the
-        // transform down into geometry -- there is none -- it throws the
-        // placement away, and every light in the file ends up at the origin.
-        // What the ancestors and the object together came to is written back
-        // instead: the same position and orientation, said without them.
         const Point3 location = { newMatrix[3][0], newMatrix[3][1], newMatrix[3][2] };
 
         if (location[0] != 0.0 || location[1] != 0.0 || location[2] != 0.0)
         {
-            Location placed;
+            Location where;
 
-            placed.location = location;
-            locations.push_back(placed);
+            where.location = location;
+            locations.push_back(where);
         }
 
         const std::array<double, 9> rotation = { newMatrix[0][0], newMatrix[0][1], newMatrix[0][2],
@@ -10782,27 +11490,80 @@ void AC3D::Object::transform(const Matrix &currentMatrix)
             turned.rotation = rotation;
             rotations.push_back(turned);
         }
+
+        matrix = newMatrix;
+
+        for (size_t i = 0; i < kids.size(); ++i)
+        {
+            kids[i].transform(newMatrix);
+            hoistKids(kids, i);
+        }
+
+        return;
+    }
+
+    // A poly's vertices, and a group's if it has some: its loc and rot are
+    // cleared above, so geometry left untransformed would move.
+    for (auto &vertex : vertices)
+    {
+        newMatrix.transformPoint(vertex.vertex);
+
+        if (vertex.has_normal)
+            newMatrix.transformNormal(vertex.normal);
     }
 
     // Every object's kids, a poly's included. A poly can be a parent in this
     // format, and its kids were the one branch this walk never reached: their
     // own loc and rot survived while the ancestors' were baked away, which
     // left them placed against a parent transform that no longer exists.
-    for (auto &kid : kids)
-        kid.transform(newMatrix);
+    for (size_t i = 0; i < kids.size(); ++i)
+    {
+        kids[i].transform(newMatrix);
+        hoistKids(kids, i);
+    }
+}
+
+// A light that has just been flattened keeps its own loc and rot, so what was
+// under it, baked into the world, cannot stay there. Its kids are moved out
+// to follow it among its siblings, and the index is moved past them: they
+// have been transformed already.
+void AC3D::Object::hoistKids(std::vector<Object> &siblings, size_t &index)
+{
+    Object &object = siblings[index];
+
+    if (!object.isPlaced() || object.kids.empty())
+        return;
+
+    std::vector<Object> moved = std::move(object.kids);
+
+    object.kids.clear();
+    object.numkids.number = 0;
+
+    const size_t count = moved.size();
+
+    siblings.insert(siblings.begin() + static_cast<std::ptrdiff_t>(index) + 1,
+                    std::make_move_iterator(moved.begin()), std::make_move_iterator(moved.end()));
+
+    index += count;
 }
 
 void AC3D::transform(const Matrix &matrix)
 {
-    for (auto &object : m_objects)
-        object.transform(matrix);
+    for (size_t i = 0; i < m_objects.size(); ++i)
+    {
+        m_objects[i].transform(matrix);
+        Object::hoistKids(m_objects, i);
+    }
 }
 
 bool AC3D::Object::splitPolygons()
 {
     bool changed = false;
 
-    if (type.type == "poly")
+    // Any object holding surfaces, not only a poly: a group or the world
+    // that holds geometry of its own is drawn the same, and its polygons
+    // were left whole.
+    if (!surfaces.empty())
     {
         for (size_t i = 0; i < surfaces.size(); ++i)
         {
@@ -10876,22 +11637,9 @@ bool AC3D::Object::splitPolygons()
 
                     if (triangles.empty())
                         continue;
-
-                    for (auto &ref : surfaces[i].refs)
-                    {
-                        ref.collinear = false;
-                        ref.duplicate = false;
-                    }
                 }
                 else
                 {
-                    // clear flags
-                    for (auto &ref : surfaces[i].refs)
-                    {
-                        ref.collinear = false;
-                        ref.duplicate = false;
-                    }
-
                     if (size <= 3)
                         continue;
 
@@ -10927,6 +11675,17 @@ bool AC3D::Object::splitPolygons()
                 // Nothing but lines: nothing to fan.
                 if (triangles.empty())
                     continue;
+
+                // Only now that there are triangles: every ref is a corner of
+                // one of them, and not for the clean to take out. Cleared
+                // before the fan, a polygon with no area kept its flags off
+                // when nothing came of it, so the clean that would have
+                // deleted it left it, and it was written with 0 0 0 normals.
+                for (auto &ref : surfaces[i].refs)
+                {
+                    ref.collinear = false;
+                    ref.duplicate = false;
+                }
 
                 const Surface original = surfaces[i];
 
@@ -11660,9 +12419,27 @@ void AC3D::fixOverlapping2SidedSurface()
         }
     }
 
+    // A surface that lets light through is seen from behind through itself,
+    // so it keeps its second side, as --fixSurface2SidedOpaque leaves it:
+    // glass with trans 0.6 and a sticker on it were both made single sided,
+    // and the glass disappeared from behind. See-through by its material or
+    // by its object's texture.
+    std::set<const Surface *> transparent;
+
+    for (const auto &poly : polys)
+    {
+        const bool texture = hasTransparentTexture(*poly.object);
+
+        for (const auto &surface : poly.object->surfaces)
+        {
+            if (texture || hasTransparentMaterial(surface))
+                transparent.insert(&surface);
+        }
+    }
+
     for (auto *surface : surfaces)
     {
-        if (!surface->isDoubleSided())
+        if (!surface->isDoubleSided() || transparent.count(surface) != 0)
             continue;
 
         if (surface->isPolygon())
@@ -12091,9 +12868,12 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
         return false;
     }
 
-    // Owning buffers for the decoded image and its per row pointers.
-    std::vector<png_byte> image_data;
-    std::vector<png_bytep> row_pointers;
+    // One row at a time, into one row's worth of memory. The whole image
+    // used to be decoded at once, into a buffer as large as the header said:
+    // a 68 byte file claiming 1000000 by 1000000 pixels asked for 4 TB, and
+    // acclint ended on std::bad_alloc. Made before setjmp, so the jump back
+    // on a decoding error does not pass over its destructor.
+    std::vector<png_byte> row;
 
     if (setjmp(png_jmpbuf(png_ptr))) {
         return false;
@@ -12129,7 +12909,7 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
         png_set_tRNS_to_alpha(png_ptr);
     if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
         png_set_gray_to_rgb(png_ptr);
-    png_set_interlace_handling(png_ptr);
+    const int passes = png_set_interlace_handling(png_ptr);
     png_read_update_info(png_ptr, png_bridge.info);
 
     const int channels = png_get_channels(png_ptr, png_bridge.info);
@@ -12140,30 +12920,33 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
 
     const size_t rowbytes = png_get_rowbytes(png_ptr, png_bridge.info);
 
-    image_data.resize(rowbytes * height);
-    row_pointers.resize(height);
-
-    for (png_uint_32 i = 0; i < height; ++i)
-        row_pointers[i] = image_data.data() + (i * rowbytes);
-
-    png_read_image(png_ptr, row_pointers.data());
-    png_read_end(png_ptr, nullptr);
+    // Opaque to start with. An interlaced image fills a row in over several
+    // passes, and what a pass has not reached yet is left as it was: either
+    // this, or a pixel of the image from a row before. Either way nothing in
+    // the row is anything but opaque or a pixel the image has, so a pixel
+    // found to let light through is one the image has.
+    row.assign(rowbytes, 0xff);
 
     // The alpha of each pixel is its last channel: one byte, or two big
     // endian ones. Anything short of all ones lets something show through.
     const size_t bytes = static_cast<size_t>(depth / 8);
     const size_t stride = 4 * bytes;
 
-    for (png_uint_32 row = 0; row < height; ++row)
+    for (int pass = 0; pass < passes; ++pass)
     {
-        const png_byte *pixel = row_pointers[row];
-
-        for (png_uint_32 column = 0; column < width; ++column, pixel += stride)
+        for (png_uint_32 y = 0; y < height; ++y)
         {
-            for (size_t i = 0; i < bytes; ++i)
+            png_read_row(png_ptr, row.data(), nullptr);
+
+            const png_byte *pixel = row.data();
+
+            for (png_uint_32 column = 0; column < width; ++column, pixel += stride)
             {
-                if (pixel[3 * bytes + i] != 255)
-                    return true;
+                for (size_t i = 0; i < bytes; ++i)
+                {
+                    if (pixel[3 * bytes + i] != 255)
+                        return true;
+                }
             }
         }
     }

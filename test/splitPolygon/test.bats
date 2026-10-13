@@ -279,3 +279,45 @@ setup_file() {
 
 ################################################################################
 
+# test5: a quad with every corner on one line, smooth shaded. It has no area and
+# nothing comes of the fan, so the clean deletes it as it would one that is
+# not split, and the object goes with it. Its collinear flags were cleared
+# before the fan, so the clean left it, and it was written as a strip that
+# covers nothing.
+@test "test5.1" {
+  $RUN_TEST acclint -Wno-warnings test5.ac --splitPolygon -o test5.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.output.acc)"
+  expected_file="$(tr -d '\r' < test5.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.output.acc test5.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.output.acc
+}
+
+################################################################################
+
+# test6: a group holding a five sided polygon of its own. It is split like a
+# poly's. Only polys were looked at, and it was written with refs 5.
+@test "test6.1" {
+  $RUN_TEST acclint -Wno-warnings test6.ac --splitPolygon -o test6.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test6.output.ac)"
+  expected_file="$(tr -d '\r' < test6.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.output.ac test6.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.output.ac
+}
+
+################################################################################

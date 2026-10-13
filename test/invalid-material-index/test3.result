@@ -1,0 +1,14 @@
+test3.ac:14 error: reading material index
+mat -1
+    ^
+test3.ac:13 warning: surface with texture coordinates but no texture
+SURF 0x10
+^
+test3.ac:2 warning: unused material
+MATERIAL "m" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+test3.ac:13 warning: missing mat
+SURF 0x10
+^
+3 warnings
+1 error

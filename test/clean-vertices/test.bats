@@ -109,7 +109,7 @@ setup_file() {
 
 ################################################################################
 # Positions are compared with a tolerance, and tolerance equality is not
-# transitive: 0, 3e-07 and 6e-07 against a threshold of 4.77e-07 give a == b
+# transitive: 0, 8e-08 and 1.6e-07 against a threshold of 1.19e-07 give a == b
 # and b == c but a != c. Deciding duplicates by walking pairs therefore takes
 # the transitive closure of a relation that is not one.
 #
@@ -119,7 +119,7 @@ setup_file() {
 # this wrong each land on a different vertex count:
 #
 #   9   compares exactly, so nothing near-coincident merges at all
-#   8   correct: {0, 3e-07} merge, 6e-07 is too far from the survivor
+#   8   correct: {0, 8e-08} merge, 1.6e-07 is too far from the survivor
 #   7   chains, collapsing all three onto a vertex that was never equal to
 #       the third one
 #

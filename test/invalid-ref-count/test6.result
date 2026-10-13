@@ -1,0 +1,16 @@
+test6.ac:14 warning: invalid ref count: 4 actual: 3
+refs 4
+     ^
+test6.ac:12 warning: surface with texture coordinates but no texture
+SURF 0x10
+^
+test6.ac:18 warning: missing kids line
+OBJECT poly
+^
+test6.ac:5 note: object
+OBJECT poly
+^
+test6.ac:25 warning: surface with texture coordinates but no texture
+SURF 0x10
+^
+4 warnings

@@ -82,3 +82,18 @@ setup_file() {
 
 ################################################################################
 
+
+# test2: a blank line, then a header with no version letter. The error is
+# against line 2, where the header is, not line 1.
+@test "test2" {
+  $RUN_TEST acclint test2.ac
+  [ "$status" -eq 1 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

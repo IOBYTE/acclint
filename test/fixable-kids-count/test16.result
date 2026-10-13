@@ -1,0 +1,13 @@
+test16.ac:5 warning: poly with kids
+OBJECT poly
+       ^
+test16.ac:18 note: kids
+kids 1
+     ^
+test16.ac:4 warning: missing kids: only 1 out of 2 kids found
+kids 2
+     ^
+test16.ac:18 warning: kids count of 1 is 1 more than the file holds (object: P1): reading it as 0 gives every object above it the kids it asks for
+kids 1
+     ^
+3 warnings

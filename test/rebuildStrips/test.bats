@@ -99,3 +99,24 @@ setup_file() {
 }
 
 ################################################################################
+
+# test4: a strip of nothing but degenerate triangles. Rebuilt it is nothing, and
+# the clean after it takes away what is left. --rebuildStrips ran after the
+# last clean, and the object was written holding vertices and no surfaces.
+@test "test4.1" {
+  $RUN_TEST acclint test4.acc --rebuildStrips -o test4.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.output.acc)"
+  expected_file="$(tr -d '\r' < test4.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.output.acc test4.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.output.acc
+}
+
+################################################################################

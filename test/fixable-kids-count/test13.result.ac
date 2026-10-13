@@ -38,7 +38,7 @@ refs 3
 kids 0
 OBJECT group
 name "___TKMN0_gl1"
-kids 1
+kids 2
 OBJECT poly
 name "TKMN0"
 numvert 3
@@ -52,7 +52,7 @@ refs 3
 0 0 0
 1 0 0
 2 0 0
-kids 1
+kids 0
 OBJECT poly
 name "obj0_1_1"
 numvert 3

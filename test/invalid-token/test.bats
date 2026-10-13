@@ -137,3 +137,34 @@ setup_file() {
 }
 
 ################################################################################
+
+# test3: attributes after numvert and after numsurf. The format puts them
+# before both, so each is an invalid token, noted against the count it came
+# after. Nothing was said, and -o wrote them first, so a reader that applies
+# them where it comes to them drew the output textured and moved where it had
+# drawn the input untextured at the origin.
+@test "test3.1" {
+  $RUN_TEST acclint -Wno-missing-texture test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test3.2" {
+  rm -f test3.2.output.ac
+  $RUN_TEST acclint -Wno-missing-texture test3.ac -o test3.2.output.ac
+  [ "$status" -eq 1 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.2.output
+  fi
+  [ "$actual" = "$expected" ]
+  [ ! -e test3.2.output.ac ]
+}
+
+################################################################################

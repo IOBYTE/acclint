@@ -147,3 +147,19 @@ setup_file() {
 }
 
 ################################################################################
+
+# test3: data -1 on the world. It cannot be read as a size. It was read into
+# an unsigned size as the largest value it holds, and the data swallowed the
+# rest of the file.
+@test "test3" {
+  $RUN_TEST acclint test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

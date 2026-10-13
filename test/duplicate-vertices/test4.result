@@ -1,13 +1,13 @@
 test4.ac:9 warning: duplicate vertices
-0.0000003 0.0 0.0
+0.00000008 0.0 0.0
 ^
 test4.ac:8 note: first instance
 0.0 0.0 0.0
 ^
 test4.ac:10 warning: duplicate vertices
-0.0000006 0.0 0.0
+0.00000016 0.0 0.0
 ^
 test4.ac:9 note: first instance
-0.0000003 0.0 0.0
+0.00000008 0.0 0.0
 ^
 2 warnings

@@ -1,0 +1,13 @@
+test20.straight.ac:22 warning: collinear vertices
+4 0 1
+^
+test20.straight.ac:11 note: first vertex
+2 1 0
+^
+test20.straight.ac:12 note: second vertex
+1 1 0
+^
+test20.straight.ac:13 note: third vertex
+0 1 0
+^
+1 warning

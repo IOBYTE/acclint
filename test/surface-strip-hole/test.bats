@@ -20,10 +20,8 @@ setup_file() {
 # leaves a gap the size of that triangle -- but only on a single sided
 # surface, since a 2 sided one draws the reversed face anyway.
 #
-# The fixtures are lifted out of a real Speed Dreams track rather than drawn
-# by hand: the geometry that trips this check is a fold of close to ninety
-# degrees between neighbours, which is fiddly to write down and easy to get
-# accidentally harmless.
+# test1.acc is a flat strip of ten refs with two of them swapped, so the strip
+# folds back over itself and two triangles face down while the rest face up.
 ################################################################################
 
 # test1.1: nothing else in the fixture is worth a diagnostic, so the check
@@ -136,6 +134,23 @@ setup_file() {
   [ "$status" -eq 0 ]
   if [ "$output" != "" ]; then
     echo "$output" > test3.1.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################
+# test4: a strip lifted out of a real Speed Dreams track, folding round a box
+# corner: its neighbours meet at close to 90 degrees. It is one surface facing
+# one way, and its vertex normals agree with every triangle. The check used to
+# report a hole here, by rounding: the condition it tested could only be true
+# when a fold came within a hair of 90 degrees.
+################################################################################
+
+@test "test4.1" {
+  $RUN_TEST acclint -Wno-warnings -Wsurface-strip-hole test4.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.1.output
   fi
   [ "$output" = "" ]
 }

@@ -147,3 +147,33 @@ setup_file() {
 }
 
 ################################################################################
+
+# test3: mat -1. It cannot be read as a material index. It was read into an
+# unsigned index as 18446744073709551615 and reported as that.
+@test "test3" {
+  $RUN_TEST acclint test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test4: mat 1.9. It cannot be read as a material index. It was read as 1, a
+# material that exists, and nothing was said.
+@test "test4" {
+  $RUN_TEST acclint test4.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

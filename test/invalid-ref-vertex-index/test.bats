@@ -177,3 +177,34 @@ setup_file() {
 }
 
 ################################################################################
+
+# test5: a ref whose index is 2.5. It is not an index, and is reported as one
+# that cannot be read. It was read as 2, the ".5" taken for its u and the rest
+# shifted along, with only "trailing text" said.
+@test "test5" {
+  $RUN_TEST acclint test5.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test6: a ref whose index is -1. It cannot be read as an index. It was read
+# into an unsigned index as 18446744073709551615 and reported as that.
+@test "test6" {
+  $RUN_TEST acclint test6.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

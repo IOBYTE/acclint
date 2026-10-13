@@ -323,3 +323,19 @@ setup_file() {
 
 ################################################################################
 
+
+# test10: two blank lines before the header, which has trailing text. It is
+# reported against line 3, where the header is. Everything said about the
+# header was said against line 1.
+@test "test10" {
+  $RUN_TEST acclint test10.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test10.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test10.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

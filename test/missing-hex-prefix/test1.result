@@ -1,0 +1,4 @@
+test1.ac:12 warning: missing hex prefix
+SURF 20
+     ^
+1 warning

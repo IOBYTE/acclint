@@ -246,7 +246,7 @@ setup_file() {
   [ "$actual" = "$expected" ]
 }
 
-# test11: the two triangles are 3e-07 apart in z, inside the 4.77e-07 the
+# test11: the two triangles are 8e-08 apart in z, inside the 1.19e-07 the
 # comparison allows at this magnitude, so they overlap and are reported. The
 # boxes do not touch in z, though, so a cull that drops the tolerance rejects
 # the pair before the triangles are ever compared and the warning disappears.
@@ -363,6 +363,103 @@ setup_file() {
   expected="$(tr -d '\r' < test16.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test16.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# Two coplanar two sided triangles that touch and share no area: a vertex of
+# the second lies on the first's long edge, and the edge from it runs along
+# part of that edge. The edge test counted touching edges as crossing, so this
+# was reported as an overlap.
+@test "test17" {
+  $RUN_TEST acclint test17.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test17.output
+  fi
+  [ "$output" = "" ]
+}
+
+# And --fixAll leaves both two sided. It made both single sided.
+@test "test17.1" {
+  $RUN_TEST acclint --fixAll test17.ac -o test17.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test17.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test17.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test17.1.output.ac)"
+  expected_file="$(tr -d '\r' < test17.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test17.1.output.ac test17.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test17.1.output.ac
+}
+
+# Edges lying partly along each other, no area shared: not an overlap either.
+@test "test18" {
+  $RUN_TEST acclint test18.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test18.output
+  fi
+  [ "$output" = "" ]
+}
+
+################################################################################
+
+# test19: a two sided triangle on sloped ground far from the origin, and a
+# smaller one lying exactly on it. Their planes were compared by normal and by
+# distance from the origin, and the rounding in a normal, multiplied by that
+# distance, put them in different planes: the overlap was missed. Each
+# triangle's vertices are now measured against the other's plane.
+@test "test19" {
+  $RUN_TEST acclint test19.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test19.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test19.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test20: two triangles 1 mm across, one lying on the other. They overlap. A
+# point inside a triangle was measured against an absolute floor of 1, so at
+# this size it was never inside, and the overlap was missed; at 2 mm it was
+# found.
+@test "test20" {
+  $RUN_TEST acclint test20.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test20.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test20.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# test21: two quads, two sided, one lying inside the other. Each quad is two
+# triangles, and every triangle of one overlaps every triangle of the other.
+# It is one warning for the pair of surfaces, naming the first triangles found
+# to overlap. Every overlapping pair of triangles was a warning of its own:
+# two here, and hundreds for two overlapping 10 by 10 grids.
+@test "test21" {
+  $RUN_TEST acclint -Wno-surface-no-texture test21.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test21.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test21.output
   fi
   [ "$actual" = "$expected" ]
 }

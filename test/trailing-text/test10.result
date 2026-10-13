@@ -1,0 +1,7 @@
+test10.ac:3 warning: trailing text: "x"
+AC3Dbx
+     ^
+test10.ac:15 warning: surface with texture coordinates but no texture
+SURF 0x10
+^
+2 warnings

@@ -19,4 +19,7 @@ kids 2
 test13.ac:24 warning: kids count of 1 is 1 more than this poly can hold (object: TKMN0): reading it as 0 puts ___TKMN0_gl1 under TKMN0_g, where it belongs
 kids 1
      ^
-5 warnings
+test13.ac:55 warning: kids count of 1 is 1 more than the file holds (object: TKMN0): reading it as 0 gives every object above it the kids it asks for
+kids 1
+     ^
+6 warnings

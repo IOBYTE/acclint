@@ -355,3 +355,27 @@ setup_file() {
 }
 
 ################################################################################
+
+# test9: huge.png is 68 bytes whose header claims 1000000 by 1000000 pixels of
+# RGBA, with almost no image data after it. It is read a row at a time, runs
+# out of data, and is taken for opaque. The whole image was decoded at once,
+# into a buffer the size the header gave, and acclint ended on std::bad_alloc.
+@test "test9.1" {
+  $RUN_TEST acclint -Wno-warnings test9.ac --combineTexture -o test9.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test9.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test9.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test9.1.output.ac)"
+  expected_file="$(tr -d '\r' < test9.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test9.1.output.ac test9.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test9.1.output.ac
+}
+
+################################################################################

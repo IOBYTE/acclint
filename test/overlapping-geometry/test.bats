@@ -274,3 +274,19 @@ setup_file() {
   fi
   [ "$actual" = "$expected" ]
 }
+
+# test9: two single sided quads, one lying inside the other, facing the same
+# way. One warning for the pair of surfaces, naming the first triangles found
+# to overlap. Every overlapping pair of triangles was a warning of its own.
+@test "test9" {
+  $RUN_TEST acclint -Wno-warnings -Woverlapping-geometry test9.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test9.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test9.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

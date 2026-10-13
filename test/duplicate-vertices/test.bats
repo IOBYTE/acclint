@@ -293,3 +293,150 @@ setup_file() {
 }
 
 ################################################################################
+
+# A vertex that no smooth face uses is the same as anything in its place, so
+# it cannot be what decides that two others are. Here two smooth faces meet at
+# 30 degrees, under crease 60, on vertices split to keep the edge hard, and a
+# flat face uses a third vertex at each end of the edge. Each split vertex is
+# a duplicate of the flat face's vertex, but they cannot both be merged with
+# it, so only the first is reported. Both were.
+@test "test10" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test10.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test10.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test10.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# And only the first is merged: numvert goes from 9 to 7 and the edge stays
+# hard. The cleanup compared each vertex only with the first in its place, the
+# flat face's, so all three became one, numvert 5, and the edge was rounded
+# off.
+@test "test10.1" {
+  $RUN_TEST acclint -Wno-warnings test10.ac -o test10.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test10.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test10.output.ac)"
+  expected_file="$(tr -d '\r' < test10.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test10.output.ac test10.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test10.output.ac
+}
+
+# The same through uv in a .acc: the first vertex is not used at all, and the
+# two after it in the same place have different uv. The unused one goes and
+# the other two stay apart. They were merged into one, and the output had
+# "different uv".
+@test "test11" {
+  $RUN_TEST acclint -Wno-warnings test11.acc -o test11.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test11.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test11.output.acc)"
+  expected_file="$(tr -d '\r' < test11.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test11.output.acc test11.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test11.output.acc
+}
+
+################################################################################
+
+# A concave polygon whose first three corners are its reflex one: the normal
+# they give faces the other way from the polygon. It meets the second face at
+# 30 degrees on split vertices, so the edge is hard, and the default crease
+# would smooth it if they were one. They were reported as duplicates, because
+# with the polygon taken to face backwards the angle was 150 degrees. The same
+# polygon written starting at another corner was not. The normal is now the
+# one summed over every edge.
+@test "test12" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test12.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test12.output
+  fi
+  [ "$output" = "" ]
+}
+
+# And the split vertices are not merged: numvert stays 9. It went to 7.
+@test "test12.1" {
+  $RUN_TEST acclint -Wno-warnings test12.ac -o test12.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test12.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test12.output.ac)"
+  expected_file="$(tr -d '\r' < test12.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test12.output.ac test12.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test12.output.ac
+}
+
+################################################################################
+
+# The same goes for what counts as a duplicate. Two faces 50 degrees apart on
+# split vertices, under crease 60 then crease 40: the last line is the one
+# written out, and at 40 degrees the edge is hard whether the vertices are
+# split or not, so they are duplicates. Read from the first line, merging them
+# would have smoothed the edge, and they were not reported.
+@test "test13" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test13.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test13.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test13.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+
+# A .ac keeps its coordinates on the ref, but two faces closer than the crease
+# angle that meet at one vertex with different coordinates are what the
+# "different uv" warning reports. Here two flat-lying faces of a textured
+# object touch along an edge on vertices of their own, a uv seam. Merging the
+# pair would make that warning, so they are not duplicates. They were
+# reported as duplicates.
+@test "test14" {
+  $RUN_TEST acclint -Wno-warnings -Wduplicate-vertices test14.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test14.output
+  fi
+  [ "$output" = "" ]
+}
+
+# And they are not merged: numvert stays 6. They were merged, and linting the
+# output gave two "different uv" that the input did not have.
+@test "test14.1" {
+  $RUN_TEST acclint -Wno-warnings test14.ac -o test14.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test14.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test14.output.ac)"
+  expected_file="$(tr -d '\r' < test14.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test14.output.ac test14.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test14.output.ac
+}
+
+################################################################################

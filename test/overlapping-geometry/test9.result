@@ -1,0 +1,25 @@
+test9.ac:29 warning: overlapping geometry (object: b texture:  sides: 1 facing: same)
+SURF 0x00
+^
+test9.ac:32 note: ref
+0 0 0
+^
+test9.ac:33 note: ref
+1 0 0
+^
+test9.ac:34 note: ref
+2 0 0
+^
+test9.ac:13 note: first instance (object: a texture:  sides: 1)
+SURF 0x00
+^
+test9.ac:16 note: ref
+0 0 0
+^
+test9.ac:17 note: ref
+1 0 0
+^
+test9.ac:18 note: ref
+2 0 0
+^
+1 warning

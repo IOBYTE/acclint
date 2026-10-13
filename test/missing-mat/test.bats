@@ -97,7 +97,9 @@ setup_file() {
 }
 
 # test2: a Line-type SURF (0x02) with no "mat" line -- must NOT warn, since
-# line/point geometry is exempt from the missing-mat check.
+# line/point geometry is exempt from the missing-mat check. Nor is the
+# material unused: a surface with no mat line is drawn with material 0, a line
+# as much as a polygon. It was reported unused.
 @test "test2" {
   $RUN_TEST acclint test2.ac
   [ "$status" -eq 0 ]

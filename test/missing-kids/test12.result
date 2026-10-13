@@ -1,0 +1,7 @@
+test12.ac:19 warning: missing kids: only 0 out of 1 kids found
+kids 1
+     ^
+test12.ac:11 warning: unused vertex
+5 5 5
+^
+2 warnings

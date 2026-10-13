@@ -1,0 +1,14 @@
+test4.ac:14 error: less refs than specified: 2 of 3 before the end of the file
+refs 3
+     ^
+test4.ac:14 warning: invalid ref count: polygon with 2 vertices
+refs 3
+     ^
+test4.ac:5 warning: missing kids line at the end of the file
+OBJECT poly
+^
+test4.ac:10 warning: unused vertex
+0 1 0
+^
+3 warnings
+1 error

@@ -1,0 +1,25 @@
+test21.ac:29 warning: overlapping 2 sided surface (object: b texture:  sides: 2)
+SURF 0x20
+^
+test21.ac:32 note: ref
+0 0 0
+^
+test21.ac:33 note: ref
+1 0 0
+^
+test21.ac:34 note: ref
+2 0 0
+^
+test21.ac:13 note: first instance (object: a texture:  sides: 2)
+SURF 0x20
+^
+test21.ac:16 note: ref
+0 0 0
+^
+test21.ac:17 note: ref
+1 0 0
+^
+test21.ac:18 note: ref
+2 0 0
+^
+1 warning

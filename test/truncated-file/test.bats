@@ -109,3 +109,32 @@ setup_file() {
 }
 
 ################################################################################
+
+# test4: cut off inside a refs list, two refs into three. The refs loop just
+# stopped at the end of the file, so no error was reached: -o exited 0 and
+# wrote the world with the poly, its vertices and its material gone.
+@test "test4.1" {
+  $RUN_TEST acclint test4.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test4.2" {
+  rm -f test4.2.output.ac
+  $RUN_TEST acclint test4.ac -o test4.2.output.ac
+  [ "$status" -eq 1 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.2.output
+  fi
+  [ "$actual" = "$expected" ]
+  [ ! -e test4.2.output.ac ]
+}
+
+################################################################################

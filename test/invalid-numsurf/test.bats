@@ -107,3 +107,19 @@ setup_file() {
 }
 
 ################################################################################
+
+# test4: numsurf x, then two SURFs. The numsurf is reported once and the SURFs
+# are read as if there were no count. Each SURF was "more SURF than specified"
+# as well, with a note at the line already reported.
+@test "test4" {
+  $RUN_TEST acclint test4.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

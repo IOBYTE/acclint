@@ -1,0 +1,11 @@
+test5.ac:18 error: invalid ref vertex index
+2.5 1 1
+^
+test5.ac:13 warning: surface with texture coordinates but no texture
+SURF 0x10
+^
+test5.ac:10 warning: unused vertex
+1 1 0
+^
+2 warnings
+1 error

@@ -61,3 +61,19 @@ setup_file() {
 }
 
 ################################################################################
+
+# test2: an object of a type the format does not have, OBJECT foo, holding a
+# poly. It is listed with its kid under it, as a group would be. It was left
+# out, and its kid was listed with no parent line.
+@test "test2" {
+  $RUN_TEST acclint -Wno-warnings --dump poly test2.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

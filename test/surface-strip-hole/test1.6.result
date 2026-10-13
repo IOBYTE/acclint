@@ -1,8 +1,11 @@
-test1.acc:21 warning: triangle strip with 1 possible hole (reversed triangle)
+test1.acc:19 warning: triangle strip with 2 possible holes (reversed triangles)
 SURF 0x14
 ^
-test1.acc:33 note: ref
-1 1 0
+test1.acc:27 note: ref
+5 0 0
+^
+test1.acc:28 note: ref
+6 0 0
 ^
 1 warning
 surface strip hole: 1

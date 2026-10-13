@@ -380,7 +380,7 @@ setup_file() {
 ################################################################################
 # A flagged ref is taken out by the cleanup on the way out, so a run of them
 # goes all at once. Each corner of test15's curve -- a 300 m radius in 1 m
-# segments, 5 km from the origin -- bends by 1.7 mm, inside the 2.4 mm
+# segments, 20 km from the origin -- bends by 1.7 mm, inside the 2.4 mm
 # collinear() allows at that distance. Measured against its neighbours each
 # one passed on its own, all 49 were taken out together, and the curve was
 # written as a straight edge a metre away from where it was.
@@ -501,4 +501,175 @@ setup_file() {
 }
 
 ################################################################################
+# A ref in line with the corners either side of it is redundant only if what
+# it carries is what the edge between them would give it anyway: its texture
+# coordinates, and in a .acc its vertex normal, interpolated along the edge.
+# Judged on position alone, such a ref was reported and the clean took it out,
+# and the texture or the shading along the edge changed with it.
+################################################################################
 
+# test20: a quad with a ref halfway along its top edge whose u is 0.9 where
+# the edge gives 0.5. It is not reported (test20.1) and it is written
+# (test20.2). It was reported and removed, and the texture was warped.
+@test "test20.1" {
+  $RUN_TEST acclint -Wno-missing-texture test20.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test20.1.output
+  fi
+  [ "$output" = "" ]
+}
+
+@test "test20.2" {
+  $RUN_TEST acclint -Wno-missing-texture test20.ac -o test20.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test20.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test20.2.output.ac)"
+  expected_file="$(tr -d '\r' < test20.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test20.2.output.ac test20.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test20.2.output.ac
+}
+
+# test20.3: the same ref with u 0.5, which the edge gives it. It is reported
+# (test20.3) and removed (test20.4), as before.
+@test "test20.3" {
+  $RUN_TEST acclint -Wno-missing-texture test20.straight.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test20.3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test20.3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test20.4" {
+  $RUN_TEST acclint -Wno-warnings test20.straight.ac -o test20.4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test20.4.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test20.4.output.ac)"
+  expected_file="$(tr -d '\r' < test20.4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test20.4.output.ac test20.4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test20.4.output.ac
+}
+
+# test21: a .acc quad with a ref halfway along its top edge whose vertex
+# normal leans 37 degrees from the others. It is not reported and it is
+# written; it was removed, normal and all.
+@test "test21.1" {
+  $RUN_TEST acclint -Wno-missing-texture test21.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test21.1.output
+  fi
+  [ "$output" = "" ]
+}
+
+@test "test21.2" {
+  $RUN_TEST acclint -Wno-missing-texture test21.acc -o test21.2.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test21.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test21.2.output.acc)"
+  expected_file="$(tr -d '\r' < test21.2.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test21.2.output.acc test21.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test21.2.output.acc
+}
+
+# test22: two refs along the top edge, a third and two thirds of the way, with
+# u at a third and two thirds. Each is what the edge from the corner before it
+# to the corner after it gives it, and both go (test22.1). With the second at
+# u 0.2, neither does: the first is not what the edge to the second gives it,
+# nor is the second what the edge to the corner gives it (test22.2). Both
+# were removed.
+@test "test22.1" {
+  $RUN_TEST acclint -Wno-warnings test22.ac -o test22.1.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test22.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test22.1.output.ac)"
+  expected_file="$(tr -d '\r' < test22.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test22.1.output.ac test22.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test22.1.output.ac
+}
+
+@test "test22.2" {
+  $RUN_TEST acclint -Wno-warnings test22.bent.ac -o test22.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test22.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test22.2.output.ac)"
+  expected_file="$(tr -d '\r' < test22.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test22.2.output.ac test22.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test22.2.output.ac
+}
+
+################################################################################
+
+# (2,1,0) is collinear in object "left", on the middle of its right edge, but
+# it is a corner of object "right" beside it. Taken out, it leaves that corner
+# in the middle of left's edge, a T-junction that renders as a crack. Only the
+# object's own surfaces were asked whether they keep a point as a corner.
+@test "test23.1" {
+  $RUN_TEST acclint -Wno-warnings test23.ac -o test23.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test23.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test23.output.ac)"
+  expected_file="$(tr -d '\r' < test23.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test23.output.ac test23.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test23.output.ac
+}
+
+# The same in one object of two materials, split by --splitMat before the
+# clean: the neighbour is in an object of its own by then. Plain -o kept the
+# point and --splitMat took it out.
+@test "test24.1" {
+  $RUN_TEST acclint -Wno-warnings test24.ac --splitMat -o test24.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test24.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test24.output.ac)"
+  expected_file="$(tr -d '\r' < test24.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test24.output.ac test24.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test24.output.ac
+}
+
+################################################################################

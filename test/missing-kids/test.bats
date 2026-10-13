@@ -490,3 +490,19 @@ setup_file() {
   fi
   [ "$actual" = "$expected" ]
 }
+
+# test12: a poly says kids 1 and the file ends there. The checks on the poly
+# still run: its unused vertex is reported. Running out of file in the kids
+# block returned before them, and only "missing kids" was said.
+@test "test12" {
+  $RUN_TEST acclint test12.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test12.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test12.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

@@ -432,6 +432,12 @@ setup_file() {
 # takes ___TKMN0_gl1. A poly holds no kids in a track model, so it is the poly's
 # count that comes down, and the level of detail keeps the 2 it was right to
 # ask for. Its count was the one lowered.
+#
+# The second TKMN0, in ___TKMN0_gl1, says kids 1 as well and holds obj0_1_1,
+# where the file ends with the level of detail still one short. Its count comes
+# down to 0 the same way, and obj0_1_1 joins it in the level of detail. A count
+# was never taken down to 0, so it held obj0_1_1 and the level of detail's
+# count was lowered instead.
 @test "test13.1" {
   $RUN_TEST acclint test13.ac
   [ "$status" -eq 0 ]
@@ -457,6 +463,134 @@ setup_file() {
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test13.output.ac
+}
+
+################################################################################
+
+# test14: the file stops short inside TKMN1_g, which asks for 2 and holds only
+# ___TKMN1_gl0; the level of detail holds exactly its 2, x1 and the segment's
+# own poly TKMN1. That is all the missing kids warning has to say. The level of
+# detail was blamed for one too many, and --fixKids moved TKMN1 out of it and
+# under TKMN1_g.
+@test "test14.1" {
+  $RUN_TEST acclint test14.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test14.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test14.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test14.2" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test14.ac -o test14.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test14.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test14.output.ac)"
+  expected_file="$(tr -d '\r' < test14.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test14.output.ac test14.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test14.output.ac
+}
+
+################################################################################
+
+# test15: the same with TKMN0_g one level down from a world that asks for 2.
+# The segment's own poly stays in its level of detail; it went to the world.
+@test "test15.1" {
+  $RUN_TEST acclint test15.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test15.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test15.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test15.2" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test15.ac -o test15.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test15.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test15.output.ac)"
+  expected_file="$(tr -d '\r' < test15.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test15.output.ac test15.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test15.output.ac
+}
+
+################################################################################
+
+# test16: poly P1 says kids 1, and its sibling P2 follows it with the world
+# one short. A poly that holds nothing is what a poly usually is, so P1's count
+# comes down to 0 and P2 goes back to the world. A count was never taken down
+# to 0, P2 stayed inside P1, and only "missing kids" was said.
+@test "test16.1" {
+  $RUN_TEST acclint test16.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test16.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test16.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test16.2" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test16.ac -o test16.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test16.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test16.output.ac)"
+  expected_file="$(tr -d '\r' < test16.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test16.output.ac test16.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test16.output.ac
+}
+
+################################################################################
+
+# test17: the same with kids 2 and two siblings after it.
+@test "test17.1" {
+  $RUN_TEST acclint test17.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test17.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test17.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test17.2" {
+  $RUN_TEST acclint -Wno-warnings -Wno-errors --fixKids test17.ac -o test17.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test17.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test17.output.ac)"
+  expected_file="$(tr -d '\r' < test17.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test17.output.ac test17.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test17.output.ac
 }
 
 ################################################################################

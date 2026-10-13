@@ -69,6 +69,7 @@ void usage()
     std::cerr << "  -Wno-invalid-object-type               Don't show invalid object type warnings." << std::endl;
     std::cerr << "  -Wno-invalid-ref-count                 Don't show invalid ref count warnings." << std::endl;
     std::cerr << "  -Wno-material-after-object             Don't show material after object warnings." << std::endl;
+    std::cerr << "  -Wno-missing-hex-prefix                Don't show missing hex prefix warnings." << std::endl;
     std::cerr << "  -Wno-missing-kids                      Don't show missing kids warnings." << std::endl;
     std::cerr << "  -Wno-missing-mat                       Don't show missing mat warnings." << std::endl;
     std::cerr << "  -Wno-missing-numsurf                   Don't show missing numsurf warnings." << std::endl;
@@ -257,6 +258,7 @@ int main(int argc, char *argv[])
     bool invalid_object_type = true;
     bool invalid_ref_count = true;
     bool material_after_object = true;
+    bool missing_hex_prefix = true;
     bool missing_kids = true;
     bool missing_mat = true;
     bool missing_numsurf = true;
@@ -711,6 +713,7 @@ int main(int argc, char *argv[])
                 invalid_object_type = value;
                 invalid_ref_count = value;
                 material_after_object = value;
+                missing_hex_prefix = value;
                 missing_kids = value;
                 missing_mat = value;
                 missing_numsurf = value;
@@ -854,6 +857,10 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-material-after-object" || arg == "-Wmaterial-after-object")
             {
                 material_after_object = isEnabled(arg);
+            }
+            else if (arg == "-Wno-missing-hex-prefix" || arg == "-Wmissing-hex-prefix")
+            {
+                missing_hex_prefix = isEnabled(arg);
             }
             else if (arg == "-Wno-missing-kids" || arg == "-Wmissing-kids")
             {
@@ -1287,6 +1294,7 @@ int main(int argc, char *argv[])
         target.invalidObjectType(invalid_object_type);
         target.invalidRefCount(invalid_ref_count);
         target.materialAfterObject(material_after_object);
+        target.missingHexPrefix(missing_hex_prefix);
         target.missingKids(missing_kids);
         target.missingMat(missing_mat);
         target.missingNumsurf(missing_numsurf);
@@ -1428,6 +1436,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.invalidObjectTypeCount(), "invalid object type: ");
             showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
             showCount(ac3d.materialAfterObjectCount(), "material after object: ");
+            showCount(ac3d.missingHexPrefixCount(), "missing hex prefix: ");
             showCount(ac3d.missingKidsCount(), "missing kids: ");
             showCount(ac3d.missingMatCount(), "missing mat: ");
             showCount(ac3d.missingNumsurfCount(), "missing numsurf: ");
@@ -1653,13 +1662,13 @@ int main(int argc, char *argv[])
         if (fix_surface_2_sided_opaque)
             ac3d.fixSurface2SidedOpaque();
 
+        // Not flattened first: addPoly carries each object's loc and rot down
+        // to its triangles, the same as the check, so the overlaps are found
+        // in world space either way. Flattening baked every loc and rot into
+        // the vertices, even with nothing to fix, and moved the pivots that
+        // animated parts turn about.
         if (fix_overlapping_2_sided_surface)
-        {
-            ac3d.flatten();
-            ac3d.clean();
-
             ac3d.fixOverlapping2SidedSurface();
-        }
 
         // Both of those clear the two sided flag on surfaces one at a time,
         // which can leave an object holding a mix of surface states that
@@ -1741,8 +1750,11 @@ int main(int argc, char *argv[])
             ac3d.clean();
         }
 
-        if (rebuildStrips)
-            ac3d.rebuildStrips();
+        // Cleaned after, as every other change is: a strip with nothing but
+        // degenerate triangles is rebuilt as nothing, and the object was
+        // written holding vertices and no surfaces.
+        if (rebuildStrips && ac3d.rebuildStrips())
+            ac3d.clean();
 
         // Nothing to join when the strips are being taken apart.
         if (stitchStrips && !triangleStrips)

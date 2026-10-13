@@ -1,0 +1,31 @@
+test19.ac:12 warning: surface with texture coordinates but no texture
+SURF 0x30
+^
+test19.ac:26 warning: surface with texture coordinates but no texture
+SURF 0x20
+^
+test19.ac:26 warning: overlapping 2 sided surface (object: b0 texture:  sides: 2)
+SURF 0x20
+^
+test19.ac:29 note: ref
+0 0 0
+^
+test19.ac:30 note: ref
+1 1 0
+^
+test19.ac:31 note: ref
+2 0 1
+^
+test19.ac:12 note: first instance (object: a0 texture:  sides: 2)
+SURF 0x30
+^
+test19.ac:15 note: ref
+0 0 0
+^
+test19.ac:16 note: ref
+1 1 0
+^
+test19.ac:17 note: ref
+2 0 1
+^
+3 warnings

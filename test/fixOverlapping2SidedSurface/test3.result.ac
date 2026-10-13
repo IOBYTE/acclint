@@ -25,10 +25,11 @@ refs 3
 kids 0
 OBJECT poly
 name "back1"
+loc -1 0 0
 numvert 3
-0 0 0
 1 0 0
-1 1 0
+2 0 0
+2 1 0
 numsurf 1
 SURF 0x0
 mat 0
@@ -39,10 +40,11 @@ refs 3
 kids 0
 OBJECT poly
 name "back2"
+loc -1 0 0
 numvert 3
-0 0 0
+1 0 0
+2 1 0
 1 1 0
-0 1 0
 numsurf 1
 SURF 0x0
 mat 0

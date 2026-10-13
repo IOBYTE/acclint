@@ -762,3 +762,69 @@ setup_file() {
 }
 
 ################################################################################
+
+# A field's keyword stuck to the number before it: "shi 10trans 0.5". The
+# keyword went with the number, the 0.5 was taken for something extra and trans
+# was written 0, translucent made opaque, with three warnings. Only the missing
+# separator is reported, and trans is read as 0.5.
+@test "test24.1" {
+  $RUN_TEST acclint -Wno-surface-no-texture test24.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test24.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test24.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test24.2" {
+  $RUN_TEST acclint -Wno-warnings test24.ac -o test24.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test24.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test24.2.output.ac)"
+  expected_file="$(tr -d '\r' < test24.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test24.2.output.ac test24.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test24.2.output.ac
+}
+
+################################################################################
+
+# A junk suffix on each colour component: "rgb 1.0f 1.0f 1.0f". The "f" was
+# taken for a missing number, and every component after it shifted along:
+# rgb 1 0 1 and amb 1 0 0. The rest of each word is passed over, so rgb is
+# 1 1 1 and amb is left alone.
+@test "test25.1" {
+  $RUN_TEST acclint -Wno-surface-no-texture test25.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test25.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test25.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test25.2" {
+  $RUN_TEST acclint -Wno-warnings test25.ac -o test25.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test25.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test25.2.output.ac)"
+  expected_file="$(tr -d '\r' < test25.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test25.2.output.ac test25.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test25.2.output.ac
+}
+
+################################################################################

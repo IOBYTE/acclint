@@ -73,6 +73,7 @@ private:                                               \
     CHECK(invalidObjectType, m_invalid_object_type, true)
     CHECK(invalidRefCount, m_invalid_ref_count, true)
     CHECK(materialAfterObject, m_material_after_object, true)
+    CHECK(missingHexPrefix, m_missing_hex_prefix, true)
     CHECK(missingKids, m_missing_kids, true)
     CHECK(missingMat, m_missing_mat, true)
     CHECK(missingNumsurf, m_missing_numsurf, true)
@@ -346,9 +347,16 @@ private:
         // comparison -- clusterVertices sizes its sweep window with it --
         // must use this rather than restate the formula, or the two drift
         // apart the moment k is tuned.
+        //
+        // One float epsilon of the magnitude, about one or two steps of the
+        // float the coordinate is drawn with. It was four, and at x = 6000
+        // that is 2.9 mm, six float steps: a strip 2 mm wide out there had
+        // its two sides taken for one, warned of as "duplicate surface
+        // vertices", and was deleted with its material. The arithmetic here
+        // is double, far finer than that, so the margin bought nothing.
         static double tolerance(double a, double b)
         {
-            constexpr double k = 4.0;
+            constexpr double k = 1.0;
             return k * SMALL_NUM * std::max({std::abs(a), std::abs(b), 1.0});
         }
 
@@ -399,10 +407,17 @@ private:
         {
             return std::sqrt(x() * x() + y() * y() + z() * z());
         }
+        // Any length a division can be trusted with is scaled to 1: above
+        // the smallest normal double and finite. The floor used to be
+        // SMALL_NUM, an absolute 1.19e-7, so the normal of a triangle with
+        // 0.3 mm legs, 9e-8 long, was left as it was and written out that
+        // way, which acclint then read back as "invalid normal length".
+        // Whether a direction that short means anything is for the caller
+        // to say; this only makes it a direction.
         void normalize()
         {
             const double l = length();
-            if (l > SMALL_NUM)
+            if (l > std::numeric_limits<double>::min() && std::isfinite(l))
             {
                 x(x() / l);
                 y(y() / l);
@@ -766,8 +781,8 @@ private:
 
             // The normal goes where the vertices went. Left in object space,
             // it no longer stood square to the triangle once the object was
-            // rotated, and pointInCoplanarTriangle measures against it: at
-            // 90 degrees every point read as outside, and an overlap was
+            // rotated, and the overlap test measured against it: at 90
+            // degrees every point read as outside, and an overlap was
             // missed. Taken from the moved vertices, as the constructor takes
             // it, so a mirroring matrix turns it round with the winding.
             degenerate = AC3D::degenerate(vertices[0].vertex, vertices[1].vertex, vertices[2].vertex);
@@ -1085,6 +1100,9 @@ private:
     {
         int number = 0;
         int number_offset = 0;
+        // The line was there but its number could not be read: what follows
+        // is read as surfaces with no count to hold them to.
+        bool invalid = false;
     };
 
     struct Numkids : public LineInfo
@@ -1124,6 +1142,16 @@ private:
         bool empty() const
         {
             return (type.type == "poly" && vertices.empty() && surfaces.empty() && kids.empty());
+        }
+        // The angle in degrees below which faces meeting at a vertex are
+        // drawn smooth: 45 when the object has no crease line, which is what
+        // the AC3D format says, and otherwise the last one, which is the one
+        // that gets written. Everything that needs the angle asks here, so
+        // what is checked, what is merged and what is converted all agree.
+        static constexpr double default_crease = 45.0;
+        double creaseAngle() const
+        {
+            return creases.empty() ? default_crease : creases.back().crease;
         }
         bool getVertex(size_t index, Point3 &vertex) const
         {
@@ -1237,6 +1265,13 @@ private:
         void dump(DumpType dump_type, size_t count, size_t level) const;
         void incrementMaterialIndex(size_t num_materials);
         void transform(const Matrix &currentMatrix);
+        // A light, or anything else that is neither geometry nor a group:
+        // flattening leaves it its own loc and rot rather than baking them.
+        bool isPlaced() const
+        {
+            return type.type != "poly" && type.type != "group" && type.type != "world";
+        }
+        static void hoistKids(std::vector<Object> &siblings, size_t &index);
         void removeKids(const RemoveInfo &remove_info);
         bool splitPolygons();
         bool rebuildStrips(bool swaps);
@@ -1429,7 +1464,7 @@ private:
         std::vector<std::vector<size_t>>         surfaces;
         std::vector<Point3>                      normals;
         std::vector<bool>                        normal_known;
-        double                                   crease = 45.0;
+        double                                   crease = Object::default_crease;
         // Whether a split vertex is the only way an edge can be stated here,
         // which build works out from the vertices themselves, and whether one
         // set of coordinates per vertex is all that survives, which is about
@@ -1438,6 +1473,20 @@ private:
         // by its topology and read one set of coordinates per vertex.
         bool                                     shading_from_topology = false;
         bool                                     one_uv_per_vertex = false;
+        // Where a vertex may keep more than one set of coordinates, as a .ac
+        // can, the corners it is named at: the coordinates and the way the
+        // face points there. Two vertices whose corners differ in
+        // coordinates on faces closer than the crease angle would be what
+        // checkDifferentUV reports once they are one, so they are not made
+        // one. Only for an object with a texture, which is all that check
+        // looks at.
+        struct Corner
+        {
+            Point3 normal;
+            const std::vector<Point2> *coordinates = nullptr;
+        };
+        std::vector<std::vector<Corner>>         corners;
+        bool                                     uv_by_crease = false;
 
         void build(const Object &object, bool consider_topology, bool single_uv);
         bool operator()(const Object &object, size_t index1, size_t index2) const;
@@ -1489,7 +1538,10 @@ private:
     static bool cleanVertices(std::vector<Object> &objects, bool consider_topology, bool single_uv);
     static bool cleanVertices(Object &object, bool consider_topology, bool single_uv);
     static bool cleanSurfaces(std::vector<Object> &objects);
-    static bool cleanSurfaces(Object &object);
+    static bool tooFewCorners(const Surface &surface);
+    static bool isCorner(const std::vector<Point3> &corners, const Point3 &point);
+    static bool cleanSurfaces(Object &object, const std::vector<Point3> *corners = nullptr,
+                              const Matrix *matrix = nullptr);
     static bool cleanMaterials(std::vector<Object> &objects, const std::vector<size_t> &indexes);
     static void unifySurfaceTypes(std::vector<Object> &objects);
     static void unifySurfaceTypes(Object &object);
@@ -1544,6 +1596,7 @@ private:
     static bool ccw(const AC3D::Point2 &p1, const AC3D::Point2 &p2, const AC3D::Point2 &p3);
     static double closest(const Point3 &p0, const Point3 &p1, const Point3 &p2, const Point3 &p3);
     static Point3 normalizedNormal(const Point3 &p0, const Point3 &p1, const Point3 &p2);
+    static bool polygonNormal(const Object &object, const Surface &surface, Point3 &normal);
     static Point3 unnormalizedNormal(const Point3 &p0, const Point3 &p1, const Point3 &p2);
     static bool degenerate(const Point3 &p0, const Point3 &p1, const Point3 &p2);
     static bool degenerate(const std::array<Point3, 3> &vertices);
@@ -1554,6 +1607,7 @@ private:
     static bool boundingBoxesOverlap(const Point3 &min1, const Point3 &max1,
                                      const Point3 &min2, const Point3 &max2);
     static bool trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2);
+    static bool coplanarTrianglesShareArea(const Triangle &triangle1, const Triangle &triangle2);
     static size_t getSharedVertexCount(const Triangle &triangle1, const Triangle &triangle2);
     static bool pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle);
     static PlaneType getPlaneType(const Point3 &normal);

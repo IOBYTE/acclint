@@ -42,6 +42,11 @@
         <suppression>clang-tidy-readability-inconsistent-ifelse-braces</suppression>
         <suppression>clang-tidy-readability-isolate-declaration</suppression>
         <suppression>clang-tidy-readability-math-missing-parentheses</suppression>
+        <suppression>useStlAlgorithm</suppression>
+        <suppression>clang-tidy-readability-redundant-nested-if</suppression>
+        <suppression>clang-tidy-modernize-use-ranges</suppression>
+        <suppression>clang-tidy-readability-trailing-comma</suppression>
+        <suppression>clang-tidy-boost-use-ranges</suppression>
     </suppressions>
     <tools>
         <tool>clang-tidy</tool>

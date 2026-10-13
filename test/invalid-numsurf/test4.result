@@ -1,0 +1,4 @@
+test4.ac:12 error: invalid numsurf
+numsurf x
+        ^
+1 error

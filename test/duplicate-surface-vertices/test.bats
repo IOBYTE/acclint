@@ -227,3 +227,37 @@ setup_file() {
 }
 
 ################################################################################
+
+# test7: a quad 2 mm wide and 1 m long at x = 6000, as two triangles. A float
+# steps by about 0.5 mm out there, so the two long sides are four steps apart
+# and distinct. Points were the same within four float epsilons of their size,
+# 2.9 mm at x = 6000, so each triangle had two refs on top of each other: it
+# warned "duplicate surface vertices", and the output lost both surfaces and
+# the material. Nothing is wrong with it now.
+@test "test7.1" {
+  $RUN_TEST acclint test7.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$output" = "" ]
+}
+
+# And it is written as it was read.
+@test "test7.2" {
+  $RUN_TEST acclint test7.ac -o test7.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test7.output.ac)"
+  expected_file="$(tr -d '\r' < test7.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test7.output.ac test7.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.output.ac
+}
+
+################################################################################

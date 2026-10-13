@@ -81,3 +81,18 @@ setup_file() {
 }
 
 ################################################################################
+
+# test2: subdiv -1. It cannot be read as a count. It was read into an unsigned
+# count, and written back as 18446744073709551615.
+@test "test2" {
+  $RUN_TEST acclint test2.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

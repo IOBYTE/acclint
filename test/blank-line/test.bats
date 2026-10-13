@@ -123,3 +123,37 @@ setup_file() {
 
 ################################################################################
 
+
+# test4: an object with "data 0". Written out, it is followed straight by the
+# next line. The writer ended the empty data with a newline of its own, and
+# -Wblank-line found a blank line in acclint's output that the input did not
+# have.
+@test "test4.1" {
+  $RUN_TEST acclint test4.ac -o test4.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.output.ac)"
+  expected_file="$(tr -d '\r' < test4.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.output.ac test4.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.output.ac
+}
+
+@test "test4.2" {
+  $RUN_TEST acclint test4.ac -o test4.2.output.ac
+  [ "$status" -eq 0 ]
+  $RUN_TEST acclint -Wblank-line test4.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.2.output
+  fi
+  [ "$output" = "" ]
+  rm test4.2.output.ac
+}
+
+################################################################################

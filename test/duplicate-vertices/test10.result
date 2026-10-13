@@ -1,0 +1,13 @@
+test10.ac:11 warning: duplicate vertices
+0 0 0
+^
+test10.ac:9 note: first instance
+0 0 0
+^
+test10.ac:12 warning: duplicate vertices
+1 0 0
+^
+test10.ac:10 note: first instance
+1 0 0
+^
+2 warnings

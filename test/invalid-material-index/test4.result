@@ -1,0 +1,20 @@
+test4.ac:13 error: reading material index
+mat 1.9
+    ^
+test4.ac:3 warning: duplicate materials with different names
+MATERIAL "n" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+test4.ac:2 note: first instance
+MATERIAL "m" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+test4.ac:2 warning: unused material
+MATERIAL "m" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+test4.ac:3 warning: unused material
+MATERIAL "n" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 10  trans 0
+^
+test4.ac:12 warning: missing mat
+SURF 0x10
+^
+4 warnings
+1 error

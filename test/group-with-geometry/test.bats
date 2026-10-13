@@ -94,3 +94,47 @@ setup_file() {
 }
 
 ################################################################################
+
+# test2: a group with a vertex and no surfaces. The vertex is unused and goes;
+# the group stays a group. It was made a poly, and written as a poly with kids:
+# the output gained a "poly used as group" warning the input did not have.
+@test "test2.1" {
+  $RUN_TEST acclint test2.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+@test "test2.2" {
+  $RUN_TEST acclint -Wno-warnings test2.ac -o test2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test2.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test2.output.ac)"
+  expected_file="$(tr -d '\r' < test2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test2.output.ac test2.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test2.output.ac
+}
+
+@test "test2.3" {
+  $RUN_TEST acclint -Wno-warnings test2.ac -o test2.3.output.ac
+  [ "$status" -eq 0 ]
+  $RUN_TEST acclint test2.3.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test2.3.output
+  fi
+  [ "$output" = "" ]
+  rm test2.3.output.ac
+}
+
+################################################################################

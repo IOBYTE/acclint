@@ -440,3 +440,47 @@ setup_file() {
 }
 
 ################################################################################
+
+# Two faces 50 degrees apart sharing an edge, under two crease lines: 60, then
+# 40. The last one is the one written out, so it is the one that counts, and
+# at 40 degrees the edge is hard: each face gets its own normals, 6 vertices.
+# The first line was read instead, and the two faces were smoothed into 4.
+@test "test18" {
+  $RUN_TEST acclint -Wno-warnings test18.ac -o test18.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test18.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test18.output.acc)"
+  expected_file="$(tr -d '\r' < test18.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test18.output.acc test18.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test18.output.acc
+}
+
+################################################################################
+
+# A triangle with 0.3 mm legs. Its normal is 9e-8 long before it is scaled,
+# which is shorter than the floor normalize() used to have, so it was written
+# out as 0 -0 9e-08 and acclint read its own output back as "invalid normal
+# length". It is written as 0 -0 1.
+@test "test19" {
+  $RUN_TEST acclint test19.ac -o test19.output.acc
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test19.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test19.output.acc)"
+  expected_file="$(tr -d '\r' < test19.result.acc)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test19.output.acc test19.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test19.output.acc
+}
+
+################################################################################

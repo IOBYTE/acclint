@@ -247,3 +247,21 @@ setup_file() {
 }
 
 ################################################################################
+
+# test6: refs 4 with three refs, and the next object's OBJECT line where the
+# fourth should be. The refs stop there, the count is reported, and the next
+# object is read as the one it is. The OBJECT line was taken for an invalid
+# ref, and the next object's name, numvert and numsurf were read into this
+# one.
+@test "test6" {
+  $RUN_TEST acclint test6.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################

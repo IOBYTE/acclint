@@ -4,14 +4,15 @@ OBJECT world
 kids 1
 OBJECT group
 name "lever"
+loc 1 0 0
 kids 2
 OBJECT poly
 name "lever-geometry"
 texture "test.png"
 numvert 3
+0 0 0
 1 0 0
-2 0 0
-2 1 0
+1 1 0
 numsurf 1
 SURF 0x0
 mat 0
@@ -24,9 +25,9 @@ OBJECT poly
 name "knob"
 texture "test.png"
 numvert 3
+0 0 0
 1 0 0
-2 0 0
-2 1 0
+1 1 0
 numsurf 1
 SURF 0x0
 mat 0

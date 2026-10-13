@@ -1,0 +1,32 @@
+AC3Db
+MATERIAL "m" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 0  trans 0
+OBJECT world
+kids 2
+OBJECT poly
+name "a0"
+numvert 3
+-51.000000 -0.912983 2.637746
+-50.000000 -0.912983 2.418365
+-51.000000 0.087017 2.846206
+numsurf 1
+SURF 0x30
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 0 1
+kids 0
+OBJECT poly
+name "b0"
+numvert 3
+-50.900000 -0.812983 2.636654
+-50.100000 -0.862983 2.450726
+-50.950000 -0.112983 2.793545
+numsurf 1
+SURF 0x20
+mat 0
+refs 3
+0 0 0
+1 1 0
+2 0 1
+kids 0

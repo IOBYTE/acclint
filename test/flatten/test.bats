@@ -239,3 +239,63 @@ setup_file() {
 }
 
 ################################################################################
+
+# test6: a light at loc 10 holding a triangle at the origin. Flattened, the
+# light keeps loc 10, its place in the world, and the triangle is baked into
+# the world at 10 and moved out from under the light to sit beside it. The
+# triangle used to be baked at 10 and left under the light, which still had
+# its loc 10, so it was drawn at 20; --fixAll flattens three times, and it
+# went to 30.
+@test "test6.1" {
+  $RUN_TEST acclint test6.ac --flatten -o test6.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test6.output.ac)"
+  expected_file="$(tr -d '\r' < test6.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.output.ac test6.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.output.ac
+}
+
+# And flattening what that wrote changes nothing.
+@test "test6.2" {
+  $RUN_TEST acclint test6.result.ac --flatten -o test6.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test6.2.output.ac)"
+  expected_file="$(tr -d '\r' < test6.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.2.output.ac test6.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.2.output.ac
+}
+
+# test7: the same light under a group at loc 0 5 0 turned a quarter turn about
+# z. The light is written with the loc and rot it has in the world, and the
+# triangle with the vertices it has in the world, beside it.
+@test "test7.1" {
+  $RUN_TEST acclint test7.ac --flatten -o test7.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test7.output.ac)"
+  expected_file="$(tr -d '\r' < test7.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test7.output.ac test7.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.output.ac
+}
+
+################################################################################
