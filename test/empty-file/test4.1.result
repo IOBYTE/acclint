@@ -1,0 +1,3 @@
+test4.ac:1 warning: found UTF-8 BOM
+test4.ac:1 error: empty file
+1 error

@@ -83,7 +83,9 @@ setup_file() {
 ################################################################################
 
 # test3: the header and a material, and nothing after. A file with no object
-# has nothing to draw: an error. -o wrote the header on its own.
+# has no world, most likely because it was cut off: a missing world warning
+# that says so. -o wrote the header on its own; then it was an error that
+# stopped -o. It writes the empty world now, which loads and draws nothing.
 @test "test3.1" {
   $RUN_TEST acclint test3.ac
   [ "$status" -eq 0 ]
@@ -96,16 +98,21 @@ setup_file() {
 }
 
 @test "test3.2" {
-  rm -f test3.2.output.ac
   $RUN_TEST acclint test3.ac -o test3.2.output.ac
-  [ "$status" -eq 1 ]
+  [ "$status" -eq 0 ]
   actual="$(echo "$output" | tr -d '\r')"
   expected="$(tr -d '\r' < test3.2.result)"
   if [ "$actual" != "$expected" ]; then
     echo "$output" > test3.2.output
   fi
   [ "$actual" = "$expected" ]
-  [ ! -e test3.2.output.ac ]
+  actual_file="$(tr -d '\r' < test3.2.output.ac)"
+  expected_file="$(tr -d '\r' < test3.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.2.output.ac test3.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.2.output.ac
 }
 
 ################################################################################

@@ -190,3 +190,61 @@ setup_file() {
   [ "$actual_file" = "$expected_file" ]
   rm test5.2.output.ac
 }
+
+################################################################################
+# A file with no OBJECT at all has no world either, and is most likely cut
+# off. It was an error with no flag and no summary line, which stopped -o.
+# It is a missing world now, with a hint that the file may be truncated, and
+# -o writes a world with no kids: a file that loads and draws nothing.
+################################################################################
+
+# test6.1: nothing but the header.
+@test "test6.1" {
+  $RUN_TEST acclint test6.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test6.2: -Wno-missing-world turns it off like any other missing world.
+@test "test6.2" {
+  $RUN_TEST acclint -Wno-missing-world test6.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.2.output
+  fi
+  [ "$output" = "" ]
+}
+
+# test6.3: -o writes the empty world.
+@test "test6.3" {
+  $RUN_TEST acclint test6.ac -o test6.3.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test6.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test6.3.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test6.3.output.ac)"
+  expected_file="$(tr -d '\r' < test6.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test6.3.output.ac test6.3.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test6.3.output.ac
+}
+
+# test6.4: the file written lints clean.
+@test "test6.4" {
+  $RUN_TEST acclint test6.result.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test6.4.output
+  fi
+  [ "$output" = "" ]
+}

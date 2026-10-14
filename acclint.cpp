@@ -167,7 +167,10 @@ void usage()
     std::cerr << "  --stripSwaps                           Let a triangle strip turn the same way twice by repeating refs." << std::endl;
     std::cerr << "  --grid size                            Partition objects into square cells of size in meters for culling." << std::endl;
     std::cerr << "                                         Implies --flatten." << std::endl;
-    std::cerr << "  --fixAll                               Fix everything." << std::endl;
+    std::cerr << "  --fixAll                               Fix everything except --fixBackToBackMirror." << std::endl;
+    std::cerr << "                                         The same as --flatten --splitPolygon --splitSURF" << std::endl;
+    std::cerr << "                                         --splitMat --combineTexture --combineObjects" << std::endl;
+    std::cerr << "                                         and every --fix option but that one." << std::endl;
     std::cerr << "  --fixBackToBackMirror                  Convert 2 single sided back to back mirror surfaces to 1 double sided." << std::endl;
     std::cerr << "  --fixKids                              Put right kids counts the file cannot honour and" << std::endl;
     std::cerr << "                                         rebuild the object tree from them." << std::endl;
@@ -192,7 +195,8 @@ void usage()
     std::cerr << "  -l                                     Print the name of the input file." << std::endl;
     std::cerr << std::endl;
     std::cerr << "By default all warnings (except blank-line, duplicate-triangles, overlapping-geometry, " << std::endl;
-    std::cerr << "surface-2-sided-opaque, surface-strip-* and surface-winding-*) and errors are enabled." << std::endl;
+    std::cerr << "surface-2-sided-opaque, surface-strip-*, surface-winding-* and surface-zero-area-uv)" << std::endl;
+    std::cerr << "and errors are enabled." << std::endl;
     std::cerr << "You can enable all warnings using -Wwarnings" << std::endl;
     std::cerr << "You can disable specific warnings or errors using the options above." << std::endl;
     std::cerr << "You can also disable all warnings or errors and then reenable specific ones" << std::endl;

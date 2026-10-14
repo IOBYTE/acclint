@@ -2046,11 +2046,38 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
     object.surfaces.insert(object.surfaces.end(), lines.begin(), lines.end());
 }
 
+// Whether nothing but whitespace is left in the file. Where it was is where it
+// is left, so reading carries on from there.
+static bool onlyWhitespaceLeft(std::istream &in)
+{
+    const std::streampos pos = in.tellg();
+    bool only = true;
+    char c = 0;
+
+    while (in.get(c))
+    {
+        if (std::isspace(static_cast<unsigned char>(c)) == 0)
+        {
+            only = false;
+            break;
+        }
+    }
+
+    in.clear();
+    in.seekg(pos);
+
+    return only;
+}
+
 bool AC3D::readHeader(std::istream &in)
 {
+    // An empty file is fatal, and no flag turns it off: there is nothing to
+    // read and nothing to write. getLine skips blank lines, so a file of
+    // nothing but them is empty too. It was "missing AC3D", which says what
+    // is missing but not that the whole file is.
     if (!getLine(in))
     {
-        error(1) << "missing AC3D" << std::endl;
+        error(1) << "empty file" << std::endl;
         return false;
     }
 
@@ -2063,6 +2090,16 @@ bool AC3D::readHeader(std::istream &in)
         if (m_utf8_bom)
             warningWithCount(m_utf8_bom_count) << "found UTF-8 BOM" << std::endl;
         m_line.erase(0, 3);
+
+        // A BOM with nothing after it is an empty file as well. It was taken
+        // for a first line that was not a header, "not AC3D file", which
+        // -Wno-not-ac3d-file and -Wno-errors turned off: the file was then
+        // refused with no word at all.
+        if (isWhitespace(m_line) && onlyWhitespaceLeft(in))
+        {
+            error(1) << "empty file" << std::endl;
+            return false;
+        }
     }
     else if (m_line.size() >= 4 && m_line[0] == '\xff' && m_line[1] == '\xfe')
     {
@@ -5737,11 +5774,14 @@ bool AC3D::read(const std::string &file)
             material.version12 = m_header.getVersion() == 12;
     }
 
-    // A file with no object in it at all is a file that ends before its world:
-    // nothing to draw, and nothing to write but the header. It was taken
-    // without a word, and -o wrote a file of one line.
-    if (m_objects.empty())
-        error() << "no OBJECT: the file ends before its world" << std::endl;
+    // A file with no object in it at all has no world, and the most likely
+    // reason is that it was cut off before it got there. It was taken
+    // without a word, and -o wrote a file of one line; then it was an error
+    // that nothing could turn off and no summary line counted. It is the
+    // missing world it is, with the hint, and -o writes the empty world the
+    // file can be (addMissingWorld).
+    if (m_objects.empty() && m_missing_world)
+        warningWithCount(m_missing_world_count) << "missing world: no OBJECT, the file may be truncated" << std::endl;
 
     // Before any check looks at the tree: what was read is only the tree the
     // file describes if every kids count could be honoured.
@@ -6924,10 +6964,12 @@ void AC3D::checkMultipleHeader(std::istringstream &iss, std::istream &in, const 
 // file written has the world the format starts with. A file with a world
 // somewhere among its top-level objects is left as it is: what to do with the
 // objects beside it is for the extra OBJECT warning and --fixMultipleWorlds.
+//
+// A file with no objects at all gets a world of no kids: it loads, and draws
+// nothing, which is what the file has.
 bool AC3D::addMissingWorld()
 {
-    if (m_objects.empty() ||
-        std::any_of(m_objects.begin(), m_objects.end(),
+    if (std::any_of(m_objects.begin(), m_objects.end(),
                     [](const Object &object) { return object.type.type == "world"; }))
         return false;
 
