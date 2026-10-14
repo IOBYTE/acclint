@@ -1,0 +1,4 @@
+test5.ac:3 warning: invalid object type: World should be lowercase
+OBJECT World
+       ^
+1 warning

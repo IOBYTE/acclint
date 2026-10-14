@@ -81,10 +81,12 @@ private:                                               \
     CHECK(missingSurfaces, m_missing_surfaces, true)
     CHECK(missingTexture, m_missing_texture, true)
     CHECK(missingUVCoordinates, m_missing_uv_coordinates, true)
+    CHECK(missingWorld, m_missing_world, true)
     CHECK(mixedSurfaceTypes, m_mixed_surface_types, true)
     CHECK(multipleCrease, m_multiple_crease, true)
     CHECK(multipleData, m_multiple_data, true)
     CHECK(multipleFolded, m_multiple_folded, true)
+    CHECK(multipleHeader, m_multiple_header, true)
     CHECK(multipleHidden, m_multiple_hidden, true)
     CHECK(multipleLoc, m_multiple_loc, true)
     CHECK(multipleLocked, m_multiple_locked, true)
@@ -270,6 +272,7 @@ public:
     bool stitchTriangleStrips();
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
+    bool addMissingWorld();
     bool gridPartition(double size, bool quad_tree);
     bool combineObjects(double size);
     void fixBackToBackMirror();
@@ -1264,6 +1267,7 @@ private:
         bool mirroredSurface(size_t index1, size_t index2) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
         void incrementMaterialIndex(size_t num_materials);
+        bool maxMaterial(size_t &max) const;
         void transform(const Matrix &currentMatrix);
         // A light, or anything else that is neither geometry nor a group:
         // flattening leaves it its own loc and rot rather than baking them.
@@ -1337,6 +1341,10 @@ private:
     std::chrono::duration<double> m_unused_vertex_time{};
 
     Header m_header;
+    // The header what is being read was written for: the first, until a file
+    // joined on after it brings its own (checkMultipleHeader).
+    Header m_read_header;
+    bool m_mixed_header = false;
     std::vector<Material> m_materials;
     std::vector<Object> m_objects;
     std::vector<std::string> m_texture_paths;
@@ -1530,6 +1538,8 @@ private:
     static Point3 surfaceRefNormal(const Surface &surface, size_t refIndex, const std::vector<Triangle> &triangles);
     void checkGroupWithGeometry(std::istream &in, const Object &object);
     void checkPolyWithKids(std::istream &in, const Object &object);
+    void checkMissingWorld(std::istringstream &iss, std::istream &in);
+    void checkMultipleHeader(std::istringstream &iss, std::istream &in, const std::string &token);
     void checkPolyUsedAsGroup(std::istream &in, const Object &object);
     static bool cleanObjects(std::vector<Object> &objects);
     static std::vector<size_t> clusterVertices(const std::vector<Vertex> &vertices);

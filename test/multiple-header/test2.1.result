@@ -1,0 +1,19 @@
+test2.ac:19 warning: multiple header
+AC3Dc
+^
+test2.ac:1 note: first header
+AC3Db
+    ^
+test2.ac:20 warning: MAT after OBJECT
+MAT "green"
+^
+test2.ac:28 warning: extra OBJECT
+OBJECT world
+^
+test2.ac:28 warning: multiple world
+OBJECT world
+       ^
+test2.ac:20 warning: unused material
+MAT "green"
+^
+5 warnings

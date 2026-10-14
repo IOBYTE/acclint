@@ -1,0 +1,16 @@
+test1.ac:19 warning: multiple header
+AC3Db
+^
+test1.ac:20 warning: MATERIAL after OBJECT
+MATERIAL "green" rgb 0 1 0  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 0  trans 0
+^
+test1.ac:21 warning: extra OBJECT
+OBJECT world
+^
+test1.ac:21 warning: multiple world
+OBJECT world
+       ^
+test1.ac:20 warning: unused material
+MATERIAL "green" rgb 0 1 0  amb 0.2 0.2 0.2  emis 0 0 0  spec 0 0 0  shi 0  trans 0
+^
+5 warnings

@@ -1,0 +1,7 @@
+test2.ac:2 warning: floating point shi: 1e1
+MATERIAL "lower" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 1e1  trans 0
+                                                                               ^
+test2.ac:3 warning: floating point shi: 1E1
+MATERIAL "upper" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 1E1  trans 0
+                                                                               ^
+2 warnings

@@ -223,3 +223,55 @@ setup_file() {
 }
 
 ################################################################################
+# An .rgb or .rgba texture is an SGI image, and its alpha is read: the second
+# channel of two, the fourth of four, verbatim or run length encoded. They were
+# read as no PNG at all, which counted as opaque.
+################################################################################
+
+# test11: three 2 sided triangles. The leaf's texture is verbatim with alpha 0
+# everywhere, the trunk's run length encoded with alpha 255 everywhere, and the
+# fence's run length encoded with one pixel at alpha 0. Only the trunk is made
+# single sided. All three were.
+@test "test11" {
+  $RUN_TEST acclint -Wno-rgb-texture test11.ac --fixSurface2SidedOpaque -o test11.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test11.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test11.output.ac)"
+  expected_file="$(tr -d '\r' < test11.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test11.output.ac test11.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test11.output.ac
+}
+
+################################################################################
+# A texture that cannot be read is taken to let light through: made single
+# sided, a see-through surface is drawn wrong, where a solid one left 2 sided is
+# only drawn twice.
+################################################################################
+
+# test12: a 2 sided triangle on a PNG with a bad filter byte, which libpng gives
+# up on. It stays 2 sided. It was made single sided.
+@test "test12" {
+  $RUN_TEST acclint test12.ac --fixSurface2SidedOpaque -o test12.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test12.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test12.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test12.output.ac)"
+  expected_file="$(tr -d '\r' < test12.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test12.output.ac test12.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test12.output.ac
+}
+
+################################################################################

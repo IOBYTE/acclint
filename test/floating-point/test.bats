@@ -81,3 +81,18 @@ setup_file() {
 }
 
 ################################################################################
+# An exponent makes shi a floating point number whichever case its e is in.
+# Only a lowercase e was looked for, so 1E1 was taken as a whole number.
+################################################################################
+
+# test2.1: 1e1 and 1E1 are both reported, and 10 is not.
+@test "test2.1" {
+  $RUN_TEST acclint -Wno-warnings -Wfloating-point test2.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test2.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}

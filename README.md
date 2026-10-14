@@ -25,7 +25,7 @@ build using [CMake](https://cmake.org) to generate the Makefiles for
 [GNU Make](https://www.gnu.org/software/make/):
 ```
 mkdir build && cd build
-cmake CMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 ```
 
 Then build the executable named ```acclint``` using GNU Make:
@@ -47,13 +47,13 @@ Here is an example of running ```acclint``` on the supplied file ```example.ac``
 
 ```
 AC3DbS
-MATERIAL "1" png 1 1 1  amb 1 1 1  emis 0 0 0  spec 0.5 0.5 5  shi 64.1  trans 1.1
+MATERIAL "1" png 1 1 1  amb 1 1 1  emis 0 0 0  spec 0.5 0.5 5  shi 64.1  trans 1.1 
 OBJECT world
 kids 2
 OBJECT poly
 name "square"
 numvert 7
-0 0 0
+0 0 0 
 0 1 0
 1 0 0
 1 0 0
@@ -64,7 +64,7 @@ numsurf 2
 SURF 0x10
 mat 0
 refs 3
-0 0 0
+0 0 0 
 1 0 0
 2 0 0
 SURF 0x10
@@ -74,6 +74,7 @@ refs 3
 4 0 0
 5 0 0
 kids 0
+
 ```
 
 ```
@@ -99,27 +100,28 @@ MATERIAL "1" png 1 1 1  amb 1 1 1  emis 0 0 0  spec 0.5 0.5 5  shi 64.1  trans 1
 example.ac:8 warning: trailing text: " "
 0 0 0 
      ^
-example.ac:12 warning: duplicate verticies
+example.ac:19 warning: trailing text: " "
+0 0 0 
+     ^
+example.ac:12 warning: duplicate vertices
 0 1 0
 ^
 example.ac:9 note: first instance
 0 1 0
 ^
-example.ac:11 warning: duplicate verticies
+example.ac:11 warning: duplicate vertices
 1 0 0
 ^
 example.ac:10 note: first instance
 1 0 0
 ^
-example.ac:19 warning: trailing text: " "
-0 0 0 
-     ^
 example.ac:14 warning: unused vertex
 1 1 1
 ^
-example.ac:29 warning: blank line
 example.ac:4 warning: missing kids: only 1 out of 2 kids found
-13 warnings
+kids 2
+     ^
+12 warnings
 ```
 
 acclint can also fix and optimize many common non-fatal problems.
@@ -170,13 +172,13 @@ acclint file.ac -o file.acc
 ```
 The converted file will have normals and triangle strips.
 
-acclint can also dump the object hiearchy of a file.
+acclint can also dump the object hierarchy of a file.
 ```
-acclint  --dump surf -Wno-warnings example.ac
+acclint --dump surf -Wno-warnings example.ac
 1 world 1 kid
-    1 poly "square" 2 surfaces
-        1 surface 3 refs
-        2 surface 3 refs
+    1 poly "square" 7 vertices 2 surfaces
+        1 surface flags 0x10 mat 0 3 refs
+        2 surface flags 0x10 mat 0 3 refs
 ```
 Running regression tests
 --------

@@ -77,10 +77,12 @@ void usage()
     std::cerr << "  -Wno-missing-surfaces                  Don't show missing surfaces warnings." << std::endl;
     std::cerr << "  -Wno-missing-texture                   Don't show missing texture warnings." << std::endl;
     std::cerr << "  -Wno-missing-uv-coordinates            Don't show missing uv coordinates warnings." << std::endl;
+    std::cerr << "  -Wno-missing-world                     Don't show missing world warnings." << std::endl;
     std::cerr << "  -Wno-mixed-surface-types               Don't show mixed surface types warnings." << std::endl;
     std::cerr << "  -Wno-multiple-crease                   Don't show multiple crease warnings." << std::endl;
     std::cerr << "  -Wno-multiple-data                     Don't show multiple data warnings." << std::endl;
     std::cerr << "  -Wno-multiple-folded                   Don't show multiple folded warnings." << std::endl;
+    std::cerr << "  -Wno-multiple-header                   Don't show multiple header warnings." << std::endl;
     std::cerr << "  -Wno-multiple-hidden                   Don't show multiple hidden warnings." << std::endl;
     std::cerr << "  -Wno-multiple-loc                      Don't show multiple loc warnings." << std::endl;
     std::cerr << "  -Wno-multiple-locked                   Don't show multiple locked warnings." << std::endl;
@@ -94,6 +96,8 @@ void usage()
     std::cerr << "  -Wno-multiple-url                      Don't show multiple url warnings." << std::endl;
     std::cerr << "  -Wno-multiple-world                    Don't show multiple world warnings." << std::endl;
     std::cerr << "  -Wno-overlapping-2-sided-surface       Don't show overlapping 2 sided surface warnings." << std::endl;
+    std::cerr << "                                         With -Woverlapping-geometry those pairs are" << std::endl;
+    std::cerr << "                                         reported as overlapping geometry instead." << std::endl;
     std::cerr << "  -Wno-overlapping-geometry              Don't show overlapping geometry warnings." << std::endl;
     std::cerr << "  -Wno-poly-used-as-group                Don't show poly used as group warnings." << std::endl;
     std::cerr << "  -Wno-poly-with-kids                    Don't show poly with kids warnings." << std::endl;
@@ -266,9 +270,11 @@ int main(int argc, char *argv[])
     bool missing_surfaces = true;
     bool missing_texture = true;
     bool missing_uv_coordinates = true;
+    bool missing_world = true;
     bool multiple_crease = true;
     bool multiple_data = true;
     bool multiple_folded = true;
+    bool multiple_header = true;
     bool multiple_hidden = true;
     bool multiple_loc = true;
     bool multiple_locked = true;
@@ -721,9 +727,11 @@ int main(int argc, char *argv[])
                 missing_surfaces = value;
                 missing_texture = value;
                 missing_uv_coordinates = value;
+                missing_world = value;
                 multiple_crease = value;
                 multiple_data = value;
                 multiple_folded = value;
+                multiple_header = value;
                 multiple_hidden = value;
                 multiple_loc = value;
                 multiple_locked = value;
@@ -890,6 +898,10 @@ int main(int argc, char *argv[])
             {
                 missing_uv_coordinates = isEnabled(arg);
             }
+            else if (arg == "-Wno-missing-world" || arg == "-Wmissing-world")
+            {
+                missing_world = isEnabled(arg);
+            }
             else if (arg == "-Wno-multiple-crease" || arg == "-Wmultiple-crease")
             {
                 multiple_crease = isEnabled(arg);
@@ -901,6 +913,10 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-multiple-folded" || arg == "-Wmultiple-folded")
             {
                 multiple_folded = isEnabled(arg);
+            }
+            else if (arg == "-Wno-multiple-header" || arg == "-Wmultiple-header")
+            {
+                multiple_header = isEnabled(arg);
             }
             else if (arg == "-Wno-multiple-hidden" || arg == "-Wmultiple-hidden")
             {
@@ -1302,9 +1318,11 @@ int main(int argc, char *argv[])
         target.missingSurfaces(missing_surfaces);
         target.missingTexture(missing_texture);
         target.missingUVCoordinates(missing_uv_coordinates);
+        target.missingWorld(missing_world);
         target.multipleCrease(multiple_crease);
         target.multipleData(multiple_data);
         target.multipleFolded(multiple_folded);
+        target.multipleHeader(multiple_header);
         target.multipleHidden(multiple_hidden);
         target.multipleLoc(multiple_loc);
         target.multipleLocked(multiple_locked);
@@ -1444,9 +1462,11 @@ int main(int argc, char *argv[])
             showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
             showCount(ac3d.missingTextureCount(), "missing texture: ");
             showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
+            showCount(ac3d.missingWorldCount(), "missing world: ");
             showCount(ac3d.multipleCreaseCount(), "multiple crease: ");
             showCount(ac3d.multipleDataCount(), "multiple data: ");
             showCount(ac3d.multipleFoldedCount(), "multiple folded: ");
+            showCount(ac3d.multipleHeaderCount(), "multiple header: ");
             showCount(ac3d.multipleHiddenCount(), "multiple hidden: ");
             showCount(ac3d.multipleLocCount(), "multiple loc: ");
             showCount(ac3d.multipleLockedCount(), "multiple locked: ");
@@ -1626,6 +1646,11 @@ int main(int argc, char *argv[])
 
         // First, so everything after sees the object as the group it is
         // used as.
+        // A file whose objects are not in a world is given one, so what is
+        // written has the world the format starts with. Before anything else
+        // looks at the tree, so everything after sees it as it will be.
+        ac3d.addMissingWorld();
+
         if (fix_poly_with_kids)
             ac3d.fixPolyWithKids();
 

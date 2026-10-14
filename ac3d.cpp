@@ -2453,7 +2453,14 @@ bool AC3D::readValue(std::istringstream &in, double &value, const std::string_vi
 
         if (iss)
         {
-            if (!is_float && value_string.find_first_of(".e") != std::string::npos)
+            // Only the number itself, and an exponent either way: shi 1E1 is
+            // as much a floating point number as 1e1, and was not reported.
+            // What is stuck to it after is the missing separator below, and a
+            // keyword there with an e in it is no exponent.
+            const std::string number = iss.peek() == std::istringstream::traits_type::eof() ?
+                value_string : value_string.substr(0, static_cast<size_t>(iss.tellg()));
+
+            if (!is_float && number.find_first_of(".eE") != std::string::npos)
             {
                 if (m_floating_point)
                 {
@@ -2898,7 +2905,7 @@ bool AC3D::readMaterialAfterObject(std::istringstream &iss, std::istream &in, co
         return true;
     }
 
-    if (token == MAT_token && m_header.getVersion() == 12)
+    if (token == MAT_token && m_read_header.getVersion() == 12)
     {
         if (m_material_after_object)
         {
@@ -2948,17 +2955,6 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     }
     else
     {
-        if (object.type.type == world_token)
-        {
-            if (m_multiple_world && m_has_world)
-            {
-                warningWithCount(m_multiple_world_count) << "multiple world" << std::endl;
-                showLine(iss, object.type.type_offset);
-            }
-
-            m_has_world = true;
-        }
-
         if (object.type.type != world_token && object.type.type != group_token &&
             object.type.type != poly_token && object.type.type != light_token)
         {
@@ -2981,6 +2977,20 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     showLine(iss, object.type.type_offset);
                 }
             }
+        }
+
+        // After the type is lowercased: a second world spelled World is still
+        // a second world, and was only reported once -o had written it in
+        // lowercase.
+        if (object.type.type == world_token)
+        {
+            if (m_multiple_world && m_has_world)
+            {
+                warningWithCount(m_multiple_world_count) << "multiple world" << std::endl;
+                showLine(iss, object.type.type_offset);
+            }
+
+            m_has_world = true;
         }
 
         checkTrailing(iss);
@@ -5619,6 +5629,9 @@ bool AC3D::read(const std::string &file)
     if (!readHeader(in))
         return false;
 
+    m_read_header = m_header;
+    m_mixed_header = false;
+
     bool needMaterial = true;
 
     while (getLine(in))
@@ -5636,7 +5649,7 @@ bool AC3D::read(const std::string &file)
                 readMaterial(iss, material);
                 m_materials.push_back(material);
             }
-            else if (token == MAT_token && m_header.getVersion() == 12)
+            else if (token == MAT_token && m_read_header.getVersion() == 12)
             {
                 Material material;
                 readMaterial(iss, in, material);
@@ -5649,11 +5662,15 @@ bool AC3D::read(const std::string &file)
                     warningWithCount(m_extra_object_count) << "extra OBJECT" << std::endl;
                     showLine(in, m_line_pos);
                 }
+                if (m_objects.empty())
+                    checkMissingWorld(iss, in);
                 Object object;
                 readObject(iss, in, object);
                 needMaterial = false;
                 m_objects.push_back(object);
             }
+            else if (token.starts_with("AC3D"))
+                checkMultipleHeader(iss, in, token);
             else if (m_invalid_token)
             {
                 errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
@@ -5667,6 +5684,8 @@ bool AC3D::read(const std::string &file)
                 warningWithCount(m_extra_object_count) << "extra OBJECT" << std::endl;
                 showLine(in, m_line_pos);
             }
+            if (m_objects.empty())
+                checkMissingWorld(iss, in);
             Object object;
             readObject(iss, in, object);
             m_objects.push_back(object);
@@ -5682,7 +5701,7 @@ bool AC3D::read(const std::string &file)
             readMaterial(iss, material);
             m_materials.push_back(material);
         }
-        else if (token == MAT_token && m_header.getVersion() == 12)
+        else if (token == MAT_token && m_read_header.getVersion() == 12)
         {
             if (m_material_after_object)
             {
@@ -5693,6 +5712,8 @@ bool AC3D::read(const std::string &file)
             readMaterial(iss, in, material);
             m_materials.push_back(material);
         }
+        else if (token.starts_with("AC3D"))
+            checkMultipleHeader(iss, in, token);
         else if (m_invalid_token)
         {
             errorWithCount(m_invalid_token_count) << "invalid token: " << token << std::endl;
@@ -5701,6 +5722,14 @@ bool AC3D::read(const std::string &file)
     }
 
     in.clear(); // clear eof so we can seek in file
+
+    // Files of both versions joined: each material is written in the form of
+    // the header the file is written with, as a merge does.
+    if (m_mixed_header)
+    {
+        for (auto &material : m_materials)
+            material.version12 = m_header.getVersion() == 12;
+    }
 
     // A file with no object in it at all is a file that ends before its world:
     // nothing to draw, and nothing to write but the header. It was taken
@@ -6828,6 +6857,90 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
 // The complement of "group with geometry": one says the object is a container
 // and then fills it with surfaces, the other says it is geometry and then
 // hangs a tree off it.
+// The format starts with a world: the first OBJECT is the world and
+// everything else is under it. A file whose first object is something else --
+// a lone poly -- has none, and -o gives it one (addMissingWorld).
+//
+// It looks at the type before the object is read, so the warning comes before
+// any about the object's contents, in line order.
+void AC3D::checkMissingWorld(std::istringstream &iss, std::istream &in)
+{
+    if (!m_missing_world)
+        return;
+
+    const std::streampos start = iss.tellg();
+    const std::streampos offset = fieldPos(iss);
+    std::string type;
+
+    iss >> type;
+    iss.clear();
+    iss.seekg(start);
+
+    // World is a world spelled wrong, which has its own warning.
+    if (type.empty() || icasecmp(type, world_token))
+        return;
+
+    warningWithCount(m_missing_world_count) << "missing world" << std::endl;
+    showLine(in, m_line_pos, static_cast<int>(offset));
+}
+
+// Two files joined end to end: the second file's header line is still there,
+// partway through. It was an invalid token, an error, so the file could not be
+// written at all, not even with --fixMultipleWorlds, which joins the two worlds
+// such a file has. It is a warning now and the line is skipped: what follows
+// it is read as the rest of the file, and -o writes the one header at the top.
+//
+// What follows a header was written for that header's version, so it is read
+// as that version: a MAT block after an AC3Dc line is a material even when the
+// file began AC3Db. The file is still written as the first header's version,
+// its materials all in that version's form. A second header of another
+// version has a note pointing at the first.
+void AC3D::checkMultipleHeader(std::istringstream &iss, std::istream &in, const std::string &token)
+{
+    Header header;
+    header.version = token.substr(0, 5);
+
+    if (header.getVersion() != m_read_header.getVersion())
+        m_mixed_header = true;
+
+    m_read_header = header;
+
+    if (!m_multiple_header)
+        return;
+
+    warningWithCount(m_multiple_header_count) << "multiple header" << std::endl;
+    showLine(iss, 0);
+
+    if (header.version != m_header.version)
+    {
+        note(1) << "first header" << std::endl;
+        showLine(in, 0, 4);
+    }
+}
+
+// Puts the top-level objects in a new world when none of them is one, so the
+// file written has the world the format starts with. A file with a world
+// somewhere among its top-level objects is left as it is: what to do with the
+// objects beside it is for the extra OBJECT warning and --fixMultipleWorlds.
+bool AC3D::addMissingWorld()
+{
+    if (m_objects.empty() ||
+        std::any_of(m_objects.begin(), m_objects.end(),
+                    [](const Object &object) { return object.type.type == "world"; }))
+        return false;
+
+    Object world;
+
+    world.type.type = "world";
+    world.kids = std::move(m_objects);
+    world.numkids.number = static_cast<int>(world.kids.size());
+
+    m_objects.clear();
+    m_objects.push_back(std::move(world));
+
+    return true;
+}
+
 void AC3D::checkPolyWithKids(std::istream &in, const Object &object)
 {
     if (!m_poly_with_kids)
@@ -9449,35 +9562,53 @@ bool AC3D::splitMultipleMat(std::vector<Object> &kids)
     return split || pieces != 0;
 }
 
+// Two files joined end to end: the second file's header is gone, its
+// materials follow the first file's world, and its surfaces number them from
+// 0 as they did in their own file. So every material defined after the first
+// world's OBJECT line is the second file's, and its surfaces are moved past
+// the first file's materials to find them.
+//
+// Only the materials on the lines directly above the second world used to be
+// counted, and then the join was refused. A blank line or a MAT block hid them,
+// and the worlds were joined with the second file's surfaces still on the
+// first file's materials: its own were dropped as unused and it was drawn in
+// the wrong ones. Refusing left the file as it was, which lost them the same
+// way.
 bool AC3D::fixMultipleWorlds()
 {
     // check for concatenated files
     if (!(m_objects.size() == 2 && m_objects[0].type.type == "world" && m_objects[1].type.type == "world"))
         return false;
 
-    size_t materials = 0;
-    size_t line_number = m_objects[1].line_number - 1;
+    const size_t first_world = m_objects[0].line_number;
+    const size_t first_materials = static_cast<size_t>(
+        std::count_if(m_materials.begin(), m_materials.end(),
+                      [first_world](const Material &material) { return material.line_number < first_world; }));
 
-    // check if concatenated file has materials
-    for (auto it = m_materials.rbegin(); it != m_materials.rend(); ++it)
+    // A second file with no materials of its own was drawn with the first
+    // file's, so its surfaces are left on them.
+    if (first_materials != m_materials.size())
     {
-        if (it->line_number == line_number)
+        // A surface past the second file's own materials was wrong in that
+        // file, and there is no telling which one it meant. Moved, it would
+        // point past them all and the file written would not load.
+        const size_t second_materials = m_materials.size() - first_materials;
+        size_t used = 0;
+
+        if (m_objects[1].maxMaterial(used) && used >= second_materials)
         {
-            materials++;
-            line_number--;
+            std::cerr << "Can't fix concatenated world: the second world uses material " << used
+                      << " but has only " << second_materials << " of its own" << std::endl;
+            return false;
         }
-        else
-            break;
+
+        for (auto &kid : m_objects[1].kids)
+            kid.incrementMaterialIndex(first_materials);
     }
 
-    if (materials != 0)
-    {
-        // TODO: change material index of concatenated file surfaces if necessary
-        std::cerr << "Can't fix concatenated world with materials yet" << std::endl;
-        return false;
-    }
-
-    m_objects[0].kids.insert(m_objects[0].kids.end(), m_objects[1].kids.begin(), m_objects[1].kids.end());
+    m_objects[0].kids.insert(m_objects[0].kids.end(),
+                             std::make_move_iterator(m_objects[1].kids.begin()),
+                             std::make_move_iterator(m_objects[1].kids.end()));
 
     m_objects.pop_back();
 
@@ -11422,6 +11553,34 @@ void AC3D::Object::incrementMaterialIndex(size_t num_materials)
         kid.incrementMaterialIndex(num_materials);
 }
 
+// The highest material number a surface of this object or its kids uses, and
+// whether there is any surface at all. A SURF with no mat line uses 0.
+bool AC3D::Object::maxMaterial(size_t &max) const
+{
+    bool found = false;
+
+    for (const auto &surface : surfaces)
+    {
+        if (!found || surface.material() > max)
+            max = surface.material();
+        found = true;
+    }
+
+    for (const auto &kid : kids)
+    {
+        size_t kid_max = 0;
+
+        if (kid.maxMaterial(kid_max))
+        {
+            if (!found || kid_max > max)
+                max = kid_max;
+            found = true;
+        }
+    }
+
+    return found;
+}
+
 void AC3D::Object::transform(const Matrix &currentMatrix)
 {
     Matrix thisMatrix;
@@ -12353,6 +12512,19 @@ void AC3D::combineTexture()
     // once combined into the first world, and again as it was.
     m_objects.erase(m_objects.begin() + 1, m_objects.end());
 
+    // The groups go in a world. When the first top-level object is not one --
+    // a file holding a lone poly -- a world is made to hold them, and the
+    // object is not kept: what it had was collected like everything else.
+    // Its kids were cleared and the groups hung under it, so it kept its own
+    // surfaces as well, and its geometry was written twice.
+    if (m_objects[0].type.type != "world")
+    {
+        Object made;
+
+        made.type.type = "world";
+        m_objects[0] = std::move(made);
+    }
+
     Object &world = m_objects[0];
 
     world.kids.clear();
@@ -12792,6 +12964,140 @@ bool AC3D::hasTransparentTexture(const Object &object)
     return transparent;
 }
 
+namespace
+{
+
+// Whether an SGI image (.rgb, .rgba, .sgi) lets light through anywhere: 1 if
+// it does, 0 if it is opaque, -1 if it cannot be read. The alpha is the
+// second channel of a two channel image and the fourth of a four channel one;
+// anything else has none. Both the verbatim and the run length encoded forms
+// are read, at one or two bytes a channel. These were read as no PNG at all,
+// which counted as opaque: a tree texture with alpha 0 everywhere had its
+// leaves made single sided.
+int sgiTransparency(FILE *file)
+{
+    std::vector<unsigned char> data;
+
+    if (std::fseek(file, 0, SEEK_END) != 0)
+        return -1;
+
+    const long length = std::ftell(file);
+
+    if (length < 512 || length > (256L << 20) || std::fseek(file, 0, SEEK_SET) != 0)
+        return -1;
+
+    data.resize(static_cast<size_t>(length));
+
+    if (std::fread(data.data(), 1, data.size(), file) != data.size())
+        return -1;
+
+    const auto u16 = [&data](size_t at) { return static_cast<size_t>((data[at] << 8) | data[at + 1]); };
+    const auto u32 = [&data](size_t at)
+    {
+        return (static_cast<size_t>(data[at]) << 24) | (static_cast<size_t>(data[at + 1]) << 16) |
+               (static_cast<size_t>(data[at + 2]) << 8) | static_cast<size_t>(data[at + 3]);
+    };
+
+    if (u16(0) != 474)
+        return -1;
+
+    const unsigned storage = data[2];
+    const size_t bpc = data[3];
+    const size_t dimension = u16(4);
+    const size_t xsize = u16(6);
+    const size_t ysize = dimension >= 2 ? u16(8) : 1;
+    const size_t zsize = dimension >= 3 ? u16(10) : 1;
+
+    if ((bpc != 1 && bpc != 2) || storage > 1 || xsize == 0 || ysize == 0 || zsize == 0)
+        return -1;
+
+    size_t alpha = 0;
+
+    if (zsize == 2)
+        alpha = 1;
+    else if (zsize >= 4)
+        alpha = 3;
+    else
+        return 0;
+
+    const size_t full = bpc == 1 ? 0xff : 0xffff;
+    const auto value = [&data, bpc, &u16](size_t at) { return bpc == 1 ? static_cast<size_t>(data[at]) : u16(at); };
+
+    if (storage == 0)
+    {
+        const size_t row = xsize * bpc;
+        const size_t start = 512 + alpha * ysize * row;
+
+        if (start + ysize * row > data.size())
+            return -1;
+
+        for (size_t at = start; at < start + ysize * row; at += bpc)
+        {
+            if (value(at) != full)
+                return 1;
+        }
+
+        return 0;
+    }
+
+    // Run length encoded: a table of where each row starts, rows of every
+    // channel one after the other, then each row as runs. A run's count is
+    // the low seven bits of its first value: with the top bit set that many
+    // values follow, without it the next value is repeated that many times.
+    const size_t rows = ysize * zsize;
+
+    if (512 + rows * 8 > data.size())
+        return -1;
+
+    for (size_t y = 0; y < ysize; ++y)
+    {
+        size_t at = u32(512 + (alpha * ysize + y) * 4);
+        size_t done = 0;
+
+        while (done < xsize)
+        {
+            if (at + bpc > data.size())
+                return -1;
+
+            const size_t head = value(at);
+            const size_t count = head & 0x7f;
+
+            at += bpc;
+
+            if (count == 0)
+                break;
+
+            if (head & 0x80)
+            {
+                for (size_t k = 0; k < count; ++k, at += bpc)
+                {
+                    if (at + bpc > data.size())
+                        return -1;
+                    if (value(at) != full)
+                        return 1;
+                }
+            }
+            else
+            {
+                if (at + bpc > data.size())
+                    return -1;
+                if (value(at) != full)
+                    return 1;
+                at += bpc;
+            }
+
+            done += count;
+        }
+
+        if (done < xsize)
+            return -1;
+    }
+
+    return 0;
+}
+
+} // namespace
+
 bool AC3D::Object::hasTransparentTexture(bool report) const
 {
     if (textures.empty() || textures[0].name.empty())
@@ -12827,24 +13133,47 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
     const size_t number = 8;
     unsigned char header[number];
 
+    // A texture that cannot be read is taken to let light through. Taken for
+    // opaque, as it was, it was made single sided by
+    // --fixSurface2SidedOpaque and grouped and merged with solid geometry by
+    // --combineTexture, --grid and --combineObjects: a see-through surface
+    // drawn wrong. Taken for transparent, the worst that happens is a solid
+    // one left as it was.
     if (fread(header, 1, number, fp.get()) != number)
     {
         if (report)
-            std::cerr << "error reading png header: " << textures[0].path.c_str() << std::endl;
-        return false;
+            std::cerr << "error reading texture header: " << textures[0].path.c_str() << std::endl;
+        return true;
     }
 
     const bool is_png = !png_sig_cmp(header, 0, number);
     if (!is_png)
     {
+        // An SGI image, which is what an .rgb or .rgba texture is.
+        if (header[0] == 0x01 && header[1] == 0xda)
+        {
+            const int sgi = sgiTransparency(fp.get());
+
+            if (sgi >= 0)
+                return sgi == 1;
+
+            if (report)
+                std::cerr << "error reading sgi texture: " << textures[0].path.c_str() << std::endl;
+            return true;
+        }
+
+        // A JPEG has no alpha.
+        if (header[0] == 0xff && header[1] == 0xd8 && header[2] == 0xff)
+            return false;
+
         if (report)
-            std::cerr << "invalid png header " << textures[0].path.c_str() << std::endl;
-        return false;
+            std::cerr << "unknown texture type: " << textures[0].path.c_str() << std::endl;
+        return true;
     }
 
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
     if (!png_ptr)
-        return false;
+        return true;
 
     // Consolidated unified structural manager for context management
     struct PngBridgeRAII
@@ -12865,7 +13194,7 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
     if (!png_bridge.info)
     {
         // Safe: Leaving context allows png_bridge destructor to clean structures safely
-        return false;
+        return true;
     }
 
     // One row at a time, into one row's worth of memory. The whole image
@@ -12875,8 +13204,10 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
     // on a decoding error does not pass over its destructor.
     std::vector<png_byte> row;
 
+    // A PNG libpng gives up on -- a bad filter byte, a bad CRC, data that
+    // stops short -- cannot be said to be opaque.
     if (setjmp(png_jmpbuf(png_ptr))) {
-        return false;
+        return true;
     }
 
     png_init_io(png_ptr, fp.get());
@@ -12916,7 +13247,7 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
     const int depth = png_get_bit_depth(png_ptr, png_bridge.info);
 
     if (channels != 4 || (depth != 8 && depth != 16))
-        return false;
+        return true;
 
     const size_t rowbytes = png_get_rowbytes(png_ptr, png_bridge.info);
 

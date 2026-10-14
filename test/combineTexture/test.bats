@@ -358,7 +358,8 @@ setup_file() {
 
 # test9: huge.png is 68 bytes whose header claims 1000000 by 1000000 pixels of
 # RGBA, with almost no image data after it. It is read a row at a time, runs
-# out of data, and is taken for opaque. The whole image was decoded at once,
+# out of data, and is taken to let light through, as a texture that cannot be
+# read is. The whole image was decoded at once,
 # into a buffer the size the header gave, and acclint ended on std::bad_alloc.
 @test "test9.1" {
   $RUN_TEST acclint -Wno-warnings test9.ac --combineTexture -o test9.1.output.ac
@@ -376,6 +377,49 @@ setup_file() {
   fi
   [ "$actual_file" = "$expected_file" ]
   rm test9.1.output.ac
+}
+
+################################################################################
+
+# test10: a file whose only top-level object is a poly, with no world. A world
+# is made to hold OPAQUE, and the poly is written once, inside it. The poly
+# itself was kept to hold the groups: its kids were cleared and OPAQUE hung
+# under it, so it kept its own triangle as well, and one triangle became two.
+@test "test10.1" {
+  $RUN_TEST acclint -Wno-warnings test10.ac --combineTexture -o test10.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test10.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test10.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test10.1.output.ac)"
+  expected_file="$(tr -d '\r' < test10.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test10.1.output.ac test10.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test10.1.output.ac
+}
+
+# And --fixAll, which combines by texture too, the same way.
+@test "test10.2" {
+  $RUN_TEST acclint -Wno-warnings test10.ac --fixAll -o test10.2.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test10.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test10.2.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test10.2.output.ac)"
+  expected_file="$(tr -d '\r' < test10.fixall.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test10.2.output.ac test10.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test10.2.output.ac
 }
 
 ################################################################################

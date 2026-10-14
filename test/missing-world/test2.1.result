@@ -1,0 +1,7 @@
+test2.ac:3 warning: missing world
+OBJECT poly
+       ^
+test2.ac:17 warning: extra OBJECT
+OBJECT group
+^
+2 warnings

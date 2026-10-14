@@ -1,0 +1,7 @@
+test6.ac:19 warning: invalid object type: World should be lowercase
+OBJECT World
+       ^
+test6.ac:19 warning: multiple world
+OBJECT World
+       ^
+2 warnings

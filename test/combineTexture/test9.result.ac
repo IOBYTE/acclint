@@ -3,7 +3,10 @@ MATERIAL "solid" rgb 1 1 1  amb 0.2 0.2 0.2  emis 0 0 0  spec 0.5 0.5 0.5  shi 1
 OBJECT world
 kids 1
 OBJECT group
-name "OPAQUE"
+name "TRANSPARENT"
+kids 1
+OBJECT group
+name "transparent_group1"
 kids 1
 OBJECT poly
 name "p"
