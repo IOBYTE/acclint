@@ -1,4 +1,4 @@
-test4.ac:2 error: reading type
+test4.ac:2 warning: invalid object type: missing
 OBJECT
-      ^
-1 error
+       ^
+1 warning

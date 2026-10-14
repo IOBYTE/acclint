@@ -2991,10 +2991,20 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
     object.type.type_offset = static_cast<int>(fieldPos(iss));
     iss >> object.type.type;
 
+    // An OBJECT with no type is an invalid object type like any other, and
+    // the rest of the object is read as it would be. It was an error that no
+    // flag turned off and no summary line counted, and nothing could be
+    // written.
     if (!iss)
     {
-        error() << "reading type" << std::endl;
-        showLine(iss);
+        object.type.type.clear();
+        object.type.invalid = true;
+
+        if (m_invalid_object_type)
+        {
+            warningWithCount(m_invalid_object_type_count) << "invalid object type: missing" << std::endl;
+            showLine(iss, object.type.type_offset);
+        }
     }
     else
     {
@@ -3009,11 +3019,14 @@ bool AC3D::readObject(std::istringstream &iss, std::istream &in, Object &object)
                     warningWithCount(m_invalid_object_type_count) << "invalid object type: " << object.type.type << " should be lowercase" << std::endl;
                     showLine(iss, object.type.type_offset);
                 }
-                for (auto  &c : object.type.type)
+                object.type.original_type = object.type.type;
+                for (auto &c : object.type.type)
                     c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
             }
             else
             {
+                object.type.invalid = true;
+
                 if (m_invalid_object_type)
                 {
                     warningWithCount(m_invalid_object_type_count) << "invalid object type: " << object.type.type << std::endl;
@@ -6914,7 +6927,10 @@ void AC3D::checkDifferentUV(std::istream &in, const Object &object)
 // any about the object's contents, in line order.
 void AC3D::checkMissingWorld(std::istringstream &iss, std::istream &in)
 {
-    if (!m_missing_world)
+    // Nothing after OBJECT: no type to look at, and no position to come back
+    // to either, as the stream is at its end. The missing type is reported
+    // as an invalid object type when the object is read.
+    if (!m_missing_world || iss.eof())
         return;
 
     const std::streampos start = iss.tellg();

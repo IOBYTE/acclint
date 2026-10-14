@@ -147,4 +147,60 @@ setup_file() {
 }
 
 ################################################################################
+# test3: an OBJECT with no type. It was the error "reading type", which no
+# flag turned off and no summary line counted, and nothing could be written.
+# It is an invalid object type now, pointed at where the type should be.
+################################################################################
 
+# test3.1: the warning, with the caret where the type is missing.
+@test "test3.1" {
+  $RUN_TEST acclint test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test3.2: -Wno-warnings turns it off.
+@test "test3.2" {
+  $RUN_TEST acclint -Wno-warnings test3.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test3.2.output
+  fi
+  [ "$output" = "" ]
+}
+
+# test3.3: counted under invalid object type.
+@test "test3.3" {
+  $RUN_TEST acclint --summary test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test3.4: -o writes the object as it was read.
+@test "test3.4" {
+  $RUN_TEST acclint test3.ac -o test3.4.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.4.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test3.4.output.ac)"
+  expected_file="$(tr -d '\r' < test3.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test3.4.output.ac test3.4.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test3.4.output.ac
+}

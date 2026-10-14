@@ -1091,6 +1091,11 @@ private:
     {
         std::string type;
         int type_offset = 0;
+        // Not a type there is: missing, or one the format does not have.
+        bool invalid = false;
+        // A known type in the wrong case, as the file spelled it ("World");
+        // type holds it lowercased. Empty when the file spelled it right.
+        std::string original_type;
     };
 
     struct Numvert : public LineInfo

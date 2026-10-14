@@ -147,7 +147,8 @@ setup_file() {
   [ "$output" = "" ]
 }
 
-# test4.1: an OBJECT with no type is a read error, and no missing world on top.
+# test4.1: an OBJECT with no type is an invalid object type, and no missing
+# world on top: there is no type to say it is not a world.
 @test "test4.1" {
   $RUN_TEST acclint test4.ac
   [ "$status" -eq 0 ]
