@@ -1845,18 +1845,24 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
     // the same normal are still two vertices when their coordinates differ:
     // a uv seam. They were made one, and the texture on one side of the seam
     // came out wrong, which the "different uv" warning then found in the
-    // output.
-    std::vector<const std::vector<Point2> *> vertex_coordinates;
+    // output. Kept as the triangle and corner they came from rather than a
+    // pointer to them.
+    std::vector<std::pair<size_t, size_t>> vertex_corners;
 
-    for (auto &triangle : triangles)
+    for (size_t t = 0; t < triangles.size(); t++)
     {
+        auto &triangle = triangles[t];
+
         for (size_t i = 0; i < 3; i++)
         {
             bool found = false;
             const Vertex vertex = triangle.vertex(i, object);
             for (size_t j = 0; j < vertices.size(); j++)
             {
-                if (vertices[j] == vertex && *vertex_coordinates[j] == triangle.m_coordinates[i])
+                const auto &[made_triangle, made_corner] = vertex_corners[j];
+
+                if (vertices[j] == vertex &&
+                    triangles[made_triangle].m_coordinates[made_corner] == triangle.m_coordinates[i])
                 {
                     triangle.m_vertex_index[i] = j;
                     found = true;
@@ -1867,7 +1873,7 @@ void AC3D::convertObjectToAcc(Object &object, bool strips, bool swaps)
             {
                 triangle.m_vertex_index[i] = vertices.size();
                 vertices.emplace_back(vertex);
-                vertex_coordinates.push_back(&triangle.m_coordinates[i]);
+                vertex_corners.emplace_back(t, i);
             }
         }
     }
@@ -4548,11 +4554,11 @@ std::vector<std::vector<AC3D::Ref>> AC3D::makeTriangleStrips(const std::vector<T
 {
     using Key = std::pair<size_t, std::vector<Point2>>;
 
-    std::map<Key, size_t> ids;
+    std::map<Key, size_t> refIds; // id by ref
     std::vector<Ref> refs; // by id
 
-    const auto identify = [&ids, &refs](const Ref &ref) {
-        const auto result = ids.emplace(Key{ ref.index, ref.coordinates }, refs.size());
+    const auto identify = [&refIds, &refs](const Ref &ref) {
+        const auto result = refIds.emplace(Key{ ref.index, ref.coordinates }, refs.size());
 
         if (result.second)
             refs.push_back(ref);
@@ -6025,46 +6031,42 @@ void AC3D::checkOverlapping2SidedSurface(std::istream &in, const Poly &object1, 
             // to overlap. Every overlapping pair of triangles was a warning of
             // its own: two overlapping 10 by 10 grids gave 1264 of them, some
             // 30,000 lines.
+            bool reported = false;
+
+            for (const auto &triangle1 : surface1.transformedTriangles)
             {
-                bool reported = false;
+                if (reported)
+                    break;
 
+                for (const auto &triangle2 : surface2.transformedTriangles)
                 {
-                    for (const auto &triangle1 : surface1.transformedTriangles)
+                    if (trianglesOverlap(triangle1, triangle2))
                     {
-                        if (reported)
-                            break;
+                        reported = true;
 
-                        for (const auto &triangle2 : surface2.transformedTriangles)
-                        {
-                            if (trianglesOverlap(triangle1, triangle2))
-                            {
-                                reported = true;
+                        warningWithCount(m_overlapping_2_sided_surface_count, surface2.line_number) <<
+                            "overlapping 2 sided surface (object: " <<
+                            object2.object->getName() << " texture: " << object2.object->getTexture() <<
+                            " sides: " << (surface2.isDoubleSided() ? "2)" : "1)") << std::endl;
+                        showLine(in, surface2.line_pos);
+                        note(triangle2.refs[0].line_number) << "ref" << std::endl;
+                        showLine(in, triangle2.refs[0].line_pos);
+                        note(triangle2.refs[1].line_number) << "ref" << std::endl;
+                        showLine(in, triangle2.refs[1].line_pos);
+                        note(triangle2.refs[2].line_number) << "ref" << std::endl;
+                        showLine(in, triangle2.refs[2].line_pos);
 
-                                warningWithCount(m_overlapping_2_sided_surface_count, surface2.line_number) <<
-                                    "overlapping 2 sided surface (object: " <<
-                                    object2.object->getName() << " texture: " << object2.object->getTexture() <<
-                                    " sides: " << (surface2.isDoubleSided() ? "2)" : "1)") << std::endl;
-                                showLine(in, surface2.line_pos);
-                                note(triangle2.refs[0].line_number) << "ref" << std::endl;
-                                showLine(in, triangle2.refs[0].line_pos);
-                                note(triangle2.refs[1].line_number) << "ref" << std::endl;
-                                showLine(in, triangle2.refs[1].line_pos);
-                                note(triangle2.refs[2].line_number) << "ref" << std::endl;
-                                showLine(in, triangle2.refs[2].line_pos);
-
-                                note(surface1.line_number) << "first instance (object: " <<
-                                    object1.object->getName() << " texture: " << object1.object->getTexture() <<
-                                    " sides: " << (surface1.isDoubleSided() ? "2)" : "1)") << std::endl;
-                                showLine(in, surface1.line_pos);
-                                note(triangle1.refs[0].line_number) << "ref" << std::endl;
-                                showLine(in, triangle1.refs[0].line_pos);
-                                note(triangle1.refs[1].line_number) << "ref" << std::endl;
-                                showLine(in, triangle1.refs[1].line_pos);
-                                note(triangle1.refs[2].line_number) << "ref" << std::endl;
-                                showLine(in, triangle1.refs[2].line_pos);
-                                break;
-                            }
-                        }
+                        note(surface1.line_number) << "first instance (object: " <<
+                            object1.object->getName() << " texture: " << object1.object->getTexture() <<
+                            " sides: " << (surface1.isDoubleSided() ? "2)" : "1)") << std::endl;
+                        showLine(in, surface1.line_pos);
+                        note(triangle1.refs[0].line_number) << "ref" << std::endl;
+                        showLine(in, triangle1.refs[0].line_pos);
+                        note(triangle1.refs[1].line_number) << "ref" << std::endl;
+                        showLine(in, triangle1.refs[1].line_pos);
+                        note(triangle1.refs[2].line_number) << "ref" << std::endl;
+                        showLine(in, triangle1.refs[2].line_pos);
+                        break;
                     }
                 }
             }
@@ -6932,10 +6934,11 @@ bool AC3D::addMissingWorld()
     Object world;
 
     world.type.type = "world";
-    world.kids = std::move(m_objects);
+    // Swapped rather than moved, so m_objects is left empty by definition
+    // and not in a moved-from state.
+    world.kids.swap(m_objects);
     world.numkids.number = static_cast<int>(world.kids.size());
 
-    m_objects.clear();
     m_objects.push_back(std::move(world));
 
     return true;
@@ -10533,7 +10536,7 @@ bool AC3D::cleanSurfaces(Object &object, const std::vector<Point3> *corners, con
     // A surface with too few corners left to be anything -- a triangle with a
     // point on its long edge -- has no area to fill a crack with, and goes as
     // it always did. It keeps no point for anyone else either.
-    const auto degenerate = tooFewCorners;
+    const auto isDegenerate = tooFewCorners;
 
     // A corner of a surface somewhere else in the world, where the caller
     // knows the world.
@@ -10553,7 +10556,7 @@ bool AC3D::cleanSurfaces(Object &object, const std::vector<Point3> *corners, con
 
     for (const auto &surface : object.surfaces)
     {
-        if (degenerate(surface))
+        if (isDegenerate(surface))
             continue;
 
         for (const auto &ref : surface.refs)
@@ -10566,7 +10569,7 @@ bool AC3D::cleanSurfaces(Object &object, const std::vector<Point3> *corners, con
     for (size_t i = 0; i < object.surfaces.size(); ++i)
     {
         Surface &surface = object.surfaces[i];
-        const bool keep_corners = !degenerate(surface);
+        const bool keep_corners = !isDegenerate(surface);
         auto it = surface.refs.begin();
         while (it != surface.refs.end())
         {

@@ -531,7 +531,7 @@ private:
         }
         // Whether the 3x3 part keeps lengths and angles -- a rotation, or a
         // rotation and a mirror -- to the 6 figures a rot is written with.
-        bool rotation() const
+        bool isRotation() const
         {
             const Matrix &m = *this;
 
@@ -574,7 +574,7 @@ private:
             const double t1 = normal[1];
             const double t2 = normal[2];
 
-            if (rotation())
+            if (isRotation())
             {
                 normal = { t0 * m[0][0] + t1 * m[1][0] + t2 * m[2][0],
                            t0 * m[0][1] + t1 * m[1][1] + t2 * m[2][1],
@@ -879,7 +879,7 @@ private:
             return normal.dot(point) - distance;
         }
 
-        bool isAbovePlane(const Point3 &point) const
+        [[maybe_unused]] bool isAbovePlane(const Point3 &point) const
         {
             return distanceToPoint(point) > planeEpsilon(point);
         }
@@ -1619,7 +1619,7 @@ private:
     static bool trianglesOverlap(const Triangle &triangle1, const Triangle &triangle2);
     static bool coplanarTrianglesShareArea(const Triangle &triangle1, const Triangle &triangle2);
     static size_t getSharedVertexCount(const Triangle &triangle1, const Triangle &triangle2);
-    static bool pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle);
+    [[maybe_unused]] static bool pointInCoplanarTriangle(const Point3 &point, const Triangle &triangle);
     static PlaneType getPlaneType(const Point3 &normal);
     [[maybe_unused]] static std::array<Point2, 3> convert2D(const std::array<Point3, 3> &vertices, PlaneType planeType);
 };
