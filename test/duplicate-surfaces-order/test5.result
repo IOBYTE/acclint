@@ -1,1 +1,7 @@
-
+test5.acc:21 warning: duplicate surfaces
+SURF 0x10
+^
+test5.acc:15 note: first instance
+SURF 0x10
+^
+1 warning

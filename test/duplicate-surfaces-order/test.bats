@@ -167,13 +167,13 @@ setup_file() {
 
 ################################################################################
 
-# Regression test: two surfaces with identical vertex positions in the same
-# order, differing only in vertex normals. Difference::None uses full Vertex
-# equality (position + normal) and correctly fails to match, but
-# Difference::Order used sameVertex() (position-only) and matched at the
-# trivial zero-rotation alignment, misreporting "different vertex order"
-# under DEFAULT flags -- no special -W flags needed to hit this. Expect no
-# output.
+# Two surfaces with identical vertex positions in the same order, differing
+# only in vertex normals. Difference::Order used sameVertex() (position-only)
+# and matched at the trivial zero-rotation alignment, misreporting "different
+# vertex order"; that alignment is skipped there. Difference::None compared
+# normals as well, so the pair was then not reported at all, while the same
+# copy turned or reversed was. It compares positions only now, and the pair
+# is "duplicate surfaces".
 @test "test5" {
   $RUN_TEST acclint test5.acc
   [ "$status" -eq 0 ]
