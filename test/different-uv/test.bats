@@ -128,3 +128,21 @@ setup_file() {
 }
 
 ################################################################################
+# Two strips stitched into one surface by repeating refs, which makes
+# degenerate triangles at the join. A ref there was given the normal of
+# triangle k-2 only, which is one of the degenerate ones, so it had none and
+# the ref was skipped: vertex 4's different uv against the other surface was
+# never reported. The first of k-2, k-1 and k with a normal is used now.
+################################################################################
+
+# test5.1: vertex 4 has uv 0 0.75 in the strip and 0.9 0.75 in the triangle.
+@test "test5.1" {
+  $RUN_TEST acclint -Wno-missing-texture test5.acc
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test5.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test5.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}

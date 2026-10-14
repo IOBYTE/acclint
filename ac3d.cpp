@@ -4295,18 +4295,17 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
         return true;
     }
 
+    // Positions only, as for the other two: the same surface is the same
+    // surface whatever normals a .acc gives its vertices. Normals were
+    // compared here alone, so a copy in the same order with different normals
+    // was no duplicate, and Order skips the same-order alignment as this
+    // one's to answer: it was reported turned or reversed, and not at all as
+    // it was.
     if (difference == Difference::None)
     {
         for (size_t i = 0; i < size; ++i)
         {
-            const size_t vertex1 = surface1.refs[i].index;
-            const size_t vertex2 = surface2.refs[i].index;
-
-            // skip invalid vertex
-            if (vertex1 >= vertices.size() || vertex2 >= vertices.size())
-                return false;
-
-            if (!(vertex1 == vertex2 || vertices[vertex1] == vertices[vertex2]))
+            if (!sameVertex(surface1.refs[i].index, surface2.refs[i].index))
                 return false;
         }
 
@@ -4322,12 +4321,8 @@ bool AC3D::Object::sameSurface(size_t index1, size_t index2, Difference differen
             for (size_t j = 0; j < size; j++)
             {
                 // skip the zero-rotation alignment (i aligned with the same
-                // index j): that's what Difference::None tests, using its
-                // own (stricter) per-vertex criteria. Without this, a pair
-                // that fails None only because of a looser sameVertex()
-                // comparison (e.g. same positions but different normals)
-                // would be misreported here as "different vertex order"
-                // even though the order is identical.
+                // index j): that is what Difference::None answers, and the
+                // order is the same there, not different.
                 if (j == i)
                     continue;
 
@@ -6770,6 +6765,12 @@ void AC3D::checkDifferentMat(std::istream &in, const Object &object)
 // directly can never fire for a triangle strip. For triangle strips, use
 // the normal of whichever constituent triangle actually contains the ref
 // at refIndex instead of the (unset) surface-wide normal.
+//
+// A ref is a corner of up to three triangles, k-2, k-1 and k, and the first
+// of them with a normal is used. Only k-2 was looked at, and where strips
+// are stitched together it is one of the degenerate triangles that join
+// them: its normal is zero, the ref was skipped, and a different uv at the
+// join was never reported.
 AC3D::Point3 AC3D::surfaceRefNormal(const Surface &surface, size_t refIndex,
                                     const std::vector<Triangle> &triangles)
 {
@@ -6777,10 +6778,16 @@ AC3D::Point3 AC3D::surfaceRefNormal(const Surface &surface, size_t refIndex,
     {
         if (!triangles.empty())
         {
-            size_t t = (refIndex >= 2) ? (refIndex - 2) : 0;
-            if (t >= triangles.size())
-                t = triangles.size() - 1;
-            return triangles[t].normal;
+            const size_t first = (refIndex >= 2) ? (refIndex - 2) : 0;
+            const size_t last = std::min(refIndex, triangles.size() - 1);
+
+            for (size_t t = first; t <= last; ++t)
+            {
+                if (triangles[t].normal.length() > Point3::SMALL_NUM)
+                    return triangles[t].normal;
+            }
+
+            return triangles[std::min(first, triangles.size() - 1)].normal;
         }
     }
 
