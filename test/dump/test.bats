@@ -25,6 +25,9 @@ setup_file() {
 # So is a poly with kids in group mode, where polys are not otherwise shown:
 # the kids hang off it, and without its line "wheels" was shown under the
 # light.
+#
+# Anything the format does not allow is tagged on its line, with the line the
+# object starts on: here the poly with kids.
 ################################################################################
 
 @test "test1.1" {
@@ -77,3 +80,61 @@ setup_file() {
 }
 
 ################################################################################
+# test3: a file that breaks the spec in many ways. Every mode tags what is
+# wrong: a group with geometry, a poly with kids, a world inside the world
+# spelled World, a type that does not exist, two names, and a kids count the
+# file cannot honour -- the declared and the found counts are both shown.
+################################################################################
+
+# test3.1: group mode, which leaves leaf polys out.
+@test "test3.1" {
+  $RUN_TEST acclint -Wno-warnings --dump group test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.1.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test3.2: poly mode, everything.
+@test "test3.2" {
+  $RUN_TEST acclint -Wno-warnings --dump poly test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.2.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+# test3.3: problems mode: only the tagged objects and the objects above them,
+# each keeping its number among its siblings. "fine" and its poly are left
+# out, and so is the poly door under body.
+@test "test3.3" {
+  $RUN_TEST acclint -Wno-warnings --dump problems test3.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test3.3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test3.3.output
+  fi
+  [ "$actual" = "$expected" ]
+}
+
+################################################################################
+# test4: a file with nothing wrong in it says so.
+################################################################################
+
+@test "test4" {
+  $RUN_TEST acclint -Wno-warnings --dump problems test4.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test4.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test4.output
+  fi
+  [ "$actual" = "$expected" ]
+}

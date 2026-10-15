@@ -4487,17 +4487,67 @@ void AC3D::Object::removeKids(const RemoveInfo &remove_info)
     }
 }
 
-void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
+// What about this object the format does not allow, as " [tag]" for each
+// thing, then the line it starts on. Empty when it follows the spec. --dump
+// prints the tree as the file is read, and without these a file that breaks
+// the rules looked like one that does not: a group's own geometry was not
+// mentioned, a poly with kids read like a group, a World read like a world.
+std::string AC3D::Object::specTags(size_t count, size_t level) const
 {
-    std::string indent;
+    std::ostringstream tags;
+
+    if (level == 0)
+    {
+        if (count == 0 && type.type != "world")
+            tags << " [no world]";
+        else if (count != 0)
+            tags << (type.type == "world" ? " [multiple world]" : " [extra object]");
+    }
+    else if (type.type == "world")
+        tags << " [nested world]";
+
+    if (type.invalid)
+        tags << (type.type.empty() ? " [missing type]" : " [invalid type]");
+
+    if (!type.original_type.empty())
+        tags << " [type was " << type.original_type << "]";
+
+    if ((type.type == "world" || type.type == "group") && (!vertices.empty() || !surfaces.empty()))
+        tags << " [geometry: " << vertices.size() << " vertices " << surfaces.size() << " surface"
+             << (surfaces.size() == 1 ? "" : "s") << "]";
+
+    if (type.type == "poly" && !kids.empty())
+        tags << " [poly with kids]";
+
+    if (numkids.line_number == 0)
+        tags << " [no kids line: " << kids.size() << " found]";
+    else if (numkids.inferred)
+        tags << " [kids: no number, " << kids.size() << " found]";
+    else if (numkids.number < 0 || static_cast<size_t>(numkids.number) != kids.size())
+        tags << " [kids: " << numkids.number << " declared, " << kids.size() << " found]";
+
+    if (names.size() > 1)
+        tags << " [" << names.size() << " names]";
+
+    if (tags.tellp() > 0)
+        tags << " :" << type.line_number;
+
+    return tags.str();
+}
+
+// The line --dump prints for this object, or nothing when the mode leaves it
+// out.
+std::string AC3D::Object::dumpLine(DumpType dump_type, size_t count, size_t level) const
+{
+    std::ostringstream line;
 
     for (size_t i = 0; i < level; i++)
-        indent += "    ";
+        line << "    ";
 
     if (type.type == "world")
     {
-        std::cout << indent << (count + 1) << " " << type.type;
-        std::cout << " " << kids.size() << " kid" << (kids.size() == 1 ? "" : "s") << std::endl;
+        line << (count + 1) << " " << type.type;
+        line << " " << kids.size() << " kid" << (kids.size() == 1 ? "" : "s");
     }
     else
     {
@@ -4512,41 +4562,57 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
         // reported as invalid, but it is in the tree and its kids hang off
         // it. It matched nothing here and was left out, and its kid was
         // shown with no parent line.
-        if (type.type != "poly" ||
-            (!kids.empty() && dump_type != DumpType::poly && dump_type != DumpType::surf))
+        const bool polys = dump_type == DumpType::poly || dump_type == DumpType::surf ||
+                           dump_type == DumpType::problems;
+
+        if (type.type != "poly" || (!kids.empty() && !polys))
         {
-            std::cout << indent << (count + 1) << " " << type.type;
+            line << (count + 1) << " " << type.type;
 
             for (const auto &name : names)
-                std::cout << " " << name.name;
+                line << " " << name.name;
 
-            std::cout << " " << kids.size() << " kid" << (kids.size() == 1 ? "" : "s") << std::endl;
+            line << " " << kids.size() << " kid" << (kids.size() == 1 ? "" : "s");
         }
-        else if (type.type == "poly" && (dump_type == DumpType::poly || dump_type == DumpType::surf))
+        else if (polys)
         {
-            std::cout << indent << (count + 1) << " " << type.type;
+            line << (count + 1) << " " << type.type;
 
             for (const auto &name : names)
-                std::cout << " " << name.name;
+                line << " " << name.name;
 
             if (!textures.empty())
             {
-                std::cout << " texture";
+                line << " texture";
 
                 for (const auto &texture : textures)
-                    std::cout << " " << texture.name;
+                    line << " " << texture.name;
             }
 
-            std::cout << " " << vertices.size() << " vertices";
-            std::cout << " " << surfaces.size() << " surface" << (surfaces.size() == 1 ? "" : "s") << std::endl;
+            line << " " << vertices.size() << " vertices";
+            line << " " << surfaces.size() << " surface" << (surfaces.size() == 1 ? "" : "s");
+        }
+        else
+            return std::string();
+    }
 
-            if (dump_type == DumpType::surf)
-            {
-                for (size_t i = 0; i < surfaces.size(); i++)
-                {
-                    surfaces[i].dump(i, level + 1);
-                }
-            }
+    line << specTags(count, level);
+
+    return line.str();
+}
+
+void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
+{
+    const std::string line = dumpLine(dump_type, count, level);
+
+    if (!line.empty())
+        std::cout << line << std::endl;
+
+    if (dump_type == DumpType::surf && type.type == "poly")
+    {
+        for (size_t i = 0; i < surfaces.size(); i++)
+        {
+            surfaces[i].dump(i, level + 1);
         }
     }
 
@@ -4554,6 +4620,27 @@ void AC3D::Object::dump(DumpType dump_type, size_t count, size_t level) const
     {
         kids[i].dump(dump_type, i, level + 1);
     }
+}
+
+// --dump problems: only the objects that break the spec, and the objects
+// above them that show where they are. Built bottom up, so an object is only
+// written when it or something under it has a tag. Each keeps its number
+// among its siblings, so the path can be followed in the file.
+bool AC3D::Object::dumpProblems(size_t count, size_t level, std::vector<std::string> &lines) const
+{
+    std::vector<std::string> below;
+    bool any = false;
+
+    for (size_t i = 0; i < kids.size(); i++)
+        any = kids[i].dumpProblems(i, level + 1, below) || any;
+
+    if (!any && specTags(count, level).empty())
+        return false;
+
+    lines.push_back(dumpLine(DumpType::problems, count, level));
+    lines.insert(lines.end(), std::make_move_iterator(below.begin()), std::make_move_iterator(below.end()));
+
+    return true;
 }
 
 void AC3D::Surface::dump(size_t count, size_t level) const
@@ -11456,6 +11543,23 @@ bool AC3D::gridPartition(double size, bool quad_tree)
 
 void AC3D::dump(DumpType dump_type) const
 {
+    if (dump_type == DumpType::problems)
+    {
+        std::vector<std::string> lines;
+
+        for (size_t i = 0; i < m_objects.size(); i++)
+            m_objects[i].dumpProblems(i, 0, lines);
+
+        // Said, so a clean file is not mistaken for a dump that did not run.
+        if (lines.empty())
+            std::cout << "no problems" << std::endl;
+
+        for (const auto &line : lines)
+            std::cout << line << std::endl;
+
+        return;
+    }
+
     for (size_t i = 0; i < m_objects.size(); i++)
     {
         m_objects[i].dump(dump_type, i, 0);

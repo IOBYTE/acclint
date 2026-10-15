@@ -1,4 +1,4 @@
 1 world 2 kids
-    1 foo "P" 1 kid
+    1 foo "P" 1 kid [invalid type] :5
         1 poly "K" 3 vertices 1 surface
     2 poly "Q" 3 vertices 1 surface

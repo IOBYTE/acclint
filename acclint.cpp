@@ -147,7 +147,9 @@ void usage()
     std::cerr << "  -Wno-unfixable-kids-count              Don't show unfixable kids count errors." << std::endl;
 
     // options
-    std::cerr << "  --dump group|poly|surf                 Dumps the hierarchy of OBJECT and SURF." << std::endl;
+    std::cerr << "  --dump group|poly|surf|problems        Dumps the hierarchy of OBJECT and SURF." << std::endl;
+    std::cerr << "                                         Objects that break the spec are tagged." << std::endl;
+    std::cerr << "                                         problems shows only them and their parents." << std::endl;
     std::cerr << "  -v 11|12                               Output version 11 or 12." << std::endl;
     std::cerr << "  --splitPolygon                         Split polygon surface into separate triangle surfaces." << std::endl;
     std::cerr << "  --rebuildStrips                        Rebuild triangle strips from the triangles in them." << std::endl;
@@ -670,6 +672,8 @@ int main(int argc, char *argv[])
                 dump_type = AC3D::DumpType::poly;
             else if (type == "surf")
                 dump_type = AC3D::DumpType::surf;
+            else if (type == "problems")
+                dump_type = AC3D::DumpType::problems;
             else
             {
                 std::cerr << "Invalid dump type: " << type << std::endl;

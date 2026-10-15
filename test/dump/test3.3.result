@@ -1,0 +1,8 @@
+1 world 4 kids
+    1 group "car" 3 kids [geometry: 3 vertices 1 surface] :5
+        1 poly "body" 3 vertices 1 surface [poly with kids] :19
+        2 world 0 kids [nested world] [type was World] :36
+        3 geometry "foo" 0 kids [invalid type] :39
+    2 poly "a" "b" 0 vertices 0 surfaces [2 names] :42
+    4 poly "wheel" 0 vertices 0 surfaces [poly with kids] [kids: 3 declared, 2 found] :52
+        2 world 0 kids [nested world] :58

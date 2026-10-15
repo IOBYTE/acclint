@@ -151,7 +151,7 @@ private:                                               \
     void showLine(std::istream &in, const std::streampos &pos, int offset = 0) const;
 
 public:
-    enum class DumpType { group, poly, surf};
+    enum class DumpType { group, poly, surf, problems };
 
     // The compiled regular expression is held behind a pointer to an
     // incomplete type so that <regex> stays out of this header, and so out
@@ -1271,6 +1271,9 @@ private:
         bool sameSurface(size_t index1, size_t index2, Difference difference) const;
         bool mirroredSurface(size_t index1, size_t index2) const;
         void dump(DumpType dump_type, size_t count, size_t level) const;
+        std::string dumpLine(DumpType dump_type, size_t count, size_t level) const;
+        std::string specTags(size_t count, size_t level) const;
+        bool dumpProblems(size_t count, size_t level, std::vector<std::string> &lines) const;
         void incrementMaterialIndex(size_t num_materials);
         bool maxMaterial(size_t &max) const;
         void transform(const Matrix &currentMatrix);
