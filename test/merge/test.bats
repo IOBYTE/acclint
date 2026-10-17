@@ -316,3 +316,59 @@ setup_file() {
 }
 
 ################################################################################
+# --summary said how many of each warning and error there were in the input
+# file, but only the totals for a --merge file. Each file read now gets the
+# same: its totals and, with --summary, how many of each.
+################################################################################
+
+# test14: test14b.ac is the README's example.ac, with 12 warnings of 6 kinds.
+@test "test14" {
+  $RUN_TEST acclint --summary --quiet test1a.ac --merge test14b.ac -o test14.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test14.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test14.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test14.output.ac)"
+  expected_file="$(tr -d '\r' < test14.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test14.output.ac test14.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test14.output.ac
+}
+
+# test15: both files have warnings, of different kinds: each file gets its
+# own totals and its own breakdown, the input file's first.
+@test "test15" {
+  $RUN_TEST acclint --summary --quiet test14b.ac --merge test2b.ac -o test15.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test15.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test15.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test15.output.ac)"
+  expected_file="$(tr -d '\r' < test15.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test15.output.ac test15.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test15.output.ac
+}
+
+# test16: the merge file has an error. Its breakdown says which, and the
+# output file is not written.
+@test "test16" {
+  $RUN_TEST acclint --summary --quiet test14b.ac --merge test3b.ac -o test16.output.ac
+  [ "$status" -eq 1 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test16.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test16.output
+  fi
+  [ "$actual" = "$expected" ]
+}

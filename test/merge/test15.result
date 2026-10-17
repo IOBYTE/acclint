@@ -1,0 +1,11 @@
+12 warnings
+duplicate vertices: 2
+floating point: 1
+invalid material: 3
+missing kids: 1
+trailing text: 4
+unused vertex: 1
+Reading: test2b.ac
+1 warning
+poly with kids: 1
+Merging: test2b.ac

@@ -1,0 +1,13 @@
+12 warnings
+duplicate vertices: 2
+floating point: 1
+invalid material: 3
+missing kids: 1
+trailing text: 4
+unused vertex: 1
+Reading: test3b.ac
+1 warning
+unused vertex: 1
+1 error
+invalid ref vertex index: 1
+Can't write output file because merge file has fatal errors

@@ -220,6 +220,131 @@ void showCount(size_t count, const char *text)
         std::cout << text << count << std::endl;
 }
 
+// The totals for one file, and with --summary how many of each. Said for
+// every file read: a --merge file had only its totals, with no breakdown.
+void showTotals(const AC3D &ac3d)
+{
+    if (ac3d.warnings() > 0)
+    {
+        std::cerr << ac3d.warnings() << " warning";
+        if (ac3d.warnings() > 1)
+            std::cerr << "s";
+        std::cerr << std::endl;
+
+        if (ac3d.summary())
+        {
+            // warnings with tests
+            showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
+            showCount(ac3d.blankLineCount(), "blank line: ");
+            showCount(ac3d.collinearSurfaceVerticesCount(), "collinear surface vertices: ");
+            showCount(ac3d.differentMatCount(), "different mat: ");
+            showCount(ac3d.differentSURFCount(), "different surf: ");
+            showCount(ac3d.differentUVCount(), "different uv: ");
+            showCount(ac3d.droppedDataCount(), "dropped data: ");
+            showCount(ac3d.duplicateMaterialsCount(), "duplicate materials: ");
+            showCount(ac3d.duplicateSurfacesCount(), "duplicate surfaces: ");
+            showCount(ac3d.duplicateSurfacesOrderCount(), "duplicate surfaces order: ");
+            showCount(ac3d.duplicateSurfacesWindingCount(), "duplicate surfaces winding: ");
+            showCount(ac3d.duplicateSurfaceVerticesCount(), "duplicate surface vertices: ");
+            showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
+            showCount(ac3d.duplicateTrianglesCount(), "duplicate triangles: ");
+            showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");
+            showCount(ac3d.emptyObjectCount(), "empty object: ");
+            showCount(ac3d.extraObjectCount(), "extra object: ");
+            showCount(ac3d.extraUVCoordinatesCount(), "extra uv coordinates: ");
+            showCount(ac3d.fixableKidsCountCount(), "fixable kids count: ");
+            showCount(ac3d.floatingPointCount(), "floating point: ");
+            showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
+            showCount(ac3d.invalidMaterialCount(), "invalid material: ");
+            showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
+            showCount(ac3d.invalidObjectTypeCount(), "invalid object type: ");
+            showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
+            showCount(ac3d.materialAfterObjectCount(), "material after object: ");
+            showCount(ac3d.missingHexPrefixCount(), "missing hex prefix: ");
+            showCount(ac3d.missingKidsCount(), "missing kids: ");
+            showCount(ac3d.missingMatCount(), "missing mat: ");
+            showCount(ac3d.missingNumsurfCount(), "missing numsurf: ");
+            showCount(ac3d.missingNormalCount(), "missing normal: ");
+            showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
+            showCount(ac3d.missingTextureCount(), "missing texture: ");
+            showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
+            showCount(ac3d.missingWorldCount(), "missing world: ");
+            showCount(ac3d.multipleCreaseCount(), "multiple crease: ");
+            showCount(ac3d.multipleDataCount(), "multiple data: ");
+            showCount(ac3d.multipleFoldedCount(), "multiple folded: ");
+            showCount(ac3d.multipleHeaderCount(), "multiple header: ");
+            showCount(ac3d.multipleHiddenCount(), "multiple hidden: ");
+            showCount(ac3d.multipleLocCount(), "multiple loc: ");
+            showCount(ac3d.multipleLockedCount(), "multiple locked: ");
+            showCount(ac3d.multipleNameCount(), "multiple name: ");
+            showCount(ac3d.multipleRotCount(), "multiple rot: ");
+            showCount(ac3d.multipleShaderCount(), "multiple shader: ");
+            showCount(ac3d.multipleSubdivCount(), "multiple subdiv: ");
+            showCount(ac3d.multipleTexoffCount(), "multiple texoff: ");
+            showCount(ac3d.multipleTexrepCount(), "multiple texrep: ");
+            showCount(ac3d.multipleTextureCount(), "multiple texture: ");
+            showCount(ac3d.multipleUrlCount(), "multiple url: ");
+            showCount(ac3d.multipleWorldCount(), "multiple world: ");
+            showCount(ac3d.mixedSurfaceTypesCount(), "mixed surface types: ");
+            showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
+            showCount(ac3d.overlappingGeometryCount(), "overlapping geometry: ");
+            showCount(ac3d.polyUsedAsGroupCount(), "poly used as group: ");
+            showCount(ac3d.polyWithKidsCount(), "poly with kids: ");
+            showCount(ac3d.rgbTextureCount(), "rgb texture: ");
+            showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
+            showCount(ac3d.surfaceNotConvexCount(), "surface not convex: ");
+            showCount(ac3d.surfaceNotCoplanarCount(), "surface not coplanar: ");
+            showCount(ac3d.surfaceNoTextureCount(), "surface no texture: ");
+            showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
+            showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
+            showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
+            showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
+            showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
+            showCount(ac3d.surfaceWindingMixedCount(), "surface winding mixed: ");
+            showCount(ac3d.surfaceWindingOpposedCount(), "surface winding opposed: ");
+            showCount(ac3d.surfaceZeroAreaUVCount(), "surface zero area uv: ");
+            showCount(ac3d.trailingTextCount(), "trailing text: ");
+            showCount(ac3d.unsupportedVersionCount(), "unsupported version: ");
+            showCount(ac3d.unusedMaterialCount(), "unused material: ");
+            showCount(ac3d.unusedVertexCount(), "unused vertex: ");
+            showCount(ac3d.utf8BomCount(), "utf8 bom: ");
+
+            // warnings without test
+            showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
+        }
+    }
+
+    if (ac3d.errors() > 0)
+    {
+        std::cerr << ac3d.errors() << " error";
+        if (ac3d.errors() > 1)
+            std::cerr << "s";
+        std::cerr << std::endl;
+
+        if (ac3d.summary())
+        {
+            // errors with tests
+            showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
+            showCount(ac3d.invalidMaterialIndexCount(), "invalid material index: ");
+            showCount(ac3d.invalidNormalCount(), "invalid normal: ");
+            showCount(ac3d.invalidNumsurfCount(), "invalid numsurf: ");
+            showCount(ac3d.invalidNumvertCount(), "invalid numvert: ");
+            showCount(ac3d.invalidRefsCount(), "invalid refs: ");
+            showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
+            showCount(ac3d.invalidTokenCount(), "invalid token: ");
+            showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
+            showCount(ac3d.invalidVertexCount(), "invalid vertex: ");
+            showCount(ac3d.invalidRefVertexIndexCount(), "invalid ref vertex index: ");
+            showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
+            showCount(ac3d.missingVertexCount(), "missing vertex: ");
+            showCount(ac3d.missingRefsCount(), "missing refs: ");
+
+            // errors without tests
+            showCount(ac3d.unfixableKidsCountCount(), "unfixable kids count: ");
+        }
+    }
+}
+
 } // namespace
 
 int main(int argc, char *argv[])
@@ -1449,125 +1574,7 @@ int main(int argc, char *argv[])
     if (!out_file.empty())
         ac3d.checkDroppedData(out_version);
 
-    if (ac3d.warnings() > 0)
-    {
-        std::cerr << ac3d.warnings() << " warning";
-        if (ac3d.warnings() > 1)
-            std::cerr << "s";
-        std::cerr << std::endl;
-
-        if (ac3d.summary())
-        {
-            // warnings with tests
-            showCount(ac3d.ambiguousTextureCount(), "ambiguous texture: ");
-            showCount(ac3d.blankLineCount(), "blank line: ");
-            showCount(ac3d.collinearSurfaceVerticesCount(), "collinear surface vertices: ");
-            showCount(ac3d.differentMatCount(), "different mat: ");
-            showCount(ac3d.differentSURFCount(), "different surf: ");
-            showCount(ac3d.differentUVCount(), "different uv: ");
-            showCount(ac3d.droppedDataCount(), "dropped data: ");
-            showCount(ac3d.duplicateMaterialsCount(), "duplicate materials: ");
-            showCount(ac3d.duplicateSurfacesCount(), "duplicate surfaces: ");
-            showCount(ac3d.duplicateSurfacesOrderCount(), "duplicate surfaces order: ");
-            showCount(ac3d.duplicateSurfacesWindingCount(), "duplicate surfaces winding: ");
-            showCount(ac3d.duplicateSurfaceVerticesCount(), "duplicate surface vertices: ");
-            showCount(ac3d.duplicateTextureCount(), "duplicate texture: ");
-            showCount(ac3d.duplicateTrianglesCount(), "duplicate triangles: ");
-            showCount(ac3d.duplicateVerticesCount(), "duplicate vertices: ");
-            showCount(ac3d.emptyObjectCount(), "empty object: ");
-            showCount(ac3d.extraObjectCount(), "extra object: ");
-            showCount(ac3d.extraUVCoordinatesCount(), "extra uv coordinates: ");
-            showCount(ac3d.fixableKidsCountCount(), "fixable kids count: ");
-            showCount(ac3d.floatingPointCount(), "floating point: ");
-            showCount(ac3d.groupWithGeometryCount(), "group with geometry: ");
-            showCount(ac3d.invalidMaterialCount(), "invalid material: ");
-            showCount(ac3d.invalidNormalLengthCount(), "invalid normal length: ");
-            showCount(ac3d.invalidObjectTypeCount(), "invalid object type: ");
-            showCount(ac3d.invalidRefCountCount(), "invalid ref count: ");
-            showCount(ac3d.materialAfterObjectCount(), "material after object: ");
-            showCount(ac3d.missingHexPrefixCount(), "missing hex prefix: ");
-            showCount(ac3d.missingKidsCount(), "missing kids: ");
-            showCount(ac3d.missingMatCount(), "missing mat: ");
-            showCount(ac3d.missingNumsurfCount(), "missing numsurf: ");
-            showCount(ac3d.missingNormalCount(), "missing normal: ");
-            showCount(ac3d.missingSurfacesCount(), "missing surfaces: ");
-            showCount(ac3d.missingTextureCount(), "missing texture: ");
-            showCount(ac3d.missingUVCoordinatesCount(), "missing uv coordinates: ");
-            showCount(ac3d.missingWorldCount(), "missing world: ");
-            showCount(ac3d.multipleCreaseCount(), "multiple crease: ");
-            showCount(ac3d.multipleDataCount(), "multiple data: ");
-            showCount(ac3d.multipleFoldedCount(), "multiple folded: ");
-            showCount(ac3d.multipleHeaderCount(), "multiple header: ");
-            showCount(ac3d.multipleHiddenCount(), "multiple hidden: ");
-            showCount(ac3d.multipleLocCount(), "multiple loc: ");
-            showCount(ac3d.multipleLockedCount(), "multiple locked: ");
-            showCount(ac3d.multipleNameCount(), "multiple name: ");
-            showCount(ac3d.multipleRotCount(), "multiple rot: ");
-            showCount(ac3d.multipleShaderCount(), "multiple shader: ");
-            showCount(ac3d.multipleSubdivCount(), "multiple subdiv: ");
-            showCount(ac3d.multipleTexoffCount(), "multiple texoff: ");
-            showCount(ac3d.multipleTexrepCount(), "multiple texrep: ");
-            showCount(ac3d.multipleTextureCount(), "multiple texture: ");
-            showCount(ac3d.multipleUrlCount(), "multiple url: ");
-            showCount(ac3d.multipleWorldCount(), "multiple world: ");
-            showCount(ac3d.mixedSurfaceTypesCount(), "mixed surface types: ");
-            showCount(ac3d.overlapping2SidedSurfaceCount(), "overlapping 2 sided surface: ");
-            showCount(ac3d.overlappingGeometryCount(), "overlapping geometry: ");
-            showCount(ac3d.polyUsedAsGroupCount(), "poly used as group: ");
-            showCount(ac3d.polyWithKidsCount(), "poly with kids: ");
-            showCount(ac3d.rgbTextureCount(), "rgb texture: ");
-            showCount(ac3d.surface2SidedOpaqueCount(), "surface 2 sided opaque: ");
-            showCount(ac3d.surfaceNotConvexCount(), "surface not convex: ");
-            showCount(ac3d.surfaceNotCoplanarCount(), "surface not coplanar: ");
-            showCount(ac3d.surfaceNoTextureCount(), "surface no texture: ");
-            showCount(ac3d.surfaceSelfIntersectingCount(), "surface self intersecting: ");
-            showCount(ac3d.surfaceStripDegenerateCount(), "surface strip degenerate: ");
-            showCount(ac3d.surfaceStripDuplicateTrianglesCount(), "surface strip duplicate triangles: ");
-            showCount(ac3d.surfaceStripHoleCount(), "surface strip hole: ");
-            showCount(ac3d.surfaceStripSizeCount(), "surface strip size: ");
-            showCount(ac3d.surfaceWindingMixedCount(), "surface winding mixed: ");
-            showCount(ac3d.surfaceWindingOpposedCount(), "surface winding opposed: ");
-            showCount(ac3d.surfaceZeroAreaUVCount(), "surface zero area uv: ");
-            showCount(ac3d.trailingTextCount(), "trailing text: ");
-            showCount(ac3d.unsupportedVersionCount(), "unsupported version: ");
-            showCount(ac3d.unusedMaterialCount(), "unused material: ");
-            showCount(ac3d.unusedVertexCount(), "unused vertex: ");
-            showCount(ac3d.utf8BomCount(), "utf8 bom: ");
-
-            // warnings without test
-            showCount(ac3d.multiplePolygonSurfaceCount(), "multiple polygon surface: ");
-        }
-    }
-
-    if (ac3d.errors() > 0)
-    {
-        std::cerr << ac3d.errors() << " error";
-        if (ac3d.errors() > 1)
-            std::cerr << "s";
-        std::cerr << std::endl;
-
-        if (ac3d.summary())
-        {
-            // errors with tests
-            showCount(ac3d.invalidKidsCountCount(), "invalid kids count: ");
-            showCount(ac3d.invalidMaterialIndexCount(), "invalid material index: ");
-            showCount(ac3d.invalidNormalCount(), "invalid normal: ");
-            showCount(ac3d.invalidNumsurfCount(), "invalid numsurf: ");
-            showCount(ac3d.invalidNumvertCount(), "invalid numvert: ");
-            showCount(ac3d.invalidRefsCount(), "invalid refs: ");
-            showCount(ac3d.invalidSurfaceTypeCount(), "invalid surface type: ");
-            showCount(ac3d.invalidTokenCount(), "invalid token: ");
-            showCount(ac3d.invalidTextureCoordinateCount(), "invalid texture coordinate: ");
-            showCount(ac3d.invalidVertexCount(), "invalid vertex: ");
-            showCount(ac3d.invalidRefVertexIndexCount(), "invalid ref vertex index: ");
-            showCount(ac3d.moreSURFThanSpecifiedCount(), "more SURF than specified: ");
-            showCount(ac3d.missingVertexCount(), "missing vertex: ");
-            showCount(ac3d.missingRefsCount(), "missing refs: ");
-
-            // errors without tests
-            showCount(ac3d.unfixableKidsCountCount(), "unfixable kids count: ");
-        }
-    }
+    showTotals(ac3d);
 
     if (!out_file.empty())
     {
@@ -1625,23 +1632,13 @@ int main(int argc, char *argv[])
             // Its materials are written in the input file's version too.
             to_merge.checkDroppedData(out_version);
 
-            if (to_merge.warnings() > 0)
-            {
-                std::cerr << to_merge.warnings() << " warning";
-                if (to_merge.warnings() > 1)
-                    std::cerr << "s";
-                std::cerr << std::endl;
-            }
+            showTotals(to_merge);
 
             // Refused the way the input file is. Its errors were counted and
             // then ignored, and a file that could not have been written on its
             // own was written merged into another.
             if (to_merge.errors() > (fix_ref_index ? to_merge.invalidRefVertexIndexCount() : 0))
             {
-                std::cerr << to_merge.errors() << " error";
-                if (to_merge.errors() > 1)
-                    std::cerr << "s";
-                std::cerr << std::endl;
                 std::cerr << "Can't write output file because merge file has fatal errors" << std::endl;
                 return EXIT_FAILURE;
             }
