@@ -7070,6 +7070,32 @@ void AC3D::checkMultipleHeader(std::istringstream &iss, std::istream &in, const 
     }
 }
 
+// A version 11 file writes a material on one MATERIAL line, which has no
+// room for data: only a version 12 MAT block holds it. Writing version 11 --
+// asked for with -v 11, or the header of a file that has a MAT block with
+// data after an AC3Dc line of its own -- dropped every material's data
+// without a word. Asked before the warnings are counted, with the version
+// that will be written.
+void AC3D::checkDroppedData(int version)
+{
+    if (!m_dropped_data || version != 11)
+        return;
+
+    std::ifstream in(m_file, std::ifstream::binary);
+
+    for (const auto &material : m_materials)
+    {
+        if (material.data.empty())
+            continue;
+
+        const Data &data = material.data.front();
+
+        warningWithCount(m_dropped_data_count, data.line_number) << "dropped data: version 11 materials have no data" << std::endl;
+        if (in)
+            showLine(in, data.line_pos);
+    }
+}
+
 // Puts the top-level objects in a new world when none of them is one, so the
 // file written has the world the format starts with. A file with a world
 // somewhere among its top-level objects is left as it is: what to do with the

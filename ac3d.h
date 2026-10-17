@@ -54,6 +54,7 @@ private:                                               \
     CHECK(differentMat, m_different_mat, true)
     CHECK(differentSURF, m_different_surf, true)
     CHECK(differentUV, m_different_uv, true)
+    CHECK(droppedData, m_dropped_data, true)
     CHECK(duplicateMaterials, m_duplicate_materials, true)
     CHECK(duplicateSurfaces, m_duplicate_surfaces, true)
     CHECK(duplicateSurfacesOrder, m_duplicate_surfaces_order, true)
@@ -273,6 +274,8 @@ public:
     void removeObjects(const RemoveInfo &remove_info);
     void combineTexture();
     bool addMissingWorld();
+    void checkDroppedData(int version);
+    int headerVersion() const { return m_header.getVersion(); }
     bool gridPartition(double size, bool quad_tree);
     bool combineObjects(double size);
     void fixBackToBackMirror();

@@ -50,6 +50,7 @@ void usage()
     std::cerr << "  -Wno-different-mat                     Don't show different mat warnings." << std::endl;
     std::cerr << "  -Wno-different-surf                    Don't show different surf warnings." << std::endl;
     std::cerr << "  -Wno-different-uv                      Don't show different uv warnings." << std::endl;
+    std::cerr << "  -Wno-dropped-data                      Don't show dropped data warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-materials               Don't show duplicate materials warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces                Don't show duplicate surfaces warnings." << std::endl;
     std::cerr << "  -Wno-duplicate-surfaces-order          Don't show duplicate surfaces with different vertex order warnings." << std::endl;
@@ -249,6 +250,7 @@ int main(int argc, char *argv[])
     bool different_mat = true;
     bool different_surf = true;
     bool different_uv = true;
+    bool dropped_data = true;
     bool duplicate_materials = true;
     bool duplicate_surfaces = true;
     bool duplicate_surfaces_order = true;
@@ -709,6 +711,7 @@ int main(int argc, char *argv[])
                 different_mat = value;
                 different_surf = value;
                 different_uv = value;
+                dropped_data = value;
                 duplicate_materials = value;
                 duplicate_surfaces = value;
                 duplicate_surfaces_order = value;
@@ -805,6 +808,10 @@ int main(int argc, char *argv[])
             else if (arg == "-Wno-different-uv" || arg == "-Wdifferent-uv")
             {
                 different_uv = isEnabled(arg);
+            }
+            else if (arg == "-Wno-dropped-data" || arg == "-Wdropped-data")
+            {
+                dropped_data = isEnabled(arg);
             }
             else if (arg == "-Wno-duplicate-materials" || arg == "-Wduplicate-materials")
             {
@@ -1299,6 +1306,7 @@ int main(int argc, char *argv[])
         target.differentMat(different_mat);
         target.differentSURF(different_surf);
         target.differentUV(different_uv);
+        target.droppedData(dropped_data);
         target.duplicateMaterials(duplicate_materials);
         target.duplicateSurfaces(duplicate_surfaces);
         target.duplicateSurfacesOrder(duplicate_surfaces_order);
@@ -1427,6 +1435,12 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    // Check if material data will be dropped in conversion.
+    const int out_version = version != 0 ? version : ac3d.headerVersion();
+
+    if (!out_file.empty())
+        ac3d.checkDroppedData(out_version);
+
     if (ac3d.warnings() > 0)
     {
         std::cerr << ac3d.warnings() << " warning";
@@ -1443,6 +1457,7 @@ int main(int argc, char *argv[])
             showCount(ac3d.differentMatCount(), "different mat: ");
             showCount(ac3d.differentSURFCount(), "different surf: ");
             showCount(ac3d.differentUVCount(), "different uv: ");
+            showCount(ac3d.droppedDataCount(), "dropped data: ");
             showCount(ac3d.duplicateMaterialsCount(), "duplicate materials: ");
             showCount(ac3d.duplicateSurfacesCount(), "duplicate surfaces: ");
             showCount(ac3d.duplicateSurfacesOrderCount(), "duplicate surfaces order: ");
@@ -1587,6 +1602,9 @@ int main(int argc, char *argv[])
 
                 return EXIT_FAILURE;
             }
+
+            // Its materials are written in the input file's version too.
+            to_merge.checkDroppedData(out_version);
 
             if (to_merge.warnings() > 0)
             {
