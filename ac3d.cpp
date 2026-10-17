@@ -11570,6 +11570,22 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
 
     std::map<std::pair<long long, long long>, Object> cell_objects;
     std::vector<Object> unpartitioned;
+    std::vector<Object> see_through;
+
+    // An object that is, or holds, something see-through.
+    const auto holdsTransparent = [this](const Object &object)
+    {
+        const auto holds = [this](const Object &o, const auto &self) -> bool
+        {
+            if (!o.surfaces.empty() && isTransparent(o))
+                return true;
+
+            return std::any_of(o.kids.begin(), o.kids.end(),
+                               [&self](const Object &kid) { return self(kid, self); });
+        };
+
+        return holds(object, holds);
+    };
 
     for (auto &kid : parent.kids)
     {
@@ -11588,9 +11604,18 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
         // The cells it would have bought are worth less than the picture: this
         // is a small share of a track's surfaces, and it is the share where
         // being drawn in the right order is the whole of being drawn right.
+        //
+        // It goes after the cells, though, where it was: it was put first,
+        // ahead of the opaque geometry gathered into the cells, so a window
+        // written after its wall was drawn before it -- blended over what had
+        // been drawn so far, with the wall then drawn over it. What only
+        // holds something see-through goes after them for the same reason.
         if (kid.surfaces.empty() || !kid.kids.empty() || isTransparent(kid))
         {
-            unpartitioned.push_back(std::move(kid));
+            if (holdsTransparent(kid))
+                see_through.push_back(std::move(kid));
+            else
+                unpartitioned.push_back(std::move(kid));
             continue;
         }
 
@@ -11760,6 +11785,9 @@ void AC3D::gridPartition(Object &parent, GridInfo &info)
         for (auto &cell : cell_list)
             parent.kids.push_back(std::move(cell.second));
     }
+
+    for (auto &kid : see_through)
+        parent.kids.push_back(std::move(kid));
 }
 
 // Speed Dreams' .acc loader keeps the group tree only when some object name

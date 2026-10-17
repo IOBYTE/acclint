@@ -154,3 +154,26 @@ setup_file() {
 }
 
 ################################################################################
+# --splitPolygon fans each polygon from its first corner, and the back face is
+# the front one reversed, so it was cut along the other diagonal: no triangle
+# of one mirrored a triangle of the other, nothing was merged, and the quad
+# came out as four single sided triangles. The mirror pair is merged first
+# now, and the two sided quad is what is split.
+################################################################################
+
+# test8: two triangles, both two sided.
+@test "test8" {
+  $RUN_TEST acclint -Wno-warnings test8.ac --splitPolygon --fixBackToBackMirror -o test8.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test8.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test8.output.ac)"
+  expected_file="$(tr -d '\r' < test8.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test8.output.ac test8.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test8.output.ac
+}

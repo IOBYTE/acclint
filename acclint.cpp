@@ -1707,6 +1707,28 @@ int main(int argc, char *argv[])
         if (flatten)
             ac3d.flatten();
 
+        // Before the fixes that clear the two sided flag this one sets:
+        // fixSurface2SidedOpaque would take the merged surface straight back
+        // to single sided, and this removes the overlap that
+        // fixOverlapping2SidedSurface would otherwise have answered by making
+        // both faces one sided again. Merging first also leaves them less to
+        // look at. The clean afterwards collects the vertices the surface
+        // that went away was the only user of.
+        //
+        // And before --splitPolygon. Splitting fans each polygon from its
+        // first corner, and the back face is the front one reversed, so its
+        // first corner is a different one: the two are cut along different
+        // diagonals, no triangle of one is the mirror of a triangle of the
+        // other, and nothing was merged -- a quad came out as four single
+        // sided triangles instead of one two sided quad. Before --splitSURF
+        // too, so the two sided surface it makes is split from the single
+        // sided ones with everything else.
+        if (fix_back_to_back_mirror)
+        {
+            ac3d.fixBackToBackMirror();
+            ac3d.clean();
+        }
+
         if (splitPolygon)
             ac3d.splitPolygons();
 
@@ -1720,19 +1742,6 @@ int main(int argc, char *argv[])
 
         if (fix_rgb_texture)
             ac3d.fixRgbTexture();
-
-        // Before the two fixes below, both of which clear the two sided flag
-        // this one sets: fixSurface2SidedOpaque would take the merged
-        // surface straight back to single sided, and this removes the
-        // overlap that fixOverlapping2SidedSurface would otherwise have
-        // answered by making both faces one sided again. Merging first also
-        // leaves them less to look at. The clean afterwards collects the
-        // vertices the surface that went away was the only user of.
-        if (fix_back_to_back_mirror)
-        {
-            ac3d.fixBackToBackMirror();
-            ac3d.clean();
-        }
 
         if (fix_surface_2_sided_opaque)
             ac3d.fixSurface2SidedOpaque();
@@ -1761,12 +1770,7 @@ int main(int argc, char *argv[])
         // take out the ones a piece does not use. Nothing followed this one,
         // so the pieces were written with all of them, and each that went
         // unused was an "unused vertex" in the file.
-        //
-        // --fixBackToBackMirror makes the pair it merges 2 sided, which leaves
-        // the same mix in an object --splitSURF took apart before it ran, and
-        // the object was written with it.
-        if (fix_surface_2_sided_opaque || fix_overlapping_2_sided_surface ||
-            (fix_back_to_back_mirror && splitSURF))
+        if (fix_surface_2_sided_opaque || fix_overlapping_2_sided_surface)
         {
             if (ac3d.splitMultipleSURF())
                 ac3d.clean();

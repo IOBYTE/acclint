@@ -319,3 +319,27 @@ setup_file() {
 }
 
 ################################################################################
+# A see-through object is left out of the cells, so the objects it would be
+# blended over are drawn before it the way the file draws them. It was put
+# first, ahead of the cells holding the opaque geometry: a window written after
+# its wall was drawn before the wall. It goes after the cells now.
+################################################################################
+
+# test11.1: the wall in cell_0_0, then the window.
+@test "test11.1" {
+  $RUN_TEST acclint -Wno-warnings test11.ac --grid 10 -o test11.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test11.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test11.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test11.1.output.ac)"
+  expected_file="$(tr -d '\r' < test11.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test11.1.output.ac test11.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test11.1.output.ac
+}
