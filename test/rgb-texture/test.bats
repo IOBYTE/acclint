@@ -118,6 +118,8 @@ setup_file() {
 ################################################################################
 # test4: --fixRgbTexture renames the upper case one too, keeping the stem it
 # had and putting .png in place of the extension.
+# TEST2.png is there for it to be renamed to: a texture is only renamed to
+# a .png that exists.
 ################################################################################
 
 @test "test4.1" {

@@ -9833,8 +9833,12 @@ std::string AC3D::findTexture(const std::string &name) const
 
 void AC3D::fixRgbTexture()
 {
+    // What each texture name became, decided once however many objects use
+    // it, and said once.
+    std::map<std::string, std::string> renamed;
+
     for (auto &object : m_objects)
-        fixRgbTexture(object);
+        fixRgbTexture(object, renamed);
 }
 
 // The file the name is looked for in changes with the name. Only the name used
@@ -9845,21 +9849,75 @@ void AC3D::fixRgbTexture()
 // Every object is renamed, not only a poly: the rgb texture warning is given
 // for a texture on any object, and one on a group was warned about and then
 // left as it was.
-void AC3D::fixRgbTexture(Object &object)
+//
+// Only to a .png that is there, and that lets light through where the .rgb
+// does. It was renamed whether or not the .png existed, and the file written
+// had a missing texture where it had one that loaded. And a .png that is
+// opaque where the .rgba is not, or the other way, draws the surface
+// differently: everything that sorts by transparency -- --combineTexture,
+// --grid, the two sided fixes -- would then put it with the wrong objects.
+// Either way the texture is left as it was, and the reason said.
+void AC3D::fixRgbTexture(Object &object, std::map<std::string, std::string> &renamed)
 {
     for (auto &texture : object.textures)
     {
         // isRgbTexture only says yes when there is an extension to
         // find, so the dot is there to be found.
-        if (isRgbTexture(texture.name))
+        if (!isRgbTexture(texture.name))
+            continue;
+
+        auto it = renamed.find(texture.name);
+
+        if (it == renamed.end())
         {
-            texture.name.replace(texture.name.rfind('.'), std::string::npos, ".png");
+            std::string png = texture.name;
+            png.replace(png.rfind('.'), std::string::npos, ".png");
+
+            const std::string png_path = findTexture(png);
+            std::string reason;
+
+            if (!isRegularFile(png_path))
+                reason = " not found";
+            else if (isRegularFile(texture.path))
+            {
+                // Asked the way every other check asks, of an object holding
+                // just this one texture.
+                Object rgb_object;
+                rgb_object.textures.push_back(texture);
+
+                Object png_object;
+                png_object.textures.push_back(texture);
+                png_object.textures[0].name.assign(png);
+                png_object.textures[0].path = png_path;
+
+                const bool rgb_transparent = rgb_object.hasTransparentTexture(false);
+                const bool png_transparent = png_object.hasTransparentTexture(false);
+
+                if (rgb_transparent != png_transparent)
+                    reason = png_transparent ? " is transparent and the rgb texture is not"
+                                             : " is opaque and the rgb texture is not";
+            }
+
+            if (!reason.empty())
+            {
+                if (!m_quiet)
+                    std::cout << "fixRgbTexture: \"" << png << "\"" << reason << ": " << texture.name
+                              << " left as it is" << std::endl;
+                png.clear();
+            }
+
+            it = renamed.emplace(texture.name, png).first;
+        }
+
+        if (!it->second.empty())
+        {
+            texture.name.assign(it->second);
             texture.path = findTexture(texture.name);
         }
     }
 
     for (auto &kid : object.kids)
-        fixRgbTexture(kid);
+        fixRgbTexture(kid, renamed);
 }
 
 // A poly with kids is a group given the wrong type, or a part with its moving
@@ -13369,7 +13427,13 @@ bool AC3D::Object::hasTransparentTexture(bool report) const
         return true;
     }
 
-    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    // libpng's warnings -- an sRGB profile it knows to be wrong, a chunk it
+    // does not know -- go to stderr by default, in the middle of acclint's
+    // own output, and say nothing about whether the texture lets light
+    // through. Errors still end the read below.
+    const auto quiet = [](png_structp, png_const_charp) {};
+
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, quiet);
     if (!png_ptr)
         return true;
 

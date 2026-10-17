@@ -1606,7 +1606,7 @@ private:
     bool hasTransparentMaterial(const Surface &surface) const;
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
-    void fixRgbTexture(Object &object);
+    void fixRgbTexture(Object &object, std::map<std::string, std::string> &renamed);
     std::string findTexture(const std::string &name) const;
     static bool fixPolyWithKids(Object &object);
     static void fixBackToBackMirror(Object &object);

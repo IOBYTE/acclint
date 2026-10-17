@@ -1,0 +1,3 @@
+fixRgbTexture: "gone.png" not found: "gone.rgb" left as it is
+fixRgbTexture: "leaf.png" is opaque and the rgb texture is not: "leaf.rgba" left as it is
+fixRgbTexture: "sign.png" is transparent and the rgb texture is not: "sign.rgb" left as it is
