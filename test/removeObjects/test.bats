@@ -152,3 +152,62 @@ setup_file() {
 }
 
 ################################################################################
+# An object with no name line is matched as the empty name, the same as one
+# with name "". It was never matched at all, so '.*' left it behind.
+################################################################################
+
+# test4.1: '.*' removes all three polys: name "", no name line, name "x".
+@test "test4.1" {
+  $RUN_TEST acclint -Wno-warnings test4.ac --removeObjects poly '.*' -o test4.1.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.1.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.1.output.ac)"
+  expected_file="$(tr -d '\r' < test4.1.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.1.output.ac test4.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.1.output.ac
+}
+
+# test4.2: 'x' removes only the one named x.
+@test "test4.2" {
+  $RUN_TEST acclint -Wno-warnings test4.ac --removeObjects poly x -o test4.2.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test4.2.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test4.2.output.ac)"
+  expected_file="$(tr -d '\r' < test4.2.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test4.2.output.ac test4.2.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test4.2.output.ac
+}
+
+################################################################################
+# The top-level objects are tried as well as everything under them. Only
+# their kids were, so a poly with no world around it was never removed.
+################################################################################
+
+# test5: a lone top-level poly is removed, and -o writes the empty world.
+@test "test5" {
+  $RUN_TEST acclint -Wno-warnings test5.ac --removeObjects poly '.*' -o test5.output.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test5.output
+  fi
+  [ "$output" = "" ]
+  actual_file="$(tr -d '\r' < test5.output.ac)"
+  expected_file="$(tr -d '\r' < test5.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test5.output.ac test5.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test5.output.ac
+}

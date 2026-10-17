@@ -142,7 +142,6 @@ void usage()
     std::cerr << "  -Wno-missing-vertex                    Don't show missing vertex errors." << std::endl;
     std::cerr << "  -Wno-missing-refs                      Don't show missing refs errors." << std::endl;
     std::cerr << "  -Wno-more-surf-than-specified          Don't show more surf than specified errors." << std::endl;
-    std::cerr << "  -Wno-not-ac3d-file                     Don't show not AC3D file errors." << std::endl;
 
     // errors without tests
     std::cerr << "  -Wno-unfixable-kids-count              Don't show unfixable kids count errors." << std::endl;
@@ -468,7 +467,6 @@ int main(int argc, char *argv[])
 
     // errors without tests
 
-    bool not_ac3d_file = true;
 
     std::vector<std::string> texture_paths;
     bool dump = false;
@@ -1241,7 +1239,6 @@ int main(int argc, char *argv[])
                 missing_vertex = value;
                 missing_refs = value;
                 more_surf_than_specified = value;
-                not_ac3d_file = value;
 
                 // errors without tests
                 unfixable_kids_count = value;
@@ -1314,7 +1311,8 @@ int main(int argc, char *argv[])
 
             else if (arg == "-Wno-not-ac3d-file" || arg == "-Wnot-ac3d-file")
             {
-                not_ac3d_file = isEnabled(arg);
+                // Still accepted, so a command that passes it keeps working,
+                // but a file that is not AC3D is fatal and always said.
             }
             else
             {
@@ -1526,7 +1524,6 @@ int main(int argc, char *argv[])
         target.missingVertex(missing_vertex);
         target.missingRefs(missing_refs);
         target.moreSURFThanSpecified(more_surf_than_specified);
-        target.notAC3DFile(not_ac3d_file);
 
         // errors without tests
         target.unfixableKidsCount(unfixable_kids_count);

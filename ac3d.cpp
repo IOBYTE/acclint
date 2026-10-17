@@ -2134,13 +2134,14 @@ bool AC3D::readHeader(std::istream &in)
         return false;
     }
 
+    // Fatal, and said whatever is turned off, like an empty file: there is
+    // nothing to read and nothing to write. -Wno-not-ac3d-file and
+    // -Wno-errors turned it off, and the file was refused with no word at
+    // all and exit status 1.
     if (!m_line.starts_with("AC3D"))
     {
-        if (m_not_ac3d_file)
-        {
-            error(m_line_number) << "not AC3D file" << std::endl;
-            showLine(iss, 0);
-        }
+        error(m_line_number) << "not AC3D file" << std::endl;
+        showLine(iss, 0);
         return false;
     }
 
@@ -4484,12 +4485,20 @@ bool AC3D::Object::mirroredSurface(size_t index1, size_t index2) const
     return false;
 }
 
+// An object with no name line is matched as the empty name, the same as one
+// with name "": '.*' takes both. It was never matched at all, so no pattern
+// could remove an object that had not been given a name.
+static bool removeMatches(const AC3D::RemoveInfo &remove_info, const std::string &type, const std::string &name)
+{
+    return type == remove_info.object_type && remove_info.matches(name);
+}
+
 void AC3D::Object::removeKids(const RemoveInfo &remove_info)
 {
     auto kid = kids.begin();
     while (kid != kids.end())
     {
-        if (!kid->names.empty() && kid->type.type == remove_info.object_type && remove_info.matches(kid->names.back().name))
+        if (removeMatches(remove_info, kid->type.type, kid->getName()))
             kid = kids.erase(kid);
         else
         {
@@ -12735,10 +12744,22 @@ bool AC3D::RemoveInfo::matches(const std::string &name) const
     return regular_expression && std::regex_match(name, regular_expression->regex);
 }
 
+// The top-level objects are tried as well as everything under them. Only
+// their kids were, so a file of loose objects -- a poly with no world -- kept
+// every one of them whatever the pattern.
 void AC3D::removeObjects(const RemoveInfo &remove_info)
 {
-    for (auto &object : m_objects)
-        object.removeKids(remove_info);
+    auto object = m_objects.begin();
+    while (object != m_objects.end())
+    {
+        if (removeMatches(remove_info, object->type.type, object->getName()))
+            object = m_objects.erase(object);
+        else
+        {
+            object->removeKids(remove_info);
+            ++object;
+        }
+    }
 }
 
 bool AC3D::Object::sameTextures(const Object &object) const

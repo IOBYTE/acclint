@@ -203,14 +203,6 @@ public:
     {
         return m_crlf;
     }
-    void notAC3DFile(bool value)
-    {
-        m_not_ac3d_file = value;
-    }
-    bool notAC3DFile() const
-    {
-        return m_not_ac3d_file;
-    }
     void texturePaths(const std::vector<std::string> &paths)
     {
         m_texture_paths = paths;
@@ -1337,7 +1329,6 @@ private:
     // as a .acc is just as much a track.
     bool            m_acc_output = false;
     bool            m_crlf = false;
-    bool            m_not_ac3d_file = true;
     bool            m_quiet = false;
     bool            m_summary = false;
     bool            m_show_times = false;

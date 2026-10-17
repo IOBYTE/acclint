@@ -27,13 +27,17 @@ setup_file() {
   [ "$actual" = "$expected" ]
 }
 
+# test1.2: a file that is not AC3D is fatal, and -Wno-errors does not hide it.
+# It used to: the file was refused with no word at all and exit status 1.
 @test "test1.2" {
   $RUN_TEST acclint -Wno-errors test1.ac
   [ "$status" -eq 1 ]
-  if [ "$output" != "" ]; then
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
     echo "$output" > test1.2.output
   fi
-  [ "$output" = "" ]
+  [ "$actual" = "$expected" ]
 }
 
 @test "test1.3" {
@@ -81,3 +85,17 @@ setup_file() {
 }
 
 ################################################################################
+# -Wno-not-ac3d-file is still accepted, so a command that passes it keeps
+# working, but the error is said all the same.
+################################################################################
+
+@test "test2" {
+  $RUN_TEST acclint -Wno-not-ac3d-file test1.ac
+  [ "$status" -eq 1 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test2.output
+  fi
+  [ "$actual" = "$expected" ]
+}
