@@ -1,0 +1,6 @@
+test4.ac:18 error: invalid ref vertex index
+z 0 0
+^
+1 error
+test4.ac:18 ref not repaired: 2 vertices fit
+test4.ac:13 surface dropped: invalid ref vertex index

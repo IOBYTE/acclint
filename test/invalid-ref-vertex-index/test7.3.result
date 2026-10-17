@@ -1,0 +1,8 @@
+test7.ac:22 error: invalid ref vertex index
+z 0 0
+^
+test7.ac:30 error: invalid ref vertex index: 9 of 4
+9 0 0
+^
+2 errors
+Can't write output file because input file has fatal errors

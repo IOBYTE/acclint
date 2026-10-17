@@ -1,4 +1,8 @@
 test4.ac:17 error: invalid ref vertex index
 x 1 0
 ^
+test4.ac:13 warning: surface with texture coordinates but no texture
+SURF 0x10
+^
+1 warning
 1 error

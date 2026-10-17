@@ -164,7 +164,8 @@ setup_file() {
 # test4: a quad whose second ref has no number where its index should be, next
 # to a ref that names vertex 0. The failed read left the index 0, so the ref
 # was compared as vertex 0, and "duplicate surface vertices" was reported with
-# the error. It names no vertex now, and only the error is reported.
+# the error. It names no vertex now. Its texture coordinates, 1 0, are still
+# read, so a surface with them and no texture is reported too.
 @test "test4" {
   $RUN_TEST acclint test4.ac -Wno-unused-vertex
   [ "$status" -eq 0 ]
@@ -208,3 +209,51 @@ setup_file() {
 }
 
 ################################################################################
+# With the error turned off nothing refused -o, and a ref that names no
+# vertex was written as the index it was read as: 18446744073709551615 for
+# one that was not a number, or a vertex that is not there. The file written
+# did not load. The surface cannot be drawn without the vertex, so it is
+# dropped, and each one dropped is said.
+################################################################################
+
+# test7.1: the first surface is kept; the second has a ref that is not a
+# number and the third one past the last vertex, and both go.
+@test "test7.1" {
+  $RUN_TEST acclint -Wno-invalid-ref-vertex-index test7.ac -o test7.1.output.ac
+  [ "$status" -eq 0 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test7.1.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test7.1.output
+  fi
+  [ "$actual" = "$expected" ]
+  actual_file="$(tr -d '\r' < test7.1.output.ac)"
+  expected_file="$(tr -d '\r' < test7.result.ac)"
+  if [ "$actual_file" != "$expected_file" ]; then
+    cp test7.1.output.ac test7.1.actual.output
+  fi
+  [ "$actual_file" = "$expected_file" ]
+  rm test7.1.output.ac
+}
+
+# test7.2: the file written lints clean.
+@test "test7.2" {
+  $RUN_TEST acclint test7.result.ac
+  [ "$status" -eq 0 ]
+  if [ "$output" != "" ]; then
+    echo "$output" > test7.2.output
+  fi
+  [ "$output" = "" ]
+}
+
+# test7.3: with the error on, -o is still refused.
+@test "test7.3" {
+  $RUN_TEST acclint test7.ac -o test7.3.output.ac
+  [ "$status" -eq 1 ]
+  actual="$(echo "$output" | tr -d '\r')"
+  expected="$(tr -d '\r' < test7.3.result)"
+  if [ "$actual" != "$expected" ]; then
+    echo "$output" > test7.3.output
+  fi
+  [ "$actual" = "$expected" ]
+}

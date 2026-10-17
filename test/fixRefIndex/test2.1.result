@@ -1,0 +1,5 @@
+test2.ac:43 error: invalid ref vertex index: 9 of 8
+9 0 0
+^
+1 error
+test2.ac:43 ref repaired: vertex 6 (its edges match the surfaces around it)

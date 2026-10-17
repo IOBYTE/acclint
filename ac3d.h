@@ -275,6 +275,8 @@ public:
     void combineTexture();
     bool addMissingWorld();
     void checkDroppedData(int version);
+    size_t dropInvalidRefSurfaces();
+    size_t fixRefIndex();
     int headerVersion() const { return m_header.getVersion(); }
     bool gridPartition(double size, bool quad_tree);
     bool combineObjects(double size);
@@ -1607,6 +1609,8 @@ private:
     bool hasTransparentTexture(const Object &object);
     void fixSurface2SidedOpaque(Object &object);
     void fixRgbTexture(Object &object, std::map<std::string, std::string> &renamed);
+    size_t dropInvalidRefSurfaces(Object &object) const;
+    size_t fixRefIndex(Object &object) const;
     std::string findTexture(const std::string &name) const;
     static bool fixPolyWithKids(Object &object);
     static void fixBackToBackMirror(Object &object);

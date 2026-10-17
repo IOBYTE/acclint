@@ -1,0 +1,5 @@
+test1.ac:43 error: invalid ref vertex index
+z 0 0
+^
+1 error
+Can't write output file because input file has fatal errors

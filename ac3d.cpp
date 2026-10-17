@@ -672,6 +672,18 @@ bool AC3D::readRef(std::istringstream &in, AC3D::Ref &ref)
         // "duplicate surface vertices" beside a ref that names vertex 0.
         ref.index = std::numeric_limits<size_t>::max();
         ref.invalid_index = true;
+
+        // The texture coordinates after it are still read, so a ref that
+        // --fixRefIndex puts right has the mapping it was written with.
+        in.clear();
+        in.seekg(0, std::ios::beg);
+        in >> text;
+
+        Point2 uv{ 0.0, 0.0 };
+
+        if (in >> uv)
+            ref.coordinates.push_back(uv);
+
         return false;
     }
 
@@ -7094,6 +7106,366 @@ void AC3D::checkDroppedData(int version)
         if (in)
             showLine(in, data.line_pos);
     }
+}
+
+// A ref that names no vertex -- not a number, or a number past the last
+// vertex -- is an error, and -o is refused because of it. With the error
+// turned off nothing refused -o, and the ref was written as the index it was
+// read as: 18446744073709551615 for one that was not a number, or the vertex
+// that is not there. Either way the file written did not load. The surface
+// cannot be drawn without the vertex, so it goes, and each one is said.
+size_t AC3D::dropInvalidRefSurfaces()
+{
+    size_t dropped = 0;
+
+    for (auto &object : m_objects)
+        dropped += dropInvalidRefSurfaces(object);
+
+    return dropped;
+}
+
+size_t AC3D::dropInvalidRefSurfaces(Object &object) const
+{
+    size_t dropped = 0;
+
+    auto it = object.surfaces.begin();
+
+    while (it != object.surfaces.end())
+    {
+        const Surface &surface = *it;
+        const bool invalid = std::any_of(surface.refs.begin(), surface.refs.end(),
+                                         [&object](const Ref &ref) { return ref.index >= object.vertices.size(); });
+
+        if (invalid)
+        {
+            if (!m_quiet)
+                std::cout << m_file << ":" << surface.line_number
+                          << " surface dropped: invalid ref vertex index" << std::endl;
+            it = object.surfaces.erase(it);
+            ++dropped;
+        }
+        else
+            ++it;
+    }
+
+    for (auto &kid : object.kids)
+        dropped += dropInvalidRefSurfaces(kid);
+
+    return dropped;
+}
+
+// --fixRefIndex: a ref that names no vertex is put right when exactly one
+// vertex fits it, and said; a surface it cannot be done for is left to
+// dropInvalidRefSurfaces. Only a surface with one bad ref is tried: with more
+// there is no telling which goes where.
+//
+// A vertex fits when the edges the ref would make are the edges the surfaces
+// around it already have, the other way round -- which is how the surfaces
+// of a mesh fit together -- and the surface it makes has a shape: no
+// repeated corner, some area, flat enough to be a polygon, not crossing
+// itself. A vertex no other surface uses has no edges to match. It is tried
+// only when no vertex matches, and only an unused one: that is the vertex
+// the ref is most likely to have lost, when it was used by this surface
+// alone.
+size_t AC3D::fixRefIndex()
+{
+    size_t fixed = 0;
+
+    for (auto &object : m_objects)
+        fixed += fixRefIndex(object);
+
+    return fixed;
+}
+
+size_t AC3D::fixRefIndex(Object &object) const
+{
+    size_t fixed = 0;
+
+    for (auto &kid : object.kids)
+        fixed += fixRefIndex(kid);
+
+    const size_t count = object.vertices.size();
+
+    if (count == 0)
+        return fixed;
+
+    const auto bad = [count](const Ref &ref) { return ref.index >= count; };
+
+    // The corners of the faces a surface draws, each in the order it faces:
+    // a polygon is one face, a strip a triangle for each ref after the
+    // second. A line draws no face.
+    const auto faces = [](const Surface &surface)
+    {
+        std::vector<std::vector<size_t>> list;
+
+        if (surface.isPolygon())
+        {
+            std::vector<size_t> face;
+            for (size_t i = 0; i < surface.refs.size(); ++i)
+                face.push_back(i);
+            list.push_back(std::move(face));
+        }
+        else if (surface.isTriangleStrip())
+        {
+            for (size_t i = 0; i + 2 < surface.refs.size(); ++i)
+            {
+                size_t first = 0;
+                size_t second = 0;
+                size_t third = 0;
+
+                stripTriangle(i, first, second, third);
+                list.push_back({ first, second, third });
+            }
+        }
+
+        return list;
+    };
+
+    // Every edge of every face that names only vertices there are, from
+    // where it starts to where it ends; and how many refs use each vertex.
+    std::map<size_t, std::set<size_t>> ending_at;
+    std::map<size_t, std::set<size_t>> starting_at;
+    std::vector<size_t> uses(count, 0);
+
+    const auto addEdges = [&](const Surface &surface, const std::vector<size_t> &face)
+    {
+        for (size_t i = 0; i < face.size(); ++i)
+        {
+            const size_t from = surface.refs[face[i]].index;
+            const size_t to = surface.refs[face[(i + 1) % face.size()]].index;
+
+            if (from < count && to < count && from != to)
+            {
+                ending_at[to].insert(from);
+                starting_at[from].insert(to);
+            }
+        }
+    };
+
+    for (const auto &surface : object.surfaces)
+    {
+        for (const auto &ref : surface.refs)
+        {
+            if (ref.index < count)
+                uses[ref.index]++;
+        }
+
+        for (const auto &face : faces(surface))
+        {
+            if (std::none_of(face.begin(), face.end(), [&](size_t r) { return bad(surface.refs[r]); }))
+                addEdges(surface, face);
+        }
+    }
+
+    for (auto &surface : object.surfaces)
+    {
+        if (std::count_if(surface.refs.begin(), surface.refs.end(), bad) != 1)
+            continue;
+
+        const size_t k = static_cast<size_t>(std::find_if(surface.refs.begin(), surface.refs.end(), bad) -
+                                             surface.refs.begin());
+        Ref &ref = surface.refs[k];
+        const std::vector<std::vector<size_t>> all_faces = faces(surface);
+
+        // The edges the ref is an end of, in the faces it is a corner of:
+        // the vertex before it and the one after. Two faces of a strip that
+        // share an edge through it make it inside the strip, where there is
+        // nothing to match it with, so those are taken out.
+        std::vector<std::pair<size_t, bool>> edges; // the other end, and whether it ends at the ref
+        std::set<size_t> corners;                   // the other corners of those faces
+
+        for (const auto &face : all_faces)
+        {
+            const auto at = std::find(face.begin(), face.end(), k);
+
+            if (at == face.end())
+                continue;
+
+            const size_t i = static_cast<size_t>(at - face.begin());
+            const size_t before = surface.refs[face[(i + face.size() - 1) % face.size()]].index;
+            const size_t after = surface.refs[face[(i + 1) % face.size()]].index;
+
+            edges.emplace_back(before, true);
+            edges.emplace_back(after, false);
+
+            for (const size_t r : face)
+            {
+                if (r != k)
+                    corners.insert(surface.refs[r].index);
+            }
+        }
+
+        std::vector<std::pair<size_t, bool>> outer;
+
+        for (const auto &edge : edges)
+        {
+            const std::pair<size_t, bool> opposite{ edge.first, !edge.second };
+
+            if (std::find(edges.begin(), edges.end(), opposite) == edges.end())
+                outer.push_back(edge);
+        }
+
+        // A vertex every outer edge matches: an edge ending at the ref, from
+        // a, is matched by a neighbour's edge from the vertex to a; one
+        // starting at the ref, to b, by a neighbour's edge from b to it.
+        std::set<size_t> candidates;
+        bool first = true;
+
+        for (const auto &[other, ends_at_ref] : outer)
+        {
+            const auto &found = ends_at_ref ? ending_at[other] : starting_at[other];
+            std::set<size_t> next;
+
+            for (const size_t vertex : found)
+            {
+                if (first || candidates.contains(vertex))
+                    next.insert(vertex);
+            }
+
+            candidates = std::move(next);
+            first = false;
+        }
+
+        // A corner the face already has is not a corner it is missing.
+        for (const size_t corner : corners)
+            candidates.erase(corner);
+
+        bool unused = false;
+
+        if (candidates.empty() && !all_faces.empty())
+        {
+            for (size_t vertex = 0; vertex < count; ++vertex)
+            {
+                if (uses[vertex] == 0)
+                    candidates.insert(vertex);
+            }
+            unused = true;
+        }
+
+        // The shape the surface would have.
+        const auto fits = [&](size_t vertex)
+        {
+            Surface trial = surface;
+            trial.refs[k].index = vertex;
+
+            for (const auto &face : faces(trial))
+            {
+                if (std::find(face.begin(), face.end(), k) == face.end())
+                    continue;
+
+                std::vector<Point3> points(face.size());
+
+                std::transform(face.begin(), face.end(), points.begin(),
+                               [&](size_t r) { return object.vertices[trial.refs[r].index].vertex; });
+
+                for (size_t i = 0; i < points.size(); ++i)
+                {
+                    for (size_t j = i + 1; j < points.size(); ++j)
+                    {
+                        if (points[i].equals(points[j]))
+                            return false;
+                    }
+                }
+
+                // Newell's normal: none when the face has no area or
+                // crosses itself so that its edges cancel out.
+                Point3 normal{ 0.0, 0.0, 0.0 };
+                double size = 0.0;
+
+                for (size_t i = 0; i < points.size(); ++i)
+                {
+                    const Point3 a = points[i] - points[0];
+                    const Point3 b = points[(i + 1) % points.size()] - points[0];
+
+                    normal += Point3{ (a.y() - b.y()) * (a.z() + b.z()),
+                                      (a.z() - b.z()) * (a.x() + b.x()),
+                                      (a.x() - b.x()) * (a.y() + b.y()) };
+                    size = std::max(size, a.length());
+                }
+
+                if (!(normal.length() > 0.0))
+                    return false;
+
+                normal.normalize();
+
+                if (points.size() < 4)
+                    continue;
+
+                // Flat to within a thousandth of its size: loose enough for a
+                // polygon that was never quite flat, tight enough to tell a
+                // corner in its plane from one that is not.
+                if (!std::all_of(points.begin(), points.end(), [&](const Point3 &p)
+                                 { return std::fabs(normal.dot(p - points[0])) <= size * 1e-3; }))
+                    return false;
+
+                // Not crossing itself, seen along its normal.
+                const size_t axis = std::fabs(normal.x()) > std::fabs(normal.y()) ?
+                    (std::fabs(normal.x()) > std::fabs(normal.z()) ? 0 : 2) :
+                    (std::fabs(normal.y()) > std::fabs(normal.z()) ? 1 : 2);
+                const auto flat = [axis](const Point3 &p)
+                {
+                    return axis == 0 ? std::pair{ p.y(), p.z() } :
+                           axis == 1 ? std::pair{ p.z(), p.x() } : std::pair{ p.x(), p.y() };
+                };
+                const auto side = [](const std::pair<double, double> &o, const std::pair<double, double> &a,
+                                     const std::pair<double, double> &b)
+                {
+                    return (a.first - o.first) * (b.second - o.second) - (a.second - o.second) * (b.first - o.first);
+                };
+                const size_t n = points.size();
+
+                for (size_t i = 0; i < n; ++i)
+                {
+                    for (size_t j = i + 2; j < n; ++j)
+                    {
+                        if (i == 0 && j == n - 1)
+                            continue;
+
+                        const auto a = flat(points[i]);
+                        const auto b = flat(points[(i + 1) % n]);
+                        const auto c = flat(points[j]);
+                        const auto d = flat(points[(j + 1) % n]);
+
+                        if (side(a, b, c) * side(a, b, d) < 0.0 && side(c, d, a) * side(c, d, b) < 0.0)
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        };
+
+        std::vector<size_t> passed;
+
+        std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(passed), fits);
+
+        if (passed.size() == 1)
+        {
+            if (!m_quiet)
+                std::cout << m_file << ":" << ref.line_number << " ref repaired: vertex " << passed[0]
+                          << (unused ? " (the only unused vertex that fits)" : " (its edges match the surfaces around it)")
+                          << std::endl;
+            ref.index = passed[0];
+            ref.invalid_index = false;
+            uses[passed[0]]++;
+            object.vertices[passed[0]].used = true;
+            ++fixed;
+
+            for (const auto &face : faces(surface))
+                addEdges(surface, face);
+        }
+        else if (!m_quiet)
+        {
+            std::cout << m_file << ":" << ref.line_number << " ref not repaired: ";
+            if (passed.empty())
+                std::cout << "no vertex fits";
+            else
+                std::cout << passed.size() << " vertices fit";
+            std::cout << std::endl;
+        }
+    }
+
+    return fixed;
 }
 
 // Puts the top-level objects in a new world when none of them is one, so the

@@ -170,11 +170,13 @@ void usage()
     std::cerr << "  --stripSwaps                           Let a triangle strip turn the same way twice by repeating refs." << std::endl;
     std::cerr << "  --grid size                            Partition objects into square cells of size in meters for culling." << std::endl;
     std::cerr << "                                         Implies --flatten." << std::endl;
-    std::cerr << "  --fixAll                               Fix everything except --fixBackToBackMirror." << std::endl;
+    std::cerr << "  --fixAll                               Fix everything except --fixBackToBackMirror and --fixRefIndex." << std::endl;
     std::cerr << "                                         The same as --flatten --splitPolygon --splitSURF" << std::endl;
     std::cerr << "                                         --splitMat --combineTexture --combineObjects" << std::endl;
-    std::cerr << "                                         and every --fix option but that one." << std::endl;
+    std::cerr << "                                         and every --fix option but those two." << std::endl;
     std::cerr << "  --fixBackToBackMirror                  Convert 2 single sided back to back mirror surfaces to 1 double sided." << std::endl;
+    std::cerr << "  --fixRefIndex                          Put right a ref that names no vertex when exactly one vertex" << std::endl;
+    std::cerr << "                                         fits, and drop the surface when none or several do." << std::endl;
     std::cerr << "  --fixKids                              Put right kids counts the file cannot honour and" << std::endl;
     std::cerr << "                                         rebuild the object tree from them." << std::endl;
     std::cerr << "  --fixMultipleWorlds                    Removes extra worlds." << std::endl;
@@ -363,6 +365,7 @@ int main(int argc, char *argv[])
     double combine_percent = 25.0;
     double grid_size = 0.0;
     bool fix_back_to_back_mirror = false;
+    bool fix_ref_index = false;
     bool fix_kids = false;
     bool fix_multiple_worlds = false;
     bool fix_overlapping_2_sided_surface = false;
@@ -405,6 +408,7 @@ int main(int argc, char *argv[])
         OPT_FIX_POLY_WITH_KIDS,
         OPT_FIX_RGB_TEXTURE,
         OPT_FIX_BACK_TO_BACK_MIRROR,
+        OPT_FIX_REF_INDEX,
         OPT_FIX_SURFACE_2_SIDED_OPAQUE,
         OPT_FIX_ALL,
         OPT_GRID,
@@ -433,6 +437,7 @@ int main(int argc, char *argv[])
         { "stripSwaps",                  no_argument,       nullptr, OPT_STRIP_SWAPS },
         { "fixAll",                      no_argument,       nullptr, OPT_FIX_ALL },
         { "fixBackToBackMirror",         no_argument,       nullptr, OPT_FIX_BACK_TO_BACK_MIRROR },
+        { "fixRefIndex",                 no_argument,       nullptr, OPT_FIX_REF_INDEX },
         { "fixKids",                     no_argument,       nullptr, OPT_FIX_KIDS },
         { "fixMultipleWorlds",           no_argument,       nullptr, OPT_FIX_MULTIPLE_WORLDS },
         { "fixOverlapping2SidedSurface", no_argument,       nullptr, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE },
@@ -464,7 +469,7 @@ int main(int argc, char *argv[])
     const std::set<int> output_options = {
         OPT_SPLIT_SURF, OPT_SPLIT_MAT, OPT_FLATTEN, OPT_SPLIT_POLYGON, OPT_REBUILD_STRIPS,
         OPT_NO_TRIANGLE_STRIPS, OPT_COMBINE_OBJECTS, OPT_COMBINE_TEXTURE, OPT_FIX_ALL,
-        OPT_FIX_BACK_TO_BACK_MIRROR, OPT_FIX_MULTIPLE_WORLDS, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
+        OPT_FIX_BACK_TO_BACK_MIRROR, OPT_FIX_REF_INDEX, OPT_FIX_MULTIPLE_WORLDS, OPT_FIX_OVERLAPPING_2_SIDED_SURFACE,
         OPT_FIX_POLY_WITH_KIDS, OPT_FIX_RGB_TEXTURE, OPT_FIX_SURFACE_2_SIDED_OPAQUE, OPT_QUAD_TREE,
         OPT_STITCH_STRIPS, OPT_STRIP_SWAPS, OPT_GRID, OPT_MERGE, OPT_REMOVE_OBJECTS
     };
@@ -588,6 +593,9 @@ int main(int argc, char *argv[])
             break;
         case OPT_FIX_BACK_TO_BACK_MIRROR:
             fix_back_to_back_mirror = true;
+            break;
+        case OPT_FIX_REF_INDEX:
+            fix_ref_index = true;
             break;
         case OPT_FIX_KIDS:
             fix_kids = true;
@@ -1563,11 +1571,22 @@ int main(int argc, char *argv[])
 
     if (!out_file.empty())
     {
-        if (ac3d.errors() > 0)
+        // --fixRefIndex answers the invalid ref vertex index errors itself:
+        // what it cannot put right it drops.
+        const size_t answered = fix_ref_index ? ac3d.invalidRefVertexIndexCount() : 0;
+
+        if (ac3d.errors() > answered)
         {
             std::cerr << "Can't write output file because input file has fatal errors" << std::endl;
             return EXIT_FAILURE;
         }
+
+        if (fix_ref_index)
+            ac3d.fixRefIndex();
+
+        // There with -Wno-invalid-ref-vertex-index, which let -o go on, and
+        // what --fixRefIndex could not put right.
+        ac3d.dropInvalidRefSurfaces();
 
         // Set before merging as well as everything after: a merge file in the
         // other format is converted to the one being written as it is merged,
@@ -1617,7 +1636,7 @@ int main(int argc, char *argv[])
             // Refused the way the input file is. Its errors were counted and
             // then ignored, and a file that could not have been written on its
             // own was written merged into another.
-            if (to_merge.errors() > 0)
+            if (to_merge.errors() > (fix_ref_index ? to_merge.invalidRefVertexIndexCount() : 0))
             {
                 std::cerr << to_merge.errors() << " error";
                 if (to_merge.errors() > 1)
@@ -1626,6 +1645,11 @@ int main(int argc, char *argv[])
                 std::cerr << "Can't write output file because merge file has fatal errors" << std::endl;
                 return EXIT_FAILURE;
             }
+
+            if (fix_ref_index)
+                to_merge.fixRefIndex();
+
+            to_merge.dropInvalidRefSurfaces();
 
             if (fix_multiple_worlds)
                 to_merge.fixMultipleWorlds();

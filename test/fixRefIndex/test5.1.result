@@ -1,0 +1,5 @@
+test5.acc:38 error: invalid ref vertex index
+z 0 0
+^
+1 error
+test5.acc:38 ref repaired: vertex 5 (its edges match the surfaces around it)
